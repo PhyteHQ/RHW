@@ -1,0 +1,38 @@
+name: Price Check Label Cleanup
+
+on:
+  push:
+    branches: [fix/price-check-routes]
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: fix/price-check-routes
+      - name: Fix Price Check labels
+        shell: python
+        run: |
+          from pathlib import Path
+          p = Path('js/37-app-price-check.js')
+          s = p.read_text(encoding='utf-8')
+          s = s.replace('/* Fixed NPC procurement routes only. Compares live NPC source prices against */', '/* Fixed procurement routes only. Compares live source prices against RHW payout. */')
+          s = s.replace('  /* Only fixed NPC purchase routes belong here. Produced, mined and variable', '  /* Only fixed purchase routes belong here. Produced, mined and variable')
+          s = s.replace('FIXED NPC PROCUREMENT // SOURCE COST VS RHW PAYOUT', 'FIXED PROCUREMENT // SOURCE COST VS RHW PAYOUT')
+          s = s.replace('<small>FIXED NPC ROUTE</small>', "<small>${route.sourceType === 'pob' ? 'FIXED POB ROUTE' : 'FIXED NPC ROUTE'}</small>")
+          p.write_text(s, encoding='utf-8')
+      - name: Validate JavaScript
+        run: node --check js/37-app-price-check.js
+      - name: Commit
+        shell: bash
+        run: |
+          if git diff --quiet; then exit 0; fi
+          git config user.name 'RHW Automation'
+          git config user.email 'actions@users.noreply.github.com'
+          git add js/37-app-price-check.js
+          git commit -m 'Clarify Price Check source labels'
+          git push origin HEAD:fix/price-check-routes
