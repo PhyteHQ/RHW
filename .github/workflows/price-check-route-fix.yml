@@ -13,34 +13,24 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - name: Inspect Darkstat Copperland mining operation
+      - name: Inspect Darkstat Copperland POB
         shell: python
         run: |
           import json, urllib.request
 
           def norm(value): return ' '.join(str(value or '').lower().split())
-          url = 'https://darkstat.dd84ai.com/api/mining_operations'
-          body = json.dumps({
-              'include_market_goods': True,
-              'filter_to_useful': False,
-              'filter_market_good_category': ['commodity']
-          }).encode()
-          req = urllib.request.Request(url, data=body, headers={'Accept':'application/json','Content-Type':'application/json'}, method='POST')
+          url = 'https://darkstat.dd84ai.com/api/pobs'
+          req = urllib.request.Request(url, data=b'', headers={'Accept':'application/json'}, method='POST')
           with urllib.request.urlopen(req, timeout=30) as response:
               bases = json.load(response)
 
-          print(f'MINING_OPERATION_COUNT={len(bases)}')
-          matches = []
-          for base in bases:
-              name = norm(base.get('name'))
-              system = norm(base.get('system_name'))
-              goods = base.get('market_goods') or []
-              copper = [g for g in goods if norm(g.get('name')) == 'copper' or norm(g.get('nickname')) in {'copper','commodity_copper'}]
-              if 'copperland' in name or ('coronado' in system and copper):
-                  matches.append((base, copper))
-
-          print(f'COPPERLAND_OR_CORONADO_MATCHES={len(matches)}')
-          for base, copper in matches:
-              print('MINING_BASE', json.dumps({k:base.get(k) for k in ('name','nickname','system_name','system_nickname')}, ensure_ascii=False))
+          print(f'POB_COUNT={len(bases)}')
+          matches = [b for b in bases if 'copperland' in norm(b.get('name')) or 'copperland' in norm(b.get('nickname'))]
+          print(f'COPPERLAND_MATCHES={len(matches)}')
+          for base in matches:
+              print('POB', json.dumps({k:base.get(k) for k in ('name','nickname','system_name','system','owner') if k in base}, ensure_ascii=False))
+              goods = base.get('shop_items') or []
+              copper = [g for g in goods if norm(g.get('name') or g.get('item_name') or g.get('nickname')) in {'copper','commodity_copper'}]
+              print(f'COPPER_ITEMS={len(copper)}')
               for good in copper:
-                  print('COPPER', json.dumps({k:good.get(k) for k in ('name','nickname','base_sells','price_base_sells_for','price_base_buys_for','is_server_override')}, ensure_ascii=False))
+                  print('COPPER', json.dumps(good, ensure_ascii=False, sort_keys=True))
