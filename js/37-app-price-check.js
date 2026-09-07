@@ -1,6 +1,6 @@
 /* ========================================================================== */
 /* RHW PRICE CHECK                                                            */
-/* Fixed NPC procurement routes only. Compares live NPC source prices against */
+/* Fixed procurement routes only. Compares live source prices against RHW payout. */
 /* RHW's current PoB purchase prices. Variable PoB goods stay in Network Scan.*/
 /* ========================================================================== */
 (function initRhwPriceCheck() {
@@ -18,7 +18,7 @@
     market: 'rhw-webapp-v4:price-check-market-cache'
   });
 
-  /* Only fixed NPC purchase routes belong here. Produced, mined and variable
+  /* Only fixed purchase routes belong here. Produced, mined and variable
      PoB-system goods are intentionally excluded and remain owned by the
      Production/Network Scan workflows. */
   const ROUTES = Object.freeze([
@@ -161,7 +161,7 @@
   function workspaceMarkup() {
     return `<div class="pricecheck-frame">
       <header class="pricecheck-heading">
-        <div><h2>PRICE CHECK</h2><p>FIXED NPC PROCUREMENT // SOURCE COST VS RHW PAYOUT</p></div>
+        <div><h2>PRICE CHECK</h2><p>FIXED PROCUREMENT // SOURCE COST VS RHW PAYOUT</p></div>
         <button type="button" class="pricecheck-refresh" id="priceCheckRefresh">REFRESH MARKET</button>
       </header>
       <div class="pricecheck-status-grid" id="priceCheckStatusGrid"></div>
@@ -507,7 +507,7 @@
     const liveCopy = live === null ? 'LIVE PRICE UNAVAILABLE' : `LIVE ${money(live)}`;
     const payoutCopy = payout === null ? 'RHW PRICE UNAVAILABLE' : money(payout);
     return `<tr class="pricecheck-row" data-route-key="${esc(route.key)}">
-      <td><span class="pricecheck-mobile-label">COMMODITY</span><span class="pricecheck-commodity"><strong>${esc(route.commodity)}</strong><small>FIXED NPC ROUTE</small></span></td>
+      <td><span class="pricecheck-mobile-label">COMMODITY</span><span class="pricecheck-commodity"><strong>${esc(route.commodity)}</strong><small>${route.sourceType === 'pob' ? 'FIXED POB ROUTE' : 'FIXED NPC ROUTE'}</small></span></td>
       <td><span class="pricecheck-mobile-label">SOURCE</span><span class="pricecheck-source"><strong>${esc(sourceName)}</strong><small>${esc(sourceMeta)}</small></span></td>
       <td><span class="pricecheck-mobile-label">SOURCE PRICE / OVERRIDE</span><div class="pricecheck-price-editor"><input class="pricecheck-price-input" data-pricecheck-override="${esc(route.key)}" type="number" inputmode="decimal" min="0" step="1" value="${esc(overrideValue)}" placeholder="${live === null ? '' : esc(String(Math.round(live)))}" aria-label="${esc(route.commodity)} manual source price">${hasOverride ? `<button type="button" class="pricecheck-reset" data-pricecheck-reset="${esc(route.key)}">RESET</button>` : ''}<small class="pricecheck-live ${hasOverride ? 'manual' : ''}">${hasOverride ? `MANUAL ACTIVE // ${liveCopy}` : liveCopy}</small></div></td>
       <td><span class="pricecheck-mobile-label">RHW PAYS</span><span class="pricecheck-payout"><strong>${payoutCopy}</strong><small>${rhwSnapshot().stale ? 'RHW CACHED' : 'CURRENT RHW BUY'}</small></span></td>
