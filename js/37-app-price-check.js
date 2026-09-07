@@ -458,7 +458,8 @@
     if (route.sourceType === 'pob') {
       const source = pobSourceFor(route);
       const good = source ? pobGoodFor(source, route.commodity) : null;
-      const pobLivePrice = finite(good?.sell_price ?? good?.price_to_buy_from_base ?? good?.buy_price);
+      // PoB shop semantics: price = player buys from base; sell_price = base buys from player.
+      const pobLivePrice = finite(good?.price ?? good?.price_to_buy_from_base ?? good?.buy_price);
       if (source) {
         market = {
           ...market,
@@ -662,7 +663,7 @@
     if (ROUTES.length !== 12) failures.push('route-count');
     const copperRoute = ROUTES.find(route => route.key === 'copper');
     if (copperRoute?.sourceType !== 'pob' || copperRoute?.sourceNickname !== 'copperland') failures.push('copper-source');
-    if (finite(pobGoodFor({ shop_items: [{ name: 'Copper', sell_price: 80 }] }, 'Copper')?.sell_price) !== 80) failures.push('copper-pob-price');
+    if (finite(pobGoodFor({ shop_items: [{ name: 'Copper', price: 100, sell_price: 80 }] }, 'Copper')?.price) !== 100) failures.push('copper-pob-buy-from-base-price');
     if (document.querySelector('#rhwFocusToolsPanel [data-rhw-tool="build-queue"]')) failures.push('obsolete-build-queue');
     return failures;
   }
