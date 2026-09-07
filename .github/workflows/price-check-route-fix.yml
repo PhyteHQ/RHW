@@ -13,11 +13,13 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - name: Inspect Darkstat Coronado and Copper sellers
+      - name: Inspect Darkstat Copperland mining operation
         shell: python
         run: |
           import json, urllib.request
-          url = 'https://darkstat.dd84ai.com/api/npc_bases'
+
+          def norm(value): return ' '.join(str(value or '').lower().split())
+          url = 'https://darkstat.dd84ai.com/api/mining_operations'
           body = json.dumps({
               'include_market_goods': True,
               'filter_to_useful': False,
@@ -27,20 +29,18 @@ jobs:
           with urllib.request.urlopen(req, timeout=30) as response:
               bases = json.load(response)
 
-          def norm(value): return ' '.join(str(value or '').lower().split())
-          print(f'BASE_COUNT={len(bases)}')
-
-          candidates = []
+          print(f'MINING_OPERATION_COUNT={len(bases)}')
+          matches = []
           for base in bases:
               name = norm(base.get('name'))
               system = norm(base.get('system_name'))
               goods = base.get('market_goods') or []
               copper = [g for g in goods if norm(g.get('name')) == 'copper' or norm(g.get('nickname')) in {'copper','commodity_copper'}]
-              if 'copper' in name or 'coronado' in system or copper:
-                  candidates.append((base, copper))
+              if 'copperland' in name or ('coronado' in system and copper):
+                  matches.append((base, copper))
 
-          print(f'CANDIDATES={len(candidates)}')
-          for base, copper in candidates:
-              print('BASE', json.dumps({k:base.get(k) for k in ('name','nickname','system_name','system_nickname')}, ensure_ascii=False))
+          print(f'COPPERLAND_OR_CORONADO_MATCHES={len(matches)}')
+          for base, copper in matches:
+              print('MINING_BASE', json.dumps({k:base.get(k) for k in ('name','nickname','system_name','system_nickname')}, ensure_ascii=False))
               for good in copper:
                   print('COPPER', json.dumps({k:good.get(k) for k in ('name','nickname','base_sells','price_base_sells_for','price_base_buys_for','is_server_override')}, ensure_ascii=False))
