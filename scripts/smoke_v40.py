@@ -17,6 +17,7 @@ APP_LAYER_ASSETS = [
     "js/34-app-stability-polish.js",
     "js/35-app-command-compact-polish.js",
     "js/36-app-focus-pass.js",
+    "js/37-app-price-check.js",
 ]
 
 

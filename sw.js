@@ -31,7 +31,7 @@ const APP_SHELL = [
   './js/27-app-v40-production-orders.js', './js/28-app-v40-transfer-center.js', './js/29-app-v40-newswire-review.js',
   './js/30-app-v40-full-audit.js', './js/31-app-command-rework.js', './js/32-app-unified-workspaces.js',
   './js/33-app-ui-polish-fix.js', './js/34-app-stability-polish.js', './js/35-app-command-compact-polish.js',
-  './js/36-app-focus-pass.js',
+  './js/36-app-focus-pass.js', './js/37-app-price-check.js',
   ...Array.from({ length: 6 }, (_, index) => `./assets/recipes/catalog-v1-part-${String(index + 1).padStart(2, '0')}.js`)
 ];
 
