@@ -192,12 +192,24 @@ def main() -> int:
             print("Focus Pass + Price Check smoke passed: 4 daily tabs, 15 fixed routes, sign-only colors, overrides, mobile fit")
             return 0
         finally:
+            try:
+                cdp.call("Emulation.clearDeviceMetricsOverride")
+            except Exception:
+                pass
             cdp.close()
     except Exception as exc:
         print(f"ERROR: {exc}")
         return 1
     finally:
-        base.stop(chrome, browser, folder)
+        chrome.terminate()
+        try:
+            chrome.wait(timeout=3)
+        except Exception:
+            chrome.kill()
+        try:
+            folder.cleanup()
+        except Exception:
+            pass
 
 
 if __name__ == '__main__':
