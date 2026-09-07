@@ -22,7 +22,7 @@
      PoB-system goods are intentionally excluded and remain owned by the
      Production/Network Scan workflows. */
   const ROUTES = Object.freeze([
-    Object.freeze({ key: 'copper', commodity: 'Copper', source: 'Copperland', system: 'Coronado', aliases: ['Copperland'] }),
+    Object.freeze({ key: 'copper', commodity: 'Copper', source: 'Copperland', system: 'Coronado', sourceType: 'pob', sourceNickname: 'copperland', aliases: ['Copperland'] }),
     Object.freeze({ key: 'hull-panels', commodity: 'Hull Panels', source: 'Portsmouth Shipyard', system: 'Cambridge', aliases: ['Portsmouth Shipyard'] }),
     Object.freeze({ key: 'industrial-materials', commodity: 'Industrial Materials', source: 'Planet New London', system: 'New London', aliases: ['Planet New London', 'New London'] }),
     Object.freeze({ key: 'mox', commodity: 'MOX', source: 'Belvedere Refinery', system: 'New London', aliases: ['Belvedere Refinery'] }),
@@ -254,6 +254,28 @@
       || matches[0];
   }
 
+
+  function pobGoodFor(baseEntry, commodity) {
+    const target = normalize(commodity);
+    const candidates = Array.isArray(baseEntry?.shop_items) ? baseEntry.shop_items : [];
+    return candidates.find(good => normalize(good?.name || good?.item_name) === target)
+      || candidates.find(good => normalize(good?.nickname) === `commodity ${target}`)
+      || null;
+  }
+
+  function pobSourceFor(route) {
+    try {
+      const pobs = typeof allBases !== 'undefined' && Array.isArray(allBases) ? allBases : [];
+      const nickname = normalize(route?.sourceNickname || route?.source);
+      const name = normalize(route?.source);
+      return pobs.find(baseEntry => normalize(baseEntry?.nickname) === nickname)
+        || pobs.find(baseEntry => normalize(baseEntry?.name) === name)
+        || null;
+    } catch {
+      return null;
+    }
+  }
+
   function baseSystem(baseEntry) {
     return String(baseEntry?.system_name || baseEntry?.system || '').trim();
   }
@@ -378,7 +400,7 @@
   function shouldResolveSources(forceResolve) {
     if (forceResolve) return true;
     const sources = state.sourceCache?.sources || {};
-    const missing = ROUTES.some(route => !sources[route.key]?.nickname);
+    const missing = ROUTES.filter(route => route.sourceType !== 'pob').some(route => !sources[route.key]?.nickname);
     const age = Date.now() - (Number(state.sourceCache?.resolvedAt) || 0);
     return missing && age >= SOURCE_RESOLVE_RETRY_MS;
   }
@@ -401,7 +423,7 @@
       /* A cached nickname can disappear after a Discovery data change. One full
          resolution pass repairs renamed/replaced sources without making every
          normal five-minute refresh expensive. */
-      const missingKnownBase = !full && ROUTES.some(route => {
+      const missingKnownBase = !full && ROUTES.filter(route => route.sourceType !== 'pob').some(route => {
         const nickname = state.sourceCache?.sources?.[route.key]?.nickname;
         return nickname && !bases.some(baseEntry => String(baseEntry?.nickname || '') === String(nickname));
       });
@@ -432,7 +454,25 @@
   }
 
   function effectiveRow(route) {
-    const market = state.marketCache?.routes?.[route.key] || {};
+    let market = state.marketCache?.routes?.[route.key] || {};
+    if (route.sourceType === 'pob') {
+      const source = pobSourceFor(route);
+      const good = source ? pobGoodFor(source, route.commodity) : null;
+      const pobLivePrice = finite(good?.sell_price ?? good?.price_to_buy_from_base ?? good?.buy_price);
+      if (source) {
+        market = {
+          ...market,
+          sourceNickname: String(source.nickname || route.sourceNickname || ''),
+          sourceName: String(source.name || route.source),
+          system: String(source.system_name || source.system || route.system),
+          goodNickname: String(good?.nickname || ''),
+          livePrice: pobLivePrice,
+          found: true,
+          sold: pobLivePrice !== null,
+          sourceType: 'pob'
+        };
+      }
+    }
     const live = finite(market.livePrice);
     const hasOverride = Object.prototype.hasOwnProperty.call(state.overrides, route.key) && finite(state.overrides[route.key]) !== null;
     const sourcePrice = hasOverride ? finite(state.overrides[route.key]) : live;
@@ -461,7 +501,9 @@
     const overrideValue = hasOverride ? String(state.overrides[route.key]) : '';
     const sourceName = market.sourceName || route.source;
     const system = market.system || route.system;
-    const sourceMeta = market.sourceNickname ? `${system} // ${market.sourceNickname}` : `${system} // SOURCE MATCH PENDING`;
+    const sourceMeta = market.sourceType === 'pob'
+      ? `${system} // POB ${market.sourceNickname || route.sourceNickname || route.source}`
+      : (market.sourceNickname ? `${system} // ${market.sourceNickname}` : `${system} // SOURCE MATCH PENDING`);
     const liveCopy = live === null ? 'LIVE PRICE UNAVAILABLE' : `LIVE ${money(live)}`;
     const payoutCopy = payout === null ? 'RHW PRICE UNAVAILABLE' : money(payout);
     return `<tr class="pricecheck-row" data-route-key="${esc(route.key)}">
@@ -618,6 +660,9 @@
     if (!document.querySelector('.app-tabs [data-workspace="pricecheck"]')) failures.push('tab');
     if (!document.getElementById('workspacePricecheck')) failures.push('workspace');
     if (ROUTES.length !== 12) failures.push('route-count');
+    const copperRoute = ROUTES.find(route => route.key === 'copper');
+    if (copperRoute?.sourceType !== 'pob' || copperRoute?.sourceNickname !== 'copperland') failures.push('copper-source');
+    if (finite(pobGoodFor({ shop_items: [{ name: 'Copper', sell_price: 80 }] }, 'Copper')?.sell_price) !== 80) failures.push('copper-pob-price');
     if (document.querySelector('#rhwFocusToolsPanel [data-rhw-tool="build-queue"]')) failures.push('obsolete-build-queue');
     return failures;
   }
