@@ -5,32 +5,270 @@ on:
     branches: [fix/price-check-routes]
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
-  copper-diagnostic:
+  patch:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+        with:
+          ref: fix/price-check-routes
 
-      - name: Inspect Darkstat Copperland POB
+      - name: Patch mixed NPC and POB source support
         shell: python
         run: |
-          import json, urllib.request
+          from pathlib import Path
 
-          def norm(value): return ' '.join(str(value or '').lower().split())
-          url = 'https://darkstat.dd84ai.com/api/pobs'
-          req = urllib.request.Request(url, data=b'', headers={'Accept':'application/json'}, method='POST')
-          with urllib.request.urlopen(req, timeout=30) as response:
-              bases = json.load(response)
+          path = Path('js/37-app-price-check.js')
+          text = path.read_text(encoding='utf-8')
 
-          print(f'POB_COUNT={len(bases)}')
-          matches = [b for b in bases if 'copperland' in norm(b.get('name')) or 'copperland' in norm(b.get('nickname'))]
-          print(f'COPPERLAND_MATCHES={len(matches)}')
-          for base in matches:
-              print('POB', json.dumps({k:base.get(k) for k in ('name','nickname','system_name','system','owner') if k in base}, ensure_ascii=False))
-              goods = base.get('shop_items') or []
-              copper = [g for g in goods if norm(g.get('name') or g.get('item_name') or g.get('nickname')) in {'copper','commodity_copper'}]
-              print(f'COPPER_ITEMS={len(copper)}')
-              for good in copper:
-                  print('COPPER', json.dumps(good, ensure_ascii=False, sort_keys=True))
+          if "const POB_API = 'https://darkstat.dd84ai.com/api/pobs';" not in text:
+              text = text.replace(
+                  "  const MARKET_API = 'https://darkstat.dd84ai.com/api/npc_bases';\n",
+                  "  const MARKET_API = 'https://darkstat.dd84ai.com/api/npc_bases';\n  const POB_API = 'https://darkstat.dd84ai.com/api/pobs';\n"
+              )
+
+          text = text.replace(
+              "    market: 'rhw-webapp-v4:price-check-market-cache'",
+              "    market: 'rhw-webapp-v4:price-check-market-cache-v2'"
+          )
+
+          text = text.replace(
+              "    Object.freeze({ key: 'copper', commodity: 'Copper', source: 'Copperland', system: 'Coronado', aliases: ['Copperland'] }),",
+              "    Object.freeze({ key: 'copper', commodity: 'Copper', source: 'Copperland', system: 'Coronado', sourceType: 'pob', sourceNickname: 'copperland', aliases: ['Copperland'] }),"
+          )
+
+          needle = """  function marketGoodFor(baseEntry, commodity) {
+    const target = normalize(commodity);
+    const candidates = Array.isArray(baseEntry?.market_goods) ? baseEntry.market_goods : [];
+    const matches = candidates.filter(good => normalize(good?.name || good?.nickname) === target);
+    if (!matches.length) return null;
+    return matches.find(good => good?.base_sells === true && finite(good?.price_base_sells_for) !== null)
+      || matches.find(good => finite(good?.price_base_sells_for) !== null)
+      || matches[0];
+  }
+"""
+          addition = needle + """
+  function isPobRoute(route) { return route?.sourceType === 'pob'; }
+
+  function pobGoodFor(baseEntry, commodity) {
+    const target = normalize(commodity);
+    const candidates = Array.isArray(baseEntry?.shop_items) ? baseEntry.shop_items : [];
+    return candidates.find(good => normalize(good?.name || good?.item_name) === target)
+      || candidates.find(good => normalize(good?.nickname) === `commodity ${target}`)
+      || null;
+  }
+
+  function pobForRoute(route, pobs) {
+    const nickname = normalize(route?.sourceNickname || route?.source);
+    const name = normalize(route?.source);
+    return (pobs || []).find(baseEntry => normalize(baseEntry?.nickname) === nickname)
+      || (pobs || []).find(baseEntry => normalize(baseEntry?.name) === name)
+      || null;
+  }
+"""
+          if 'function pobGoodFor' not in text:
+              if needle not in text:
+                  raise SystemExit('marketGoodFor insertion point not found')
+              text = text.replace(needle, addition)
+
+          old_fetch = """  async function fetchJson(body) {
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), 18000);
+    try {
+      const response = await fetch(MARKET_API, {
+        method: 'POST',
+        headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+        signal: controller.signal
+      });
+      if (!response.ok) throw new Error(`MARKET HTTP ${response.status}`);
+      const data = await response.json();
+      if (!Array.isArray(data)) throw new Error('INVALID NPC MARKET RESPONSE');
+      return data;
+    } finally {
+      window.clearTimeout(timeout);
+    }
+  }
+"""
+          new_fetch = """  async function fetchJson(url, body = null) {
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), 18000);
+    try {
+      const headers = { 'Accept': 'application/json' };
+      const options = { method: 'POST', headers, signal: controller.signal };
+      if (body !== null) {
+        headers['Content-Type'] = 'application/json';
+        options.body = JSON.stringify(body);
+      }
+      const response = await fetch(url, options);
+      if (!response.ok) throw new Error(`MARKET HTTP ${response.status}`);
+      const data = await response.json();
+      if (!Array.isArray(data)) throw new Error('INVALID MARKET RESPONSE');
+      return data;
+    } finally {
+      window.clearTimeout(timeout);
+    }
+  }
+"""
+          if old_fetch in text:
+              text = text.replace(old_fetch, new_fetch)
+
+          text = text.replace('    return fetchJson(body);', '    return fetchJson(MARKET_API, body);')
+
+          marker = """  async function fetchMarketBases({ full = false } = {}) {
+    const sourceMap = state.sourceCache?.sources || {};
+    const nicknames = [...new Set(Object.values(sourceMap).map(entry => entry?.nickname).filter(Boolean))];
+    const body = {
+      include_market_goods: true,
+      filter_to_useful: true,
+      filter_market_good_category: ['commodity']
+    };
+    if (!full && nicknames.length) body.filter_nicknames = nicknames;
+    return fetchJson(MARKET_API, body);
+  }
+"""
+          pobs_fetch = marker + """
+
+  async function fetchPobs() {
+    try {
+      if (typeof allBases !== 'undefined' && Array.isArray(allBases) && allBases.length) return allBases;
+    } catch {}
+    return fetchJson(POB_API);
+  }
+"""
+          if 'async function fetchPobs()' not in text:
+              if marker not in text:
+                  raise SystemExit('fetchMarketBases insertion point not found')
+              text = text.replace(marker, pobs_fetch)
+
+          text = text.replace(
+              '  function snapshotRoutes(bases, { resolve = false } = {}) {',
+              '  function snapshotRoutes(bases, pobs = [], { resolve = false } = {}) {'
+          )
+
+          loop_needle = """    for (const route of ROUTES) {
+      let source = null;
+"""
+          loop_replacement = """    for (const route of ROUTES) {
+      if (isPobRoute(route)) {
+        const source = pobForRoute(route, pobs);
+        const good = source ? pobGoodFor(source, route.commodity) : null;
+        const livePrice = finite(good?.sell_price ?? good?.price_to_buy_from_base ?? good?.buy_price);
+        next[route.key] = {
+          sourceNickname: String(source?.nickname || route.sourceNickname || ''),
+          sourceName: String(source?.name || route.source),
+          system: String(source?.system_name || source?.system || route.system),
+          goodNickname: String(good?.nickname || ''),
+          livePrice,
+          found: Boolean(source),
+          sold: livePrice !== null,
+          sourceType: 'pob'
+        };
+        continue;
+      }
+      let source = null;
+"""
+          if "sourceType: 'pob'" not in text.split('function snapshotRoutes', 1)[1]:
+              if loop_needle not in text:
+                  raise SystemExit('snapshot loop insertion point not found')
+              text = text.replace(loop_needle, loop_replacement, 1)
+
+          text = text.replace(
+              '    const missing = ROUTES.some(route => !sources[route.key]?.nickname);',
+              '    const missing = ROUTES.filter(route => !isPobRoute(route)).some(route => !sources[route.key]?.nickname);'
+          )
+
+          old_refresh = """      const full = shouldResolveSources(forceResolve) || !Object.keys(state.sourceCache?.sources || {}).length;
+      let bases = await fetchMarketBases({ full });
+      snapshotRoutes(bases, { resolve: full });
+"""
+          new_refresh = """      const full = shouldResolveSources(forceResolve) || !Object.keys(state.sourceCache?.sources || {}).length;
+      let [bases, pobs] = await Promise.all([fetchMarketBases({ full }), fetchPobs()]);
+      snapshotRoutes(bases, pobs, { resolve: full });
+"""
+          if old_refresh in text:
+              text = text.replace(old_refresh, new_refresh)
+
+          text = text.replace(
+              "      const missingKnownBase = !full && ROUTES.some(route => {",
+              "      const missingKnownBase = !full && ROUTES.filter(route => !isPobRoute(route)).some(route => {"
+          )
+          text = text.replace(
+              '        snapshotRoutes(bases, { resolve: true });',
+              '        snapshotRoutes(bases, pobs, { resolve: true });'
+          )
+
+          text = text.replace("state.marketLabel = 'NPC MARKET LIVE';", "state.marketLabel = 'SOURCE MARKET LIVE';")
+          text = text.replace("state.marketDetail = 'CONTACTING DARKSTAT NPC MARKET';", "state.marketDetail = 'CONTACTING DARKSTAT NPC + POB MARKETS';")
+
+          old_meta = """    const sourceMeta = market.sourceNickname ? `${system} // ${market.sourceNickname}` : `${system} // SOURCE MATCH PENDING`;
+"""
+          new_meta = """    const sourceMeta = market.sourceType === 'pob'
+      ? `${system} // POB ${market.sourceNickname || route.sourceNickname || ''}`
+      : (market.sourceNickname ? `${system} // ${market.sourceNickname}` : `${system} // SOURCE MATCH PENDING`);
+"""
+          if old_meta in text:
+              text = text.replace(old_meta, new_meta)
+
+          self_needle = """    if (ROUTES.length !== 12) failures.push('route-count');
+"""
+          self_new = self_needle + """    const copper = ROUTES.find(route => route.key === 'copper');
+    if (copper?.sourceType !== 'pob' || copper?.sourceNickname !== 'copperland') failures.push('copper-source');
+    if (finite(pobGoodFor({ shop_items: [{ name: 'Copper', sell_price: 80 }] }, 'Copper')?.sell_price) !== 80) failures.push('copper-pob-price');
+"""
+          if "failures.push('copper-source')" not in text:
+              if self_needle not in text:
+                  raise SystemExit('self test insertion point not found')
+              text = text.replace(self_needle, self_new)
+
+          text = text.replace(
+              '    marketGoodFor\n  };',
+              '    marketGoodFor,\n    pobGoodFor\n  };'
+          )
+          # Above replacement may not match because this is source text, handle exact JS form too.
+          text = text.replace(
+              '    marketGoodFor\n  };',
+              '    marketGoodFor,\n    pobGoodFor\n  };'
+          )
+          text = text.replace(
+              '    marketGoodFor\n  };',
+              '    marketGoodFor,\n    pobGoodFor\n  };'
+          )
+          # Explicit normal string form.
+          text = text.replace('    marketGoodFor\n  };', '    marketGoodFor,\n    pobGoodFor\n  };')
+
+          path.write_text(text, encoding='utf-8')
+
+          smoke = Path('scripts/smoke_focus_pass.py')
+          s = smoke.read_text(encoding='utf-8')
+          if "copperSource" not in s:
+              s = s.replace(
+                  "                priceFailures:RHWV4.pricecheck?.selfTest?.()||[],\n",
+                  "                priceFailures:RHWV4.pricecheck?.selfTest?.()||[],\n                copperSource:RHWV4.pricecheck.routes.find(route=>route.key==='copper')?.sourceType||'',\n                copperPobPrice:RHWV4.pricecheck.pobGoodFor?.({shop_items:[{name:'Copper',sell_price:80}]},'Copper')?.sell_price??null,\n"
+              )
+              s = s.replace(
+                  "            if not primary.get(\"priceApi\") or primary.get(\"priceFailures\") or not primary.get(\"toolButton\") or primary.get(\"overflow\", 0) > 2:\n",
+                  "            if not primary.get(\"priceApi\") or primary.get(\"priceFailures\") or primary.get(\"copperSource\") != \"pob\" or primary.get(\"copperPobPrice\") != 80 or not primary.get(\"toolButton\") or primary.get(\"overflow\", 0) > 2:\n"
+              )
+          smoke.write_text(s, encoding='utf-8')
+
+      - name: Validate patch
+        shell: bash
+        run: |
+          node --check js/37-app-price-check.js
+          python3 -m py_compile scripts/smoke_focus_pass.py
+
+      - name: Commit patch
+        shell: bash
+        run: |
+          if git diff --quiet; then
+            echo 'Patch already applied.'
+            exit 0
+          fi
+          git config user.name 'RHW Automation'
+          git config user.email 'actions@users.noreply.github.com'
+          git add js/37-app-price-check.js scripts/smoke_focus_pass.py
+          git commit -m 'Use Copperland POB sell price in Price Check'
+          git push origin HEAD:fix/price-check-routes
