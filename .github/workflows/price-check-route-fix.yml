@@ -5,80 +5,42 @@ on:
     branches: [fix/price-check-routes]
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  cleanup:
+  copper-diagnostic:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-        with:
-          ref: fix/price-check-routes
 
-      - name: Check Copperland Darkstat price
+      - name: Inspect Darkstat Coronado and Copper sellers
         shell: python
         run: |
           import json, urllib.request
           url = 'https://darkstat.dd84ai.com/api/npc_bases'
           body = json.dumps({
               'include_market_goods': True,
-              'filter_to_useful': True,
+              'filter_to_useful': False,
               'filter_market_good_category': ['commodity']
           }).encode()
           req = urllib.request.Request(url, data=body, headers={'Accept':'application/json','Content-Type':'application/json'}, method='POST')
-          try:
-              with urllib.request.urlopen(req, timeout=30) as response:
-                  bases = json.load(response)
-              def norm(value): return ' '.join(str(value or '').lower().split())
-              matches = [b for b in bases if norm(b.get('name')) == 'copperland' or ('copperland' in norm(b.get('name')) and 'coronado' in norm(b.get('system_name')))]
-              print(f'COPPERLAND_BASE_MATCHES={len(matches)}')
-              for base in matches:
-                  print('COPPERLAND_BASE', json.dumps({k:base.get(k) for k in ('name','nickname','system_name')}, ensure_ascii=False))
-                  goods = base.get('market_goods') or []
-                  copper = [g for g in goods if norm(g.get('name')) == 'copper' or norm(g.get('nickname')) == 'copper']
-                  print(f'COPPER_GOOD_MATCHES={len(copper)}')
-                  for good in copper:
-                      print('COPPER_GOOD', json.dumps({k:good.get(k) for k in ('name','nickname','base_sells','price_base_sells_for','price_base_buys_for','is_server_override')}, ensure_ascii=False))
-          except Exception as exc:
-              print('COPPERLAND_API_CHECK_FAILED', repr(exc))
+          with urllib.request.urlopen(req, timeout=30) as response:
+              bases = json.load(response)
 
-      - name: Remove non-purchased routes
-        shell: python
-        run: |
-          from pathlib import Path
+          def norm(value): return ' '.join(str(value or '').lower().split())
+          print(f'BASE_COUNT={len(bases)}')
 
-          price = Path('js/37-app-price-check.js')
-          text = price.read_text(encoding='utf-8')
-          remove_lines = [
-              '    Object.freeze({ key: \'molybdenum\', commodity: \'Molybdenum\', source: "L\'Ardenne Trading Post/Depot", system: \'Zurich\', aliases: ["L\'Ardenne Trading Post", "L\'Ardenne Trading Depot", "L\'Ardenne"] }),\n',
-              "    Object.freeze({ key: 'toxic-waste', commodity: 'Toxic Waste', source: 'Portsmouth Shipyard', system: 'Cambridge', aliases: ['Portsmouth Shipyard'] }),\n",
-              "    Object.freeze({ key: 'scrap-metal-market', commodity: 'Scrap Metal', source: 'Belvedere Refinery', system: 'Cambridge', aliases: ['Belvedere Refinery'] }),\n",
-          ]
-          for line in remove_lines:
-              if line not in text:
-                  raise SystemExit(f'Expected route line missing: {line.strip()}')
-              text = text.replace(line, '')
-          text = text.replace('if (ROUTES.length !== 15)', 'if (ROUTES.length !== 12)')
-          price.write_text(text, encoding='utf-8')
+          candidates = []
+          for base in bases:
+              name = norm(base.get('name'))
+              system = norm(base.get('system_name'))
+              goods = base.get('market_goods') or []
+              copper = [g for g in goods if norm(g.get('name')) == 'copper' or norm(g.get('nickname')) in {'copper','commodity_copper'}]
+              if 'copper' in name or 'coronado' in system or copper:
+                  candidates.append((base, copper))
 
-          smoke = Path('scripts/smoke_focus_pass.py')
-          text = smoke.read_text(encoding='utf-8')
-          text = text.replace('the 15 fixed NPC procurement routes', 'the 12 fixed NPC procurement routes')
-          text = text.replace('price.get("rows") != 15', 'price.get("rows") != 12')
-          text = text.replace('price.get("routeCount") != 15', 'price.get("routeCount") != 12')
-          text = text.replace('geometry.get("rowCount") != 15', 'geometry.get("rowCount") != 12')
-          text = text.replace('15 fixed routes', '12 fixed routes')
-          smoke.write_text(text, encoding='utf-8')
-
-      - name: Commit cleanup
-        shell: bash
-        run: |
-          if git diff --quiet; then
-            echo 'No route changes to commit.'
-            exit 0
-          fi
-          git config user.name 'RHW Automation'
-          git config user.email 'actions@users.noreply.github.com'
-          git add js/37-app-price-check.js scripts/smoke_focus_pass.py
-          git commit -m 'Fix Price Check tracked routes'
-          git push origin HEAD:fix/price-check-routes
+          print(f'CANDIDATES={len(candidates)}')
+          for base, copper in candidates:
+              print('BASE', json.dumps({k:base.get(k) for k in ('name','nickname','system_name','system_nickname')}, ensure_ascii=False))
+              for good in copper:
+                  print('COPPER', json.dumps({k:good.get(k) for k in ('name','nickname','base_sells','price_base_sells_for','price_base_buys_for','is_server_override')}, ensure_ascii=False))
