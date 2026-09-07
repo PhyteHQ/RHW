@@ -93,6 +93,7 @@ if (!window.__RHW_SMOKE_INLINE__) {
         ['./js/34-app-stability-polish.js', 'rhwStabilityPolish'],
         ['./js/35-app-command-compact-polish.js', 'rhwCommandCompactPolish'],
         ['./js/36-app-focus-pass.js', 'rhwFocusPass'],
+        ['./js/37-app-price-check.js', 'rhwPriceCheck'],
         ['./js/19-app-v40-runtime.js', 'rhwV4Runtime']
       ];
 
