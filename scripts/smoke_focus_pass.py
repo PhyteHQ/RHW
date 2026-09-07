@@ -75,7 +75,7 @@ def main() -> int:
                 raise RuntimeError(f"Price Check shell failed: {primary}")
 
             # PRICE CHECK is a first-class route and intentionally contains only
-            # the 15 fixed NPC procurement routes supplied by RHW operations.
+            # the 12 fixed NPC procurement routes supplied by RHW operations.
             base.ev(cdp, "(()=>{document.querySelector('.app-tabs [data-workspace=\"pricecheck\"]')?.click();return true;})()")
             settle(.2)
             price = base.ev(cdp, f"""(()=>{{{VISIBLE_HELPER}return{{
@@ -90,7 +90,7 @@ def main() -> int:
             }};}})()""")
             if price.get("workspace") != "pricecheck" or price.get("hash") != "#pricecheck/routes" or not price.get("panel"):
                 raise RuntimeError(f"Price Check route failed: {price}")
-            if price.get("rows") != 15 or price.get("routeCount") != 15 or price.get("context") or price.get("buildQueue") or "PRICE CHECK" not in price.get("active", ""):
+            if price.get("rows") != 12 or price.get("routeCount") != 12 or price.get("context") or price.get("buildQueue") or "PRICE CHECK" not in price.get("active", ""):
                 raise RuntimeError(f"Price Check scope/UI failed: {price}")
 
             # Deterministic math test: positive is green, negative is red and zero
@@ -177,7 +177,7 @@ def main() -> int:
                     tabs:tabs.length,touch:tabs.map(x=>x.getBoundingClientRect().height),
                     rowCount:document.querySelectorAll('#priceCheckRows .pricecheck-row').length}};
                 }})()""")
-                if geometry.get("overflow", 0) > 2 or geometry.get("tabs") != 4 or geometry.get("rowCount") != 15:
+                if geometry.get("overflow", 0) > 2 or geometry.get("tabs") != 4 or geometry.get("rowCount") != 12:
                     raise RuntimeError(f"Price Check geometry at {width}px failed: {geometry}")
                 if width < 760 and any(height < 43.5 for height in geometry.get("touch", [])):
                     raise RuntimeError(f"Primary touch targets at {width}px failed: {geometry}")
@@ -189,7 +189,7 @@ def main() -> int:
             if runtime_failures:
                 raise RuntimeError(f"Runtime failures: {runtime_failures}")
 
-            print("Focus Pass + Price Check smoke passed: 4 daily tabs, 15 fixed routes, sign-only colors, overrides, mobile fit")
+            print("Focus Pass + Price Check smoke passed: 4 daily tabs, 12 fixed routes, sign-only colors, overrides, mobile fit")
             return 0
         finally:
             try:

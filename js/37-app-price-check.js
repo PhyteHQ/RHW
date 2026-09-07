@@ -25,15 +25,12 @@
     Object.freeze({ key: 'copper', commodity: 'Copper', source: 'Copperland', system: 'Coronado', aliases: ['Copperland'] }),
     Object.freeze({ key: 'hull-panels', commodity: 'Hull Panels', source: 'Portsmouth Shipyard', system: 'Cambridge', aliases: ['Portsmouth Shipyard'] }),
     Object.freeze({ key: 'industrial-materials', commodity: 'Industrial Materials', source: 'Planet New London', system: 'New London', aliases: ['Planet New London', 'New London'] }),
-    Object.freeze({ key: 'molybdenum', commodity: 'Molybdenum', source: "L'Ardenne Trading Post/Depot", system: 'Zurich', aliases: ["L'Ardenne Trading Post", "L'Ardenne Trading Depot", "L'Ardenne"] }),
     Object.freeze({ key: 'mox', commodity: 'MOX', source: 'Belvedere Refinery', system: 'New London', aliases: ['Belvedere Refinery'] }),
     Object.freeze({ key: 'niobium', commodity: 'Niobium', source: 'Java Station', system: 'IMG', aliases: ['Java Station'] }),
-    Object.freeze({ key: 'toxic-waste', commodity: 'Toxic Waste', source: 'Portsmouth Shipyard', system: 'Cambridge', aliases: ['Portsmouth Shipyard'] }),
     Object.freeze({ key: 'titanium', commodity: 'Titanium', source: 'Kensington Shipping Platform', system: 'New London', aliases: ['Kensington Shipping Platform'] }),
     Object.freeze({ key: 'energy-field-equipment', commodity: 'Energy Field Equipment', source: 'Planet Cambridge', system: 'Cambridge', aliases: ['Planet Cambridge', 'Cambridge'] }),
     Object.freeze({ key: 'super-alloy', commodity: 'Super Alloy', source: 'Durham Outpost', system: 'Leeds', aliases: ['Durham Outpost'] }),
     Object.freeze({ key: 'ablative-armor-plating', commodity: 'Ablative Armor Plating', source: 'Oder Shipyard', system: 'New Berlin', aliases: ['Oder Shipyard'] }),
-    Object.freeze({ key: 'scrap-metal-market', commodity: 'Scrap Metal', source: 'Belvedere Refinery', system: 'Cambridge', aliases: ['Belvedere Refinery'] }),
     Object.freeze({ key: 'food-rations', commodity: 'Food Rations', source: 'Planet New London', system: 'New London', aliases: ['Planet New London', 'New London'] }),
     Object.freeze({ key: 'hydrocarbons', commodity: 'Hydrocarbons', source: 'Kensington Shipping Platform', system: 'New London', aliases: ['Kensington Shipping Platform'] }),
     Object.freeze({ key: 'consumer-goods', commodity: 'Consumer Goods', source: 'New London', system: 'New London', aliases: ['Planet New London', 'New London'] })
@@ -620,7 +617,7 @@
     if (!document.getElementById('rhwPriceCheckStyle')) failures.push('style');
     if (!document.querySelector('.app-tabs [data-workspace="pricecheck"]')) failures.push('tab');
     if (!document.getElementById('workspacePricecheck')) failures.push('workspace');
-    if (ROUTES.length !== 15) failures.push('route-count');
+    if (ROUTES.length !== 12) failures.push('route-count');
     if (document.querySelector('#rhwFocusToolsPanel [data-rhw-tool="build-queue"]')) failures.push('obsolete-build-queue');
     return failures;
   }
