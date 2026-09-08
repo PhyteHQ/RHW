@@ -63,13 +63,13 @@ def main() -> int:
               };
               const nav=document.getElementById('rhwLogisticsViewNav');
               const market=document.getElementById('marketScanSection');
-              const fixed=document.getElementById('fixedLogisticsSection');
+              const materials=document.getElementById('materialsScanSection');
               const marketTab=nav?.querySelector('[data-logistics-view="market"]');
-              const fixedTab=nav?.querySelector('[data-logistics-view="fixed"]');
+              const materialsTab=nav?.querySelector('[data-logistics-view="materials"]');
               const context=document.getElementById('commandContextAction');
               const title=document.getElementById('marketScanTitle');
-              const price=document.querySelector('[data-market-sort="price"]');
-              const stock=document.querySelector('[data-market-sort="stock"]');
+              const price=market.querySelector('[data-market-sort="price"]');
+              const stock=market.querySelector('[data-market-sort="stock"]');
               const dock=document.querySelector('.app-tabs');
               const root=document.scrollingElement||document.documentElement;
               const dockTop=rect(dock).top<9999?rect(dock).top:window.innerHeight;
@@ -77,14 +77,14 @@ def main() -> int:
                 view:document.body.dataset.logisticsView||'',
                 navVisible:visible(nav),navRect:rect(nav),
                 marketVisible:visible(market),marketRect:rect(market),
-                fixedVisible:visible(fixed),
+                materialsVisible:visible(materials),
                 titleVisible:visible(title),titleRect:rect(title),
                 priceVisible:visible(price),priceRect:rect(price),
                 stockVisible:visible(stock),stockRect:rect(stock),
                 dockTop,
                 marketSelected:marketTab?.getAttribute('aria-selected')||'',
-                fixedSelected:fixedTab?.getAttribute('aria-selected')||'',
-                tabHeights:[marketTab,fixedTab].map(x=>x?.getBoundingClientRect().height||0),
+                materialsSelected:materialsTab?.getAttribute('aria-selected')||'',
+                tabHeights:[marketTab,materialsTab].map(x=>x?.getBoundingClientRect().height||0),
                 contextVisible:visible(context),
                 calculator:document.querySelector('.app-tabs [data-workspace="operations"] > span')?.textContent?.trim()||'',
                 innerWidth:window.innerWidth,innerHeight:window.innerHeight,
@@ -95,11 +95,11 @@ def main() -> int:
                 overflow:Math.max(document.documentElement.scrollWidth,document.body.scrollWidth)-window.innerWidth,
                 failures:RHWV4.stabilityPolish?.selfTest?.()||[]
               };
-              fixedTab?.click();
-              const fixedState={view:document.body.dataset.logisticsView||'',marketVisible:visible(market),fixedVisible:visible(fixed),selected:fixedTab?.getAttribute('aria-selected')||''};
+              materialsTab?.click();
+              const materialsState={view:document.body.dataset.logisticsView||'',marketVisible:visible(market),materialsVisible:visible(materials),selected:materialsTab?.getAttribute('aria-selected')||''};
               marketTab?.click();
-              const marketState={view:document.body.dataset.logisticsView||'',marketVisible:visible(market),fixedVisible:visible(fixed),selected:marketTab?.getAttribute('aria-selected')||''};
-              return{initial,fixedState,marketState};
+              const marketState={view:document.body.dataset.logisticsView||'',marketVisible:visible(market),materialsVisible:visible(materials),selected:marketTab?.getAttribute('aria-selected')||''};
+              return{initial,materialsState,marketState};
             })()""")
 
             initial = result.get("initial", {})
@@ -107,9 +107,9 @@ def main() -> int:
                 raise RuntimeError(f"Stability self-test failed: {result}")
             if initial.get("calculator") != "CALCULATOR":
                 raise RuntimeError(f"Workspace label regression: {result}")
-            if initial.get("view") != "market" or not initial.get("navVisible") or not initial.get("marketVisible") or initial.get("fixedVisible"):
-                raise RuntimeError(f"Market Scan is not the default visible Logistics tool: {result}")
-            if initial.get("marketSelected") != "true" or initial.get("fixedSelected") != "false":
+            if initial.get("view") != "market" or not initial.get("navVisible") or not initial.get("marketVisible") or initial.get("materialsVisible"):
+                raise RuntimeError(f"Ship Components is not the default visible Logistics tool: {result}")
+            if initial.get("marketSelected") != "true" or initial.get("materialsSelected") != "false":
                 raise RuntimeError(f"Logistics tab state is inconsistent: {result}")
             if any(height < 43.5 for height in initial.get("tabHeights", [])):
                 raise RuntimeError(f"Logistics touch target too small: {result}")
@@ -125,16 +125,83 @@ def main() -> int:
                     or not initial.get("titleVisible") or title_rect.get("top", 9999) < 0 or title_rect.get("bottom", 9999) > dock_top - 8
                     or not initial.get("priceVisible") or price_rect.get("top", 9999) < 0 or price_rect.get("bottom", 9999) > dock_top - 8
                     or not initial.get("stockVisible") or stock_rect.get("top", 9999) < 0 or stock_rect.get("bottom", 9999) > dock_top - 8):
-                raise RuntimeError(f"Market Scan title/sort controls are not fully usable above the mobile dock: {result}")
+                raise RuntimeError(f"Ship Components title/sort controls are not fully usable above the mobile dock: {result}")
             if initial.get("overflow", 0) > 2:
                 raise RuntimeError(f"Logistics mobile horizontal overflow: {result}")
 
-            fixed_state = result.get("fixedState", {})
-            if fixed_state != {"view": "fixed", "marketVisible": False, "fixedVisible": True, "selected": "true"}:
-                raise RuntimeError(f"Fixed Links switch failed: {result}")
+            materials_state = result.get("materialsState", {})
+            if materials_state != {"view": "materials", "marketVisible": False, "materialsVisible": True, "selected": "true"}:
+                raise RuntimeError(f"Industrial Materials switch failed: {result}")
             market_state = result.get("marketState", {})
-            if market_state != {"view": "market", "marketVisible": True, "fixedVisible": False, "selected": "true"}:
-                raise RuntimeError(f"Market Scan switch-back failed: {result}")
+            if market_state != {"view": "market", "marketVisible": True, "materialsVisible": False, "selected": "true"}:
+                raise RuntimeError(f"Ship Components switch-back failed: {result}")
+
+            # Populate both scans using a third-party POB, with enough offers to
+            # exercise the mobile disclosure and independent sort controls.
+            fixture = base.ev(cdp, """(()=>{
+              const names=[...MARKET_SCAN,...MATERIALS_SCAN];
+              allBases=Array.from({length:8},(_,i)=>({name:`Scan Test ${i}`,system_name:'Test System',
+                shop_items:names.map(name=>({name,quantity:100+i*100,min_stock:20,price_to_buy_from_base:10+i}))}));
+              dataIsStale=false;lastSyncError='';lastLoaded=new Date();
+              marketSort='price';materialsSort='price';renderSupplier();
+              return {
+                ships:[...document.querySelectorAll('#marketScanGrid .market-card')].map(c=>c.dataset.marketCommodity),
+                materials:[...document.querySelectorAll('#materialsScanGrid .market-card')].map(c=>c.dataset.marketCommodity),
+                tabs:[...document.querySelectorAll('#rhwLogisticsViewNav [role="tab"]')].map(b=>b.firstChild.textContent.trim())
+              };
+            })()""")
+            if len(fixture['ships']) != 6 or 'prototype components' in fixture['ships']:
+                raise RuntimeError(f"Ship scan target partition failed: {fixture}")
+            if fixture['materials'] != ['gold', 'gold ore', 'niobium', 'niobium ore', 'prototype components']:
+                raise RuntimeError(f"Material scan target partition failed: {fixture}")
+            if fixture['tabs'] != ['SHIP COMPONENTS', 'INDUSTRIAL MATERIALS']:
+                raise RuntimeError(f"Logistics naming failed: {fixture}")
+
+            for width in (360, 390, 412, 430):
+                cdp.call("Emulation.setDeviceMetricsOverride", {
+                    "width": width, "height": 820, "deviceScaleFactor": 1, "mobile": True,
+                })
+                for view, section_id in [('market', 'marketScanSection'), ('materials', 'materialsScanSection')]:
+                    base.ev(cdp, f"document.querySelector('[data-logistics-view=\"{view}\"]').click()")
+                    time.sleep(.95)
+                    geometry = base.ev(cdp, f"""(()=>{{
+                      const section=document.getElementById('{section_id}');
+                      const dock=document.querySelector('.app-tabs').getBoundingClientRect();
+                      const controls=[document.getElementById('rhwLogisticsViewNav'),section.querySelector('.logistics-subhead-title'),...section.querySelectorAll('.market-sort-button')];
+                      const card=section.querySelector('.market-card');
+                      const toggle=card.querySelector('.market-mobile-toggle');
+                      const visibleRows=()=>[...card.querySelectorAll('.supplier-commodity-row')].filter(r=>r.getBoundingClientRect().height>0).length;
+                      if(toggle?.getAttribute('aria-expanded')==='true')toggle.click();
+                      const collapsed=visibleRows();toggle?.click();const expanded=visibleRows();toggle?.click();
+                      const beforeOther=document.querySelector('#'+('{view}'==='market'?'materialsScanSection':'marketScanSection')+' .market-sort-button[aria-pressed="true"]').dataset.marketSort;
+                      section.querySelector('[data-market-sort="stock"]').click();
+                      const afterOther=document.querySelector('#'+('{view}'==='market'?'materialsScanSection':'marketScanSection')+' .market-sort-button[aria-pressed="true"]').dataset.marketSort;
+                      const first=section.querySelector('.market-card .supplier-commodity-name strong')?.textContent;
+                      return {{
+                        controls:controls.map(c=>{{const r=c.getBoundingClientRect();return {{top:r.top,bottom:r.bottom,height:r.height,width:r.width}};}}),
+                        overflow:Math.max(document.documentElement.scrollWidth,document.body.scrollWidth)-innerWidth,
+                        dockTop:dock.top,collapsed,expanded,independent:beforeOther===afterOther,first,
+                        selected:section.querySelector('[data-market-sort="stock"]').getAttribute('aria-pressed')
+                      }};
+                    }})()""")
+                    if geometry['overflow'] > 2 or any(c['top'] < 0 or c['bottom'] > geometry['dockTop'] - 8 or c['width'] <= 0 for c in geometry['controls']):
+                        raise RuntimeError(f"Logistics {view} controls at {width}px are obscured: {geometry}")
+                    if any(c['height'] < 43.5 for c in geometry['controls'][2:]):
+                        raise RuntimeError(f"Logistics {view} sort touch targets at {width}px are too small: {geometry}")
+                    if geometry['collapsed'] != 3 or geometry['expanded'] != 6:
+                        raise RuntimeError(f"Logistics {view} offer disclosure failed: {geometry}")
+                    if not geometry['independent'] or geometry['selected'] != 'true' or geometry['first'] != 'Scan Test 7':
+                        raise RuntimeError(f"Logistics {view} sort interaction failed: {geometry}")
+
+            keyboard = base.ev(cdp, """(()=>{
+              const tabs=[...document.querySelectorAll('#rhwLogisticsViewNav [role="tab"]')];
+              tabs[0].focus();tabs[0].dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowRight',bubbles:true}));
+              const next=document.activeElement===tabs[1]&&tabs[1].getAttribute('aria-selected')==='true';
+              tabs[1].dispatchEvent(new KeyboardEvent('keydown',{key:'Home',bubbles:true}));
+              return {next,home:document.activeElement===tabs[0]&&tabs[0].tabIndex===0&&tabs[1].tabIndex===-1};
+            })()""")
+            if not all(keyboard.values()):
+                raise RuntimeError(f"Logistics keyboard navigation failed: {keyboard}")
 
             runtime_failures = [
                 failure for failure in cdp.take_runtime_failures()
@@ -143,7 +210,7 @@ def main() -> int:
             if runtime_failures:
                 raise RuntimeError(f"Browser console/runtime errors: {runtime_failures}")
 
-            print("RHW stability smoke passed: 390px Logistics exposes Market Scan title + sort controls above the mobile dock and switches to fixed links cleanly")
+            print("RHW stability smoke passed: both Logistics scans, independent sorting, mobile offers + geometry at 360/390/412/430px, keyboard tabs")
             return 0
         finally:
             try:

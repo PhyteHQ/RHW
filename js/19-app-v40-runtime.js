@@ -75,13 +75,20 @@
 
     const requiredMarketTargets = [
       'avionics systems', 'interior systems', 'propulsion systems',
-      'superstructure systems', 'reactor systems', 'exotic systems', 'prototype components'
+      'superstructure systems', 'reactor systems', 'exotic systems'
     ];
     const marketTargets = typeof MARKET_SCAN === 'undefined'
       ? []
       : MARKET_SCAN.map(value => String(value || '').trim().toLowerCase());
     if (marketTargets.length !== requiredMarketTargets.length || requiredMarketTargets.some(target => !marketTargets.includes(target))) {
       failures.push('feature:shipyard-market-scan');
+    }
+
+    const requiredMaterialTargets = ['gold', 'gold ore', 'niobium', 'niobium ore', 'prototype components'];
+    const materialTargets = typeof MATERIALS_SCAN === 'undefined'
+      ? [] : MATERIALS_SCAN.map(value => String(value || '').trim().toLowerCase());
+    if (materialTargets.length !== requiredMaterialTargets.length || requiredMaterialTargets.some(target => !materialTargets.includes(target)) || materialTargets.some(target => marketTargets.includes(target))) {
+      failures.push('feature:industrial-materials-scan');
     }
 
     if (typeof app.navHierarchy?.sync !== 'function') failures.push('module:navigation-hierarchy');
@@ -142,8 +149,8 @@
       });
 
       const targetMeta = document.getElementById('externalTargetsMeta');
-      if (targetMeta && typeof MARKET_SCAN !== 'undefined' && typeof REMOTE_FACILITIES !== 'undefined') {
-        targetMeta.textContent = `${REMOTE_FACILITIES.length} FIXED LINKS + ${MARKET_SCAN.length} MARKET CHANNELS`;
+      if (targetMeta && typeof MARKET_SCAN !== 'undefined' && typeof MATERIALS_SCAN !== 'undefined') {
+        targetMeta.textContent = `${MARKET_SCAN.length} SHIP COMPONENTS + ${MATERIALS_SCAN.length} MATERIALS`;
       }
 
       app.ready = true;

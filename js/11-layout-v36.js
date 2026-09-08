@@ -64,8 +64,7 @@ function initProductionDetailsToggle() {
   applyState();
 }
 
-function enhanceMobileMarketCards() {
-  const grid = document.getElementById('marketScanGrid');
+function enhanceMobileMarketCards(grid) {
   if (!grid) return;
 
   grid.querySelectorAll('.market-card').forEach((card, cardIndex) => {
@@ -94,12 +93,13 @@ function enhanceMobileMarketCards() {
 }
 
 function initMobileMarketDisclosure() {
-  const grid = document.getElementById('marketScanGrid');
-  if (!grid) return;
-
-  const observer = new MutationObserver(() => enhanceMobileMarketCards());
-  observer.observe(grid, { childList: true, subtree: true });
-  enhanceMobileMarketCards();
+  ['marketScanGrid', 'materialsScanGrid'].forEach(id => {
+    const grid = document.getElementById(id);
+    if (!grid) return;
+    const observer = new MutationObserver(() => enhanceMobileMarketCards(grid));
+    observer.observe(grid, { childList: true, subtree: true });
+    enhanceMobileMarketCards(grid);
+  });
 }
 
 function tagLayoutVersion() {

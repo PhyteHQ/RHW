@@ -231,28 +231,26 @@ function initEcoMode() {
 }
 
 function applyFeatureVisibility() {
-  const showExternal = Boolean(FEATURES.fixedLogistics || FEATURES.marketScan);
+  const showExternal = Boolean(FEATURES.materialsScan || FEATURES.marketScan);
   if (els.externalLogisticsPanel) els.externalLogisticsPanel.hidden = !showExternal;
-  if (els.fixedLogisticsSection) els.fixedLogisticsSection.hidden = !FEATURES.fixedLogistics;
+  if (els.materialsScanSection) els.materialsScanSection.hidden = !FEATURES.materialsScan;
   if (els.marketScanSection) els.marketScanSection.hidden = !FEATURES.marketScan;
   if (els.newswirePanel) els.newswirePanel.hidden = !FEATURES.newswire;
   if (els.ecoToggleBtn) els.ecoToggleBtn.hidden = !FEATURES.ecoMode;
 
   if (els.externalTargetsMeta) {
     const targetParts = [];
-    if (FEATURES.fixedLogistics) targetParts.push(`${REMOTE_FACILITIES.length} FIXED LINKS`);
-    if (FEATURES.marketScan) targetParts.push(`${MARKET_SCAN.length} MARKET CHANNELS`);
+    if (FEATURES.materialsScan) targetParts.push(`${MATERIALS_SCAN.length} MATERIALS`);
+    if (FEATURES.marketScan) targetParts.push(`${MARKET_SCAN.length} SHIP COMPONENTS`);
     els.externalTargetsMeta.textContent = targetParts.join(' + ') || 'NO TARGETS';
   }
   if (els.externalSystemsMeta) {
-    const systems = FEATURES.fixedLogistics ? REMOTE_FACILITIES.map(f => f.system.toUpperCase()) : [];
-    if (FEATURES.marketScan) systems.push('ALL REGISTERED BASES');
-    els.externalSystemsMeta.textContent = systems.join(' // ') || 'NONE';
+    els.externalSystemsMeta.textContent = showExternal ? 'ALL KNOWN POBS' : 'NONE';
   }
   if (els.externalModeMeta) {
     const modes = [];
-    if (FEATURES.fixedLogistics) modes.push('FIXED LOGISTICS');
-    if (FEATURES.marketScan) modes.push('REGIONAL MARKET SCAN');
+    if (FEATURES.materialsScan) modes.push('INDUSTRIAL MATERIALS');
+    if (FEATURES.marketScan) modes.push('SHIP COMPONENTS');
     els.externalModeMeta.textContent = modes.join(' + ') || 'STANDBY';
   }
 
@@ -267,7 +265,8 @@ function saveViewPreferences() {
     role: els.roleFilter?.value || 'all',
     sortCol,
     sortAsc,
-    marketSort
+    marketSort,
+    materialsSort
   });
 }
 
@@ -281,6 +280,7 @@ function restoreViewPreferences() {
   if (validColumns.has(saved?.sortCol)) sortCol = saved.sortCol;
   if (typeof saved?.sortAsc === 'boolean') sortAsc = saved.sortAsc;
   if (['price', 'stock'].includes(saved?.marketSort)) marketSort = saved.marketSort;
+  if (['price', 'stock'].includes(saved?.materialsSort)) materialsSort = saved.materialsSort;
 }
 
 function itemName(item) { return item?.name || item?.item_name || item?.nickname || String(item?.id || 'Unknown Asset'); }

@@ -197,7 +197,7 @@ function renderManifest() {
 function renderAll() {
   renderOverview();
   if (FEATURES.capitalShipyard) renderShipyardControl();
-  if (FEATURES.fixedLogistics || FEATURES.marketScan) renderSupplier();
+  if (FEATURES.materialsScan || FEATURES.marketScan) renderSupplier();
   renderProductionModules();
   renderManifest();
   updateBaseTelemetry();
