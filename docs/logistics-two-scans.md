@@ -12,3 +12,5 @@ Both views use one renderer for stock above base reserves, valid buy-from-base p
 The Logistics summary now reflects both scans rather than requiring two particular bases. A failed initial fetch reports unavailable data; cached results retain stale labels.
 
 Validation is covered by `scripts/test_logistics_scans.js` and `scripts/smoke_stability_polish.py`. The latter exercises both material and ship views at 360, 390, 412 and 430 pixels, including sort independence, offer disclosure and keyboard navigation. Both are part of the Pages release gate.
+
+The live upgrade check exposed a pre-existing PWA cache mismatch: navigation fetched new HTML while installation could copy old HTTP-cached scripts into the new release cache. Shell installation now reloads every asset, and controlled navigation serves the installed HTML until the user activates an update. The audit regression suite covers both cases.

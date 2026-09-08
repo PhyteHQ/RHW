@@ -38,7 +38,9 @@ const APP_SHELL = [
 self.addEventListener('install', event => {
   event.waitUntil((async () => {
     const cache = await caches.open(CACHE_NAME);
-    await cache.addAll(APP_SHELL);
+    // A fresh worker must not seed its new cache from still-fresh HTTP cache
+    // entries belonging to the previous deployment.
+    await cache.addAll(APP_SHELL.map(src => new Request(new URL(src, self.location.href), { cache: 'reload' })));
     // Updates wait for an explicit restart; active calculator sessions stay open.
   })());
 });
@@ -67,6 +69,14 @@ async function networkFirst(request, fallback) {
     if (cached) return cached;
     throw error;
   }
+}
+
+async function appShellNavigation(request) {
+  const cache = await caches.open(CACHE_NAME);
+  // Keep HTML and scripts on the same installed release until UPDATE NOW.
+  // Fetching new HTML over old cache-first scripts can prevent the app booting.
+  const shell = await cache.match('./index.html');
+  return shell || networkFirst(request, './index.html');
 }
 
 function sourceResponse(response, source, fetchedAt) {
@@ -120,7 +130,7 @@ self.addEventListener('fetch', event => {
   const url = new URL(request.url);
 
   if (request.mode === 'navigate') {
-    event.respondWith(networkFirst(request, './index.html'));
+    event.respondWith(appShellNavigation(request));
     return;
   }
 

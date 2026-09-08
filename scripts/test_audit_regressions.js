@@ -164,11 +164,18 @@ async function models() {
 
 async function serviceWorker() {
   const handlers = {}, entries = new Map();
-  let skipCalls = 0, network = true;
-  const cache = { addAll: async () => {}, put: async (k, v) => entries.set(k, v),
+  let skipCalls = 0, network = true, shellRequests = [];
+  const cache = { addAll: async requests => {
+      shellRequests = [...requests];
+      // Simulate an HTTP cache that still holds the previous release.
+      for (const request of requests) {
+        const body = request.cache === 'reload' ? 'NEW RELEASE' : 'OLD HTTP CACHE';
+        entries.set(request.url, new Response(body));
+      }
+    }, put: async (k, v) => entries.set(k, v),
     match: async k => entries.get(k)?.clone() };
-  const ctx = vm.createContext({ Headers, Response, URL, console,
-    addEventListener: (k, f) => { handlers[k] = f; }, location: { origin: 'https://example.invalid' },
+  const ctx = vm.createContext({ Headers, Request, Response, URL, console,
+    addEventListener: (k, f) => { handlers[k] = f; }, location: { origin: 'https://example.invalid', href: 'https://example.invalid/RHW/sw.js' },
     skipWaiting: async () => { skipCalls++; }, clients: { claim: async () => {} },
     caches: { open: async () => cache, keys: async () => [], delete: async () => true },
     fetch: async () => { if (!network) throw new Error('offline'); return new Response('## operations\n- [RHW | good] TEST'); }
@@ -180,6 +187,15 @@ async function serviceWorker() {
   handlers.install({ waitUntil: p => { installed = p; } });
   await installed;
   assert.equal(skipCalls, 0, 'Installing an update must not activate it over a live session');
+  assert.ok(shellRequests.length > 50, 'Install the full app shell');
+  assert.ok(shellRequests.every(request => request.cache === 'reload'), 'Every shell request must bypass old HTTP cache');
+  assert.equal(await entries.get('https://example.invalid/RHW/js/config.js').clone().text(), 'NEW RELEASE');
+  assert.equal(await entries.get('https://example.invalid/RHW/js/34-app-stability-polish.js').clone().text(), 'NEW RELEASE');
+  entries.set('./index.html', new Response('INSTALLED HTML'));
+  assert.equal(await (await ctx.appShellNavigation('https://example.invalid/RHW/')).text(), 'INSTALLED HTML',
+    'Navigation must keep the installed HTML together with its cached scripts while an update waits');
+  entries.delete('./index.html');
+  assert.equal((await ctx.appShellNavigation('https://example.invalid/RHW/')).status, 200, 'A missing shell falls back to network');
   const fresh = await ctx.newswireResponse('news');
   const originalTime = fresh.headers.get('X-RHW-Fetched-At');
   assert.equal(fresh.headers.get('X-RHW-Source'), 'network');
