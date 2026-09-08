@@ -193,6 +193,29 @@ def main() -> int:
                     if not geometry['independent'] or geometry['selected'] != 'true' or geometry['first'] != 'Scan Test 7':
                         raise RuntimeError(f"Logistics {view} sort interaction failed: {geometry}")
 
+            # Desktop must pair the refined metals with their ores; the old
+            # generic 3+2 grid split these pairs across rows on wide displays.
+            for width in (1024, 1280, 1440, 1920):
+                cdp.call("Emulation.setDeviceMetricsOverride", {
+                    "width": width, "height": 1080, "deviceScaleFactor": 1, "mobile": False,
+                })
+                layout = base.ev(cdp, """(()=>{
+                  document.querySelector('[data-logistics-view="materials"]').click();
+                  return [...document.querySelectorAll('#materialsScanGrid .market-card')].map(card=>{
+                    const r=card.getBoundingClientRect();
+                    return {name:card.dataset.marketCommodity,left:r.left,right:r.right,top:r.top,bottom:r.bottom};
+                  });
+                })()""")
+                gold, gold_ore, niobium, niobium_ore, pc = layout
+                same = lambda a, b: abs(a - b) < 2
+                if (not same(gold['top'], gold_ore['top']) or gold['right'] >= gold_ore['left']
+                        or not same(niobium['top'], niobium_ore['top']) or niobium['right'] >= niobium_ore['left']
+                        or niobium['top'] < max(gold['bottom'], gold_ore['bottom'])
+                        or pc['top'] < max(niobium['bottom'], niobium_ore['bottom'])
+                        or not same(pc['left'], gold['left']) or not same(pc['right'], gold_ore['right'])
+                        or gold['left'] < 0 or gold_ore['right'] > width):
+                    raise RuntimeError(f"Material pairs / full-width Prototype Components at {width}px failed: {layout}")
+
             keyboard = base.ev(cdp, """(()=>{
               const tabs=[...document.querySelectorAll('#rhwLogisticsViewNav [role="tab"]')];
               tabs[0].focus();tabs[0].dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowRight',bubbles:true}));
@@ -210,7 +233,7 @@ def main() -> int:
             if runtime_failures:
                 raise RuntimeError(f"Browser console/runtime errors: {runtime_failures}")
 
-            print("RHW stability smoke passed: both Logistics scans, independent sorting, mobile offers + geometry at 360/390/412/430px, keyboard tabs")
+            print("RHW stability smoke passed: both Logistics scans, independent sorting, mobile 360/390/412/430px, desktop material pairs 1024/1280/1440/1920px, keyboard tabs")
             return 0
         finally:
             try:
