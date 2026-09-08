@@ -178,6 +178,13 @@ h1 {
 .market-card .supplier-commodity-row { align-items: center; }
 .market-mobile-toggle { display: none; }
 
+/* Keep each metal beside its ore, with Prototype Components below both pairs. */
+@media (min-width: 761px) {
+  #materialsScanGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  #materialsScanGrid > .market-card { grid-column: auto; }
+  #materialsScanGrid > [data-market-commodity="prototype components"] { grid-column: 1 / -1; }
+}
+
 /* -------------------------------------------------------------------------
    MANIFEST: desktop keeps the dense command table; mobile becomes readable
    asset cards instead of a horizontally clipped desktop table.
