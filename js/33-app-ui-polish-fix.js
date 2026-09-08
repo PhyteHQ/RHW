@@ -1,8 +1,8 @@
 /* ==========================================================================
    RHW UI POLISH FIX
    Keeps the unified visual system while clarifying workspace hierarchy,
-   moving maintenance data behind the actual tool, promoting the external
-   market scan into its own Logistics surface, and removing redundant controls.
+   moving maintenance data behind the actual tool, giving both
+   market scans matching Logistics surfaces, and removing redundant controls.
    ========================================================================== */
 (function initRhwUiPolishFix() {
   'use strict';
@@ -50,9 +50,7 @@
       .rhw-data-status-utility[open]>summary{border-bottom:1px solid rgba(120,173,138,.14)}
       .rhw-data-status-utility #discoveryDataStatus{margin:0!important;border:0!important;border-radius:0!important;box-shadow:none!important}
 
-      /* The broad other-POB scan is a first-class Logistics tool. It is no longer
-         nested inside the legacy fixed-link panel, so mobile layout rules cannot
-         bury it behind that old hierarchy. */
+      /* Both all-POB scans share the same direct Logistics surface. */
       [data-command-panel="logistics"]>.rhw-market-scan-surface{
         display:block!important;visibility:visible!important;opacity:1!important;
         width:100%;margin:0!important;border:1px solid rgba(125,167,234,.24);border-radius:9px;
@@ -178,56 +176,26 @@
   function restoreMarketScan() {
     const logisticsPanel = document.querySelector('[data-command-panel="logistics"]');
     const external = document.getElementById('externalLogisticsPanel');
-    const fixed = document.getElementById('fixedLogisticsSection');
     const market = document.getElementById('marketScanSection');
-    const grid = document.getElementById('marketScanGrid');
-    if (!logisticsPanel || !external || !market || !grid) return false;
+    const materials = document.getElementById('materialsScanSection');
+    if (!logisticsPanel || !external || !market || !materials) return false;
 
-    market.hidden = false;
-    market.removeAttribute('hidden');
-    market.style.removeProperty('display');
-    market.style.removeProperty('visibility');
-    market.style.removeProperty('opacity');
-    market.classList.add('rhw-market-scan-surface');
+    // Move the existing nodes to preserve renderer references and sort listeners.
+    [market, materials].forEach(surface => {
+      surface.hidden = false;
+      surface.removeAttribute('hidden');
+      ['display', 'visibility', 'opacity'].forEach(property => surface.style.removeProperty(property));
+      surface.classList.add('rhw-market-scan-surface');
+      if (surface.parentElement !== logisticsPanel) logisticsPanel.insertBefore(surface, external);
+    });
 
-    /* Leave fixed remote links in their legacy panel, but promote the broad scan
-       to a direct child of LOGISTICS. Moving the live DOM preserves all cached
-       element references used by renderMarketScan/renderSupplier. */
-    if (market.parentElement !== logisticsPanel || market.nextElementSibling !== external) {
-      logisticsPanel.insertBefore(market, external);
-    }
-
-    if (fixed) {
-      fixed.hidden = false;
-      fixed.removeAttribute('hidden');
-      fixed.style.removeProperty('display');
-      fixed.style.removeProperty('visibility');
-      fixed.style.removeProperty('opacity');
-    }
-
-    const kicker = market.querySelector('.logistics-subhead-kicker');
-    const title = market.querySelector('.logistics-subhead-title');
-    if (kicker) kicker.textContent = 'ALL KNOWN POBS / GOODS RADAR';
-    if (title) title.textContent = 'EXTERNAL MARKET SCAN';
-
-    const actions = market.querySelector('.market-scan-actions');
-    let scope = document.getElementById('rhwMarketScanScope');
-    if (!scope && actions) {
-      scope = document.createElement('span');
-      scope.id = 'rhwMarketScanScope';
-      scope.className = 'rhw-market-scan-scope';
-      actions.prepend(scope);
-    }
-    const targetCount = typeof MARKET_SCAN !== 'undefined' && Array.isArray(MARKET_SCAN) ? MARKET_SCAN.length : 0;
-    if (scope) scope.textContent = `${targetCount || 'ALL'} GOODS · ALL KNOWN POBS`;
-
-    const externalTitle = external.querySelector('.remote-panel-title');
-    if (externalTitle) externalTitle.textContent = 'FIXED LOGISTICS LINKS';
-    const modeMeta = document.getElementById('externalModeMeta');
-    if (modeMeta) modeMeta.textContent = 'DIRECT PROCUREMENT LINKS';
+    const shipScope = document.getElementById('rhwMarketScanScope');
+    const materialsScope = document.getElementById('rhwMaterialsScanScope');
+    if (shipScope) shipScope.textContent = `${MARKET_SCAN.length} COMPONENTS · ALL KNOWN POBS`;
+    if (materialsScope) materialsScope.textContent = `${MATERIALS_SCAN.length} MATERIALS · ALL KNOWN POBS`;
 
     try {
-      if (typeof renderMarketScan === 'function') renderMarketScan();
+      if (typeof renderSupplier === 'function') renderSupplier();
     } catch {}
     return true;
   }

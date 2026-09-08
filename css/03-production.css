@@ -109,8 +109,8 @@
     .pill.confiscated-pill { color: #f3e5f5; background: rgba(156, 39, 176, 0.16); border-color: rgba(156, 39, 176, 0.48); }
     .pill.shipyard-pill { color: #d9e8ff; background: rgba(78, 121, 184, 0.16); border-color: rgba(100, 151, 224, 0.52); }
 
-    #itemsBody, #productionGrid, #supplierGrid, #marketScanGrid, #shipyardControl { transition: opacity 0.3s ease, filter 0.3s ease; }
-    body.syncing #itemsBody, body.syncing #productionGrid, body.syncing #supplierGrid, body.syncing #marketScanGrid, body.syncing #shipyardControl { opacity: 0.3; filter: blur(4px) grayscale(50%); pointer-events: none; }
+    #itemsBody, #productionGrid, #materialsScanGrid, #marketScanGrid, #shipyardControl { transition: opacity 0.3s ease, filter 0.3s ease; }
+    body.syncing #itemsBody, body.syncing #productionGrid, body.syncing #materialsScanGrid, body.syncing #marketScanGrid, body.syncing #shipyardControl { opacity: 0.3; filter: blur(4px) grayscale(50%); pointer-events: none; }
     .error-box { display: none; padding: 10px 20px; border-bottom: 1px solid rgba(165, 42, 42, 0.55); background: rgba(165, 42, 42, 0.12); color: #ffbdbd; font-family: var(--font-tech); font-size: 12px; margin: 0; }
     .manifest-panel { position: relative; overflow: hidden; }
     .manifest-panel::after { content: ''; position: absolute; left: -20%; right: -20%; top: -30%; height: 90px; background: linear-gradient(180deg, transparent, rgba(212,175,55,0.12), transparent); opacity: 0; pointer-events: none; transform: translateY(-120%); }

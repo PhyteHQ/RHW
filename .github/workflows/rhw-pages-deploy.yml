@@ -52,6 +52,9 @@ jobs:
       - name: Validate audit regressions
         run: node scripts/test_audit_regressions.js
 
+      - name: Validate Logistics market scans
+        run: node scripts/test_logistics_scans.js
+
       - name: Validate Full App Audit model
         run: node scripts/test_full_audit.js
 

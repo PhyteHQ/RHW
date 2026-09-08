@@ -196,7 +196,7 @@
     setOverviewState('v40OverviewProduction', weakest?.cardState === 'critical' ? 'critical' : (weakest?.cardState === 'low' ? 'low' : 'ok'));
 
     write('v40OverviewLogistics', document.getElementById('supplierLinkText')?.textContent?.trim() || 'SAT-LINK ONLINE');
-    write('v40OverviewLogisticsMeta', document.getElementById('marketScanMeta')?.textContent?.trim() || 'MARKET RADAR READY');
+    write('v40OverviewLogisticsMeta', 'SHIP COMPONENTS + INDUSTRIAL MATERIALS · ALL KNOWN POBS');
     const linkBadge = document.getElementById('supplierLinkBadge');
     setOverviewState('v40OverviewLogistics', linkBadge?.classList.contains('stale') ? 'low' : (linkBadge?.classList.contains('polling') ? 'waiting' : 'ok'));
     renderPriorities();

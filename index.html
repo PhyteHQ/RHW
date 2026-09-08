@@ -115,9 +115,35 @@
     <section class="capital-shipyard-control anim-boot delay-4" id="shipyardControl" aria-label="Capital Shipyard Control"></section>
 
     <section class="panel remote-panel anim-boot delay-4" id="externalLogisticsPanel">
-      <div class="panel-head remote-panel-head"><div class="panel-heading-copy"><div class="section-kicker"><span>05</span> REMOTE FACILITIES</div><div class="panel-title remote-panel-title">EXTERNAL LOGISTICS UPLINK</div><div class="remote-route"><span><small>TARGETS</small><strong id="externalTargetsMeta">2 FIXED LINKS + 5 MARKET CHANNELS</strong></span><span><small>SYSTEMS</small><strong id="externalSystemsMeta">DUBLIN // LEEDS // ALL REGISTERED BASES</strong></span><span><small>MODE</small><strong id="externalModeMeta">FIXED LOGISTICS + REGIONAL MARKET SCAN</strong></span></div></div><div class="sat-link-badge polling" id="supplierLinkBadge"><span class="sat-link-dot"></span><span class="sat-link-text" id="supplierLinkText">SAT-LINK SCANNING</span></div></div>
-      <section class="logistics-subsection" id="fixedLogisticsSection" aria-labelledby="fixedLogisticsTitle"><div class="logistics-subhead"><div><div class="logistics-subhead-kicker">DIRECT SAT-LINKS</div><div class="logistics-subhead-title" id="fixedLogisticsTitle">FIXED LOGISTICS</div></div><div class="logistics-subhead-meta" id="fixedLogisticsMeta">AWAITING TELEMETRY</div></div><div class="supplier-grid" id="supplierGrid"></div></section>
-      <section class="logistics-subsection market-scan-section" id="marketScanSection" aria-labelledby="marketScanTitle"><div class="logistics-subhead market-scan-head"><div><div class="logistics-subhead-kicker">CROSS-BASE PROCUREMENT RADAR</div><div class="logistics-subhead-title" id="marketScanTitle">REGIONAL MARKET SCAN</div></div><div class="market-scan-actions"><div class="logistics-subhead-meta" id="marketScanMeta">AWAITING TELEMETRY</div><div class="market-sort-segments" role="group" aria-label="Sort regional market offers"><button class="market-sort-button active" type="button" data-market-sort="price" aria-pressed="true">BEST PRICE</button><button class="market-sort-button" type="button" data-market-sort="stock" aria-pressed="false">MOST STOCK</button></div></div></div><div class="market-scan-grid" id="marketScanGrid"></div></section>
+      <div class="panel-head remote-panel-head"><div class="panel-heading-copy"><div class="section-kicker"><span>05</span> MARKET SCANS</div><div class="panel-title remote-panel-title">LOGISTICS MARKET SCANS</div><div class="remote-route"><span><small>TARGETS</small><strong id="externalTargetsMeta">6 SHIP COMPONENTS + 5 MATERIALS</strong></span><span><small>SYSTEMS</small><strong id="externalSystemsMeta">ALL KNOWN POBS</strong></span><span><small>MODE</small><strong id="externalModeMeta">SHIP COMPONENTS + INDUSTRIAL MATERIALS</strong></span></div></div><div class="sat-link-badge polling" id="supplierLinkBadge"><span class="sat-link-dot"></span><span class="sat-link-text" id="supplierLinkText">SAT-LINK SCANNING</span></div></div>
+      <section class="logistics-subsection market-scan-section" id="marketScanSection" aria-labelledby="marketScanTitle">
+        <div class="logistics-subhead market-scan-head">
+          <div><div class="logistics-subhead-kicker">ALL KNOWN POBS</div><div class="logistics-subhead-title" id="marketScanTitle">SHIP COMPONENTS</div></div>
+          <div class="market-scan-actions">
+            <span class="rhw-market-scan-scope" id="rhwMarketScanScope">6 COMPONENTS · ALL KNOWN POBS</span>
+            <div class="logistics-subhead-meta" id="marketScanMeta">AWAITING TELEMETRY</div>
+            <div class="market-sort-segments" role="group" aria-label="Sort ship components offers">
+              <button class="market-sort-button active" type="button" data-market-group="ships" data-market-sort="price" aria-pressed="true">BEST PRICE</button>
+              <button class="market-sort-button" type="button" data-market-group="ships" data-market-sort="stock" aria-pressed="false">MOST STOCK</button>
+            </div>
+          </div>
+        </div>
+        <div class="market-scan-grid" id="marketScanGrid"></div>
+      </section>
+      <section class="logistics-subsection market-scan-section" id="materialsScanSection" aria-labelledby="materialsScanTitle">
+        <div class="logistics-subhead market-scan-head">
+          <div><div class="logistics-subhead-kicker">ALL KNOWN POBS</div><div class="logistics-subhead-title" id="materialsScanTitle">INDUSTRIAL MATERIALS</div></div>
+          <div class="market-scan-actions">
+            <span class="rhw-market-scan-scope" id="rhwMaterialsScanScope">5 MATERIALS · ALL KNOWN POBS</span>
+            <div class="logistics-subhead-meta" id="materialsScanMeta">AWAITING TELEMETRY</div>
+            <div class="market-sort-segments" role="group" aria-label="Sort industrial materials offers">
+              <button class="market-sort-button active" type="button" data-market-group="materials" data-market-sort="price" aria-pressed="true">BEST PRICE</button>
+              <button class="market-sort-button" type="button" data-market-group="materials" data-market-sort="stock" aria-pressed="false">MOST STOCK</button>
+            </div>
+          </div>
+        </div>
+        <div class="market-scan-grid" id="materialsScanGrid"></div>
+      </section>
     </section>
 
     <section class="panel anim-boot delay-4" id="productionPanel"><div class="panel-head"><div class="panel-heading-copy"><div class="section-kicker"><span>06</span> INTERNAL SYSTEMS</div><div class="panel-title">PRODUCTION MODULES</div><div class="footnote">LIVE RECIPE CAPACITY // BOTTLENECK ANALYSIS</div><div class="section-freshness" data-freshness-badge hidden></div></div></div><div class="production-grid" id="productionGrid"></div></section>

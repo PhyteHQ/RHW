@@ -14,7 +14,7 @@ async function loadData() {
   }
   setTelemetryState('POLLING', 'warn');
   setFooterConnection('SYNCING', 'warn');
-  if (FEATURES.fixedLogistics || FEATURES.marketScan) setSupplierLinkState('polling', 'SAT-LINK SCANNING');
+  if (FEATURES.materialsScan || FEATURES.marketScan) setSupplierLinkState('polling', 'SAT-LINK SCANNING');
   updateNetworkFeed('loading');
 
   if (els.liveStatus) {
@@ -79,7 +79,7 @@ async function loadData() {
     setTelemetryState(dataIsStale ? 'STALE' : 'ERROR', dataIsStale ? 'warn' : 'danger');
     setFooterConnection(dataIsStale ? 'CACHE' : 'FAILED', dataIsStale ? 'warn' : 'danger');
     renderAll();
-    if (!dataIsStale && (FEATURES.fixedLogistics || FEATURES.marketScan)) {
+    if (!dataIsStale && (FEATURES.materialsScan || FEATURES.marketScan)) {
       setSupplierLinkState('offline', 'UPLINK FAILED // NO VERIFIED CACHE');
     }
     updateNetworkFeed('error', lastSyncError);
@@ -133,12 +133,8 @@ async function refreshAll() {
 els.refreshBtn?.addEventListener('click', refreshAll);
 els.headerRefreshBtn?.addEventListener('click', refreshAll);
 els.marketSortButtons?.forEach(button => button.addEventListener('click', () => {
-  const nextSort = button.dataset.marketSort;
-  if (!['price', 'stock'].includes(nextSort) || nextSort === marketSort) return;
-  marketSort = nextSort;
+  if (!setMarketSort(button.dataset.marketGroup, button.dataset.marketSort)) return;
   saveViewPreferences();
-  updateMarketSortButtons();
-  renderMarketScan();
 }));
 els.tableHeaders.forEach(th => {
   th.addEventListener('click', handleSort);

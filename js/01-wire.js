@@ -237,6 +237,7 @@ const FETCH_TIMEOUT_MS = DASHBOARD_CONFIG.fetchTimeoutMs;
 const STORAGE_KEYS = DASHBOARD_CONFIG.storageKeys;
 const FEATURES = DASHBOARD_CONFIG.features;
 const MARKET_SCAN = DASHBOARD_CONFIG.marketScan || [];
+const MATERIALS_SCAN = DASHBOARD_CONFIG.materialsScan || [];
 const MAINTENANCE = DASHBOARD_CONFIG.roles.maintenance;
 const EXPORTS = DASHBOARD_CONFIG.roles.export;
 const BYPRODUCTS = DASHBOARD_CONFIG.roles.byproduct;
@@ -272,6 +273,7 @@ let rhwBase = null;
 let remoteBases = new Map(REMOTE_FACILITIES.map(facility => [facility.key, null]));
 let allBases = [];
 let marketSort = 'price';
+let materialsSort = 'price';
 let itemsByKey = new Map();
 let operationalItemsCache = [];
 let sortCol = 'name';
@@ -328,8 +330,9 @@ const els = {
   supplierLinkText: document.getElementById('supplierLinkText'),
   shipyardControl: document.getElementById('shipyardControl'),
   externalLogisticsPanel: document.getElementById('externalLogisticsPanel'),
-  fixedLogisticsSection: document.getElementById('fixedLogisticsSection'),
-  fixedLogisticsMeta: document.getElementById('fixedLogisticsMeta'),
+  materialsScanSection: document.getElementById('materialsScanSection'),
+  materialsScanMeta: document.getElementById('materialsScanMeta'),
+  materialsScanGrid: document.getElementById('materialsScanGrid'),
   marketScanSection: document.getElementById('marketScanSection'),
   marketScanGrid: document.getElementById('marketScanGrid'),
   marketScanMeta: document.getElementById('marketScanMeta'),

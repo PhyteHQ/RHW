@@ -18,7 +18,7 @@ const DASHBOARD_CONFIG = Object.freeze({
   }),
   features: Object.freeze({
     capitalShipyard: true,
-    fixedLogistics: true,
+    materialsScan: true,
     marketScan: true,
     ecoMode: true,
     newswire: true,
@@ -39,7 +39,13 @@ const DASHBOARD_CONFIG = Object.freeze({
     'Propulsion Systems',
     'Superstructure Systems',
     'Reactor Systems',
-    'Exotic Systems',
+    'Exotic Systems'
+  ]),
+  materialsScan: Object.freeze([
+    'Gold',
+    'Gold Ore',
+    'Niobium',
+    'Niobium Ore',
     'Prototype Components'
   ]),
   remoteFacilities: Object.freeze([
