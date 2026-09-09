@@ -238,6 +238,7 @@ const STORAGE_KEYS = DASHBOARD_CONFIG.storageKeys;
 const FEATURES = DASHBOARD_CONFIG.features;
 const MARKET_SCAN = DASHBOARD_CONFIG.marketScan || [];
 const MATERIALS_SCAN = DASHBOARD_CONFIG.materialsScan || [];
+const MATERIAL_FEEDSTOCKS = DASHBOARD_CONFIG.materialFeedstocks || {};
 const MAINTENANCE = DASHBOARD_CONFIG.roles.maintenance;
 const EXPORTS = DASHBOARD_CONFIG.roles.export;
 const BYPRODUCTS = DASHBOARD_CONFIG.roles.byproduct;
@@ -344,4 +345,3 @@ const els = {
   newswirePanel: document.getElementById('newswirePanel'),
   ecoToggleBtn: document.getElementById('ecoToggleBtn')
 };
-

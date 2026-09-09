@@ -178,11 +178,30 @@ h1 {
 .market-card .supplier-commodity-row { align-items: center; }
 .market-mobile-toggle { display: none; }
 
-/* Keep each metal beside its ore, with Prototype Components below both pairs. */
+.market-card .market-feedstock {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 3px 8px;
+  color: #aebed3;
+  font: 10px/1.4 var(--font-tech);
+  letter-spacing: .035em;
+  text-transform: uppercase;
+}
+.market-card .market-feedstock strong { color: #d7e1ef; font-weight: 700; font-variant-numeric: tabular-nums; }
+.market-card .market-feedstock.unknown strong { color: #aebed3; }
+.market-card .market-feedstock.stale { color: #d2a04d; }
+
+/* Metals above their matching ores; mobile keeps each metal followed by its ore. */
 @media (min-width: 761px) {
   #materialsScanGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   #materialsScanGrid > .market-card { grid-column: auto; }
-  #materialsScanGrid > [data-market-commodity="prototype components"] { grid-column: 1 / -1; }
+  #materialsScanGrid > [data-market-commodity="gold"] { grid-area: 1 / 1; }
+  #materialsScanGrid > [data-market-commodity="niobium"] { grid-area: 1 / 2; }
+  #materialsScanGrid > [data-market-commodity="gold ore"] { grid-area: 2 / 1; }
+  #materialsScanGrid > [data-market-commodity="niobium ore"] { grid-area: 2 / 2; }
+  #materialsScanGrid > [data-market-commodity="prototype components"] { grid-area: 3 / 1 / 4 / -1; }
 }
 
 /* -------------------------------------------------------------------------

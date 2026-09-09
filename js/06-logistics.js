@@ -17,6 +17,16 @@ function validMarketPrice(item) {
   return Number.isFinite(price) && price > 0 ? price : null;
 }
 
+function marketFeedstock(base, name) {
+  const item = Array.isArray(base?.shop_items)
+    ? base.shop_items.find(entry => commodityKey(entry) === keyFromName(name)) : null;
+  const raw = item?.quantity ?? item?.amount ?? item?.stock;
+  const reported = typeof raw === 'number' || (typeof raw === 'string' && raw.trim() !== '');
+  // Input stocks include reserves. Missing/invalid telemetry is not a zero,
+  // and the presence of input stock does not establish future production.
+  return { name, quantity: reported ? finiteNumber(raw, null, 0) : null };
+}
+
 function updateMarketSortButtons() {
   els.marketSortButtons?.forEach(button => {
     const active = button.dataset.marketSort === (button.dataset.marketGroup === 'materials' ? materialsSort : marketSort);
@@ -45,11 +55,12 @@ function renderMarketScan() {
 
 function renderMaterialsScan() {
   return renderCommodityScan({ grid: els.materialsScanGrid, meta: els.materialsScanMeta,
-    targets: MATERIALS_SCAN, sort: materialsSort, enabled: FEATURES.materialsScan });
+    targets: MATERIALS_SCAN, sort: materialsSort, enabled: FEATURES.materialsScan,
+    feedstocks: MATERIAL_FEEDSTOCKS });
 }
 
 // Both Logistics views share offer selection, reserve handling and price rules.
-function renderCommodityScan({ grid, meta, targets, sort, enabled }) {
+function renderCommodityScan({ grid, meta, targets, sort, enabled, feedstocks = {} }) {
   if (!grid || !enabled) return { totalOffers: 0, uniqueBases: 0, pending: false };
 
   updateMarketSortButtons();
@@ -94,7 +105,8 @@ function renderCommodityScan({ grid, meta, targets, sort, enabled }) {
         q: sellable,
         total,
         reserve,
-        price: validMarketPrice(item)
+        price: validMarketPrice(item),
+        feedstock: feedstocks[key] ? marketFeedstock(base, feedstocks[key]) : null
       };
 
       if (offer.price === null) unlisted.push(offer);
@@ -163,6 +175,12 @@ function renderCommodityScan({ grid, meta, targets, sort, enabled }) {
       const localLabel = offer.local ? 'RHW LOCAL / OWN FACILITY · ' : '';
       const note = `${localLabel}${offer.system.toUpperCase()}${isBest ? ' · BEST PRICE' : ''}${isUnlisted ? ' · STOCK DETECTED / NOT LISTED' : ''}`;
       const priceText = isUnlisted ? 'NOT LISTED' : formatCurrency(offer.price);
+      const input = offer.feedstock;
+      const inputStock = input ? `
+          <div class="market-feedstock${input.quantity === null ? ' unknown' : ''}${dataIsStale ? ' stale' : ''}" data-market-feedstock="${escapeHTML(keyFromName(input.name))}" data-tooltip="Total reported input stock at this base, including reserves. Production also depends on other inputs and facilities.">
+            <span>${dataIsStale ? 'Cached · ' : ''}${escapeHTML(input.name)} at base</span>
+            <strong>${input.quantity === null ? 'NOT REPORTED' : number(input.quantity)}</strong>
+          </div>` : '';
       return `
         <div class="supplier-commodity-row ${rowClass}${offer.local ? ' rhw-local-offer' : ''}">
           <div class="supplier-commodity-name">
@@ -177,6 +195,7 @@ function renderCommodityScan({ grid, meta, targets, sort, enabled }) {
             <small>Unit Price</small>
             <strong class="scramble-market${isUnlisted ? ' unlisted' : ''}" data-val="${escapeHTML(priceText)}"></strong>
           </div>
+          ${inputStock}
           <div class="supplier-progress-wrap" data-tooltip="${number(offer.q)} FOR SALE // ${number(offer.total)} TOTAL · ${number(offer.reserve)} BASE RESERVE">
             <div class="supplier-progress-fill ${dataIsStale ? 'stale' : (isUnlisted ? 'low' : 'info')}" style="width:${fillPct}%;"></div>
           </div>

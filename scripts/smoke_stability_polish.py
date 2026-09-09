@@ -139,7 +139,7 @@ def main() -> int:
             # Populate both scans using a third-party POB, with enough offers to
             # exercise the mobile disclosure and independent sort controls.
             fixture = base.ev(cdp, """(()=>{
-              const names=[...MARKET_SCAN,...MATERIALS_SCAN];
+              const names=[...MARKET_SCAN,...MATERIALS_SCAN,'Military Salvage'];
               allBases=Array.from({length:8},(_,i)=>({name:`Scan Test ${i}`,system_name:'Test System',
                 shop_items:names.map(name=>({name,quantity:100+i*100,min_stock:20,price_to_buy_from_base:10+i}))}));
               dataIsStale=false;lastSyncError='';lastLoaded=new Date();
@@ -177,10 +177,13 @@ def main() -> int:
                       section.querySelector('[data-market-sort="stock"]').click();
                       const afterOther=document.querySelector('#'+('{view}'==='market'?'materialsScanSection':'marketScanSection')+' .market-sort-button[aria-pressed="true"]').dataset.marketSort;
                       const first=section.querySelector('.market-card .supplier-commodity-name strong')?.textContent;
+                      const inputLines=[...section.querySelectorAll('.market-feedstock')].filter(line=>line.getBoundingClientRect().height>0);
                       return {{
                         controls:controls.map(c=>{{const r=c.getBoundingClientRect();return {{top:r.top,bottom:r.bottom,height:r.height,width:r.width}};}}),
                         overflow:Math.max(document.documentElement.scrollWidth,document.body.scrollWidth)-innerWidth,
                         dockTop:dock.top,collapsed,expanded,independent:beforeOther===afterOther,first,
+                        inputsFit:inputLines.every(line=>{{const r=line.getBoundingClientRect();return r.left>=0&&r.right<=innerWidth&&line.scrollWidth<=line.clientWidth+1;}}),
+                        inputNames:[...new Set(inputLines.map(line=>line.dataset.marketFeedstock))],
                         selected:section.querySelector('[data-market-sort="stock"]').getAttribute('aria-pressed')
                       }};
                     }})()""")
@@ -192,9 +195,11 @@ def main() -> int:
                         raise RuntimeError(f"Logistics {view} offer disclosure failed: {geometry}")
                     if not geometry['independent'] or geometry['selected'] != 'true' or geometry['first'] != 'Scan Test 7':
                         raise RuntimeError(f"Logistics {view} sort interaction failed: {geometry}")
+                    if not geometry['inputsFit'] or (view == 'materials' and set(geometry['inputNames']) != {'gold ore', 'niobium ore', 'military salvage'}):
+                        raise RuntimeError(f"Logistics {view} seller input stocks at {width}px failed: {geometry}")
 
-            # Desktop must pair the refined metals with their ores; the old
-            # generic 3+2 grid split these pairs across rows on wide displays.
+            # Desktop places both metals above their respective ores, while
+            # the mobile reading order continues to group each metal and ore.
             for width in (1024, 1280, 1440, 1920):
                 cdp.call("Emulation.setDeviceMetricsOverride", {
                     "width": width, "height": 1080, "deviceScaleFactor": 1, "mobile": False,
@@ -203,18 +208,21 @@ def main() -> int:
                   document.querySelector('[data-logistics-view="materials"]').click();
                   return [...document.querySelectorAll('#materialsScanGrid .market-card')].map(card=>{
                     const r=card.getBoundingClientRect();
-                    return {name:card.dataset.marketCommodity,left:r.left,right:r.right,top:r.top,bottom:r.bottom};
+                    const inputLines=[...card.querySelectorAll('.market-feedstock')];
+                    return {name:card.dataset.marketCommodity,left:r.left,right:r.right,top:r.top,bottom:r.bottom,
+                      inputsFit:inputLines.every(line=>{const x=line.getBoundingClientRect();return x.left>=r.left&&x.right<=r.right&&line.scrollWidth<=line.clientWidth+1;})};
                   });
                 })()""")
                 gold, gold_ore, niobium, niobium_ore, pc = layout
                 same = lambda a, b: abs(a - b) < 2
-                if (not same(gold['top'], gold_ore['top']) or gold['right'] >= gold_ore['left']
-                        or not same(niobium['top'], niobium_ore['top']) or niobium['right'] >= niobium_ore['left']
-                        or niobium['top'] < max(gold['bottom'], gold_ore['bottom'])
-                        or pc['top'] < max(niobium['bottom'], niobium_ore['bottom'])
-                        or not same(pc['left'], gold['left']) or not same(pc['right'], gold_ore['right'])
-                        or gold['left'] < 0 or gold_ore['right'] > width):
-                    raise RuntimeError(f"Material pairs / full-width Prototype Components at {width}px failed: {layout}")
+                if (not same(gold['top'], niobium['top']) or gold['right'] >= niobium['left']
+                        or not same(gold_ore['top'], niobium_ore['top']) or gold_ore['right'] >= niobium_ore['left']
+                        or not same(gold['left'], gold_ore['left']) or not same(niobium['left'], niobium_ore['left'])
+                        or gold_ore['top'] < max(gold['bottom'], niobium['bottom'])
+                        or pc['top'] < max(gold_ore['bottom'], niobium_ore['bottom'])
+                        or not same(pc['left'], gold['left']) or not same(pc['right'], niobium['right'])
+                        or gold['left'] < 0 or niobium['right'] > width or not all(card['inputsFit'] for card in layout)):
+                    raise RuntimeError(f"Metals above ores / seller input stocks at {width}px failed: {layout}")
 
             keyboard = base.ev(cdp, """(()=>{
               const tabs=[...document.querySelectorAll('#rhwLogisticsViewNav [role="tab"]')];
@@ -233,7 +241,7 @@ def main() -> int:
             if runtime_failures:
                 raise RuntimeError(f"Browser console/runtime errors: {runtime_failures}")
 
-            print("RHW stability smoke passed: both Logistics scans, independent sorting, mobile 360/390/412/430px, desktop material pairs 1024/1280/1440/1920px, keyboard tabs")
+            print("RHW stability smoke passed: both Logistics scans, seller input stocks, mobile 360/390/412/430px, desktop metals above ores 1024/1280/1440/1920px, keyboard tabs")
             return 0
         finally:
             try:

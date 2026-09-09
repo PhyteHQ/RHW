@@ -48,6 +48,11 @@ const DASHBOARD_CONFIG = Object.freeze({
     'Niobium Ore',
     'Prototype Components'
   ]),
+  materialFeedstocks: Object.freeze({
+    'gold': 'Gold Ore',
+    'niobium': 'Niobium Ore',
+    'prototype components': 'Military Salvage'
+  }),
   remoteFacilities: Object.freeze([
     Object.freeze({
       key: 'lisheen',
