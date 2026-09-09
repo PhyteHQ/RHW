@@ -27,6 +27,7 @@ const run = file => vm.runInContext(fs.readFileSync(path.join(__dirname, '..', f
 run('js/config.js');
 vm.runInContext(`Object.assign(globalThis, { MARKET_SCAN: DASHBOARD_CONFIG.marketScan,
   MATERIALS_SCAN: DASHBOARD_CONFIG.materialsScan, FEATURES: DASHBOARD_CONFIG.features,
+  MATERIAL_FEEDSTOCKS: DASHBOARD_CONFIG.materialFeedstocks,
   BASE_NAME: DASHBOARD_CONFIG.baseName, STORAGE_KEYS: DASHBOARD_CONFIG.storageKeys });`, ctx);
 run('js/02-utils.js');
 run('js/04-state-production.js');
@@ -38,6 +39,7 @@ const good = (name, quantity, min_stock, price) => ({ name, quantity, min_stock,
 const pob = (name, shop_items) => ({ name, system_name: 'Test System', shop_items });
 const cards = grid => Object.fromEntries([...grid.innerHTML.matchAll(/data-market-commodity="([^"]+)">([\s\S]*?)(?=\n      <div class="supplier-card|$)/g)].map(m => [m[1], m[2]]));
 const rowNames = card => [...card.matchAll(/class="supplier-commodity-name">\s*<strong>([^<]+)<\/strong>/g)].map(m => m[1]);
+const inputs = card => [...card.matchAll(/data-market-feedstock="([^"]+)"[^>]*>\s*<span>([^<]+)<\/span>\s*<strong>([^<]+)<\/strong>/g)].map(m => ({ name: m[1], label: m[2], stock: m[3] }));
 
 ctx.renderSupplier();
 assert.equal(ctx.link.state, 'polling');
@@ -49,9 +51,9 @@ for (const grid of [ctx.els.marketScanGrid, ctx.els.materialsScanGrid]) assert.m
 ctx.lastSyncError = '';
 ctx.lastLoaded = new Date();
 ctx.allBases = [
-  pob('Independent POB', [...ctx.MARKET_SCAN, ...ctx.MATERIALS_SCAN].map(name => good(name, 120, 20, 50))),
-  pob('Cheapest POB', [good('Gold', 10, 0, 5)]),
-  pob('Largest POB', [good('Gold', 2000, 100, 100)]),
+  pob('Independent POB', [...[...ctx.MARKET_SCAN, ...ctx.MATERIALS_SCAN].map(name => good(name, 120, 20, 50)), good('Military Salvage', 4500, 4500, 0)]),
+  pob('Cheapest POB', [good('Gold', 10, 0, 5), good('Gold Ore', 1234, 1234, null)]),
+  pob('Largest POB', [good('Gold', 2000, 100, 100), good('Gold Ore', 0, 0, null)]),
   pob('Reserve Only', [good('Gold', 10, 10, 1)]),
   pob('Unpriced POB', [good('Niobium', 100, 10, 0)]),
   pob('Broken price', [good('Gold Ore', 100, 0, 'invalid')]),
@@ -72,12 +74,26 @@ assert.match(materials.gold, /100 FOR SALE \/\/ 120 TOTAL · 20 BASE RESERVE/);
 assert.doesNotMatch(materials.gold, /Reserve Only|Invalid stock/);
 for (const name of ['gold ore', 'niobium', 'niobium ore']) assert.match(materials[name], /NOT LISTED/);
 assert.equal(ctx.els.materialsScanMeta.textContent, '3 BASES · 7 PRICED OFFERS');
+assert.deepEqual(inputs(materials.gold).map(i => [i.name, i.stock]), [['gold ore', '1.234'], ['gold ore', '120'], ['gold ore', '0']],
+  'Each seller shows its own total input stock, including fully reserved inputs and explicit zero');
+assert.deepEqual(inputs(materials.niobium).map(i => [i.name, i.stock]), [['niobium ore', '120'], ['niobium ore', 'NOT REPORTED']]);
+assert.deepEqual(inputs(materials['prototype components']).map(i => [i.name, i.stock]), [['military salvage', '4.500']]);
+assert.doesNotMatch(ctx.els.marketScanGrid.innerHTML, /market-feedstock/);
+for (const key of ['gold ore', 'niobium ore']) assert.equal(inputs(materials[key]).length, 0, 'Ore offers do not display a production input');
+for (const raw of [undefined, null, '', '  ', 'invalid', -1, Infinity, true]) {
+  assert.equal(ctx.marketFeedstock(pob('Unreadable quantity', [good('Gold Ore', raw, 0, 1)]), 'Gold Ore').quantity, null,
+    `Invalid input quantity ${String(raw)} must never turn into a zero`);
+}
+for (const field of ['amount', 'stock']) {
+  assert.equal(ctx.marketFeedstock(pob('Alias', [{ name: 'Gold Ore (Commodity)', [field]: '2345' }]), 'Gold Ore').quantity, 2345);
+}
 
 const shipHtml = ctx.els.marketScanGrid.innerHTML;
 assert.equal(ctx.setMarketSort('materials', 'stock'), true);
 assert.equal(ctx.marketSort, 'price');
 assert.equal(ctx.els.marketScanGrid.innerHTML, shipHtml, 'Sorting materials must not re-render ships');
 assert.deepEqual(rowNames(cards(ctx.els.materialsScanGrid).gold), ['Largest POB', 'Independent POB', 'Cheapest POB']);
+assert.deepEqual(inputs(cards(ctx.els.materialsScanGrid).gold).map(i => i.stock), ['0', '120', '1.234'], 'Input stocks stay with their seller after sorting');
 assert.deepEqual(buttons.map(b => b.attrs['aria-pressed']), ['true', 'false', 'false', 'true']);
 ctx.saveViewPreferences();
 ctx.marketSort = 'stock'; ctx.materialsSort = 'price';
@@ -105,6 +121,7 @@ for (const card of [cards(ctx.els.marketScanGrid)['reactor systems'], cards(ctx.
 ctx.dataIsStale = true;
 ctx.renderSupplier();
 assert.equal(ctx.link.state, 'stale');
+assert.match(ctx.els.materialsScanGrid.innerHTML, /Cached · Gold Ore at base/);
 for (const grid of [ctx.els.marketScanGrid, ctx.els.materialsScanGrid]) {
   assert.match(grid.innerHTML, /STALE DATA/);
   assert.doesNotMatch(grid.innerHTML, /SCAN LIVE/);
@@ -114,4 +131,4 @@ ctx.allBases = [pob('Empty base', [])];
 ctx.renderSupplier();
 assert.equal(ctx.link.label, 'SCANS COMPLETE · NO PRICED OFFERS');
 assert.match(ctx.els.materialsScanGrid.innerHTML, /NO SELLERS FOUND/);
-console.log('Logistics scans passed: target partition, all-POB sourcing, reserves, invalid prices, independent sorts, top-six retention and telemetry states');
+console.log('Logistics scans passed: target partition, all-POB sourcing, reserves, seller input stocks, unknown vs zero, independent sorts, top-six retention and telemetry states');
