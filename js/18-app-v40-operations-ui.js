@@ -13,6 +13,10 @@
     ['orders', 'PRODUCTION ORDERS', 'QUEUE + MATERIALS']
   ]);
   const RECIPE_ALIASES = Object.freeze({
+    ship_assembly_li_frigate: Object.freeze({
+      outputId: 'li_frigate_package', name: '"Longhorn" Liberty Heavy Frigate',
+      terms: 'longhorn liberty heavy frigate'
+    }),
     // CFG produces medium_miner_package (Modular Miner); the civilian recipe
     // requires blueprint_medium_miner (Archon Design Schematics).
     ship_assembly_medium_miner: Object.freeze({

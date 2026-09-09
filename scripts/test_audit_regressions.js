@@ -84,6 +84,17 @@ async function models() {
   assert.ok(miners.every(r => r.outputs[0].id === 'medium_miner_package'));
   assert.ok(core.recipe('ship_assembly_medium_miner').catalysts.some(c => c.id === 'blueprint_medium_miner'));
   assert.equal(app.operations.matchingRecipes('modular miner').length, 2);
+  // Ship nicknames resolve to the actual recipe and keep its official name searchable.
+  for (const search of ['longhorn', ' LONGHORN ', 'Liberty Heavy Frigate']) {
+    const frigates = app.operations.matchingRecipes(search);
+    assert.equal(frigates.length, 1, search);
+    assert.equal(frigates[0].id, 'ship_assembly_li_frigate');
+    assert.equal(frigates[0].outputs[0].id, 'li_frigate_package');
+  }
+  app.state.calculator = { ...calc, search: 'longhorn' };
+  app.operations.renderCalculator();
+  assert.match(mount.innerHTML, /"Longhorn" Liberty Heavy Frigate/);
+  assert.match(mount.innerHTML, /value="ship_assembly_li_frigate" selected/);
   let plans = 0;
   for (const r of core.state.catalog.recipes) {
     const affiliationId = r.restricted ? r.bonuses?.[0]?.id : 'br_m_grp';
