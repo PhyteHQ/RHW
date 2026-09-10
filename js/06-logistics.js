@@ -59,6 +59,18 @@ function renderMaterialsScan() {
     feedstocks: MATERIAL_FEEDSTOCKS });
 }
 
+// Presentation metadata only. Offer selection and input-stock calculations are
+// shared by all materials, including ores with more than one supplier.
+function marketMaterialIdentity(name) {
+  return {
+    'gold': { family: 'gold', kind: 'metal', symbol: 'Au', label: 'REFINED METAL' },
+    'gold ore': { family: 'gold', kind: 'ore', symbol: 'Au', label: 'REFINING INPUT' },
+    'niobium': { family: 'niobium', kind: 'metal', symbol: 'Nb', label: 'REFINED METAL' },
+    'niobium ore': { family: 'niobium', kind: 'ore', symbol: 'Nb', label: 'REFINING INPUT' },
+    'prototype components': { family: 'components', kind: 'components', symbol: 'PC', label: 'MILITARY SALVAGE INPUT' }
+  }[keyFromName(name)] || null;
+}
+
 // Both Logistics views share offer selection, reserve handling and price rules.
 function renderCommodityScan({ grid, meta, targets, sort, enabled, feedstocks = {} }) {
   if (!grid || !enabled) return { totalOffers: 0, uniqueBases: 0, pending: false };
@@ -166,7 +178,8 @@ function renderCommodityScan({ grid, meta, targets, sort, enabled, feedstocks = 
 
   grid.innerHTML = cards.map(card => {
     const title = CANONICAL_NAMES[keyFromName(card.targetName)] || displayRecipeName(card.targetName);
-    const state = dataIsStale ? 'stale' : (card.priced.length ? 'ok' : (card.unlisted.length ? 'low' : 'critical'));
+    const identity = marketMaterialIdentity(card.targetName);
+    const state = dataIsStale ? 'stale' : (card.priced.length ? 'ok' : (card.unlisted.length ? 'low' : 'empty'));
     const rows = card.allVisible.map(offer => {
       const isUnlisted = offer.price === null;
       const isBest = !isUnlisted && card.bestPrice !== null && offer.price === card.bestPrice;
@@ -202,19 +215,20 @@ function renderCommodityScan({ grid, meta, targets, sort, enabled, feedstocks = 
         </div>`;
     }).join('');
 
-    const empty = '<div class="supplier-commodity-row critical"><div class="supplier-commodity-name"><strong>NO SELLERS FOUND</strong><small class="critical">NO BASE ABOVE ITS MINIMUM RESERVE</small></div></div>';
+    const empty = '<div class="supplier-commodity-row market-empty-row"><div class="supplier-commodity-name"><strong>NO SELLERS FOUND</strong><small>NO BASE ABOVE ITS MINIMUM RESERVE</small></div></div>';
     const pricedCount = card.priced.length;
     const unlistedCount = card.unlisted.length;
-    const linkClass = dataIsStale ? 'stale' : (pricedCount ? 'online' : (unlistedCount ? 'degraded' : 'offline'));
+    const linkClass = dataIsStale ? 'stale' : (pricedCount ? 'online' : (unlistedCount ? 'degraded' : 'idle'));
     const linkText = dataIsStale ? 'STALE DATA' : (pricedCount ? 'SCAN LIVE' : (unlistedCount ? 'UNLISTED STOCK' : 'NO SUPPLY'));
 
     return `
-      <div class="supplier-card market-card ${state}" data-market-commodity="${escapeHTML(keyFromName(card.targetName))}">
+      <div class="supplier-card market-card ${state}${identity ? ' market-material-card' : ''}"${identity ? ` data-market-family="${identity.family}" data-market-kind="${identity.kind}"` : ''} data-market-commodity="${escapeHTML(keyFromName(card.targetName))}">
         <div class="supplier-scanline"></div>
         <div class="remote-facility-head">
-          <div>
+          ${identity ? `<span class="market-material-symbol" aria-hidden="true">${identity.symbol}</span>` : ''}
+          <div class="market-card-heading">
             <div class="remote-card-meta">
-              <span class="remote-badge">MARKET SCAN</span>
+              <span class="remote-badge">${identity ? identity.label : 'MARKET SCAN'}</span>
               <span class="remote-badge">${pricedCount} OFFER${pricedCount === 1 ? '' : 'S'}</span>
             </div>
             <div class="supplier-title">${escapeHTML(String(title).toUpperCase())}</div>

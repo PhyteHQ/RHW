@@ -902,158 +902,248 @@ html.rhw-focus-pass #rhwDiagnosticsPanel .discovery-data-grid article { min-widt
   html.rhw-focus-pass #rhwDiagnosticsPanel .discovery-data-grid { grid-template-columns: minmax(0,1fr); }
 }
 
-/* RHW professional interface: shared tokens and component rules. */
+/* RHW industrial identity. Shared reading rules and deliberate component roles. */
 :root {
-  --rhw-surface-radius: 6px;
-  --rhw-surface: #161b22;
-  --rhw-surface-raised: #1d242d;
-  --rhw-border: #343b45;
+  --rhw-surface-radius: 3px;
+  --rhw-surface: #11181d;
+  --rhw-surface-raised: #1b252d;
+  --rhw-border: #43515c;
   --rhw-label-size: 12px;
   --rhw-body-size: 14px;
+  --rhw-gold-rgb: 215,182,117;
+  --rhw-steel-rgb: 177,197,214;
+  --rhw-head-fill: linear-gradient(112deg,#28313a,#172127 68%);
 }
 html.rhw-focus-pass body {
-  --app-nav-accent: var(--gold);
-  --app-nav-accent-rgb: 198,165,102;
-  background: var(--bg);
-  font-size: var(--rhw-body-size);
-  line-height: 1.5;
+  --app-nav-accent: var(--gold); --app-nav-accent-rgb: var(--rhw-gold-rgb);
+  background: radial-gradient(ellipse at 12% 0%,#24374425,transparent 48%),var(--bg);
+  font-size: var(--rhw-body-size); line-height: 1.5;
 }
-html.rhw-focus-pass body *, html.rhw-focus-pass body *::before, html.rhw-focus-pass body *::after {
-  text-shadow: none !important;
-}
-html.rhw-focus-pass body *:not(.ticker), html.rhw-focus-pass body *::before, html.rhw-focus-pass body *::after {
-  animation: none !important;
-}
+/* Preserve stable reading. Motion is restricted to the ticker and crest halo. */
+html.rhw-focus-pass body *, html.rhw-focus-pass body *::before, html.rhw-focus-pass body *::after { text-shadow: none !important; }
+html.rhw-focus-pass body *:not(.ticker), html.rhw-focus-pass body *::before, html.rhw-focus-pass body *::after { animation: none !important; }
 html.rhw-focus-pass .anim-boot { opacity: 1; transform: none; filter: none; }
 html.rhw-focus-pass body::before, html.rhw-focus-pass body::after,
-html.rhw-focus-pass .header-watermark, html.rhw-focus-pass .crest-frame::before,
-html.rhw-focus-pass .app-navigation-cluster::before, html.rhw-focus-pass .app-nav-pulse,
-html.rhw-focus-pass .rhw-workspace-index, html.rhw-focus-pass .command-module-index,
+html.rhw-focus-pass .app-nav-pulse, html.rhw-focus-pass .rhw-workspace-index,
 html.rhw-focus-pass .rhw-module-index { display: none !important; }
-html.rhw-focus-pass :is(button,input,select,textarea,summary) { border-radius: 4px; }
-html.rhw-focus-pass :is(button,input,select,textarea):focus-visible,
-html.rhw-focus-pass summary:focus-visible, html.rhw-focus-pass a:focus-visible {
-  outline: 2px solid var(--gold); outline-offset: 3px; box-shadow: none;
-}
-html.rhw-focus-pass :is(input,select,textarea) {
-  color: var(--text); background: #10151b; border-color: var(--rhw-border);
-  font-family: var(--font-main); font-size: 14px; line-height: 1.5;
-}
+html.rhw-focus-pass :is(button,input,select,textarea,summary) { border-radius: 2px; }
+html.rhw-focus-pass :is(button,input,select,textarea,summary,a):focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
+html.rhw-focus-pass :is(input,select,textarea) { color: var(--text); background: #0c1318; border-color: var(--rhw-border); font: 14px/1.5 var(--font-main); }
 html.rhw-focus-pass :is(input,select) { min-height: 44px; }
-html.rhw-focus-pass input::placeholder, html.rhw-focus-pass textarea::placeholder { color: #a0a8b2; opacity: 1; }
+html.rhw-focus-pass :is(input,textarea)::placeholder { color: #aab6bf; opacity: 1; }
 html.rhw-focus-pass .app-workspace :is(small,.pill,.module-state,.recipe-short,.feedstock-stock,.market-scan-meta,.logistics-subhead-meta,.ops-price-memory),
-html.rhw-focus-pass :is(.comms-field>span,.comms-field>small,.ops-material-table th,.pricecheck-table th,.pricecheck-live,.pricecheck-status small) {
-  font-size: var(--rhw-label-size) !important; line-height: 1.45; letter-spacing: .015em;
-}
+html.rhw-focus-pass :is(.comms-field>span,.comms-field>small,.ops-material-table th,.pricecheck-table th,.pricecheck-live,.pricecheck-status small) { font-size: var(--rhw-label-size) !important; line-height: 1.45; letter-spacing: .015em; }
 html.rhw-focus-pass .app-workspace small,
 html.rhw-focus-pass :is(.comms-field>span,.comms-field>small,.ops-material-table th,.pricecheck-table th) { color: var(--muted); }
-html.rhw-focus-pass .app-workspace :is(p,.footnote,.ops-cost-note,.production-note,.v40-newswire-explainer) {
-  font-family: var(--font-main); font-size: 14px; line-height: 1.6; letter-spacing: normal;
-}
-html.rhw-focus-pass :is(.ops-material-table,.manifest-table,.pricecheck-table) { font-size: 14px; }
+html.rhw-focus-pass .app-workspace :is(p,.footnote,.ops-cost-note,.production-note,.v40-newswire-explainer) { font: 14px/1.6 var(--font-main); letter-spacing: normal; }
 html.rhw-focus-pass .app-workspace :is(input,select,textarea) { font-size: 14px !important; }
-html.rhw-focus-pass .app-workspace button { min-height: 44px; font-size: 12px; letter-spacing: .025em; }
+html.rhw-focus-pass .app-workspace button { min-height: 44px; font: 500 12px/1.4 var(--font-main); letter-spacing: .035em; }
+html.rhw-focus-pass :is(.uplink-button,.ops-button,.comms-button,.pricecheck-refresh,.market-sort-button,.command-refresh-button) { transition: border-color 160ms,background 160ms,box-shadow 160ms; }
+html.rhw-focus-pass :is(.uplink-button,.ops-button,.comms-button,.pricecheck-refresh,.market-sort-button,.command-refresh-button):not(:disabled):hover { border-color: var(--gold); box-shadow: 0 0 12px rgba(var(--rhw-gold-rgb),.12); }
 
-/* Compact identity and global status. */
-html.rhw-focus-pass .command-header { padding: 12px var(--layout-gutter); background: var(--bg); border-bottom: 1px solid var(--line-soft); }
-html.rhw-focus-pass .command-header-inner { grid-template-columns: minmax(0,1fr) 290px; gap: 20px; }
-html.rhw-focus-pass .command-brand { grid-template-columns: 56px minmax(0,1fr); gap: 14px; }
-html.rhw-focus-pass .crest-frame { width: 56px; }
-html.rhw-focus-pass .crest { width: 54px; filter: none; }
-html.rhw-focus-pass .command-header h1 { font-size: 30px; line-height: 1; margin: 0 0 6px; letter-spacing: .035em; }
-html.rhw-focus-pass .base-telemetry-bar { padding: 0; max-width: 700px; clip-path: none; box-shadow: none; }
-html.rhw-focus-pass .base-telemetry-stat small { font: 11px/1.35 var(--font-main); margin: 0 0 2px; color: var(--muted); }
-html.rhw-focus-pass .base-telemetry-stat strong { font: 600 15px/1.35 var(--font-main); font-variant-numeric: tabular-nums; }
-html.rhw-focus-pass .uplink-panel { padding: 6px 10px; gap: 0 8px; border: 0; border-left: 1px solid var(--line-soft); background: transparent; clip-path: none; box-shadow: none; }
+/* The crest anchors the header; operational telemetry stays in the same band. */
+html.rhw-focus-pass .command-header { padding: 16px var(--layout-gutter); border-top: 2px solid var(--gold); border-bottom: 1px solid #61553e; background: linear-gradient(110deg,#12212b,#11191e 62%,#281c20); box-shadow: inset 0 1px #e4c79115; backdrop-filter: none; }
+html.rhw-focus-pass .header-watermark { display: block !important; background-image: url('../assets/rhw-crest.png'); width: 320px; height: 430px; right: 2%; top: -136px; opacity: .075; transform: rotate(-8deg); filter: grayscale(.25); }
+html.rhw-focus-pass .command-header-inner { display: grid; grid-template-columns: minmax(0,1fr) 270px; align-items: center; gap: 26px; }
+html.rhw-focus-pass .command-brand { display: grid; grid-template-columns: 114px minmax(0,1fr); min-width: 0; align-items: center; gap: 23px; }
+html.rhw-focus-pass .crest-frame { width: 114px; min-width: 0; }
+html.rhw-focus-pass .crest { width: 105px; height: 142px; object-fit: contain; filter: drop-shadow(0 3px 12px #d7b6752e); transition: filter 220ms; }
+html.rhw-focus-pass .crest-frame:hover .crest { filter: drop-shadow(0 2px 17px #d7b67555); }
+html.rhw-focus-pass .crest-frame::before { display: block; width: 110px; height: 110px; background: radial-gradient(circle,#d7b67530,transparent 66%); opacity: .65; }
+html.rhw-focus-pass .brand-copy { min-width: 0; }
+html.rhw-focus-pass .brand-kicker { color: #dfc18b; font: 12px/1.25 var(--font-tech); letter-spacing: .12em; margin-bottom: 5px; }
+html.rhw-focus-pass .command-header h1 { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px 15px; color: var(--text); font: 500 54px/.95 var(--font-title); margin: 0; letter-spacing: .06em; }
+html.rhw-focus-pass .brand-command { color: #c3cdd5; font: 500 29px/1 var(--font-title); letter-spacing: .14em; }
+html.rhw-focus-pass .brand-subtitle { margin-top: 5px; color: #c3cdd5; font: 12px/1.3 var(--font-main); letter-spacing: .12em; }
+html.rhw-focus-pass .base-telemetry-bar { margin-top: 12px; padding: 9px 0 0; max-width: 660px; background: transparent; border: 0; border-top: 1px solid #58616a; clip-path: none; box-shadow: none; }
+html.rhw-focus-pass .base-telemetry-stat { padding: 0 14px; }
+html.rhw-focus-pass .base-telemetry-stat:first-child { padding-left: 0; }
+html.rhw-focus-pass .base-telemetry-stat small { color: var(--muted); font: 12px/1.3 var(--font-main); margin: 0 0 3px; letter-spacing: .035em; }
+html.rhw-focus-pass .base-telemetry-stat strong { font: 16px/1.3 var(--font-tech); font-variant-numeric: tabular-nums; letter-spacing: 0; }
+html.rhw-focus-pass .uplink-panel { padding: 12px; gap: 0 10px; border: 1px solid #43515c; border-top: 2px solid var(--warn); background: #10171cd9; clip-path: none; box-shadow: inset 0 1px #ffffff08; }
+html.rhw-focus-pass .uplink-panel.online { border-top-color: var(--good); }
+html.rhw-focus-pass .uplink-panel.offline { border-top-color: var(--danger); }
 html.rhw-focus-pass .uplink-header { margin: 0; }
-html.rhw-focus-pass .uplink-label { font: 11px var(--font-main); color: var(--muted); }
-html.rhw-focus-pass .uplink-value { font: 600 13px/1.4 var(--font-main); }
+html.rhw-focus-pass .uplink-label { color: var(--muted); font: 12px/1.3 var(--font-main); }
+html.rhw-focus-pass .uplink-value { font: 13px/1.4 var(--font-tech); }
 html.rhw-focus-pass .uplink-details>summary { font: 12px/1.4 var(--font-main); }
-html.rhw-focus-pass #headerRefreshBtn { min-height: 44px; font-size: 12px; background: #24221b; border-color: #6b5c3f; box-shadow: none; }
-html.rhw-focus-pass .live-dot, html.rhw-focus-pass .ticker-live-dot { box-shadow: none; width: 7px; height: 7px; }
-html.rhw-focus-pass .ticker-wrap { min-height: 38px; margin: 0; border: 0; border-bottom: 1px solid var(--line-soft); background: #11161c; }
-html.rhw-focus-pass .ticker-label { background: transparent; clip-path: none; padding: 7px 14px; border-right: 1px solid var(--line-soft); }
-html.rhw-focus-pass .ticker-label strong { font: 600 12px var(--font-main); }
+html.rhw-focus-pass #headerRefreshBtn { min-height: 44px; font: 12px var(--font-tech); background: linear-gradient(120deg,#352b1d,#222522); border-color: #978052; box-shadow: inset 0 1px #e4c79122; }
+html.rhw-focus-pass .live-dot, html.rhw-focus-pass .ticker-live-dot { width: 7px; height: 7px; }
+html.rhw-focus-pass .live-dot { box-shadow: 0 0 8px currentColor; }
+html.rhw-focus-pass .ticker-wrap { min-height: 38px; margin: 0; border: 0; border-bottom: 1px solid #46505a; background: #0c1217; }
+html.rhw-focus-pass .ticker-label { padding: 7px 14px; background: linear-gradient(105deg,#332b1e,#151d22); clip-path: none; border-right: 1px solid #7e6a45; }
+html.rhw-focus-pass .ticker-label strong { font: 12px var(--font-tech); letter-spacing: .025em; }
 html.rhw-focus-pass .ticker-label small { font: 11px var(--font-main); }
-html.rhw-focus-pass :is(.ticker,.ticker-single) { font: 12px/1.5 var(--font-main); letter-spacing: .01em; }
+html.rhw-focus-pass :is(.ticker,.ticker-single) { font: 13px/1.5 var(--font-main); letter-spacing: .01em; }
 html.rhw-focus-pass .newswire-category-filter { padding-block: 4px; }
 
-/* A single primary row: workspaces on the left, tools on the right. */
-html.rhw-focus-pass .rhw-app-nav { background: var(--bg); border-color: var(--line-soft); box-shadow: none; }
-html.rhw-focus-pass .app-nav-inner { position: relative; display: grid; grid-template-columns: minmax(0,1fr) auto; align-items: start; gap: 0 16px; padding-block: 6px; }
-html.rhw-focus-pass .app-navigation-cluster { grid-column: 1; grid-row: 1; border: 0; background: transparent; box-shadow: none; overflow: visible; }
-html.rhw-focus-pass .app-nav-brand { grid-column: 2; grid-row: 1; min-height: 44px; padding: 0; gap: 8px; }
+/* Workspaces have a strong primary row and a quieter contextual row. */
+html.rhw-focus-pass .rhw-app-nav { background: #0d141a; border-color: var(--line); box-shadow: 0 5px 16px #00000030; }
+html.rhw-focus-pass .app-nav-inner { position: relative; display: grid; grid-template-columns: minmax(0,1fr) auto; align-items: start; gap: 0 14px; padding-block: 6px; }
+html.rhw-focus-pass .app-navigation-cluster { grid-column: 1; grid-row: 1; border: 1px solid var(--rhw-border); background: #0e151b; box-shadow: inset 0 1px #ffffff05; overflow: visible; }
+html.rhw-focus-pass .app-navigation-cluster::before { display: none; }
+html.rhw-focus-pass .app-nav-brand { grid-column: 2; grid-row: 1; min-height: 48px; padding: 0; gap: 8px; }
 html.rhw-focus-pass .app-nav-brand>div, html.rhw-focus-pass #rhwPwaInstallBtn small { display: none !important; }
-html.rhw-focus-pass :is(#rhwFocusToolsBtn,#rhwPwaInstallBtn) { min-height: 44px; padding: 8px 12px; box-shadow: none; background: var(--rhw-surface); color: var(--text); font: 600 12px var(--font-main); border: 1px solid var(--rhw-border); }
+html.rhw-focus-pass :is(#rhwFocusToolsBtn,#rhwPwaInstallBtn) { min-height: 48px; padding: 8px 12px; color: var(--text); font: 12px var(--font-main); border: 1px solid var(--rhw-border); background: #19222a; box-shadow: inset 0 1px #ffffff06; }
 html.rhw-focus-pass .app-tabs { width: 100%; max-width: none; grid-template-columns: repeat(4,minmax(0,1fr)); background: transparent; border: 0; }
-html.rhw-focus-pass .app-tabs button {
-  --tab-accent: var(--gold); --tab-accent-rgb: 198,165,102;
-  display: flex !important; align-items: center; justify-content: center; min-height: 44px; padding: 8px 12px;
-  border: 0; border-bottom: 2px solid transparent; background: transparent; color: var(--muted); box-shadow: none; gap: 0;
-}
-html.rhw-focus-pass .app-tabs button span { font: 600 14px/1.3 var(--font-main); letter-spacing: .025em; }
-html.rhw-focus-pass .app-tabs button small { display: none; }
-html.rhw-focus-pass .app-tabs button::before, html.rhw-focus-pass .app-tabs button::after { display: none; }
-html.rhw-focus-pass .app-tabs button.active { color: var(--gold); border-bottom-color: var(--gold); background: #222018; box-shadow: none; }
-html.rhw-focus-pass .app-context-nav-slot { margin-top: 6px; padding: 0; border: 0; background: var(--bg); }
+html.rhw-focus-pass .app-tabs button[data-workspace] { --tab-accent: var(--gold); --tab-accent-rgb: var(--rhw-gold-rgb); display: flex !important; align-items: center; justify-content: center; min-height: 48px; padding: 8px 12px; border: 0; border-right: 1px solid #35414a; border-bottom: 2px solid transparent; background: transparent; color: #bdc7ce; box-shadow: none; gap: 0; }
+html.rhw-focus-pass .app-tabs button[data-workspace]:last-child { border-right: 0; }
+html.rhw-focus-pass .app-tabs button[data-workspace] span { color: inherit; font: 500 23px/1.15 var(--font-title); letter-spacing: .06em; }
+html.rhw-focus-pass .app-tabs button small, html.rhw-focus-pass .app-tabs button::before, html.rhw-focus-pass .app-tabs button::after { display: none; }
+html.rhw-focus-pass .app-tabs button[data-workspace].active { color: #f2d8a7; border-bottom-color: var(--gold); background: linear-gradient(110deg,#362d20,#242729); box-shadow: inset 0 1px #e2c38b20; }
+html.rhw-focus-pass .app-tabs button[data-workspace]:not(.active):hover { background: #1e2a32; color: var(--text); }
+html.rhw-focus-pass .app-context-nav-slot { margin-top: 0; padding: 4px; border: 0; border-top: 1px solid var(--line-soft); background: #101920; }
 html.rhw-focus-pass .app-context-nav-slot::before { display: none; }
 html.rhw-focus-pass #commandNodeNav .workspace-subnav-tabs { gap: 4px; }
-html.rhw-focus-pass #commandNodeNav button {
-  display: flex; align-items: center; justify-content: center; min-height: 44px; padding: 8px 10px; gap: 8px;
-  border: 1px solid transparent; background: transparent; box-shadow: none; color: var(--muted);
-}
+html.rhw-focus-pass #commandNodeNav button,
+html.rhw-focus-pass body[data-workspace="command"] #commandNodeNav.command-module-nav button[data-command-node] { display: flex; grid-template-columns: none; grid-template-rows: none; align-items: center; justify-content: center; height: 44px; min-height: 44px; max-height: none; padding: 8px 10px; gap: 8px; border: 1px solid transparent; background: transparent; box-shadow: none; color: var(--muted); }
 html.rhw-focus-pass #commandNodeNav button::before, html.rhw-focus-pass #commandNodeNav button::after { display: none; }
-html.rhw-focus-pass #commandNodeNav button.active { color: var(--text); border-color: var(--rhw-border); background: var(--rhw-surface); }
-html.rhw-focus-pass .command-module-copy strong { font: 600 13px/1.3 var(--font-main); letter-spacing: .02em; }
+html.rhw-focus-pass #commandNodeNav button.active { color: var(--text); border-color: #5f7080; background: #23303a; }
+html.rhw-focus-pass .command-module-index { display: inline-flex; min-width: 18px; padding: 0; font: 12px var(--font-tech); color: #c3ad81; background: transparent; border: 0; }
+html.rhw-focus-pass .command-module-copy strong,
+html.rhw-focus-pass body[data-workspace="command"] #commandNodeNav .command-module-copy strong { font: 500 13px/1.3 var(--font-main); letter-spacing: .035em; }
 html.rhw-focus-pass .command-module-copy small, html.rhw-focus-pass .command-module-state { display: none !important; }
 html.rhw-focus-pass .inventory-view-nav { padding: 0; min-height: 0; gap: 8px; border: 0; margin: 0; background: transparent; }
-html.rhw-focus-pass .inventory-view-nav button { min-height: 40px !important; padding: 8px 14px !important; border: 0; background: transparent; box-shadow: none; }
-html.rhw-focus-pass .inventory-view-nav button span { display: inline; font: 600 12px/1.4 var(--font-main); }
+html.rhw-focus-pass .inventory-view-nav button { min-height: 44px !important; padding: 8px 14px !important; border: 1px solid transparent; border-bottom: 2px solid transparent; background: transparent; box-shadow: none; }
+html.rhw-focus-pass .inventory-view-nav button span { display: inline; font: 500 13px/1.4 var(--font-main); }
 html.rhw-focus-pass .inventory-view-nav button small, html.rhw-focus-pass .rhw-subview-index { display: none; }
-html.rhw-focus-pass .inventory-view-nav button small { font: 600 12px/1.4 var(--font-main) !important; color: var(--muted); }
-html.rhw-focus-pass .inventory-view-nav button.active { background: var(--rhw-surface); border-bottom: 2px solid var(--gold); }
-html.rhw-focus-pass #commandStrip { display: none; }
-html.rhw-focus-pass .command-area-heading, html.rhw-focus-pass .inventory-view-heading { display: none; }
-html.rhw-focus-pass .command-control-deck { background: transparent; padding: 0; border: 0; box-shadow: none; margin-bottom: 12px; grid-template-columns: minmax(200px,1fr) auto auto; }
+html.rhw-focus-pass .inventory-view-nav button.active { background: #232720; border-bottom-color: var(--gold); }
+html.rhw-focus-pass #commandStrip, html.rhw-focus-pass .command-area-heading, html.rhw-focus-pass .inventory-view-heading { display: none; }
+html.rhw-focus-pass .command-control-deck { background: transparent; padding: 0; border: 0; box-shadow: none; margin: 8px 0 12px; grid-template-columns: minmax(200px,1fr) auto auto; }
 html.rhw-focus-pass #commandGlobalSearch { font: 14px/1.4 var(--font-main) !important; }
-html.rhw-focus-pass .command-finder-label { grid-template-columns: minmax(0,1fr); background: var(--rhw-surface); border-color: var(--rhw-border); }
+html.rhw-focus-pass .command-finder-label { grid-template-columns: minmax(0,1fr); background: #111a21; border-color: var(--rhw-border); }
 html.rhw-focus-pass .command-finder-label>span:first-child, html.rhw-focus-pass .command-finder-key { display: none; }
 html.rhw-focus-pass .command-finder-label>.command-finder-input-wrap { display: block; }
 html.rhw-focus-pass .command-context-action { max-width: 280px; }
+html.rhw-focus-pass .command-global-alerts .command-alert-copy :is(strong,small) { font-size: 12px; }
+html.rhw-focus-pass .rhw-command-compact-shell { background: var(--bg); }
 
-/* Reading surfaces and the calculator. */
-html.rhw-focus-pass :is(.workspace-heading,.ops-panel,.comms-panel,.market-scan-card,.remote-card,.production-card,.production-module-card,.v40-tool-panel) {
-  background: var(--rhw-surface); border-color: var(--rhw-border); box-shadow: none; clip-path: none; border-radius: 6px;
-}
-html.rhw-focus-pass .workspace-heading { padding: 12px 0; margin-bottom: 16px; border: 0; background: transparent; }
-html.rhw-focus-pass .workspace-heading h2 { font: 600 24px/1.25 var(--font-title); letter-spacing: .04em; }
+/* Shared frames. Typography and header depth carry the industrial character. */
+html.rhw-focus-pass :is(.alert-card,.panel,.ops-panel,.comms-panel,.remote-card,.production-card,.production-module-card,.v40-tool-panel,.capital-shipyard-control) { background-color: var(--rhw-surface); border-color: var(--rhw-border); border-radius: var(--rhw-surface-radius); clip-path: none; box-shadow: inset 0 1px #ffffff07,0 7px 19px #00000030; }
+html.rhw-focus-pass :is(.alert-title,.panel-head,.ops-panel-head,.comms-panel-head) { background: var(--rhw-head-fill); border-bottom: 1px solid #54616b; }
+html.rhw-focus-pass :is(.alert-title,.panel-title,.shipyard-control-title,.production-title,.production-module-title) { color: var(--text); font-family: var(--font-title); }
+html.rhw-focus-pass .alert-title { font-size: 25px; line-height: 1.15; letter-spacing: .025em; }
+html.rhw-focus-pass .alert-title .section-index { color: var(--gold); font: 12px var(--font-tech); }
+html.rhw-focus-pass .alert-card:first-child .alert-title { background: linear-gradient(110deg,#332d20,#1b252d 66%); }
+html.rhw-focus-pass :is(.feedstock-panel,.waste-panel,.confiscated-panel) .alert-title { background: var(--rhw-head-fill); }
+html.rhw-focus-pass :is(.panel-title,.shipyard-control-title) { font-size: 30px; line-height: 1.1; }
+html.rhw-focus-pass .workspace-heading { padding: 10px 0; margin-bottom: 16px; border: 0; background: transparent; box-shadow: none; }
+html.rhw-focus-pass .workspace-heading h2 { color: var(--text); font: 500 34px/1.1 var(--font-title); letter-spacing: .055em; }
 html.rhw-focus-pass .workspace-heading p { font: 13px/1.5 var(--font-main); text-transform: none; }
-html.rhw-focus-pass .workspace-status { border: 0; background: transparent; font: 12px var(--font-main); color: var(--muted); }
-html.rhw-focus-pass .ops-panel-head { background: transparent; padding: 14px 16px; border-bottom: 1px solid var(--line-soft); }
-html.rhw-focus-pass .ops-panel-head>div>span, html.rhw-focus-pass .comms-panel-head>div>span { display: none; }
-html.rhw-focus-pass .ops-panel-head strong { font: 600 14px var(--font-main); letter-spacing: .025em; }
+html.rhw-focus-pass .workspace-status { border: 1px solid var(--rhw-border); background: #121c23; font: 12px var(--font-main); color: var(--muted); }
+html.rhw-focus-pass #workspaceOperations .workspace-heading,
+html.rhw-focus-pass body[data-comms-node="forum"] #workspaceComms .workspace-heading { display: none; }
+html.rhw-focus-pass :is(.production-card,.production-module-card) { border-top-color: #8d7c59; }
+html.rhw-focus-pass :is(.production-title,.production-module-title) { font-size: 26px; line-height: 1.15; }
+html.rhw-focus-pass :is(.section-kicker,.remote-route small) { color: var(--muted); font-size: 12px; }
+html.rhw-focus-pass .remote-route strong { color: #dce3e8; }
+
+/* Logistics: refined metals, compact ore inputs and a steel/gold components list. */
+html.rhw-focus-pass .logistics-subsection { background: transparent; border-top-color: #56616b; }
+html.rhw-focus-pass .logistics-subhead { background: linear-gradient(105deg,#24313a70,transparent 72%); border-bottom: 1px solid var(--line-soft); padding: 16px; }
+html.rhw-focus-pass .logistics-subhead-kicker { color: var(--muted); font: 12px var(--font-tech); }
+html.rhw-focus-pass .logistics-subhead-title { color: var(--text); font: 500 32px/1.1 var(--font-title); letter-spacing: .06em; }
+html.rhw-focus-pass .market-sort-segments { background: #10181e; border-color: #51616d; }
+html.rhw-focus-pass .market-sort-button { color: #c3cdd5; background: transparent; font: 12px var(--font-tech); min-height: 42px; }
+html.rhw-focus-pass .market-sort-button.active { color: #f0d5a1; border-color: #a88b56; background: linear-gradient(115deg,#352b1c,#232522); }
+html.rhw-focus-pass .market-scan-grid { padding: 16px; gap: 16px; }
+html.rhw-focus-pass #marketScanGrid { grid-template-columns: repeat(3,minmax(0,1fr)); }
+html.rhw-focus-pass #marketScanGrid>.market-card:nth-child(n) { grid-column: auto; }
+html.rhw-focus-pass .market-card { --market-accent: #b1c5d6; --market-accent-rgb: var(--rhw-steel-rgb); --market-header: linear-gradient(110deg,#293a46,#19262e 70%); background: #10171c; border: 1px solid #52616c; border-top: 2px solid var(--market-accent); border-radius: 2px; clip-path: none; box-shadow: 0 7px 20px #0000003d; transition: border-color 180ms,box-shadow 180ms; }
+html.rhw-focus-pass .market-card[data-market-family="gold"] { --market-accent: var(--gold); --market-accent-rgb: var(--rhw-gold-rgb); --market-header: linear-gradient(110deg,#352e21,#1b272e 70%); }
+html.rhw-focus-pass .market-card[data-market-family="components"] { --market-header: linear-gradient(110deg,#303332,#202c34 68%); border-top-color: var(--gold); }
+html.rhw-focus-pass .market-card:hover { border-color: var(--market-accent); box-shadow: 0 7px 20px #0000003d,0 0 14px rgba(var(--market-accent-rgb),.08); }
+html.rhw-focus-pass .market-card::after { content: ''; position: absolute; inset: auto -1px -1px auto; width: 13px; height: 13px; background: transparent; border-right: 2px solid var(--market-accent); border-bottom: 2px solid var(--market-accent); pointer-events: none; opacity: .75; }
+html.rhw-focus-pass .market-card .supplier-scanline { height: 1px; top: 0; background: var(--market-accent); box-shadow: 0 0 10px rgba(var(--market-accent-rgb),.3); opacity: .35; }
+html.rhw-focus-pass .market-card .remote-facility-head { min-height: 78px; padding: 14px; background: var(--market-header); border-bottom: 1px solid #52616c; align-items: start; gap: 12px; }
+html.rhw-focus-pass .market-material-card .remote-facility-head { display: grid; grid-template-columns: 48px minmax(0,1fr) auto; align-items: center; }
+html.rhw-focus-pass .market-card-heading { min-width: 0; }
+html.rhw-focus-pass .market-material-symbol { display: grid; place-items: center; width: 48px; height: 50px; color: var(--market-accent); font: 500 34px/1 var(--font-title); border: 1px solid rgba(var(--market-accent-rgb),.45); background: linear-gradient(135deg,rgba(var(--market-accent-rgb),.12),#0b121875); box-shadow: inset 0 0 0 3px #0a111733; }
+html.rhw-focus-pass .market-card[data-market-kind="components"] .market-material-symbol { color: var(--gold); border-color: #a28b62; }
+html.rhw-focus-pass .market-card .supplier-title { color: var(--text); font: 500 29px/1.1 var(--font-title); letter-spacing: .045em; margin-top: 5px; }
+html.rhw-focus-pass .market-card .remote-badge { color: #c3cdd5; border-color: #62717a; background: #0d172044; font: 11px/1.2 var(--font-tech); letter-spacing: .02em; white-space: normal; }
+html.rhw-focus-pass .market-card .remote-facility-subline { color: #bdc7ce; font: 11px/1.35 var(--font-main); letter-spacing: .025em; margin-top: 4px; }
+html.rhw-focus-pass .market-card .remote-link-pill { font: 11px/1.3 var(--font-tech); letter-spacing: .025em; padding: 4px 7px; align-self: start; }
+html.rhw-focus-pass .remote-link-pill.online { color: #b7d4bf; border-color: #688f73; background: #14271d; }
+html.rhw-focus-pass .remote-link-pill.idle { color: #c2c9cd; border-color: #65717a; background: #1b2329; }
+html.rhw-focus-pass .remote-link-pill:is(.stale,.degraded) { color: #e4c288; border-color: #9c8151; background: #2b2519; }
+html.rhw-focus-pass .market-card .supplier-commodity-row { grid-template-columns: minmax(0,1fr) 72px 78px; gap: 7px 10px; padding: 12px 14px; background: #10171c; border-left-color: rgba(var(--market-accent-rgb),.7); border-bottom-color: #34424d; transition: background 160ms; }
+html.rhw-focus-pass .market-card .supplier-commodity-row:hover { background: #17232b; }
+html.rhw-focus-pass .market-card .supplier-commodity-name strong { display: block; overflow: visible; -webkit-line-clamp: unset; line-clamp: unset; color: #edf0f2; font: 500 22px/1.12 var(--font-title); white-space: normal; overflow-wrap: anywhere; }
+html.rhw-focus-pass .market-card .supplier-commodity-name small { color: var(--muted); font: 12px/1.4 var(--font-main); text-transform: none; letter-spacing: .015em; }
+html.rhw-focus-pass .market-card .supplier-commodity-metric small { color: var(--muted); font: 12px var(--font-main); }
+html.rhw-focus-pass .market-card .supplier-commodity-metric strong { color: #edf0f2; font: 16px/1.25 var(--font-tech); letter-spacing: 0; }
+html.rhw-focus-pass .market-card .supplier-commodity-metric.price strong { color: #efcf91; }
+html.rhw-focus-pass .market-card .supplier-commodity-metric.price strong.unlisted { color: #e4c288; font-size: 12px; }
+html.rhw-focus-pass .market-card .market-feedstock { grid-column: 1 / -1; gap: 4px 8px; color: var(--muted); font: 12px/1.4 var(--font-main); letter-spacing: 0; text-transform: none; }
+html.rhw-focus-pass .market-card .market-feedstock strong { color: #dce4e9; font: 14px var(--font-tech); }
+html.rhw-focus-pass .market-card .market-feedstock.unknown strong { color: #b3bdc5; font-size: 12px; }
+html.rhw-focus-pass .market-card .market-feedstock.stale { color: #e4c288; }
+html.rhw-focus-pass .market-card .supplier-progress-wrap { grid-column: 1 / -1; height: 3px; margin-top: 3px; background: #2a3842; }
+html.rhw-focus-pass .market-card .supplier-progress-fill.info { background: var(--market-accent); box-shadow: 0 0 5px rgba(var(--market-accent-rgb),.2); }
+html.rhw-focus-pass .market-card .market-empty-row { grid-template-columns: minmax(0,1fr); border-left-color: #65717a; padding-block: 16px; }
+html.rhw-focus-pass .market-card .market-empty-row strong { color: #c4ccd2; font-size: 21px; }
+html.rhw-focus-pass .market-card[data-market-kind="ore"] { border-top-width: 1px; border-left: 3px solid var(--market-accent); box-shadow: none; }
+html.rhw-focus-pass .market-card[data-market-kind="ore"] .remote-facility-head { min-height: 0; grid-template-columns: 31px minmax(0,1fr) auto; padding: 11px 12px; background: linear-gradient(110deg,#202b31,#151e25); }
+html.rhw-focus-pass .market-card[data-market-kind="ore"] .market-material-symbol { width: 31px; height: 34px; font-size: 24px; background: #11191e; box-shadow: none; }
+html.rhw-focus-pass .market-card[data-market-kind="ore"] .supplier-title { font-size: 25px; margin-top: 3px; }
+html.rhw-focus-pass .market-card[data-market-kind="ore"] .remote-facility-subline { display: none; }
+html.rhw-focus-pass .market-card[data-market-kind="ore"] .supplier-commodity-row { padding-block: 10px; }
+html.rhw-focus-pass .market-card[data-market-kind="ore"] .supplier-scanline { display: none; }
+html.rhw-focus-pass :is(.market-row,.remote-route) { background: transparent; }
+html.rhw-focus-pass .market-row strong { font-size: 22px; }
+html.rhw-focus-pass :is(.market-row,.remote-route) small { color: var(--muted); }
+
+/* Calculator: engineering setup, material ledger, then the commercial quote. */
+html.rhw-focus-pass .ops-panel-head { padding: 13px 16px; }
+html.rhw-focus-pass .ops-panel-head>div>span { display: inline-flex; color: var(--gold); font: 12px var(--font-tech); }
+html.rhw-focus-pass .ops-panel-head strong { color: var(--text); font: 500 25px/1.1 var(--font-title); letter-spacing: .055em; }
+html.rhw-focus-pass .ops-setup-panel .ops-panel-head { background: linear-gradient(110deg,#343022,#1d282f); }
+html.rhw-focus-pass .ops-quote-panel { border-top: 2px solid var(--gold); }
 html.rhw-focus-pass .ops-form-grid { padding: 16px; gap: 16px; }
-html.rhw-focus-pass .ops-form-grid input, html.rhw-focus-pass .ops-form-grid select { font: 14px/1.5 var(--font-main); background: #10151b; border-color: var(--rhw-border); }
+html.rhw-focus-pass .ops-form-grid :is(input,select) { font: 14px/1.5 var(--font-main); background: #0c1318; border-color: #53616d; }
+html.rhw-focus-pass :is(.ops-material-table,.manifest-table,.pricecheck-table) :is(th,td) { font-family: var(--font-main); font-size: 14px; font-variant-numeric: tabular-nums; }
 html.rhw-focus-pass .ops-material-table :is(th,td) { padding: 12px 14px; }
-html.rhw-focus-pass .ops-material-table td>strong { font: 600 14px/1.4 var(--font-main); }
-html.rhw-focus-pass .ops-price-input { font: 500 15px/1.4 var(--font-main) !important; min-width: 72px; }
-html.rhw-focus-pass .ops-recipe-meta { margin: 0 16px 16px; padding: 12px 0; background: transparent; border-top: 1px solid var(--line-soft); }
-html.rhw-focus-pass .ops-recipe-meta strong { font: 600 20px var(--font-main); }
+html.rhw-focus-pass .ops-material-table th { color: #c3cdd5; background: #19242c; }
+html.rhw-focus-pass .ops-material-table td>strong { font: 500 15px/1.4 var(--font-main); }
+html.rhw-focus-pass .ops-price-input { font: 16px/1.4 var(--font-tech) !important; min-width: 72px; }
+html.rhw-focus-pass .ops-price-input-wrap>span { color: var(--muted); font: 12px var(--font-main); }
+html.rhw-focus-pass .ops-recipe-meta { margin: 0 16px 16px; padding: 13px 0; background: transparent; border: 0; border-top: 1px solid #53616b; box-shadow: none; }
+html.rhw-focus-pass .ops-recipe-meta strong { color: var(--text); font: 500 27px/1.15 var(--font-title); }
 html.rhw-focus-pass .ops-price-memory { padding-inline: 16px; color: var(--muted); }
 html.rhw-focus-pass .ops-price-calculation { gap: 12px; }
 html.rhw-focus-pass :is(.ops-price-flow,.ops-quote-grid) { box-shadow: none; }
+html.rhw-focus-pass .ops-flow-card { background: #152029; border-color: #53636f; border-radius: 2px; box-shadow: inset 0 1px #ffffff08; }
+html.rhw-focus-pass .ops-flow-card strong { font-family: var(--font-tech); }
+html.rhw-focus-pass .ops-flow-sell { background: linear-gradient(130deg,#332f21,#1e2526); border-color: #a68d5c; }
+html.rhw-focus-pass .ops-flow-sell>strong { color: #f0d49e; }
+html.rhw-focus-pass .ops-flow-margin { background: #18222a; }
 html.rhw-focus-pass .ops-cost-note { padding: 12px 16px; text-transform: none; }
+html.rhw-focus-pass .ops-details summary { font: 12px/1.4 var(--font-main); }
+html.rhw-focus-pass .ops-priced-state :is(span,strong), html.rhw-focus-pass .ops-flow-card :is(span,em,b) { font: 12px/1.5 var(--font-main); color: var(--muted); }
+html.rhw-focus-pass :is(.ops-price-profiles,.ops-price-profile-tools) { background: #111a21; border-color: #465763; }
+html.rhw-focus-pass .ops-price-profiles button { color: #d2dce3; background: #1c2830; border-color: #526470; }
+
+/* Price Check keeps sign colours meaningful; the ledger itself stays neutral. */
+html.rhw-focus-pass .pricecheck-heading h2 { color: var(--text); font: 500 34px/1.1 var(--font-title); letter-spacing: .055em; }
+html.rhw-focus-pass .pricecheck-status { background: var(--rhw-head-fill); box-shadow: inset 0 1px #ffffff08; border-color: var(--rhw-border); }
+html.rhw-focus-pass .pricecheck-status strong { font: 500 24px/1.2 var(--font-title); }
+html.rhw-focus-pass :is(.pricecheck-source strong,.pricecheck-payout strong) { font: 500 14px/1.4 var(--font-main); }
+html.rhw-focus-pass .pricecheck-commodity strong { font: 500 16px/1.4 var(--font-main); }
+html.rhw-focus-pass .pricecheck-note { font: 12px/1.5 var(--font-main); }
 html.rhw-focus-pass .pricecheck-price-input { min-height: 44px; }
 html.rhw-focus-pass .pricecheck-reset { min-height: 44px; font-size: 12px; }
 html.rhw-focus-pass .pricecheck-estimate { display: block; margin-top: 4px; font: 12px/1.4 var(--font-main); color: var(--muted); }
 html.rhw-focus-pass .pricecheck-row td { padding-block: 14px; }
-html.rhw-focus-pass .pricecheck-status { background: var(--rhw-surface); box-shadow: none; border-color: var(--rhw-border); }
+html.rhw-focus-pass .pricecheck-table th { background: #19242c; color: #c3cdd5; }
 html.rhw-focus-pass .pricecheck-difference.positive { color: var(--good); }
 html.rhw-focus-pass .pricecheck-difference.negative { color: var(--danger); }
-html.rhw-focus-pass :is(.market-row,.remote-route) { background: transparent; }
-html.rhw-focus-pass .market-row strong { font-size: 21px; }
-html.rhw-focus-pass :is(.market-row,.remote-route) small { color: var(--muted); }
-html.rhw-focus-pass .comms-editor-toolbar { background: transparent; }
+
+/* Composer frames share the identity; generated Forum message styling stays local. */
+html.rhw-focus-pass .comms-panel-head { padding: 13px 16px; }
+html.rhw-focus-pass .comms-panel-head>div>span { display: none; }
+html.rhw-focus-pass .comms-panel-head strong { color: var(--text); font: 500 25px/1.1 var(--font-title); letter-spacing: .05em; }
+html.rhw-focus-pass .comms-editor-toolbar { background: #162129; border-color: var(--rhw-border); }
 html.rhw-focus-pass .comms-field label, html.rhw-focus-pass .message-field>label { font: 12px/1.4 var(--font-main); }
 html.rhw-focus-pass .comms-field textarea { min-height: 160px; }
 html.rhw-focus-pass .comms-preview-live { line-height: 1.6; }
@@ -1063,52 +1153,82 @@ html.rhw-focus-pass .v40-newswire-workflow { margin-block: 12px; }
 html.rhw-focus-pass .v40-newswire-workflow button { min-height: 44px; padding: 8px 12px; }
 html.rhw-focus-pass .v40-newswire-workflow small { display: none; }
 html.rhw-focus-pass .v40-newswire-entry p { font-size: 15px; line-height: 1.5; text-transform: none; }
-html.rhw-focus-pass .rhw-focus-tools-sheet { border-radius: 6px; background: var(--rhw-surface); border-color: var(--rhw-border); }
-html.rhw-focus-pass .rhw-focus-tool-card { min-height: 80px; background: #10151b; border-color: var(--rhw-border); }
-html.rhw-focus-pass .rhw-focus-tool-copy strong { font: 600 14px/1.4 var(--font-main); }
+html.rhw-focus-pass body[data-comms-node="ticker"] .comms-panel-head { display: none; }
+html.rhw-focus-pass .rhw-focus-tools-sheet { border-radius: 3px; background: var(--rhw-surface); border-color: #62717c; }
+html.rhw-focus-pass .rhw-focus-tool-card { min-height: 80px; background: linear-gradient(110deg,#1e2c35,#131c23); border-color: #52616d; grid-template-columns: 1fr auto; }
+html.rhw-focus-pass .rhw-focus-tool-copy strong { font: 500 21px/1.2 var(--font-title); }
 html.rhw-focus-pass .rhw-focus-tool-copy small { font: 12px/1.4 var(--font-main); color: var(--muted); }
 html.rhw-focus-pass .rhw-focus-tool-index { display: none; }
-html.rhw-focus-pass .rhw-focus-tool-card { grid-template-columns: 1fr auto; }
-html.rhw-focus-pass .rhw-diagnostics-overlay { background: rgba(0,0,0,.7); backdrop-filter: none; }
+html.rhw-focus-pass .rhw-diagnostics-overlay { background: #000000b3; backdrop-filter: none; }
 
+@keyframes rhwCoreBreathe { 0%,100% { opacity: .45; } 50% { opacity: .85; } }
+@media (prefers-reduced-motion: no-preference) and (min-width: 1001px) {
+  html.rhw-focus-pass:not(.eco) .crest-frame::before { animation: rhwCoreBreathe 10s ease-in-out infinite !important; }
+}
+html.rhw-focus-pass.eco .header-watermark, html.rhw-focus-pass.eco .crest-frame::before { display: none !important; }
 @media (min-width: 1100px) {
   html.rhw-focus-pass .operations-layout-simple { display: grid; grid-template-columns: minmax(290px,.85fr) minmax(0,1.6fr); gap: 20px; align-items: start; }
   html.rhw-focus-pass .ops-setup-panel { grid-column: 1; grid-row: 1 / span 2; position: sticky; top: calc(var(--rhw-sticky-nav-offset,60px) + 16px); }
   html.rhw-focus-pass .ops-cost-panel { grid-column: 2; grid-row: 1; }
   html.rhw-focus-pass .ops-quote-panel { grid-column: 2; grid-row: 2; }
 }
+@media (min-width: 1001px) {
+  html.rhw-focus-pass .market-card[data-market-kind="components"] .supplier-commodity-row:not(.market-empty-row) { grid-template-columns: minmax(0,1fr) 100px 105px 200px; }
+  html.rhw-focus-pass .market-card[data-market-kind="components"] .market-feedstock { grid-column: 4; grid-row: 1; display: flex; flex-direction: column; align-items: flex-end; gap: 4px; padding-left: 18px; border-left: 1px solid #46535f; }
+}
+@media (max-width: 1200px) and (min-width: 761px) {
+  html.rhw-focus-pass #marketScanGrid { grid-template-columns: repeat(2,minmax(0,1fr)); }
+}
 @media (max-width: 1000px) and (min-width: 761px) {
-  html.rhw-focus-pass .command-header-inner { grid-template-columns: minmax(0,1fr) 240px; }
+  html.rhw-focus-pass .command-header-inner { grid-template-columns: minmax(0,1fr) 225px; gap: 16px; }
+  html.rhw-focus-pass .command-brand { grid-template-columns: 88px minmax(0,1fr); gap: 14px; }
+  html.rhw-focus-pass .crest-frame { width: 88px; }
+  html.rhw-focus-pass .crest { width: 85px; height: 116px; }
+  html.rhw-focus-pass .command-header h1 { font-size: 46px; gap: 10px; }
+  html.rhw-focus-pass .brand-command { font-size: 25px; }
+  html.rhw-focus-pass .base-telemetry-stat { padding-inline: 7px; }
+  html.rhw-focus-pass .base-telemetry-stat strong { font-size: 14px; }
   html.rhw-focus-pass .app-nav-inner { grid-template-columns: minmax(0,1fr); }
-  html.rhw-focus-pass .app-nav-brand { position: absolute; top: -57px; right: var(--layout-gutter); }
+  html.rhw-focus-pass .app-nav-brand { position: static; grid-column: 1; grid-row: 2; justify-content: flex-end; padding-top: 5px; min-height: 44px; }
   html.rhw-focus-pass .ticker-label { max-width: 210px; }
+  html.rhw-focus-pass .market-material-card .remote-facility-head { grid-template-columns: 39px minmax(0,1fr); gap: 10px; }
+  html.rhw-focus-pass .market-material-card .remote-link-pill { grid-column: 2; justify-self: start; }
+  html.rhw-focus-pass .market-material-symbol { width: 39px; height: 43px; font-size: 29px; }
 }
 @media (max-width: 760px) {
   html.rhw-focus-pass .command-header { padding: 12px; }
-  html.rhw-focus-pass .command-header-inner { grid-template-columns: 1fr; gap: 8px; }
-  html.rhw-focus-pass .command-brand { grid-template-columns: 40px minmax(0,1fr); gap: 10px; }
-  html.rhw-focus-pass .crest-frame { width: 40px; }
-  html.rhw-focus-pass .crest { width: 38px; }
-  html.rhw-focus-pass .command-header h1 { font-size: 25px; margin-bottom: 8px; }
-  html.rhw-focus-pass .base-telemetry-stat { padding-inline: 5px; }
-  html.rhw-focus-pass .base-telemetry-stat small { min-height: 28px; font-size: 11px; }
-  html.rhw-focus-pass .base-telemetry-stat strong { font-size: 13px; overflow-wrap: anywhere; }
-  html.rhw-focus-pass .uplink-panel { display: grid; grid-template-columns: minmax(0,1fr) auto auto; gap: 8px; border-left: 0; border-top: 1px solid var(--line-soft); padding: 8px 0 0; }
+  html.rhw-focus-pass .command-header-inner { grid-template-columns: 1fr; gap: 10px; }
+  html.rhw-focus-pass .command-brand { grid-template-columns: 70px minmax(0,1fr); gap: 0 14px; }
+  html.rhw-focus-pass .brand-copy { display: contents; }
+  html.rhw-focus-pass .crest-frame { grid-column: 1; grid-row: 1 / span 3; width: 70px; }
+  html.rhw-focus-pass .crest { width: 67px; height: 91px; }
+  html.rhw-focus-pass .crest-frame::before { width: 74px; height: 74px; }
+  html.rhw-focus-pass .brand-kicker { grid-column: 2; margin: 0; align-self: end; font-size: 12px; letter-spacing: .03em; }
+  html.rhw-focus-pass .command-header h1 { grid-column: 2; font-size: 43px; gap: 8px; margin: 3px 0 0; letter-spacing: .025em; }
+  html.rhw-focus-pass .brand-command { font-size: 24px; letter-spacing: .08em; }
+  html.rhw-focus-pass .brand-subtitle { grid-column: 2; align-self: start; font-size: 12px; letter-spacing: .04em; margin-top: 4px; }
+  html.rhw-focus-pass .base-telemetry-bar { grid-column: 1 / -1; margin-top: 10px; padding-top: 8px; max-width: none; }
+  html.rhw-focus-pass .base-telemetry-stat { padding-inline: 7px; }
+  html.rhw-focus-pass .base-telemetry-stat small { min-height: 28px; font-size: 12px; }
+  html.rhw-focus-pass .base-telemetry-stat strong { font-size: 14px; overflow-wrap: anywhere; }
+  html.rhw-focus-pass .uplink-panel { display: grid; grid-template-columns: minmax(0,1fr) auto auto; gap: 8px; border: 0; border-top: 1px solid #53616b; padding: 8px 0 0; background: transparent; box-shadow: none; }
   html.rhw-focus-pass .uplink-header { grid-column: auto; gap: 6px; }
   html.rhw-focus-pass .uplink-label { display: none; }
-  html.rhw-focus-pass .uplink-value { font-size: 12px; }
+  html.rhw-focus-pass .uplink-value { font: 12px/1.4 var(--font-main); }
   html.rhw-focus-pass .uplink-details>summary { font-size: 12px; max-width: 86px; }
   html.rhw-focus-pass #headerRefreshBtn { font-size: 11px; padding-inline: 8px; }
   html.rhw-focus-pass .uplink-details[open] { grid-column: 1 / -1; }
+  html.rhw-focus-pass .header-watermark { width: 240px; right: -35px; top: -100px; opacity: .05; }
   html.rhw-focus-pass .app-nav-inner { display: block; padding-block: 4px; }
-  html.rhw-focus-pass .app-nav-brand { justify-content: flex-end; min-height: 44px; gap: 8px; }
-  html.rhw-focus-pass .app-navigation-cluster { border: 0; }
-  html.rhw-focus-pass .app-tabs button { min-height: 52px; padding: 8px 4px; }
-  html.rhw-focus-pass .app-tabs button span { font-size: 12px; letter-spacing: 0; }
-  html.rhw-focus-pass .app-context-nav-slot { margin-top: 4px; }
+  html.rhw-focus-pass .app-nav-brand { position: static; justify-content: flex-end; min-height: 44px; gap: 8px; }
+  html.rhw-focus-pass :is(#rhwFocusToolsBtn,#rhwPwaInstallBtn) { min-height: 44px; }
+  html.rhw-focus-pass .app-navigation-cluster { margin-top: 4px; }
+  html.rhw-focus-pass .app-tabs button[data-workspace] { min-height: 48px; padding: 8px 4px; }
+  html.rhw-focus-pass .app-tabs button[data-workspace] span { font-size: 20px; letter-spacing: .02em; }
+  html.rhw-focus-pass .app-context-nav-slot { margin-top: 0; padding: 4px; }
   html.rhw-focus-pass #commandNodeNav .workspace-subnav-tabs { grid-template-columns: repeat(2,minmax(0,1fr)) !important; gap: 4px; }
   html.rhw-focus-pass #commandNodeNav button { min-height: 44px; padding: 8px; }
-  html.rhw-focus-pass .inventory-view-nav button { min-height: 44px !important; }
+  html.rhw-focus-pass .command-module-index { font-size: 11px; }
   html.rhw-focus-pass :is(.app-workspace,.uplink-panel) :is(input,select,textarea) { font-size: 16px !important; min-width: 0; }
   html.rhw-focus-pass .app-workspace button, html.rhw-focus-pass .app-workspace summary { min-height: 44px; }
   html.rhw-focus-pass #commandGlobalSearch { font-size: 16px !important; }
@@ -1116,6 +1236,20 @@ html.rhw-focus-pass .rhw-diagnostics-overlay { background: rgba(0,0,0,.7); backd
   html.rhw-focus-pass .command-context-action { grid-column: 1 / -1; max-width: none; }
   html.rhw-focus-pass .workspace-heading { margin-bottom: 12px; padding: 8px 0; }
   html.rhw-focus-pass .workspace-heading p { display: none; }
+  html.rhw-focus-pass :is(.panel-title,.shipyard-control-title) { font-size: 27px; }
+  html.rhw-focus-pass .logistics-subhead { padding: 13px 10px; }
+  html.rhw-focus-pass .logistics-subhead-title { font-size: 29px; }
+  html.rhw-focus-pass .market-scan-grid { padding: 10px; gap: 13px; }
+  html.rhw-focus-pass #marketScanGrid { grid-template-columns: minmax(0,1fr); }
+  html.rhw-focus-pass .market-card .remote-facility-head { padding: 12px; gap: 9px; }
+  html.rhw-focus-pass .market-material-card .remote-facility-head { grid-template-columns: 38px minmax(0,1fr); }
+  html.rhw-focus-pass .market-material-card .remote-link-pill { grid-column: 2; justify-self: start; }
+  html.rhw-focus-pass .market-material-symbol { width: 38px; height: 42px; font-size: 29px; }
+  html.rhw-focus-pass .market-card .supplier-title { font-size: 27px; }
+  html.rhw-focus-pass .market-card .supplier-commodity-row { grid-template-columns: minmax(0,1fr) 64px 72px; gap: 7px; padding: 11px 12px; }
+  html.rhw-focus-pass .market-card .supplier-commodity-name strong { font-size: 22px; }
+  html.rhw-focus-pass .market-card[data-market-kind="ore"] .remote-facility-head { grid-template-columns: 31px minmax(0,1fr); }
+  html.rhw-focus-pass .market-card .market-feedstock { font-size: 12px; }
   html.rhw-focus-pass .ops-form-grid { padding: 14px; gap: 14px; }
   html.rhw-focus-pass .ops-material-table :is(th,td) { padding: 10px 8px; }
   html.rhw-focus-pass .ops-mobile-decision { grid-template-columns: 1fr; margin: 0 14px 12px; }
@@ -1128,40 +1262,12 @@ html.rhw-focus-pass .rhw-diagnostics-overlay { background: rgba(0,0,0,.7); backd
   html.rhw-focus-pass .rhw-focus-tools-grid { grid-template-columns: 1fr; }
   html.rhw-focus-pass .rhw-focus-tool-card { min-height: 72px; }
 }
-@media (prefers-reduced-motion: reduce) { html.rhw-focus-pass { scroll-behavior: auto; } }
-
-/* Compact navigation supersedes the old card-height declarations. */
-html.rhw-focus-pass body[data-workspace="command"] #commandNodeNav.command-module-nav button[data-command-node] {
-  display: flex; grid-template-columns: none; grid-template-rows: none; align-items: center; justify-content: center;
-  height: 44px; min-height: 44px; max-height: none; padding: 8px 10px;
+@media (max-width: 390px) {
+  html.rhw-focus-pass .market-card .supplier-commodity-row:not(.market-empty-row) { grid-template-columns: minmax(0,1fr) minmax(0,1fr); }
+  html.rhw-focus-pass .market-card .supplier-commodity-name { grid-column: 1 / -1; }
+  html.rhw-focus-pass .market-card .supplier-commodity-metric { display: flex; align-items: baseline; gap: 8px; justify-content: flex-start; text-align: left; }
 }
-html.rhw-focus-pass body[data-workspace="command"] #commandNodeNav .command-module-copy strong {
-  font: 600 13px/1.3 var(--font-main); letter-spacing: .015em;
+@media (prefers-reduced-motion: reduce) {
+  html.rhw-focus-pass { scroll-behavior: auto; }
+  html.rhw-focus-pass *, html.rhw-focus-pass *::before, html.rhw-focus-pass *::after { animation: none !important; transition: none !important; }
 }
-html.rhw-focus-pass .command-global-alerts .command-alert-copy strong { font-size: 12px; }
-html.rhw-focus-pass .command-global-alerts .command-alert-copy small { font-size: 12px; }
-html.rhw-focus-pass body[data-comms-node="ticker"] .comms-panel-head { display: none; }
-html.rhw-focus-pass .rhw-command-compact-shell { background: var(--bg); }
-
-/* Final live review: reading text and controls use the shared working typeface. */
-html.rhw-focus-pass .app-workspace button { font-family: var(--font-main); font-size: 12px !important; }
-html.rhw-focus-pass .app-workspace small { font-family: var(--font-main); }
-html.rhw-focus-pass :is(.ops-material-table,.manifest-table,.pricecheck-table) :is(th,td) {
-  font-family: var(--font-main); font-size: 14px; font-variant-numeric: tabular-nums;
-}
-html.rhw-focus-pass :is(.pricecheck-source strong,.pricecheck-payout strong) { font: 600 14px/1.4 var(--font-main); }
-html.rhw-focus-pass .pricecheck-commodity strong { font: 600 15px/1.4 var(--font-main); }
-html.rhw-focus-pass .pricecheck-status strong { font: 600 18px/1.4 var(--font-main); }
-html.rhw-focus-pass .pricecheck-note { font: 12px/1.5 var(--font-main); }
-html.rhw-focus-pass .app-tabs button[data-workspace].active {
-  color: var(--gold); border-bottom-color: var(--gold); background: #222018; box-shadow: none;
-}
-html.rhw-focus-pass .app-tabs button[data-workspace] span { color: inherit; }
-html.rhw-focus-pass .app-tabs button[data-workspace]:not(.active):hover { background: var(--rhw-surface); color: var(--text); }
-html.rhw-focus-pass .command-control-deck { margin-top: 8px; }
-html.rhw-focus-pass #workspaceOperations .workspace-heading,
-html.rhw-focus-pass body[data-comms-node="forum"] #workspaceComms .workspace-heading { display: none; }
-html.rhw-focus-pass .ops-price-input-wrap>span { color: var(--muted); font: 12px var(--font-main); }
-html.rhw-focus-pass .ops-details summary { font: 12px/1.4 var(--font-main); }
-html.rhw-focus-pass .ops-priced-state :is(span,strong),
-html.rhw-focus-pass .ops-flow-card :is(span,em,b) { font: 12px/1.5 var(--font-main); color: var(--muted); }

@@ -1,23 +1,23 @@
 :root {
-      --bg: #0D1014;
-      --panel: #161B22;
-      --line: #343B45;
-      --line-soft: #29313B;
-      --text: #ECE9E1;
-      --muted: #ADB3BC;
-      --gold: #C6A566;
-      --gold-soft: rgba(212, 175, 55, 0.1);
+      --bg: #090D10;
+      --panel: #11181D;
+      --line: #43515C;
+      --line-soft: #2B3943;
+      --text: #F0EEE7;
+      --muted: #B3BDC5;
+      --gold: #D7B675;
+      --gold-soft: rgba(215, 182, 117, 0.1);
       --danger: #E28A8A;
       --warn: #D7B96D;
-      --good: #82BA95;
-      --blue-soft: rgba(47, 128, 237, 0.16);
-      --remote: #8BA9CC;
+      --good: #A0C6AE;
+      --blue-soft: rgba(177, 197, 214, 0.10);
+      --remote: #B1C5D6;
       --waste: #a89f91;
       --waste-soft: rgba(168, 159, 145, 0.15);
       
-      --font-main: 'Segoe UI', Arial, sans-serif;
+      --font-main: 'Barlow', 'Segoe UI', Arial, sans-serif;
       --font-title: 'Teko', 'Arial Narrow', sans-serif;
-      --font-tech: 'Consolas', 'Share Tech Mono', monospace;
+      --font-tech: 'Share Tech Mono', 'Consolas', monospace;
     }
 
     * { 
