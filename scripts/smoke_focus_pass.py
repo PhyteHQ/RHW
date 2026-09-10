@@ -2,6 +2,7 @@
 """RHW focused-navigation smoke: COMMAND, CALCULATOR, PRICE CHECK and FORUM."""
 from __future__ import annotations
 
+import base64
 import json
 import time
 
@@ -37,9 +38,15 @@ def main() -> int:
                 "width": 390, "height": 820, "deviceScaleFactor": 1, "mobile": True,
             })
             cdp.call("Page.navigate", {"url": "about:blank"})
+            # The fixture inlines CSS/JS and blocks network requests. Inline the
+            # real crest too, so its geometry is tested instead of the fallback.
+            crest_data = base64.b64encode((base.ROOT / "assets/rhw-crest.png").read_bytes()).decode("ascii")
+            document = base.document("command/inventory").replace(
+                'src="./assets/rhw-crest.png"', f'src="data:image/png;base64,{crest_data}"', 1,
+            )
             cdp.call("Page.setDocumentContent", {
                 "frameId": page["id"],
-                "html": base.document("command/inventory"),
+                "html": document,
             })
 
             end = time.time() + 9
