@@ -157,7 +157,7 @@ def main() -> int:
             })()""")
             for width in [360, 390, 430, 820, 1024, 1366, 1920]:
                 cdp.call('Emulation.setDeviceMetricsOverride', {'width':width,'height':900,'deviceScaleFactor':1,'mobile':width<760})
-                base.ev(cdp, '(()=>{scrollTo(0,0);return true;})()')
+                base.ev(cdp, "(()=>{scrollTo({top:0,behavior:'instant'});return true;})()")
                 time.sleep(.12)
                 geometry=base.ev(cdp, """(()=>{
                   const r=el=>{const x=el.getBoundingClientRect();return{top:x.top,bottom:x.bottom,left:x.left,right:x.right,height:x.height,width:x.width}};
@@ -165,7 +165,7 @@ def main() -> int:
                   return{overflow:document.documentElement.scrollWidth-innerWidth,cards:cards.map(r),
                     rows:cards.map(c=>c.querySelector('ul')?.id),
                     scrollDeck:document.querySelector('.summary-grid').scrollWidth-document.querySelector('.summary-grid').clientWidth,
-                    navHeight:r(rhwAppNav).height,toolbar:r(commandControlDeck),
+                    navHeight:r(rhwAppNav).height,toolbar:r(commandControlDeck),contextBottom:r(appSecondaryNav).bottom,
                     quantity:parseFloat(getComputedStyle(document.querySelector('.overview-row-qty')).fontSize),
                     kpi:parseFloat(getComputedStyle(document.querySelector('.base-telemetry-stat strong')).fontSize)};
                 })()""")
@@ -181,12 +181,12 @@ def main() -> int:
                         raise RuntimeError(f'Desktop HUD density at {width}px: {geometry}')
                 if width<760 and any(cards[i+1]['top']<cards[i]['bottom']-2 for i in range(4)):
                     raise RuntimeError(f'Mobile card order at {width}px: {geometry}')
-                base.ev(cdp, '(()=>{scrollTo(0,700);return true;})()')
+                base.ev(cdp, "(()=>{scrollTo({top:700,behavior:'instant'});return true;})()")
                 time.sleep(.15)
                 sticky=base.ev(cdp, """(()=>{const r=rhwAppNav.getBoundingClientRect();return{top:r.top,height:r.height,
                   context:appSecondaryNav.getBoundingClientRect().bottom,offset:parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--rhw-sticky-nav-offset')),
                   scrollY:scrollY,toolsInside:rhwAppNav.contains(rhwFocusToolsBtn)}})()""")
-                if sticky['height']>54 or sticky['toolsInside'] or abs(sticky['offset']-sticky['height']-12)>2 or (sticky['scrollY']>400 and (abs(sticky['top'])>2 or sticky['context']>0)):
+                if sticky['height']>54 or sticky['toolsInside'] or abs(sticky['offset']-sticky['height']-12)>2 or (sticky['scrollY']>400 and abs(sticky['top'])>2) or abs(sticky['context']+sticky['scrollY']-geometry['contextBottom'])>2:
                     raise RuntimeError(f'Primary-only sticky navigation at {width}px: {sticky}')
                 print(f'HUD {width}px: cards start at {cards[0]["top"]:.0f}px; sticky navigation {sticky["height"]:.0f}px')
 
