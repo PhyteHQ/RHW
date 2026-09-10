@@ -216,7 +216,7 @@
     button.setAttribute('aria-expanded', 'false');
     button.innerHTML = '<span>SYS CHECK</span><small>APP HEALTH</small>';
     const installButton = document.getElementById('rhwPwaInstallBtn');
-    if (installButton) brand.insertBefore(button, installButton);
+    if (installButton?.parentElement === brand) brand.insertBefore(button, installButton);
     else brand.appendChild(button);
 
     document.body.insertAdjacentHTML('beforeend', `<aside class="rhw-diagnostics-overlay" id="rhwDiagnosticsPanel" role="dialog" aria-modal="true" aria-labelledby="rhwDiagnosticsTitle" hidden>

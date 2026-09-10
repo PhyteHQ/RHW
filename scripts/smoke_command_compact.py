@@ -2,6 +2,7 @@
 """Focused mobile COMMAND hierarchy smoke for the compact 390px layout."""
 from __future__ import annotations
 
+import base64
 import json
 import time
 
@@ -33,7 +34,7 @@ def main() -> int:
             cdp.call("Page.navigate", {"url": "about:blank"})
             cdp.call("Page.setDocumentContent", {
                 "frameId": page["id"],
-                "html": base.document("command/inventory"),
+                "html": base.document("command/inventory").replace('src="./assets/rhw-crest.png"', 'src="data:image/png;base64,' + base64.b64encode((base.ROOT / "assets/rhw-crest.png").read_bytes()).decode() + '"'),
             })
 
             end = time.time() + 9
@@ -58,7 +59,8 @@ def main() -> int:
                 return r?{top:r.top,bottom:r.bottom,left:r.left,right:r.right,width:r.width,height:r.height}:{top:9999,bottom:9999,left:0,right:0,width:0,height:0};
               };
               const commandNav=document.getElementById('commandNodeNav');
-              const shell=document.querySelector('.rhw-command-compact-shell');
+              const shell=document.getElementById('appSecondaryNav');
+              const toolbar=document.getElementById('commandControlDeck');
               const modeNav=document.querySelector('.rhw-inventory-mode-nav');
               const commandButtons=[...commandNav?.querySelectorAll('[data-command-node]')||[]];
               const modeButtons=[...modeNav?.querySelectorAll('[data-inventory-view]')||[]];
@@ -74,7 +76,8 @@ def main() -> int:
                 commandHeights:commandButtons.map(x=>rect(x).height),
                 modeCount:modeButtons.length,
                 modeHeights:modeButtons.map(x=>rect(x).height),
-                contiguous:!!shell&&commandNav?.parentElement===shell&&modeNav?.parentElement===shell&&commandNav?.nextElementSibling===modeNav,
+                toolbar:modeNav?.parentElement===toolbar&&alerts?.parentElement===toolbar,
+                separateContext:!!shell?.contains(commandNav)&&!document.getElementById('rhwAppNav')?.contains(shell),
                 gap:modeNav&&commandNav?rect(modeNav).top-rect(commandNav).bottom:9999,
                 shellBackground:getComputedStyle(shell||document.body).backgroundColor,
                 modePosition:getComputedStyle(modeNav||document.body).position,
@@ -89,15 +92,24 @@ def main() -> int:
                 overflow:Math.max(document.documentElement.scrollWidth,document.body.scrollWidth)-window.innerWidth,
                 indexes:modeNav?.querySelectorAll('.rhw-subview-index').length||0
               };
+              document.getElementById('commandAlertToggle')?.click();
+              const detailsVisible=visible(document.getElementById('commandAlertDetails'));
+              const action=alertList?.querySelector('button');
+              action?.focus();
+              RHWV4.command.updateOverview();
+              RHWV4.commandCompactPolish.syncAlerts();
+              const stableDisclosure=visible(document.getElementById('commandAlertDetails'))&&document.activeElement===action;
               attention?.click();
               const attentionOn=document.body.dataset.commandFocus||'';
               attention?.click();
               const attentionOff=document.body.dataset.commandFocus||'';
+              document.getElementById('commandAlertDetails')?.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true,cancelable:true}));
+              const escapeClosed=!visible(document.getElementById('commandAlertDetails'))&&document.activeElement?.id==='commandAlertToggle';
               document.getElementById('inventoryManifestTab')?.click();
               const manifestState={statusVisible:visible(status),manifestVisible:visible(manifest),active:document.getElementById('inventoryManifestTab')?.classList.contains('active')||false};
               document.getElementById('inventoryStatusTab')?.click();
               const statusState={statusVisible:visible(status),manifestVisible:visible(manifest),active:document.getElementById('inventoryStatusTab')?.classList.contains('active')||false};
-              return{initial,attentionOn,attentionOff,manifestState,statusState};
+              return{initial,detailsVisible,stableDisclosure,escapeClosed,attentionOn,attentionOff,manifestState,statusState};
             })()""")
 
             initial = result.get("initial", {})
@@ -109,8 +121,8 @@ def main() -> int:
                 raise RuntimeError(f"COMMAND module cards are not compact/touch-safe: {result}")
             if initial.get("modeCount") != 2 or initial.get("indexes") != 2 or any(h < 43.5 or h > 58 for h in initial.get("modeHeights", [])):
                 raise RuntimeError(f"Inventory mode controls are not unified/touch-safe: {result}")
-            if not initial.get("contiguous") or abs(initial.get("gap", 9999)) > 2:
-                raise RuntimeError(f"Inventory mode controls are not contiguous with COMMAND navigation: {result}")
+            if not initial.get("toolbar") or not initial.get("separateContext"):
+                raise RuntimeError(f"Inventory toolbar / scrolling context is misplaced: {result}")
             if initial.get("modePosition") == "sticky" or initial.get("shellBackground") in {"rgba(0, 0, 0, 0)", "transparent"}:
                 raise RuntimeError(f"COMMAND stack can expose background content: {result}")
             if initial.get("allVisible") or not initial.get("allHidden"):
@@ -120,6 +132,10 @@ def main() -> int:
             if initial.get("alertCount", 0) > 0 and (not initial.get("alertVisible") or initial.get("alertHeight", 9999) > 50 or initial.get("alertListVisible")):
                 raise RuntimeError(f"Active COMMAND ALERTS are not compact/collapsed: {result}")
             if initial.get("attentionVisible"):
+                raise RuntimeError(f"Duplicate attention control visible outside disclosure: {result}")
+            if initial.get("alertCount", 0) > 0:
+                if not result.get("detailsVisible") or not result.get("stableDisclosure") or not result.get("escapeClosed"):
+                    raise RuntimeError(f"Alert disclosure / focus / refresh regressed: {result}")
                 if result.get("attentionOn") != "attention" or result.get("attentionOff") != "all":
                     raise RuntimeError(f"NEEDS ATTENTION is not a reversible single toggle: {result}")
             if result.get("manifestState") != {"statusVisible": False, "manifestVisible": True, "active": True}:
@@ -129,6 +145,57 @@ def main() -> int:
             if initial.get("overflow", 0) > 2:
                 raise RuntimeError(f"Compact COMMAND layout has horizontal overflow: {result}")
 
+            # Real CSS layout at phone, tablet and desktop sizes. A long Export
+            # list must not stretch unrelated cards; all categories stay reachable.
+            base.ev(cdp, """(()=>{
+              document.querySelector('.uplink-details')?.removeAttribute('open');
+              const names=['Basic Alloy','Consumer Goods','Food Rations'];
+              maintenanceList.innerHTML=names.map(name=>renderOverviewRow({state:'ok',role:'maintenance',name,quantityValue:123456,detail:'FACILITY STABLE'})).join('');
+              exportList.innerHTML=Array.from({length:5},(_,i)=>renderOverviewRow({state:'ok',role:'export',name:'Export component '+i,quantityValue:23456,detail:'EXPORT READY'})).join('');
+              feedstockList.innerHTML=names.map(name=>renderOverviewRow({state:'low',role:'procurement',name,quantityValue:1000,detail:'4 CYCLES AVAILABLE'})).join('');
+              return true;
+            })()""")
+            layout_failures=[]
+            for width in [360, 390, 430, 820, 1024, 1366, 1920]:
+                cdp.call('Emulation.setDeviceMetricsOverride', {'width':width,'height':900,'deviceScaleFactor':1,'mobile':width<760})
+                base.ev(cdp, "(()=>{scrollTo({top:0,behavior:'instant'});return true;})()")
+                time.sleep(.12)
+                geometry=base.ev(cdp, """(()=>{
+                  const r=el=>{const x=el.getBoundingClientRect();return{top:x.top,bottom:x.bottom,left:x.left,right:x.right,height:x.height,width:x.width}};
+                  const cards=[...document.querySelectorAll('#inventoryStatusPanel .alert-card')];
+                  return{overflow:document.documentElement.scrollWidth-innerWidth,cards:cards.map(r),
+                    rows:cards.map(c=>c.querySelector('ul')?.id),
+                    scrollDeck:document.querySelector('.summary-grid').scrollWidth-document.querySelector('.summary-grid').clientWidth,
+                    navHeight:r(rhwAppNav).height,toolbar:r(commandControlDeck),contextBottom:r(appSecondaryNav).bottom,
+                    labels:[...document.querySelectorAll('.app-tabs [data-workspace]')].map(b=>({text:b.textContent.trim(),button:r(b),label:r(b.querySelector('span')),font:getComputedStyle(b.querySelector('span')).font})),
+                    labelsFit:[...document.querySelectorAll('.app-tabs [data-workspace]')].every(b=>{const label=b.querySelector('span'),x=r(label),y=r(b);return x.left>=y.left+1&&x.right<=y.right-1;}),
+                    quantity:parseFloat(getComputedStyle(document.querySelector('.overview-row-qty')).fontSize),
+                    kpi:parseFloat(getComputedStyle(document.querySelector('.base-telemetry-stat strong')).fontSize)};
+                })()""")
+                if geometry['overflow']>2 or geometry['scrollDeck']>2 or len(geometry['cards'])!=5 or not geometry['labelsFit']:
+                    layout_failures.append(f'Inventory overflow at {width}px: {geometry}')
+                if geometry['rows']!=['maintenanceList','exportList','feedstockList','byproductList','confiscatedList']:
+                    layout_failures.append(f'Inventory reading order at {width}px: {geometry}')
+                cards=geometry['cards']
+                if width>=1200:
+                    if max(c['top'] for c in cards[:3])-min(c['top'] for c in cards[:3])>2 or cards[0]['height']>=cards[1]['height'] or cards[3]['top']<max(c['bottom'] for c in cards[:3])-2:
+                        layout_failures.append(f'Inventory row sizing at {width}px: {geometry}')
+                    if cards[0]['top']>455 or geometry['quantity']<19 or geometry['kpi']<20:
+                        layout_failures.append(f'Desktop HUD density at {width}px: {geometry}')
+                if width<760 and any(cards[i+1]['top']<cards[i]['bottom']-2 for i in range(4)):
+                    layout_failures.append(f'Mobile card order at {width}px: {geometry}')
+                base.ev(cdp, "(()=>{scrollTo({top:700,behavior:'instant'});return true;})()")
+                time.sleep(.15)
+                sticky=base.ev(cdp, """(()=>{const r=rhwAppNav.getBoundingClientRect();return{top:r.top,height:r.height,
+                  context:appSecondaryNav.getBoundingClientRect().bottom,offset:parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--rhw-sticky-nav-offset')),
+                  scrollY:scrollY,toolsInside:rhwAppNav.contains(rhwFocusToolsBtn)}})()""")
+                if sticky['height']>54 or sticky['toolsInside'] or abs(sticky['offset']-sticky['height']-12)>2 or (sticky['scrollY']>400 and abs(sticky['top'])>2) or abs(sticky['context']+sticky['scrollY']-geometry['contextBottom'])>2:
+                    layout_failures.append(f'Primary-only sticky navigation at {width}px: {sticky}')
+                print(f'HUD {width}px: cards start at {cards[0]["top"]:.0f}px; sticky navigation {sticky["height"]:.0f}px')
+
+            if layout_failures:
+                raise RuntimeError("\n".join(layout_failures))
+
             runtime_failures = [
                 failure for failure in cdp.take_runtime_failures()
                 if not ("TypeError: Failed to fetch" in failure and "fetchWithTimeout" in failure)
@@ -136,7 +203,7 @@ def main() -> int:
             if runtime_failures:
                 raise RuntimeError(f"Browser console/runtime errors: {runtime_failures}")
 
-            print("RHW compact COMMAND smoke passed: 390px module stack is compact, contiguous, alert-aware and mode switching remains intact")
+            print("RHW compact COMMAND smoke passed: toolbar, alerts, keyboard focus, card sizing and primary-only sticky navigation at 7 widths")
             return 0
         finally:
             try:

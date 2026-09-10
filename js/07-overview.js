@@ -23,8 +23,8 @@ function updateDataFreshnessIndicators() {
   });
 }
 
-function telemetryPlaceholderRow(message, state = 'low') {
-  return `<li class="telemetry-placeholder"><span><strong>${escapeHTML(message)}</strong><small>NO VERIFIED LOCAL INVENTORY</small></span><span class="pill ${state}">${state === 'critical' ? 'FAILED' : 'PENDING'}</span></li>`;
+function telemetryPlaceholderRow() {
+  return '<li class="telemetry-placeholder"><span>STOCK UNKNOWN<small>Awaiting verified inventory</small></span><strong aria-label="Stock unknown">—</strong></li>';
 }
 
 function renderOverviewTelemetryState(message, state = 'low') {

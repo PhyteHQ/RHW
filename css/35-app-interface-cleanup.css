@@ -962,7 +962,7 @@ html.rhw-focus-pass .base-telemetry-bar { margin-top: 12px; padding: 9px 0 0; ma
 html.rhw-focus-pass .base-telemetry-stat { padding: 0 14px; }
 html.rhw-focus-pass .base-telemetry-stat:first-child { padding-left: 0; }
 html.rhw-focus-pass .base-telemetry-stat small { color: var(--muted); font: 12px/1.3 var(--font-main); margin: 0 0 3px; letter-spacing: .035em; }
-html.rhw-focus-pass .base-telemetry-stat strong { font: 16px/1.3 var(--font-tech); font-variant-numeric: tabular-nums; letter-spacing: 0; }
+html.rhw-focus-pass .base-telemetry-stat strong { font: 22px/1.3 var(--font-tech); font-variant-numeric: tabular-nums; letter-spacing: 0; }
 html.rhw-focus-pass .uplink-panel { padding: 12px; gap: 0 10px; border: 1px solid #4f4f4f; border-top: 2px solid var(--warn); background: #161616d9; clip-path: none; box-shadow: inset 0 1px #ffffff08; }
 html.rhw-focus-pass .uplink-panel.online { border-top-color: var(--good); }
 html.rhw-focus-pass .uplink-panel.offline { border-top-color: var(--danger); }
@@ -1274,6 +1274,96 @@ html.rhw-focus-pass.eco .header-watermark, html.rhw-focus-pass.eco .crest-frame:
   html.rhw-focus-pass .market-card .supplier-commodity-row:not(.market-empty-row) { grid-template-columns: minmax(0,1fr) minmax(0,1fr); }
   html.rhw-focus-pass .market-card .supplier-commodity-name { grid-column: 1 / -1; }
   html.rhw-focus-pass .market-card .supplier-commodity-metric { display: flex; align-items: baseline; gap: 8px; justify-content: flex-start; text-align: left; }
+}
+/* HUD flow: one primary navigation row, one context row, one content toolbar. */
+html.rhw-focus-pass { scroll-padding-top: var(--rhw-sticky-nav-offset,62px); }
+html.rhw-focus-pass .rhw-app-nav { position: sticky !important; top: 0 !important; z-index: 110; }
+html.rhw-focus-pass .app-nav-inner { display: block; min-height: 48px; padding-block: 0; }
+html.rhw-focus-pass .app-navigation-cluster { margin: 0; border-width: 0 1px; box-shadow: none; }
+html.rhw-focus-pass .app-tabs { position: static; margin: 0; padding: 0; gap: 0; min-height: 48px; width: 100%; max-width: none; border-radius: 0; box-shadow: none; }
+html.rhw-focus-pass .app-tabs button[data-workspace] span { white-space: nowrap; }
+html.rhw-focus-pass .app-secondary-nav { position: relative; z-index: 10; display: grid; grid-template-columns: minmax(0,1fr) auto; align-items: start; gap: 12px; width: min(100%,var(--content-max)); margin: 0 auto; padding: 4px var(--layout-gutter); background: var(--bg); }
+html.rhw-focus-pass .app-secondary-nav .app-nav-brand { position: static; grid-column: 2; grid-row: 1; min-height: 44px; padding: 0; margin: 0; display: flex; }
+html.rhw-focus-pass #rhwFocusToolsBtn { min-height: 44px; }
+html.rhw-focus-pass .app-secondary-nav .app-context-nav-slot { grid-column: 1; grid-row: 1; min-height: 0; padding: 0; border: 0; background: transparent; box-shadow: none; position: static; }
+html.rhw-focus-pass .app-secondary-nav .workspace-subnav { margin: 0; border: 0; background: transparent; box-shadow: none; }
+html.rhw-focus-pass #workspaceCommand main { padding-top: 6px; gap: 0; }
+html.rhw-focus-pass #commandControlDeck { display: grid; grid-template-columns: minmax(200px,1fr) auto minmax(260px,1fr); gap: 10px; align-items: start; margin: 0 0 12px; padding: 0; }
+html.rhw-focus-pass body[data-command-node="inventory"] #commandControlDeck { grid-template-columns: minmax(280px,.85fr) minmax(230px,1fr) minmax(280px,1.1fr); }
+html.rhw-focus-pass body[data-command-node="inventory"] #commandControlDeck:has(#commandGlobalAlerts[hidden]) { grid-template-columns: minmax(280px,.85fr) minmax(230px,2.1fr); }
+html.rhw-focus-pass #commandControlDeck .inventory-view-nav { position: relative; top: auto; display: grid; grid-template-columns: 1fr 1fr; gap: 0; padding: 0; border: 1px solid var(--rhw-border); border-radius: 2px; background: #191919; }
+html.rhw-focus-pass body:not([data-command-node="inventory"]) #commandControlDeck .inventory-view-nav { display: none; }
+html.rhw-focus-pass #commandControlDeck .inventory-view-nav button { display: flex; align-items: center; justify-content: center; min-width: 0; height: 44px; padding: 8px !important; text-align: center; }
+html.rhw-focus-pass #commandControlDeck .inventory-view-nav button.active { background: #302a20; box-shadow: none; }
+html.rhw-focus-pass .command-context-action { height: 46px; max-width: 240px; grid-column: auto; }
+html.rhw-focus-pass #commandGlobalAlerts { position: relative; min-width: 0; margin: 0; border-radius: 2px; overflow: visible; background: #1b1917; box-shadow: none; }
+html.rhw-focus-pass #commandGlobalAlerts .command-alert-toggle { min-height: 44px; height: 44px; padding: 4px 10px; }
+html.rhw-focus-pass #commandGlobalAlerts .command-alert-copy { min-width: 0; gap: 0; }
+html.rhw-focus-pass #commandGlobalAlerts .command-alert-copy strong { font: 600 12px/1.35 var(--font-main); letter-spacing: .06em; }
+html.rhw-focus-pass #commandGlobalAlerts .command-alert-copy small { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--muted); font: 12px/1.4 var(--font-main); }
+html.rhw-focus-pass #commandGlobalAlerts .command-alert-meta { flex-shrink: 0; font: 12px var(--font-main); white-space: nowrap; }
+html.rhw-focus-pass #v40PriorityCount { font: 600 12px var(--font-main); letter-spacing: 0; }
+html.rhw-focus-pass #commandGlobalAlerts[data-filter-active] .command-alert-copy strong::after { content: ' · FILTER ON'; color: var(--gold); }
+html.rhw-focus-pass #commandAlertDetails { position: absolute; top: calc(100% + 7px); right: -1px; width: min(620px,calc(100vw - 40px)); max-height: min(580px,70vh); overflow: auto; padding: 10px; border: 1px solid var(--rhw-border); border-top: 2px solid var(--alert-state); background: #181817; box-shadow: 0 16px 35px #000a; }
+html.rhw-focus-pass #commandGlobalAlerts:not(.expanded) #commandAlertDetails { display: none; }
+html.rhw-focus-pass #commandAlertDetails .command-focus-modes { margin: 0 0 8px; }
+html.rhw-focus-pass #commandAttentionCount { display: none; }
+html.rhw-focus-pass #commandAlertDetails .command-priority-list { padding: 0; gap: 0; }
+html.rhw-focus-pass #commandAlertDetails .command-priority-item { min-height: 58px; border: 0; border-bottom: 1px solid #42423e; border-radius: 0; background: transparent; padding: 10px 4px; }
+html.rhw-focus-pass #commandAlertDetails .command-priority-item:hover { background: #252522; }
+html.rhw-focus-pass #commandAlertDetails .command-priority-item strong { font: 600 13px/1.4 var(--font-main); }
+html.rhw-focus-pass #commandAlertDetails .command-priority-item small { margin-top: 3px; white-space: normal; }
+html.rhw-focus-pass #commandAlertDetails .priority-state { font: 11px/1.4 var(--font-main); }
+html.rhw-focus-pass #commandGlobalAlerts[hidden] { display: none; }
+html.rhw-focus-pass #inventoryStatusPanel .summary-grid { display: grid; grid-template-columns: repeat(6,minmax(0,1fr)); align-items: start; gap: 16px; padding: 0; margin: 0; overflow: visible; scroll-snap-type: none; }
+html.rhw-focus-pass #inventoryStatusPanel .alert-card { grid-column: span 2; width: auto; max-width: none; min-width: 0; min-height: 0; align-self: start; padding: 0; backdrop-filter: none; }
+html.rhw-focus-pass #inventoryStatusPanel :is(.waste-panel,.confiscated-panel) { grid-column: span 3; }
+html.rhw-focus-pass #inventoryStatusPanel .alert-title { padding: 12px 14px; margin: 0; min-height: 54px; gap: 8px; }
+html.rhw-focus-pass #inventoryStatusPanel .alert-title .section-index { border: 0; padding: 0; }
+html.rhw-focus-pass #inventoryStatusPanel .section-title-meta { flex-wrap: wrap; }
+html.rhw-focus-pass #inventoryStatusPanel .alert-list { gap: 0; padding: 0 14px; flex: initial; }
+html.rhw-focus-pass #inventoryStatusPanel .alert-list li { position: relative; min-width: 0; padding: 13px 0; gap: 12px; border-left: 0; border-bottom: 1px solid #3b3b37; background: transparent; }
+html.rhw-focus-pass #inventoryStatusPanel .alert-list li:last-child { border-bottom: 0; }
+html.rhw-focus-pass #inventoryStatusPanel .alert-list li > span > strong { font: 600 14px/1.4 var(--font-main); }
+html.rhw-focus-pass #inventoryStatusPanel .overview-row-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+html.rhw-focus-pass #inventoryStatusPanel .overview-row-qty { font: 20px/1.2 var(--font-tech); font-variant-numeric: tabular-nums; letter-spacing: -.025em; }
+html.rhw-focus-pass #inventoryStatusPanel .telemetry-placeholder { border: 0 !important; color: var(--muted); font: 13px/1.5 var(--font-main); }
+html.rhw-focus-pass #inventoryStatusPanel .telemetry-placeholder strong { color: var(--muted); font: 22px var(--font-tech); }
+html.rhw-focus-pass .rhw-tools-install-slot { padding: 14px 20px; border-top: 1px solid var(--rhw-border); }
+html.rhw-focus-pass .rhw-tools-install-slot:has([hidden]), html.rhw-focus-pass .rhw-tools-install-slot:empty { display: none; }
+html.rhw-focus-pass #rhwToolsInstallSlot #rhwPwaInstallBtn { width: 100%; min-height: 48px; }
+html.rhw-focus-pass #rhwToolsInstallSlot #rhwPwaInstallBtn small { display: block !important; margin-top: 4px; font: 12px var(--font-main); color: var(--muted); }
+@media (min-width: 1001px) {
+  html.rhw-focus-pass .command-header { padding-block: 12px; }
+}
+@media (min-width: 761px) and (max-width: 1100px) {
+  html.rhw-focus-pass .app-tabs button[data-workspace] span { font-size: 20px; letter-spacing: .03em; }
+  html.rhw-focus-pass #commandControlDeck,
+  html.rhw-focus-pass body[data-command-node="inventory"] #commandControlDeck,
+  html.rhw-focus-pass body[data-command-node="inventory"] #commandControlDeck:has(#commandGlobalAlerts[hidden]) { grid-template-columns: minmax(0,1fr) minmax(0,1fr); }
+  html.rhw-focus-pass #commandGlobalAlerts { grid-column: 1 / -1; }
+  html.rhw-focus-pass #inventoryStatusPanel .summary-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  html.rhw-focus-pass #inventoryStatusPanel .alert-card { grid-column: auto; }
+  html.rhw-focus-pass #inventoryStatusPanel .feedstock-panel { grid-column: 1 / -1; }
+}
+@media (max-width: 760px) {
+  html.rhw-focus-pass { --rhw-mobile-dock-height: 0px; }
+  html.rhw-focus-pass .app-tabs button[data-workspace] span { font: 600 12px/1.3 var(--font-main); letter-spacing: 0; }
+  html.rhw-focus-pass body { padding-bottom: calc(16px + env(safe-area-inset-bottom,0px)); }
+  html.rhw-focus-pass .app-secondary-nav { gap: 8px; }
+  html.rhw-focus-pass .app-secondary-nav #commandNodeNav button { gap: 4px; }
+  html.rhw-focus-pass .app-secondary-nav .command-module-index { display: none; }
+  html.rhw-focus-pass .app-secondary-nav #rhwFocusToolsBtn { padding-inline: 10px; }
+  html.rhw-focus-pass #commandControlDeck,
+  html.rhw-focus-pass body[data-command-node="inventory"] #commandControlDeck,
+  html.rhw-focus-pass body[data-command-node="inventory"] #commandControlDeck:has(#commandGlobalAlerts[hidden]) { grid-template-columns: minmax(0,1fr); gap: 8px; }
+  html.rhw-focus-pass #commandGlobalAlerts { grid-column: 1; }
+  html.rhw-focus-pass #commandAlertDetails { position: static; width: 100%; max-height: 60vh; margin-top: 6px; border: 0; box-shadow: none; }
+  html.rhw-focus-pass #commandControlDeck .command-context-action { grid-column: 1; max-width: none; }
+  html.rhw-focus-pass #inventoryStatusPanel .summary-grid { grid-template-columns: minmax(0,1fr); }
+  html.rhw-focus-pass #inventoryStatusPanel .alert-card { grid-column: 1; flex: initial; }
+  html.rhw-focus-pass .command-top-button { bottom: calc(16px + env(safe-area-inset-bottom,0px)); }
+  html.rhw-focus-pass .base-telemetry-stat strong { font-size: 16px; }
 }
 @media (prefers-reduced-motion: reduce) {
   html.rhw-focus-pass { scroll-behavior: auto; }

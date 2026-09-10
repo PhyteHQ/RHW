@@ -70,9 +70,10 @@ def main() -> int:
               const title=document.getElementById('marketScanTitle');
               const price=market.querySelector('[data-market-sort="price"]');
               const stock=market.querySelector('[data-market-sort="stock"]');
-              const dock=document.querySelector('.app-tabs');
+              const dock=document.getElementById('rhwAppNav');
               const root=document.scrollingElement||document.documentElement;
-              const dockTop=rect(dock).top<9999?rect(dock).top:window.innerHeight;
+              const dockTop=window.innerHeight;
+              const visibleTop=rect(dock).height+8;
               const initial={
                 view:document.body.dataset.logisticsView||'',
                 navVisible:visible(nav),navRect:rect(nav),
@@ -81,7 +82,7 @@ def main() -> int:
                 titleVisible:visible(title),titleRect:rect(title),
                 priceVisible:visible(price),priceRect:rect(price),
                 stockVisible:visible(stock),stockRect:rect(stock),
-                dockTop,
+                dockTop,visibleTop,
                 marketSelected:marketTab?.getAttribute('aria-selected')||'',
                 materialsSelected:materialsTab?.getAttribute('aria-selected')||'',
                 tabHeights:[marketTab,materialsTab].map(x=>x?.getBoundingClientRect().height||0),
@@ -121,11 +122,11 @@ def main() -> int:
             title_rect = initial.get("titleRect", {})
             price_rect = initial.get("priceRect", {})
             stock_rect = initial.get("stockRect", {})
-            if (nav_rect.get("top", 9999) < 0 or nav_rect.get("bottom", 9999) > dock_top - 8
-                    or not initial.get("titleVisible") or title_rect.get("top", 9999) < 0 or title_rect.get("bottom", 9999) > dock_top - 8
-                    or not initial.get("priceVisible") or price_rect.get("top", 9999) < 0 or price_rect.get("bottom", 9999) > dock_top - 8
-                    or not initial.get("stockVisible") or stock_rect.get("top", 9999) < 0 or stock_rect.get("bottom", 9999) > dock_top - 8):
-                raise RuntimeError(f"Ship Components title/sort controls are not fully usable above the mobile dock: {result}")
+            if (nav_rect.get("top", 9999) < initial["visibleTop"] or nav_rect.get("bottom", 9999) > dock_top - 8
+                    or not initial.get("titleVisible") or title_rect.get("top", 9999) < initial["visibleTop"] or title_rect.get("bottom", 9999) > dock_top - 8
+                    or not initial.get("priceVisible") or price_rect.get("top", 9999) < initial["visibleTop"] or price_rect.get("bottom", 9999) > dock_top - 8
+                    or not initial.get("stockVisible") or stock_rect.get("top", 9999) < initial["visibleTop"] or stock_rect.get("bottom", 9999) > dock_top - 8):
+                raise RuntimeError(f"Ship Components title/sort controls are not fully usable between the primary navigation and viewport edge: {result}")
             if initial.get("overflow", 0) > 2:
                 raise RuntimeError(f"Logistics mobile horizontal overflow: {result}")
 
@@ -166,7 +167,7 @@ def main() -> int:
                     time.sleep(.95)
                     geometry = base.ev(cdp, f"""(()=>{{
                       const section=document.getElementById('{section_id}');
-                      const dock=document.querySelector('.app-tabs').getBoundingClientRect();
+                      const dock=document.getElementById('rhwAppNav').getBoundingClientRect();
                       const controls=[document.getElementById('rhwLogisticsViewNav'),section.querySelector('.logistics-subhead-title'),...section.querySelectorAll('.market-sort-button')];
                       const card=section.querySelector('.market-card');
                       const toggle=card.querySelector('.market-mobile-toggle');
@@ -181,13 +182,13 @@ def main() -> int:
                       return {{
                         controls:controls.map(c=>{{const r=c.getBoundingClientRect();return {{top:r.top,bottom:r.bottom,height:r.height,width:r.width}};}}),
                         overflow:Math.max(document.documentElement.scrollWidth,document.body.scrollWidth)-innerWidth,
-                        dockTop:dock.top,collapsed,expanded,independent:beforeOther===afterOther,first,
+                        dockTop:innerHeight,visibleTop:dock.height+8,collapsed,expanded,independent:beforeOther===afterOther,first,
                         inputsFit:inputLines.every(line=>{{const r=line.getBoundingClientRect();return r.left>=0&&r.right<=innerWidth&&line.scrollWidth<=line.clientWidth+1;}}),
                         inputNames:[...new Set(inputLines.map(line=>line.dataset.marketFeedstock))],
                         selected:section.querySelector('[data-market-sort="stock"]').getAttribute('aria-pressed')
                       }};
                     }})()""")
-                    if geometry['overflow'] > 2 or any(c['top'] < 0 or c['bottom'] > geometry['dockTop'] - 8 or c['width'] <= 0 for c in geometry['controls']):
+                    if geometry['overflow'] > 2 or any(c['top'] < geometry['visibleTop'] or c['bottom'] > geometry['dockTop'] - 8 or c['width'] <= 0 for c in geometry['controls']):
                         raise RuntimeError(f"Logistics {view} controls at {width}px are obscured: {geometry}")
                     if any(c['height'] < 43.5 for c in geometry['controls'][2:]):
                         raise RuntimeError(f"Logistics {view} sort touch targets at {width}px are too small: {geometry}")

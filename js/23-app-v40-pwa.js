@@ -22,7 +22,7 @@
 
   function mountInstallControl() {
     if (document.getElementById('rhwPwaInstallBtn')) return true;
-    const brand = document.querySelector('.app-nav-brand');
+    const brand = document.getElementById('rhwToolsInstallSlot') || document.querySelector('.app-nav-brand');
     if (!brand) return false;
     brand.insertAdjacentHTML('beforeend', '<button id="rhwPwaInstallBtn" class="rhw-pwa-install" type="button"><span>INSTALL RHW</span><small>PHONE / TABLET APP</small></button>');
     document.getElementById('rhwPwaInstallBtn')?.addEventListener('click', showInstallHelp);
@@ -125,6 +125,7 @@
 
   function showInstallHelp() {
     if (isStandalone()) return;
+    window.RHWV4?.focusPass?.closeTools();
     if (!state.installPrompt) return showManualInstructions();
     showPanel({
       kicker: 'RHW COMMAND APP', title: 'INSTALL ON THIS DEVICE',

@@ -50,6 +50,18 @@
       slot.setAttribute('aria-label', 'Active workspace navigation');
       cluster.appendChild(slot);
     }
+    // Context and utilities scroll away; only the four main tabs stay sticky.
+    let secondary = document.getElementById('appSecondaryNav');
+    if (!secondary) {
+      secondary = document.createElement('div');
+      secondary.id = 'appSecondaryNav';
+      secondary.className = 'app-secondary-nav';
+      rootNav.insertAdjacentElement('afterend', secondary);
+    }
+    const slot = document.getElementById('appContextNavSlot');
+    const brand = document.querySelector('.app-nav-brand');
+    if (slot && slot.parentElement !== secondary) secondary.prepend(slot);
+    if (brand && brand.parentElement !== secondary) secondary.appendChild(brand);
     return true;
   }
 
