@@ -244,25 +244,7 @@
     if (document.getElementById(STYLE_ID)) return;
     const style = document.createElement('style');
     style.id = STYLE_ID;
-    style.textContent = `
-      .uplink-grid>.uplink-clock-stat{grid-column:1;grid-row:1;border-left:0!important;padding-left:0!important}
-      .uplink-grid>.uplink-latest-stat{grid-column:2;grid-row:1}
-      .uplink-grid>.uplink-next-stat{grid-column:1;grid-row:2}
-      .uplink-grid>.uplink-refresh-stat{grid-column:2;grid-row:2}
-      .uplink-grid>.uplink-actions{grid-column:1/-1;grid-row:3}
-      .uplink-clock-stat .uplink-label{color:rgba(212,175,55,.72)}
-      .uplink-clock-stat .header-clock{color:#e7c963;text-shadow:0 0 10px rgba(212,175,55,.18)}
-      .ops-flow-cost.v401-unit-cost-flow>strong{color:#eef2ef}
-      .ops-flow-cost.v401-unit-cost-flow>span{color:#9fb6a7;font-weight:700}
-      .ops-flow-cost.v401-unit-cost-flow>div b{font-size:10px;color:rgba(226,231,228,.84)}
-      .ops-flow-cost.v401-unit-cost-flow>div em{color:rgba(164,173,168,.66)}
-      @media(max-width:760px){
-        .uplink-grid>.uplink-clock-stat{grid-column:1;grid-row:1}
-        .uplink-grid>.uplink-latest-stat{grid-column:2;grid-row:1}
-        .uplink-grid>.uplink-next-stat{grid-column:1;grid-row:2}
-        .uplink-grid>.uplink-refresh-stat{grid-column:2;grid-row:2}
-      }
-    `;
+    style.dataset.stylesheet = '35-app-interface-cleanup.css';
     document.head.appendChild(style);
   }
 

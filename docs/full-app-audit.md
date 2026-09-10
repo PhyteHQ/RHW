@@ -1,20 +1,21 @@
 # RHW Full App Audit
 
-PR11 adds a repeatable, content-free quality gate to **SYS CHECK**. Opening the panel runs the audit once per session; **RUN FULL AUDIT** can repeat it after a browser, device or data-state change.
+PR11 adds a repeatable, content-free quality gate to **TOOLS → SYSTEM + DATA**. Opening the panel runs the audit once per session; **RUN FULL AUDIT** can repeat it after a browser, device or data-state change.
 
 ## Route matrix
 
-The audit verifies all 11 destinations without reading their user-created content:
+The audit verifies all 11 mounted destinations (including the internal legacy Overview panel) without reading their user-created content:
 
 - Command: Overview, Inventory, Shipyard, Production and Logistics.
-- Operations: Item Calculator and Production Orders.
+- Operations: Item Calculator.
+- Price Check: Fixed routes.
 - Comms: Forum, Newswire, Drafts and Senders.
 
 ## Checks
 
 The browser audit covers route/UI state synchronization, required module contracts, unique DOM IDs and ARIA references, readable control names, modal focus containment, horizontal viewport fit, mobile touch sizing, reduced-motion behavior, local storage readback, PWA install support and catalog/Discovery count agreement.
 
-Synthetic markers verify that the Forum composer, Newswire Markdown + Forum channel and Production Order Forum report use their shared builders correctly. No saved draft, real message, sender profile, material price or inventory value is copied into the audit report.
+Synthetic markers verify that the Forum composer, Newswire Markdown + Forum channel use their shared builders correctly. Price Check is checked for its fixed-route interface and required data APIs. No saved draft, real message, sender profile, material price or inventory value is copied into the audit report.
 
 ## Accessibility repairs included in PR11
 

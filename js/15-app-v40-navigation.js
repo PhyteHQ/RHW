@@ -162,13 +162,15 @@
     const snapshot = window.telemetrySnapshot();
     const verified = snapshot.available;
     if (!verified) {
-      write('v40OverviewInventory', 'AWAITING TELEMETRY');
+      const failed = snapshot.phase === 'failed' || snapshot.phase === 'unavailable' || Boolean(snapshot.error) || /FAILED|UNAVAILABLE|ERROR/i.test(snapshot.label || '');
+      const label = failed ? 'DATA UNAVAILABLE' : 'CONNECTING';
+      write('v40OverviewInventory', label);
       write('v40OverviewInventoryMeta', 'NO VERIFIED LOCAL INVENTORY');
-      write('v40OverviewShipyard', 'AWAITING UPLINK');
+      write('v40OverviewShipyard', label);
       write('v40OverviewShipyardMeta', 'NO VERIFIED YARD INVENTORY');
-      write('v40OverviewProduction', 'SCANNING');
+      write('v40OverviewProduction', label);
       write('v40OverviewProductionMeta', 'AWAITING VERIFIED PRODUCTION INPUTS');
-      write('v40OverviewLogistics', 'SAT-LINK SCANNING');
+      write('v40OverviewLogistics', label);
       write('v40OverviewLogisticsMeta', 'AWAITING VERIFIED REMOTE STATUS');
       ['v40OverviewInventory', 'v40OverviewShipyard', 'v40OverviewProduction', 'v40OverviewLogistics'].forEach(id => setOverviewState(id, 'waiting'));
       renderPriorities();
@@ -304,5 +306,16 @@
     }, 2000);
   }
 
-  app.command = { init, activate, updateOverview, activateInventoryView, nodes: NODES };
+  function contextTarget(node) {
+    if (!window.telemetrySnapshot().available) return null;
+    if (node === 'shipyard') return shipyardAnalysis()?.bottleneck || null;
+    if (node === 'production') {
+      const analysis = productionAnalysis().find(entry => entry.cardState !== 'ok');
+      const material = analysis?.bottleneck;
+      return material ? { name: material.displayName || material.name } : null;
+    }
+    return null;
+  }
+
+  app.command = { contextTarget, init, activate, updateOverview, activateInventoryView, nodes: NODES };
 })();

@@ -70,11 +70,11 @@ memory.set(keys.productionOrders, [{ id: 'order-a', quantity: 1, updatedAt: 20 }
 memory.set(keys.activeWorkspace, 'command');
 
 const exported = app.storage.exportPayload();
-assert.equal(exported.version, 4, 'New private backups must use format V4');
+assert.equal(exported.version, 5, 'New private backups must use format V5');
 exported.current.subject = 'DETACHED EXPORT MUTATION';
 assert.equal(app.state.comms.subject, 'KEEP LOCAL CURRENT', 'Exported backup must be detached from live app state');
 const inspection = app.storage.inspectPayload(exported);
-assert.equal(inspection.version, 4);
+assert.equal(inspection.version, 5);
 assert.ok(inspection.containsPrivateContent, 'Inspector must flag private authoring content');
 assert.ok(inspection.availableSections.includes('drafts'));
 assert.ok(inspection.availableSections.includes('productionOrders'));

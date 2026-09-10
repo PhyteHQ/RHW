@@ -40,57 +40,7 @@
     if (document.getElementById('rhwV40ReleasePolishStyle')) return;
     const style = document.createElement('style');
     style.id = 'rhwV40ReleasePolishStyle';
-    style.textContent = `
-      .comms-panel-head-actions{display:flex;align-items:center;justify-content:flex-end;gap:8px;min-width:0}
-      .comms-preview-copy{min-height:30px;padding:5px 10px;border:1px solid rgba(212,175,55,.32);background:rgba(212,175,55,.075);color:#e7c963;clip-path:none;box-shadow:none;font-family:var(--font-tech);font-size:8px;font-weight:700;letter-spacing:.09em;white-space:nowrap}
-      .comms-preview-copy:hover,.comms-preview-copy:focus-visible{background:rgba(212,175,55,.14);color:#f3d77b}
-      .forum-preview-quote{margin:12px 0;padding:10px 12px;border-left:2px solid var(--comms-accent,#d4af37);background:rgba(255,255,255,.025);color:rgba(225,228,226,.82)}
-      .forum-preview-spoiler{margin:12px 0;border:1px solid rgba(125,167,234,.22);background:rgba(125,167,234,.035)}
-      .forum-preview-spoiler summary{padding:8px 10px;cursor:pointer;color:#9fb6d9;font-family:var(--font-tech);font-size:10px;font-weight:700;letter-spacing:.08em}
-      .forum-preview-spoiler>div{padding:10px 12px;border-top:1px solid rgba(125,167,234,.14)}
-      .forum-preview-blur{display:inline-block;filter:blur(5px);transition:filter .16s ease;cursor:help;user-select:none}
-      .forum-preview-blur:hover,.forum-preview-blur:focus{filter:none;user-select:text}
-      .forum-preview-bb-list{margin:10px 0;padding-left:22px}
-      .comms-editor-toolbar [data-rhw-format]{border-color:rgba(125,167,234,.18)}
-      @media (min-width:1200px){
-        .app-active-node{font-size:8px!important}
-        .workspace-subnav-label{font-size:9px!important}
-        .workspace-subnav button span{font-size:11px!important}
-        .workspace-subnav button small{font-size:8px!important}
-        .command-overview-heading>div:first-child>span{font-size:10px!important}
-        .command-overview-heading p,.command-overview-live{font-size:9px!important}
-        .command-overview-card small,.command-overview-card span{font-size:9px!important}
-        [data-command-panel="shipyard"] .section-kicker,[data-command-panel="shipyard"] .shipyard-control-subline{font-size:9px!important}
-        [data-command-panel="shipyard"] .shipyard-summary-badge,[data-command-panel="shipyard"] .shipyard-panel-state{font-size:8.5px!important}
-        [data-command-panel="shipyard"] .shipyard-section-title{font-size:10px!important}
-        [data-command-panel="shipyard"] .shipyard-component-head,[data-command-panel="shipyard"] .shipyard-component-row{font-size:9px!important}
-        [data-command-panel="shipyard"] .hull-registry-name small,[data-command-panel="shipyard"] .hull-registry-metric small{font-size:8px!important}
-        [data-command-panel="shipyard"] .shipyard-plan-button{font-size:8px!important}
-        .comms-field>span{font-size:9px!important}
-        .comms-field small{font-size:8px!important;line-height:1.4}
-        .comms-panel-head strong{font-size:11px!important}
-        .comms-panel-head small{font-size:8px!important}
-        .comms-document-control-head small{font-size:8px!important}
-        .comms-document-control-head strong{font-size:12px!important}
-        .comms-editor-toolbar button{font-size:8px!important;min-height:30px}
-        .bbcode-hint,.sender-registry-intro{font-size:8px!important;line-height:1.45}
-        .ops-panel-head strong{font-size:11px!important}
-        .ops-panel-head small{font-size:8.5px!important}
-        .ops-recipe-meta small{font-size:8px!important}
-        .ops-material-table{font-size:9.5px!important}
-        .ops-material-table th{font-size:9px!important}
-        .ops-material-table td strong{font-size:10.5px!important}
-        .ops-material-table td small{font-size:8px!important}
-        .ops-price-memory,.ops-details summary,.ops-details span{font-size:8px!important}
-        .ops-flow-card>small{font-size:8px!important}
-        .ops-flow-card>span{font-size:8.5px!important}
-        .ops-flow-card em{font-size:7.5px!important}
-        .ops-profit-strip small,.ops-revenue-line small,.ops-cost-note{font-size:8px!important}
-      }
-      @media (max-width:760px){
-        .comms-panel-head-actions{gap:5px}.comms-preview-copy{padding-inline:8px;font-size:7px}
-      }
-    `;
+    style.dataset.stylesheet = '35-app-interface-cleanup.css';
     document.head.appendChild(style);
   }
 

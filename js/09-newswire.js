@@ -203,36 +203,7 @@ function installRhwEnhancementStyles() {
   if (document.getElementById('rhwV35EnhancementStyles')) return;
   const style = document.createElement('style');
   style.id = 'rhwV35EnhancementStyles';
-  style.textContent = `
-    .newswire-filter {
-      position: relative; z-index: 7; display: flex; width: fit-content;
-      max-width: calc(100vw - 24px); margin: 0 0 -1px 22px; padding-right: 12px;
-      overflow-x: auto; border: 1px solid rgba(212,175,55,0.30); border-bottom: 0;
-      background: linear-gradient(90deg, rgba(212,175,55,0.12), rgba(10,12,15,0.98));
-      clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 100%, 0 100%); scrollbar-width: none;
-    }
-    .newswire-filter::-webkit-scrollbar { display: none; }
-    .newswire-filter button {
-      min-height: 27px; padding: 6px 11px 5px; border: 0;
-      border-right: 1px solid rgba(212,175,55,0.12); clip-path: none;
-      background: transparent; color: rgba(224,224,224,0.52);
-      font-family: var(--font-tech); font-size: 8px; letter-spacing: 0.10em;
-      box-shadow: none; white-space: nowrap;
-    }
-    .newswire-filter button:last-child { border-right: 0; }
-    .newswire-filter button:hover, .newswire-filter button:focus-visible {
-      background: rgba(212,175,55,0.07); color: var(--gold); box-shadow: none;
-    }
-    .newswire-filter button.active { background: rgba(212,175,55,0.15); color: var(--gold); }
-    .hull-detection { margin-top: 5px !important; font-size: 7px !important; letter-spacing: 0.08em !important; }
-    .hull-detection.detected { color: #78ad8a !important; }
-    .hull-detection.missing { color: #df7474 !important; }
-    .hull-registry-row.hull-not-detected {
-      border-style: dashed; background: linear-gradient(90deg, rgba(248,113,113,0.08), rgba(0,0,0,0.17));
-    }
-    .hull-registry-row.hull-not-detected .hull-registry-metric.stock strong { font-size: 10px; color: #df7474; }
-    @media (max-width: 900px) { .newswire-filter { display: none; } }
-  `;
+  style.dataset.stylesheet = '35-app-interface-cleanup.css';
   document.head.appendChild(style);
 }
 

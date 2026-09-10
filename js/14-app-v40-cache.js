@@ -195,7 +195,7 @@
     'commsMobileView'
   ]);
   const transferSectionKeys = Object.freeze([
-    'drafts', 'senders', 'current', 'priceProfiles', 'shipyardPlanner', 'newswireDraft', 'productionOrders', 'preferences'
+    'drafts', 'senders', 'current', 'priceProfiles', 'priceCheckOverrides', 'shipyardPlanner', 'newswireDraft', 'productionOrders', 'preferences'
   ]);
 
   function requireStored(key, value) {
@@ -213,7 +213,7 @@
 
   function inspectPayload(raw) {
     const version = Number(raw?.version);
-    if (!raw || raw.format !== 'rhw-webapp-local-cache' || ![1, 2, 3, 4].includes(version)) {
+    if (!raw || raw.format !== 'rhw-webapp-local-cache' || ![1, 2, 3, 4, 5].includes(version)) {
       throw new Error('UNSUPPORTED CACHE FILE');
     }
     const countObject = value => value && typeof value === 'object' ? Object.keys(value).length : 0;
@@ -221,6 +221,7 @@
       drafts: Array.isArray(raw.drafts) ? raw.drafts.length : 0,
       senders: Array.isArray(raw.localSenders) ? raw.localSenders.length : 0,
       current: raw.current && typeof raw.current === 'object' ? 1 : 0,
+      priceCheckOverrides: version >= 5 ? countObject(raw.priceCheckOverrides) : 0,
       priceProfiles: version >= 2 && Array.isArray(raw.priceProfiles) ? raw.priceProfiles.length : 0,
       shipyardPlanner: version >= 2 && raw.shipyardPlanner && typeof raw.shipyardPlanner === 'object' ? 1 : 0,
       newswireDraft: version >= 2 && raw.newswireDraft && typeof raw.newswireDraft === 'object' ? 1 : 0,
@@ -244,6 +245,9 @@
       ? new Set(options.sections.filter(key => transferSectionKeys.includes(key)))
       : new Set(transferSectionKeys);
     const includes = key => selected.has(key);
+
+    const incomingOverrides = version >= 5 && includes('priceCheckOverrides') && raw.priceCheckOverrides
+      ? app.pricecheck.normalizeOverrides(raw.priceCheckOverrides) : null;
 
     // Check the merged queue before applying ANY selected backup section.
     if (version >= 3 && includes('productionOrders') && Array.isArray(raw.productionOrders)) {
@@ -294,6 +298,7 @@
       if (app.productionOrders?.importOrders) app.productionOrders.importOrders(raw.productionOrders);
       else requireStored(keys.productionOrders, raw.productionOrders);
     }
+    if (incomingOverrides) app.pricecheck.importOverrides(incomingOverrides);
     return {
       drafts: app.state.drafts.length,
       senders: app.state.localSenders.length,
@@ -310,12 +315,13 @@
     saveCurrent();
     return {
       format: 'rhw-webapp-local-cache',
-      version: 4,
+      version: 5,
       appVersion: app.version,
       exportedAt: new Date().toISOString(),
       current: portableCopy(app.state.comms),
       drafts: portableCopy(app.state.drafts),
       localSenders: portableCopy(app.state.localSenders),
+      priceCheckOverrides: portableCopy(app.store.get(keys.priceCheckOverrides, {}) || {}),
       priceProfiles: portableCopy(app.store.get(keys.calculatorPriceProfiles, []) || []),
       shipyardPlanner: portableCopy(app.store.get(keys.shipyardPlanner, null)),
       productionOrders: portableCopy(app.productionOrders?.snapshot?.() || app.store.get(keys.productionOrders, []) || []),

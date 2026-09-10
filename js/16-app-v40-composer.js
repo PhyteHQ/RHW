@@ -809,7 +809,7 @@
     app.store.set(app.config.storageKeys.commsNode, valid);
     document.body.dataset.commsNode = valid;
     document.querySelectorAll('[data-comms-panel]').forEach(panel => { panel.hidden = panel.dataset.commsPanel !== valid; });
-    document.querySelectorAll('[data-comms-node]').forEach(button => {
+    document.querySelectorAll('button[data-comms-node]').forEach(button => {
       const active = button.dataset.commsNode === valid;
       button.classList.toggle('active', active);
       button.setAttribute('aria-current', active ? 'page' : 'false');

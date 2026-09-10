@@ -25,24 +25,7 @@
     if (document.getElementById('rhwV40StickyUxStyle')) return;
     const style = document.createElement('style');
     style.id = 'rhwV40StickyUxStyle';
-    style.textContent = `
-      .comms-bbcode-head-actions{display:flex;align-items:center;justify-content:flex-end;gap:8px;min-width:0}
-      .comms-bbcode-toggle{min-height:29px;padding:5px 9px;border:1px solid rgba(125,167,234,.24);background:rgba(125,167,234,.055);color:#b9cae6;clip-path:none;box-shadow:none;font-family:var(--font-tech);font-size:7.5px;font-weight:700;letter-spacing:.08em;white-space:nowrap}
-      .comms-bbcode-toggle:hover,.comms-bbcode-toggle:focus-visible{background:rgba(125,167,234,.12);color:#e1ebfb}
-      .bbcode-panel.v40-collapsed #forumBbcodeOutput,.bbcode-panel.v40-collapsed .bbcode-hint{display:none!important}
-      .bbcode-panel.v40-collapsed .comms-panel-head{border-bottom-color:transparent}
-      @media (min-width:961px){
-        .rhw-app-nav{position:sticky;top:0;z-index:80;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
-        body[data-workspace="comms"][data-comms-node="forum"] .preview-panel{position:sticky;top:var(--rhw-sticky-nav-offset,150px);max-height:calc(100vh - var(--rhw-sticky-nav-offset,150px) - 14px);overflow:auto;overscroll-behavior:contain}
-      }
-      @media (max-width:960px){
-        .rhw-app-nav{position:relative;top:auto}
-        .preview-panel{position:relative!important;top:auto!important;max-height:none!important;overflow:hidden!important}
-      }
-      @media (max-width:760px){
-        .comms-bbcode-head-actions{gap:5px}.comms-bbcode-toggle{font-size:7px;padding-inline:7px}
-      }
-    `;
+    style.dataset.stylesheet = '35-app-interface-cleanup.css';
     document.head.appendChild(style);
   }
 

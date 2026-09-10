@@ -6,10 +6,11 @@
 (function initRhwV4Core() {
   'use strict';
 
-  const WORKSPACES = Object.freeze(['command', 'operations', 'comms']);
+  const WORKSPACES = Object.freeze(Object.keys(RHW_APP_CONFIG.routes));
   const WORKSPACE_META = Object.freeze({
     command: Object.freeze({ nodeKey: 'commandNode', fallback: 'overview' }),
     operations: Object.freeze({ nodeKey: 'operationsNode', fallback: 'calculator' }),
+    pricecheck: Object.freeze({ nodeKey: 'pricecheckNode', fallback: 'routes' }),
     comms: Object.freeze({ nodeKey: 'commsNode', fallback: 'forum' })
   });
 
@@ -234,11 +235,13 @@
       const workspace = WORKSPACES.includes(parts[0]) ? parts[0] : null;
       let node = parts[1] || null;
       if (workspace === 'comms' && node === 'newswire') node = 'ticker';
+      if (workspace === 'operations' && node === 'orders') node = 'calculator';
+      if (workspace && node && !app.config.routes[workspace].includes(node)) node = WORKSPACE_META[workspace].fallback;
       return { workspace, node };
     },
     write(workspace, node, { replace = false } = {}) {
       const safeWorkspace = WORKSPACES.includes(workspace) ? workspace : 'command';
-      const safeNode = node || WORKSPACE_META[safeWorkspace].fallback;
+      const safeNode = app.config.routes[safeWorkspace].includes(node) ? node : WORKSPACE_META[safeWorkspace].fallback;
       const next = `#${safeWorkspace}/${safeNode}`;
       if (location.hash === next) return;
       const method = replace ? 'replaceState' : 'pushState';
@@ -254,6 +257,7 @@
   app.workspaceModule = function workspaceModule(workspace) {
     if (workspace === 'command') return app.command;
     if (workspace === 'operations') return app.operations;
+    if (workspace === 'pricecheck') return app.pricecheck;
     return app.comms;
   };
 

@@ -23,28 +23,7 @@
     const style = document.getElementById('rhwV40ReleasePolishStyle');
     if (!style || style.dataset.fullReadability === 'true') return;
     style.dataset.fullReadability = 'true';
-    style.textContent += `
-      @media (min-width:1200px){
-        [data-command-panel="inventory"] .alert-list li>span>strong{font-size:13px!important}
-        [data-command-panel="inventory"] .alert-list li small{font-size:9px!important;line-height:1.35}
-        [data-command-panel="inventory"] .overview-row-qty{font-size:13px!important}
-        [data-command-panel="inventory"] .pill{font-size:9px!important}
-        [data-command-panel="inventory"] .inventory-view-nav span{font-size:10px!important}
-        [data-command-panel="inventory"] .inventory-view-nav small{font-size:8.5px!important}
-        [data-command-panel="production"] .production-kicker{font-size:11px!important}
-        [data-command-panel="production"] .module-state{font-size:10px!important}
-        [data-command-panel="production"] .recipe-column-head{font-size:9.5px!important}
-        [data-command-panel="production"] .recipe-short{font-size:9px!important}
-        [data-command-panel="production"] .byproduct-strip{font-size:10px!important}
-        [data-command-panel="production"] .footnote{font-size:12px!important}
-        [data-command-panel="logistics"] .remote-route small,
-        [data-command-panel="logistics"] .logistics-subhead-kicker,
-        [data-command-panel="logistics"] .logistics-subhead-meta{font-size:9px!important}
-        [data-command-panel="logistics"] .market-sort-button{font-size:9px!important}
-        [data-command-panel="logistics"] .supplier-grid small,
-        [data-command-panel="logistics"] .market-scan-grid small{font-size:9px!important;line-height:1.35}
-      }
-    `;
+    style.dataset.fullReadability = 'true';
   }
 
   function selfTest() {
@@ -154,6 +133,7 @@
       }
 
       app.ready = true;
+      document.documentElement.classList.remove('rhw-loading');
       const failures = selfTest();
       exposeSmoke(failures);
       if (failures.length) throw new Error(`V4 SELF TEST FAILED: ${failures.join(', ')}`);

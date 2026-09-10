@@ -1,44 +1,44 @@
 {
   "catalog": {
     "effective": {
-      "factions": 64,
-      "products": 246,
-      "recipes": 285
+      "factions": 65,
+      "products": 251,
+      "recipes": 290
     },
     "raw": {
-      "factions": 64,
-      "products": 246,
-      "recipes": 285
+      "factions": 65,
+      "products": 251,
+      "recipes": 290
     }
   },
   "catalogState": "verified",
-  "catalogUpdatedAt": "2026-08-13T20:29:17Z",
+  "catalogUpdatedAt": "2026-09-07T09:19:54Z",
   "changes": {
-    "factionsAdded": 0,
-    "factionsChanged": 0,
-    "factionsRemoved": 1,
-    "productsAdded": 3,
-    "productsChanged": 37,
-    "productsRemoved": 4,
-    "recipesAdded": 0,
-    "recipesChanged": 35,
-    "recipesRemoved": 4
+    "factionsAdded": 1,
+    "factionsChanged": 2,
+    "factionsRemoved": 0,
+    "productsAdded": 7,
+    "productsChanged": 3,
+    "productsRemoved": 2,
+    "recipesAdded": 7,
+    "recipesChanged": 29,
+    "recipesRemoved": 2
   },
-  "lastSuccessfulSync": "2026-08-13T20:29:17Z",
+  "lastSuccessfulSync": "2026-09-07T09:19:54Z",
   "schemaVersion": 1,
   "source": {
     "canonicalUrl": "https://discoverygc.com/gameconfigpublic/",
     "downloadedFrom": {
-      "base_recipe_items.cfg": "https://raw.githubusercontent.com/SlimyTheMoon/DiscoveryRecipieCalculator/main/Sources/base_recipe_items.cfg",
-      "base_recipe_modules.cfg": "https://raw.githubusercontent.com/SlimyTheMoon/DiscoveryRecipieCalculator/main/Sources/base_recipe_modules.cfg"
+      "base_recipe_items.cfg": "https://disco-api.dd84ai.com/gameconfigpublic/base_recipe_items.cfg",
+      "base_recipe_modules.cfg": "https://disco-api.dd84ai.com/gameconfigpublic/base_recipe_modules.cfg"
     },
     "files": [
       "base_recipe_items.cfg",
       "base_recipe_modules.cfg"
     ],
     "sha256": {
-      "base_recipe_items.cfg": "80b7cb755599516aa33e9fd43bb0fc17f87943d68091049aa599b83d8bbaeb1b",
-      "base_recipe_modules.cfg": "170f6fdf65814df189f16b13784cea61cfdc8128820f394a91982de7f6ab5d59"
+      "base_recipe_items.cfg": "80f8db478cd0795341b280f0057d690e823a4f196cfee8048bf2bc40167b96cc",
+      "base_recipe_modules.cfg": "26d9c96455b83137938ef01f18a56206ac9e9e2ad336b24ca1a41ee3be085139"
     }
   },
   "workflow": {

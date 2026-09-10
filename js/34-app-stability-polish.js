@@ -17,59 +17,7 @@
     if (document.getElementById('rhwStabilityPolishStyle')) return;
     const style = document.createElement('style');
     style.id = 'rhwStabilityPolishStyle';
-    style.textContent = `
-      .rhw-logistics-view-nav{
-        display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;
-        width:100%;margin:0 0 10px;padding:6px;border:1px solid rgba(125,167,234,.24);
-        border-radius:8px;background:linear-gradient(90deg,rgba(125,167,234,.075),rgba(5,8,12,.96) 48%);
-        box-shadow:0 10px 24px rgba(0,0,0,.24)
-      }
-      .rhw-logistics-view-nav button{
-        position:relative;min-width:0;min-height:52px;padding:8px 11px;border:1px solid rgba(125,167,234,.13);
-        border-radius:5px;background:rgba(125,167,234,.025);color:rgba(190,208,235,.68);
-        font-family:var(--font-tech);font-size:11px;font-weight:700;letter-spacing:.04em;text-align:center;
-        clip-path:none;box-shadow:none
-      }
-      .rhw-logistics-view-nav button small{display:block;margin-top:2px;color:rgba(159,180,212,.48);font-size:9px;letter-spacing:.04em}
-      .rhw-logistics-view-nav button:hover,.rhw-logistics-view-nav button:focus-visible{
-        border-color:rgba(125,167,234,.38);background:rgba(125,167,234,.09);color:#dce8fb
-      }
-      .rhw-logistics-view-nav button[aria-selected="true"]{
-        border-color:rgba(125,167,234,.48);background:linear-gradient(180deg,rgba(125,167,234,.17),rgba(125,167,234,.045));
-        color:#dce8fb;box-shadow:inset 0 -2px 0 #7da7ea,inset 0 0 20px rgba(125,167,234,.045)
-      }
-      .rhw-logistics-view-nav button[aria-selected="true"] small{color:rgba(190,208,235,.72)}
-
-      body[data-workspace="command"][data-command-node="logistics"] #commandContextAction{display:none!important}
-      body[data-workspace="command"][data-command-node="logistics"] #commandControlDeck{grid-template-columns:minmax(260px,1.45fr) auto}
-
-      body[data-workspace="command"][data-command-node="logistics"] #externalLogisticsPanel{display:none!important}
-      body[data-workspace="command"][data-command-node="logistics"][data-logistics-view="market"] [data-command-panel="logistics"]>#materialsScanSection{
-        display:none!important
-      }
-      body[data-workspace="command"][data-command-node="logistics"][data-logistics-view="materials"] [data-command-panel="logistics"]>#marketScanSection{
-        display:none!important
-      }
-
-      @media(max-width:980px){
-        body[data-workspace="command"][data-command-node="logistics"] #commandControlDeck{grid-template-columns:minmax(0,1fr) auto}
-      }
-      @media(max-width:760px){
-        body[data-workspace="command"][data-command-node="logistics"] #commandControlDeck{grid-template-columns:1fr}
-        .rhw-logistics-view-nav{
-          position:relative;z-index:74;
-          width:calc(100% - 18px);margin:0 9px 10px;padding:5px;background:rgba(5,8,12,.98);
-          box-shadow:0 10px 28px rgba(0,0,0,.42)
-        }
-        .rhw-logistics-view-nav button{min-height:48px;padding:7px 6px;font-size:10px}
-        .rhw-logistics-view-nav button small{font-size:8px}
-        [data-command-panel="logistics"]{
-          /* End-of-panel scroll reserve: invisible in normal use, but enough for
-             the no-telemetry Market controls to clear the fixed bottom dock. */
-          padding-bottom:180px!important
-        }
-      }
-    `;
+    style.dataset.stylesheet = '35-app-interface-cleanup.css';
     document.head.appendChild(style);
   }
 

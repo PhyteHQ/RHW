@@ -180,43 +180,7 @@
     if (document.getElementById(STYLE_ID)) return;
     const style = document.createElement('style');
     style.id = STYLE_ID;
-    style.textContent = `
-      .v40-newswire-manager{margin:0 0 18px;border:1px solid rgba(125,167,234,.20);background:rgba(5,9,13,.42)}
-      .v40-newswire-manager-head,.v40-newswire-editor-head,.v40-newswire-file-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;border-bottom:1px solid rgba(255,255,255,.06)}
-      .v40-newswire-manager-head>div,.v40-newswire-editor-head>div,.v40-newswire-file-head>div{display:grid;gap:3px}
-      .v40-newswire-manager-head small,.v40-newswire-editor-head small,.v40-newswire-file-head small{font-family:var(--font-tech);font-size:8px;letter-spacing:.10em;color:rgba(224,224,224,.45)}
-      .v40-newswire-manager-head strong,.v40-newswire-editor-head strong,.v40-newswire-file-head strong{font-family:var(--font-tech);font-size:11px;letter-spacing:.06em;color:#dfe5ea}
-      .v40-newswire-manager-status[data-tone="dirty"]{color:#e7c963}.v40-newswire-manager-status[data-tone="warn"]{color:#c98b2c}.v40-newswire-manager-status[data-tone="good"]{color:#78ad8a}
-      .v40-newswire-publish-banner{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:10px 14px;border-bottom:1px solid rgba(125,167,234,.15);background:rgba(125,167,234,.055)}
-      .v40-newswire-publish-banner strong{font-family:var(--font-tech);font-size:10px;letter-spacing:.085em;color:#9fb6d9;white-space:nowrap}
-      .v40-newswire-publish-banner span{font-family:var(--font-tech);font-size:8px;line-height:1.45;letter-spacing:.055em;color:rgba(224,224,224,.62);text-align:right}
-      .v40-newswire-publish-banner[data-tone="dirty"]{border-color:rgba(212,175,55,.38);background:linear-gradient(90deg,rgba(212,175,55,.15),rgba(212,175,55,.045))}
-      .v40-newswire-publish-banner[data-tone="dirty"] strong{color:#f0d06b;text-shadow:0 0 12px rgba(212,175,55,.2)}
-      .v40-newswire-publish-banner[data-tone="warn"]{border-color:rgba(201,139,44,.34);background:rgba(201,139,44,.08)}
-      .v40-newswire-publish-banner[data-tone="warn"] strong{color:#d9a34c}
-      .v40-newswire-manager button,.v40-newswire-editor-action{min-height:30px;padding:6px 10px;border:1px solid rgba(125,167,234,.20);background:rgba(125,167,234,.055);color:#a9bddb;font-family:var(--font-tech);font-size:8px;font-weight:700;letter-spacing:.07em;box-shadow:none;clip-path:none}
-      .v40-newswire-manager button:hover,.v40-newswire-manager button:focus-visible,.v40-newswire-editor-action:hover,.v40-newswire-editor-action:focus-visible{background:rgba(125,167,234,.11);color:#d5e1f2}
-      .v40-newswire-category-summary{display:flex;flex-wrap:wrap;gap:6px;padding:10px 14px;border-bottom:1px solid rgba(255,255,255,.05)}
-      .v40-newswire-category-summary span{padding:4px 7px;border:1px solid rgba(212,175,55,.15);background:rgba(212,175,55,.035);font-family:var(--font-tech);font-size:8px;letter-spacing:.07em;color:rgba(224,224,224,.58)}
-      .v40-newswire-list{display:grid;gap:8px;padding:12px 14px;max-height:440px;overflow:auto}
-      .v40-newswire-empty{padding:24px;text-align:center;font-family:var(--font-tech);font-size:10px;letter-spacing:.08em;color:rgba(224,224,224,.45)}
-      .v40-newswire-entry{display:grid;grid-template-columns:minmax(170px,.65fr) minmax(0,1.6fr) auto;gap:12px;align-items:center;padding:10px 11px;border:1px solid rgba(255,255,255,.065);background:rgba(0,0,0,.18)}
-      .v40-newswire-entry.editing{border-color:rgba(212,175,55,.42);background:rgba(212,175,55,.045)}
-      .v40-newswire-entry-id{display:grid;gap:5px;min-width:0}.v40-newswire-entry-meta{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
-      .v40-newswire-entry-meta span{padding:2px 5px;border:1px solid rgba(255,255,255,.08);font-family:var(--font-tech);font-size:7px;letter-spacing:.08em;color:rgba(224,224,224,.52)}
-      .v40-newswire-entry-meta [data-tone="good"]{color:#78ad8a}.v40-newswire-entry-meta [data-tone="warn"]{color:#c98b2c}.v40-newswire-entry-meta [data-tone="danger"]{color:#c75e5e}.v40-newswire-entry-meta [data-tone="remote"]{color:#7da7ea}.v40-newswire-entry-meta [data-tone="lore"]{color:#c6a75a}
-      .v40-newswire-entry-id strong{overflow:hidden;text-overflow:ellipsis;font-family:var(--font-tech);font-size:10px;letter-spacing:.055em;color:#e4e7ea}
-      .v40-newswire-entry p{margin:0;font-family:var(--font-tech);font-size:9px;line-height:1.5;letter-spacing:.035em;color:rgba(224,224,224,.72)}
-      .v40-newswire-entry-actions{display:flex;gap:6px}.v40-newswire-entry-actions button[data-newswire-delete]{border-color:rgba(199,94,94,.22);color:#c98282}
-      .v40-newswire-editor-head{margin-top:12px;border:1px solid rgba(212,175,55,.14);border-bottom:0;background:rgba(212,175,55,.025)}
-      .v40-newswire-editor-state{color:#e7c963!important}
-      .v40-newswire-file{margin-top:18px;border:1px solid rgba(212,175,55,.16);background:rgba(0,0,0,.15)}
-      .v40-newswire-file-actions{display:flex;flex-wrap:wrap;gap:8px;padding:12px 14px}
-      .v40-newswire-file-actions .primary{border-color:rgba(212,175,55,.36);background:rgba(212,175,55,.075);color:#e7c963}
-      .v40-newswire-file details{border-top:1px solid rgba(255,255,255,.05)}.v40-newswire-file summary{padding:10px 14px;cursor:pointer;font-family:var(--font-tech);font-size:8px;letter-spacing:.08em;color:rgba(224,224,224,.5)}
-      .v40-newswire-file textarea{display:block;width:calc(100% - 28px);min-height:260px;margin:0 14px 14px;padding:12px;resize:vertical;border:1px solid rgba(212,175,55,.15);background:#06090c;color:#cfd4d7;font-family:var(--font-tech);font-size:9px;line-height:1.45}
-      @media(max-width:900px){.v40-newswire-entry{grid-template-columns:1fr}.v40-newswire-entry-actions{justify-content:flex-start}.v40-newswire-manager-head,.v40-newswire-editor-head,.v40-newswire-file-head,.v40-newswire-publish-banner{align-items:flex-start;flex-direction:column}.v40-newswire-publish-banner span{text-align:left}.v40-newswire-list{max-height:none}}
-    `;
+    style.dataset.stylesheet = '35-app-interface-cleanup.css';
     document.head.appendChild(style);
   }
 
@@ -256,7 +220,7 @@
     if (title) title.textContent = 'BMM INDUSTRIAL NEWSWIRE MANAGER';
     const explainer = panel?.querySelector('.v40-newswire-explainer span');
     if (explainer) explainer.textContent = 'LOADS THE CURRENT RHW NEWSWIRE FILE INTO A LOCAL WORKING COPY. ADD, EDIT OR DELETE BULLETINS, THEN COPY OR EXPORT THE COMPLETE UPDATED FILE. CHANGES ARE NOT PUBLISHED AUTOMATICALLY.';
-    const tab = document.querySelector('[data-comms-node="ticker"] small');
+    const tab = document.querySelector('#commsNodeNav button[data-comms-node="ticker"] small');
     if (tab) tab.textContent = 'NEWSWIRE MANAGER';
     if (document.body?.dataset?.commsNode === 'ticker') {
       const workspaceTitle = document.getElementById('commsWorkspaceTitle');

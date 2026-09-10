@@ -43,8 +43,44 @@ def main() -> int:
                 time.sleep(.1)
             if snap.get("ready") != "true" or snap.get("error") == "true" or snap.get("errors"):
                 raise RuntimeError(f"Recipe correction route boot failed: {snap}")
-            if snap.get("recipes") != 285 or snap.get("products") != 246:
+            if snap.get("recipes") != base.CATALOG_COUNTS["recipeCount"] or snap.get("products") != base.CATALOG_COUNTS["productCount"]:
                 raise RuntimeError(f"Corrected catalog counts unexpected: {snap}")
+
+            base.ev(cdp, """(()=>{
+              const search=document.getElementById('opsRecipeSearch');
+              search.value='Gold refining'; search.dispatchEvent(new Event('input',{bubbles:true}));
+              return true;
+            })()""")
+            time.sleep(.2)
+            base.ev(cdp, """(()=>{
+              const price=document.querySelector('[data-material-price="commodity_gold_ore"]');
+              price.value='123'; price.dispatchEvent(new Event('input',{bubbles:true}));
+              const iff=document.getElementById('opsAffiliation'); iff.value='__none__';
+              iff.dispatchEvent(new Event('change',{bubbles:true})); return true;
+            })()""")
+            time.sleep(.1)
+            base.ev(cdp, """(()=>{
+              const search=document.getElementById('opsRecipeSearch');
+              search.value='Gold refinin'; search.dispatchEvent(new Event('input',{bubbles:true})); return true;
+            })()""")
+            time.sleep(.2)
+            preserved=base.ev(cdp, """(()=>({
+              recipe:document.getElementById('opsRecipe').value,
+              price:document.querySelector('[data-material-price="commodity_gold_ore"]').value,
+              iff:document.getElementById('opsAffiliation').value,
+              firstGold:RHWV4.operations.matchingRecipes('Gold')[0].outputs[0].id,
+              order:!!document.getElementById('opsAddProductionOrder')
+            }))()""")
+            if preserved.get('recipe') != 'recipe_gold_advanced' or preserved.get('price') != '123' or preserved.get('iff') != '__none__' or preserved.get('firstGold') != 'commodity_gold' or preserved.get('order'):
+                raise RuntimeError(f"Calculator search/session regression: {preserved}")
+            heading=base.ev(cdp, """(()=>{
+              const before=document.querySelector('#baseHealthCard small').textContent;
+              RHWV4.navigate('comms','ticker'); RHWV4.newswireManager.enhance();
+              RHWV4.navigate('operations','calculator');
+              return {before,after:document.querySelector('#baseHealthCard small').textContent};
+            })()""")
+            if heading.get('before') != heading.get('after'):
+                raise RuntimeError(f"Newswire changed global telemetry labels: {heading}")
 
             catalog = base.ev(cdp, """(()=>({
               deprecated:[!!RHWV4.operationsCore.recipe('module_m_hyperspace_scanner'),!!RHWV4.operationsCore.recipe('module_m_cloakdisruptor')],
