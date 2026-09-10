@@ -668,11 +668,11 @@ def test_pr6_discovery_status(cdp, workspace, node):
         raise RuntimeError(f"PR6 Discovery status failed to mount: {result}")
     if f'{base.CATALOG_COUNTS["recipeCount"]} RECIPES' not in result.get("text", "") or f'{base.CATALOG_COUNTS["productCount"]} BUILD TARGETS' not in result.get("text", "") or "AUTO-MERGE DISABLED" not in result.get("text", ""):
         raise RuntimeError(f"PR6 Discovery provenance/status content failed: {result}")
-    if result.get("autoMerge") is not False or not result.get("details") or len(result.get("controls", [])) != 3:
+    if result.get("autoMerge") is not False or not result.get("details") or len(result.get("controls", [])) != 4:
         raise RuntimeError(f"PR6 Discovery review controls failed: {result}")
     if any(control.get("height", 0) < 47.5 for control in result.get("controls", [])) or result.get("overflow", 0) > 2:
         raise RuntimeError(f"PR6 Discovery mobile controls/overflow failed: {result}")
-    if not any("discovery-catalog-sync.yml" in link for link in result.get("links", [])) or not any("discovery-sync-report.md" in link for link in result.get("links", [])):
+    if not any("discovery-catalog-sync.yml" in link for link in result.get("links", [])) or not any("discovery-sync-report.md" in link for link in result.get("links", [])) or not any("compare/main...automation/discovery-catalog-sync" in link for link in result.get("links", [])):
         raise RuntimeError(f"PR6 Discovery workflow/report links failed: {result}")
     print("PR6 smoke passed: mobile Discovery provenance + sync controls + no-auto-merge policy")
 
