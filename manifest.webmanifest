@@ -11,8 +11,8 @@
     "standalone",
     "minimal-ui"
   ],
-  "background_color": "#020607",
-  "theme_color": "#05080c",
+  "background_color": "#090D10",
+  "theme_color": "#090D10",
   "orientation": "any",
   "categories": [
     "business",

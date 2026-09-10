@@ -42,8 +42,8 @@ The repository was renamed from `rhw-0/RHW` to `PhyteHQ/RHW`. GitHub may redirec
 
 Validation runs through `.github/workflows/rhw-pages-deploy.yml` and includes structural checks, JavaScript syntax validation, Discovery sync, Transfer Center, Newswire Review and Full App Audit model coverage, full headless-Chrome route/interactions, PWA install/offline behavior, reliability diagnostics, corrupted-cache recovery, Clipboard truth-state, legacy order import compatibility and retired-route redirection, Newswire search/quality/channel-parity, live/local diff, restoration and controlled-handoff behavior, plus recipe-correctness coverage.
 
-## Professional interface and September audit
+## Industrial identity and September audit
 
-The interface uses graphite reading surfaces, warm gold for selected navigation, readable labels and sign-only green/red Price Check differences. Static component styles are consolidated in `css/35-app-interface-cleanup.css`; the header and navigation use compact shared sizing on desktop and accessible controls on mobile.
+The interface follows the RHW crest: a prominent emblem, dark graphite and navy surfaces, gold navigation, steel accents and distinct industrial frames. Metals use recognizable Au/Nb marks, ores have compact input panels, and Prototype Components use a steel/gold supplier ledger. Status colours describe actual data states; no offers is a neutral result. Static component styles are consolidated in `css/35-app-interface-cleanup.css`. Working text and touch controls remain readable on desktop and mobile; reduced-motion and low-effects settings disable ambient motion.
 
 Calculator search ranks exact product names before substrings, preserves input on same-recipe searches and starts a new recipe with blank prices and BMM. Price Check records per-route timestamps, distinguishes cached prices, clears quotes missing from successful responses and retries unresolved sources. The backup format is V5, with V1–V4 import compatibility.
