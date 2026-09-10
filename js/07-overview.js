@@ -37,14 +37,36 @@ function renderOverviewTelemetryState(message, state = 'low') {
 }
 
 function renderOverviewRow({ state, role, name, item = null, detail = '', quantityValue = 0, progress = '', extraClass = '' }) {
-  const safeDetail = detail ? `<small>${escapeHTML(detail)}</small>` : '';
-  return `<li class="alert-${state}${extraClass ? ` ${extraClass}` : ''}">
-            <span><strong>${escapeHTML(name)}</strong>${safeDetail}${progress}</span>
+  const reference = overviewStockReference(item, role);
+  const safeDetail = detail ? `<small class="overview-stock-detail">${escapeHTML(detail)}</small>` : '';
+  const referenceMarkup = reference ? `<span class="overview-stock-reference"><span aria-hidden="true">/</span> ${number(reference.value)} <small>${escapeHTML(reference.label)}</small></span>` : '';
+  return `<li class="overview-stock-row alert-${state}${extraClass ? ` ${extraClass}` : ''}">
+            <span class="overview-item-copy"><strong>${escapeHTML(name)}</strong></span>
+            ${statusPill(state, role)}
             <div class="overview-row-meta">
-              <strong class="overview-row-qty">${number(quantityValue)}</strong>
-              ${statusPill(state, role)}
+              <div class="overview-stock-value"><strong class="overview-row-qty">${number(quantityValue)}</strong>${referenceMarkup}</div>
+              ${safeDetail}
             </div>
+            ${progress}
           </li>`;
+}
+
+// These are operational thresholds, not the API's reserve or storage capacity.
+// Feedstock coverage describes this input only; other recipe inputs may limit output.
+function overviewStockReference(item, role) {
+  if (!item) return null;
+  const custom = CUSTOM_ALERTS[commodityKey(item)];
+  if (role === 'procurement' && FEEDSTOCK.includes(commodityKey(item))) {
+    const { required } = feedstockAnalysis(item);
+    return required > 0 ? { value: required, label: 'BATCH INPUT' } : null;
+  }
+  if (role === 'byproduct' || role === 'confiscated') {
+    return custom?.type === 'max' && custom.yellow > 0
+      ? { value: custom.yellow, label: role === 'byproduct' ? 'DISPOSAL AT' : 'REVIEW AT' }
+      : null;
+  }
+  const target = custom?.type === 'min' ? custom.yellow : minStock(item);
+  return target > 0 ? { value: target, label: 'TARGET' } : null;
 }
 
 function renderOverviewEmptyRow(text, statusText = 'SECURE') {
@@ -52,17 +74,17 @@ function renderOverviewEmptyRow(text, statusText = 'SECURE') {
 }
 
 function overviewDetail(item, state, role) {
+  const reference = overviewStockReference(item, role);
   if (role === 'byproduct') {
-    if (state === 'ok') return readinessText(state, role);
-    if (state === 'low') return 'WARNING: HIGH VOLUME';
-    return 'CRITICAL OVERFLOW';
+    if (state !== 'ok') return state === 'low' ? 'DISPOSAL REQUIRED' : 'CONTAINMENT CRITICAL';
+    return reference ? `${number(Math.max(0, reference.value - quantity(item)))} UNTIL DISPOSAL` : readinessText(state, role);
   }
   if (role === 'confiscated') {
-    if (state === 'ok') return 'EVIDENCE SECURED';
-    if (state === 'low') return 'VAULT FILLING';
-    return 'VAULT OVERFLOW';
+    if (state !== 'ok') return state === 'low' ? 'REVIEW REQUIRED' : 'VAULT OVERFLOW';
+    return reference ? `${number(Math.max(0, reference.value - quantity(item)))} UNTIL REVIEW` : 'EVIDENCE SECURED';
   }
-  return state === 'ok' ? readinessText(state, role) : `DEFICIT: ${number(needAmount(item))}`;
+  const deficit = reference ? Math.max(0, reference.value - quantity(item)) : needAmount(item);
+  return deficit > 0 ? `${number(deficit)} TO TARGET` : readinessText(state, role);
 }
 
 function renderList(target, list, emptyText, roleOverride = null) {
@@ -120,16 +142,18 @@ function renderOverview() {
       const fallbackKey = keyFromName(name);
 
       if (!item || item.missing) {
+        const missingItem = item || { name, quantity: 0, missing: true };
+        const reference = overviewStockReference(missingItem, 'procurement');
         return renderOverviewRow({
-          state: 'critical', role: 'procurement', name: display,
-          detail: '0 CYCLES AVAILABLE', quantityValue: 0,
+          state: 'critical', role: 'procurement', name: display, item: missingItem,
+          detail: reference ? `${number(reference.value)} NEEDED FOR 1 BATCH` : 'NO INPUT STOCK', quantityValue: 0,
           progress: renderFeedstockProgress(null, 'critical', fallbackKey)
         });
       }
       const analysis = feedstockAnalysis(item);
       return renderOverviewRow({
         state: analysis.state, role: 'procurement', name: displayName(item), item,
-        detail: `${number(analysis.cycles)} CYCLES AVAILABLE`, quantityValue: analysis.quantity,
+        detail: analysis.cycles > 0 ? `${number(analysis.cycles)} INPUT BATCHES` : `${number(analysis.required - analysis.quantity)} NEEDED FOR 1 BATCH`, quantityValue: analysis.quantity,
         progress: renderFeedstockProgress(item, analysis.state, fallbackKey)
       });
     }).join('');

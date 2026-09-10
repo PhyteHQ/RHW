@@ -208,6 +208,7 @@ function installRhwEnhancementStyles() {
 }
 
 function createNewswireFilter() {
+  if (!FEATURES.newswire) return;
   const ticker = document.getElementById('newswirePanel');
   if (!ticker || document.getElementById('newswireFilter')) return;
   const filter = document.createElement('div');

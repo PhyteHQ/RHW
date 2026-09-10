@@ -1369,3 +1369,122 @@ html.rhw-focus-pass #rhwToolsInstallSlot #rhwPwaInstallBtn small { display: bloc
   html.rhw-focus-pass { scroll-behavior: auto; }
   html.rhw-focus-pass *, html.rhw-focus-pass *::before, html.rhw-focus-pass *::after { animation: none !important; transition: none !important; }
 }
+
+/* Refined console: a lit crest, instrument rail and quieter navigation levels. */
+html.rhw-focus-pass {
+  --rhw-head-fill: linear-gradient(112deg,#2c2c29,#1f1f1e 72%);
+  --rhw-border: #4a4a44;
+}
+html.rhw-focus-pass .command-header {
+  background: radial-gradient(ellipse at 9% 45%,#d7b67512,transparent 35%),linear-gradient(115deg,#1c1b18,#111110 65%,#1b1a17);
+  border-top-color: #ac8c52;
+  box-shadow: inset 0 1px #f4dfb520,inset 0 -14px 24px #0003;
+}
+html.rhw-focus-pass .command-brand { grid-template-columns: 128px minmax(0,1fr); gap: 20px; }
+html.rhw-focus-pass .crest-frame {
+  width: 128px; min-height: 156px;
+  background: radial-gradient(ellipse at center,#b9954b14,transparent 70%),linear-gradient(90deg,transparent,#ffffff03,transparent);
+  border-inline: 1px solid #c7ad7521;
+}
+html.rhw-focus-pass .crest-frame::before { width: 130px; height: 130px; background: radial-gradient(circle,#eac7773b,transparent 65%); }
+html.rhw-focus-pass .crest { width: 111px; height: 150px; filter: drop-shadow(0 4px 10px #000a) drop-shadow(0 0 12px #d7b6752c); }
+html.rhw-focus-pass .brand-kicker { color: #d5ba85; }
+html.rhw-focus-pass .brand-command { color: #d1d0c9; }
+html.rhw-focus-pass .base-telemetry-bar {
+  max-width: 740px; margin-top: 12px; padding: 10px 0;
+  grid-template-columns: minmax(0,1fr) minmax(0,1.2fr) minmax(0,1fr);
+  background: linear-gradient(180deg,#ffffff04,#08080845);
+  border: 1px solid #5f584444; border-top-color: #bda16b69; border-radius: 2px;
+  box-shadow: inset 0 1px #ffffff05,0 3px 9px #0002;
+}
+html.rhw-focus-pass .base-telemetry-stat,
+html.rhw-focus-pass .base-telemetry-stat:first-child { padding: 0 13px; }
+html.rhw-focus-pass .base-telemetry-stat + .telemetry-divider + .base-telemetry-stat { border-left: 1px solid #58564c66; }
+html.rhw-focus-pass .base-telemetry-stat small { letter-spacing: .015em; }
+html.rhw-focus-pass .base-telemetry-stat strong { overflow-wrap: anywhere; }
+html.rhw-focus-pass .uplink-panel { background: linear-gradient(135deg,#23221fcc,#141413e8); border-color: #55534a; border-top-color: var(--warn); }
+html.rhw-focus-pass .uplink-panel.online:not(:has(.uplink-details[open])) {
+  grid-template-columns: minmax(0,1fr) auto; gap: 8px;
+  padding: 8px 0 8px 12px; border: 0; border-left: 1px solid #a0c6ae55;
+  background: transparent; box-shadow: none;
+}
+html.rhw-focus-pass .uplink-panel.online:not(:has(.uplink-details[open])) .uplink-header { grid-column: 1; align-self: center; }
+html.rhw-focus-pass .uplink-panel.online:not(:has(.uplink-details[open])) .uplink-details { grid-column: 2; }
+html.rhw-focus-pass .uplink-panel.online:not(:has(.uplink-details[open])) .uplink-details > summary { max-width: 82px; }
+html.rhw-focus-pass .uplink-panel.online:not(:has(.uplink-details[open])) #headerRefreshBtn { display: none; }
+html.rhw-focus-pass .uplink-panel.offline { border-top-color: var(--danger); box-shadow: inset 0 1px #e28a8a12; }
+html.rhw-focus-pass #commandTelemetryStatus { font-size: 12px; line-height: 1.5; overflow-wrap: anywhere; }
+
+html.rhw-focus-pass .rhw-app-nav { border-top: 0; background: #171716; }
+html.rhw-focus-pass .app-navigation-cluster { background: #171716; }
+html.rhw-focus-pass .app-tabs button[data-workspace] { border-right-color: #3c3c37; }
+html.rhw-focus-pass .app-tabs button[data-workspace].active { background: linear-gradient(110deg,#3b3323,#292823); box-shadow: inset 0 1px #ebd3a426; }
+html.rhw-focus-pass .app-secondary-nav { padding-block: 5px; }
+html.rhw-focus-pass #commandNodeNav .workspace-subnav-tabs { gap: 8px; }
+html.rhw-focus-pass #commandNodeNav button,
+html.rhw-focus-pass body[data-workspace="command"] #commandNodeNav.command-module-nav button[data-command-node] {
+  border: 0; border-bottom: 2px solid transparent; border-radius: 0; background: transparent;
+}
+html.rhw-focus-pass #commandNodeNav button.active,
+html.rhw-focus-pass body[data-workspace="command"] #commandNodeNav.command-module-nav button[data-command-node].active {
+  color: #f0dfbb; border-color: transparent; border-bottom-color: #bca374;
+  background: linear-gradient(0deg,#d7b6750c,transparent 85%); box-shadow: none;
+}
+html.rhw-focus-pass #commandNodeNav button:hover { color: var(--text); background-color: #ffffff04; }
+html.rhw-focus-pass .command-module-index { color: #a9a79e; }
+html.rhw-focus-pass #rhwFocusToolsBtn { background: #1a1a18; border-color: #45453f; box-shadow: none; }
+html.rhw-focus-pass #commandGlobalSearch::placeholder { color: #a7a69d; opacity: 1; }
+
+/* Shared material depth; data rows remain flat and stable when hovered. */
+html.rhw-focus-pass :is(.alert-card,.panel,.ops-panel,.comms-panel,.remote-card,.production-card,.production-module-card,.v40-tool-panel,.capital-shipyard-control) {
+  background: linear-gradient(155deg,#20201d70,transparent 40%),#181817;
+  box-shadow: inset 0 1px #eee5cf0c,0 5px 14px #0005;
+}
+html.rhw-focus-pass #inventoryStatusPanel .alert-card { border-top: 2px solid #999385; }
+html.rhw-focus-pass #inventoryStatusPanel .alert-card:first-child { border-top-color: #d7b675; }
+html.rhw-focus-pass #inventoryStatusPanel .feedstock-panel { border-top-color: #bda16b; }
+html.rhw-focus-pass #inventoryStatusPanel .alert-title {
+  min-height: 52px; padding: 12px 16px; border-bottom-color: #45453f;
+  background: var(--rhw-head-fill); box-shadow: inset 0 1px #ffffff06;
+}
+html.rhw-focus-pass #inventoryStatusPanel .alert-card:first-child .alert-title { background: linear-gradient(115deg,#342e21,#232320 75%); }
+html.rhw-focus-pass #inventoryStatusPanel .alert-title > span:first-child { color: var(--text); }
+html.rhw-focus-pass #inventoryStatusPanel :is(.waste-panel,.confiscated-panel) { border-top: 1px solid #55534b; background: #141413; box-shadow: inset 0 1px #ffffff04; }
+html.rhw-focus-pass #inventoryStatusPanel :is(.waste-panel,.confiscated-panel) .alert-title { min-height: 46px; padding-block: 10px; background: #1c1c1a; font-size: 23px; }
+html.rhw-focus-pass #inventoryStatusPanel :is(.waste-panel,.confiscated-panel) .alert-title > span:first-child { color: #c6c3b9; }
+html.rhw-focus-pass #inventoryStatusPanel .alert-list { padding-inline: 16px; }
+html.rhw-focus-pass #inventoryStatusPanel .alert-list li.overview-stock-row { grid-template-columns: minmax(0,1fr) auto; align-items: center; padding: 14px 0; gap: 7px 10px; }
+html.rhw-focus-pass #inventoryStatusPanel .overview-item-copy { min-width: 0; overflow-wrap: anywhere; }
+html.rhw-focus-pass #inventoryStatusPanel .overview-row-meta { grid-column: 1 / -1; flex-direction: row; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 4px 12px; min-width: 0; }
+html.rhw-focus-pass #inventoryStatusPanel .overview-stock-value { display: flex; flex-wrap: wrap; align-items: baseline; gap: 5px 8px; min-width: 0; }
+html.rhw-focus-pass #inventoryStatusPanel .overview-row-qty { color: #f3f0e8; font-size: 22px; }
+html.rhw-focus-pass #inventoryStatusPanel .overview-stock-reference { display: inline-flex; align-items: baseline; gap: 5px; color: #c2c0b6; font: 14px/1.4 var(--font-tech); }
+html.rhw-focus-pass #inventoryStatusPanel .overview-stock-reference small { display: inline; margin: 0; color: #aaa99f; font: 11px/1.4 var(--font-main); letter-spacing: .035em; }
+html.rhw-focus-pass #inventoryStatusPanel .overview-stock-detail { margin: 0; color: #bcbab1; font: 12px/1.4 var(--font-main); letter-spacing: .01em; }
+html.rhw-focus-pass #inventoryStatusPanel :is(.alert-low,.alert-critical) .overview-stock-detail { color: var(--warn); }
+html.rhw-focus-pass #inventoryStatusPanel .alert-critical .overview-stock-detail { color: var(--danger); }
+html.rhw-focus-pass #inventoryStatusPanel .overview-stock-row > .progress-wrap { grid-column: 1 / -1; margin: 3px 0 0; }
+html.rhw-focus-pass #inventoryStatusPanel .overview-stock-row > .pill { font: 600 11px/1.3 var(--font-main); letter-spacing: .025em; padding: 3px 6px; white-space: nowrap; }
+html.rhw-focus-pass #inventoryStatusPanel .overview-stock-row > .pill.ok { background: transparent; border-color: transparent; color: var(--good); }
+html.rhw-focus-pass #inventoryStatusPanel .section-freshness { font: 11px/1.35 var(--font-main); letter-spacing: 0; }
+@media (hover: hover) {
+  html.rhw-focus-pass #inventoryStatusPanel .alert-list li.overview-stock-row:hover { background: #ffffff03; }
+}
+@media (max-width: 1000px) {
+  html.rhw-focus-pass .uplink-panel.online:not(:has(.uplink-details[open])) { padding: 0; border: 0; }
+  html.rhw-focus-pass .uplink-panel.online:not(:has(.uplink-details[open])) .uplink-details > summary { max-width: none; }
+}
+@media (max-width: 760px) {
+  html.rhw-focus-pass .command-brand { grid-template-columns: 76px minmax(0,1fr); gap: 0 14px; }
+  html.rhw-focus-pass .crest-frame { width: 76px; min-height: 102px; }
+  html.rhw-focus-pass .crest { width: 71px; height: 96px; }
+  html.rhw-focus-pass .crest-frame::before { width: 82px; height: 82px; }
+  html.rhw-focus-pass .base-telemetry-bar { padding-block: 9px; margin-top: 10px; }
+  html.rhw-focus-pass .base-telemetry-stat,
+  html.rhw-focus-pass .base-telemetry-stat:first-child { padding-inline: 8px; }
+  html.rhw-focus-pass .base-telemetry-stat small { font-size: 11px; }
+  html.rhw-focus-pass .base-telemetry-stat strong { font-size: 16px; }
+  html.rhw-focus-pass .uplink-panel { background: transparent; }
+  html.rhw-focus-pass #inventoryStatusPanel .alert-title { padding-inline: 14px; }
+  html.rhw-focus-pass #inventoryStatusPanel .alert-list { padding-inline: 14px; }
+}

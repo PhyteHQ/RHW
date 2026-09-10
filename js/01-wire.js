@@ -83,6 +83,7 @@ function stopEcoTicker() {
 
 function startEcoTicker() {
   stopEcoTicker();
+  if (!tickerSingle) return;
   ecoTickerIndex %= Math.max(1, tickerMessageQueue.length);
   renderEcoTickerMessage();
   if (tickerMessageQueue.length > 1 && document.visibilityState !== 'hidden') {

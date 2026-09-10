@@ -269,10 +269,10 @@
 
   app.installShell = function installShell() {
     if (document.getElementById('rhwAppNav')) return true;
-    const ticker = document.getElementById('newswirePanel');
+    const header = document.querySelector('.command-header');
     const strip = document.getElementById('commandStrip');
     const main = document.querySelector('main');
-    if (!ticker || !strip || !main) return false;
+    if (!header || !strip || !main) return false;
 
     const nav = document.createElement('nav');
     nav.id = 'rhwAppNav';
@@ -290,7 +290,7 @@
           <button type="button" role="tab" data-workspace="comms" aria-controls="workspaceComms"><span>COMMS</span><small>TRANSMISSION STUDIO</small></button>
         </div>
       </div>`;
-    ticker.insertAdjacentElement('afterend', nav);
+    header.insertAdjacentElement('afterend', nav);
 
     const root = document.createElement('div');
     root.id = 'rhwWorkspaceRoot';

@@ -21,7 +21,8 @@ const DASHBOARD_CONFIG = Object.freeze({
     materialsScan: true,
     marketScan: true,
     ecoMode: true,
-    newswire: true,
+    // The editorial manager remains available under Tools; no dashboard ticker.
+    newswire: false,
     remoteNewswire: true
   }),
   roles: Object.freeze({
