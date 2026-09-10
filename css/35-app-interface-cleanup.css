@@ -1280,11 +1280,11 @@ html.rhw-focus-pass { scroll-padding-top: var(--rhw-sticky-nav-offset,62px); }
 html.rhw-focus-pass .rhw-app-nav { position: sticky !important; top: 0 !important; z-index: 110; }
 html.rhw-focus-pass .app-nav-inner { display: block; min-height: 48px; padding-block: 0; }
 html.rhw-focus-pass .app-navigation-cluster { margin: 0; border-width: 0 1px; box-shadow: none; }
-html.rhw-focus-pass .app-tabs { position: static; margin: 0; width: 100%; max-width: none; }
+html.rhw-focus-pass .app-tabs { position: static; margin: 0; padding: 0; gap: 0; min-height: 48px; width: 100%; max-width: none; border-radius: 0; box-shadow: none; }
 html.rhw-focus-pass .app-secondary-nav { position: relative; z-index: 10; display: grid; grid-template-columns: minmax(0,1fr) auto; align-items: start; gap: 12px; width: min(100%,var(--content-max)); margin: 0 auto; padding: 4px var(--layout-gutter); background: var(--bg); }
 html.rhw-focus-pass .app-secondary-nav .app-nav-brand { position: static; grid-column: 2; grid-row: 1; min-height: 44px; padding: 0; margin: 0; display: flex; }
 html.rhw-focus-pass #rhwFocusToolsBtn { min-height: 44px; }
-html.rhw-focus-pass .app-secondary-nav .app-context-nav-slot { grid-column: 1; grid-row: 1; padding: 0; border: 0; background: transparent; box-shadow: none; position: static; }
+html.rhw-focus-pass .app-secondary-nav .app-context-nav-slot { grid-column: 1; grid-row: 1; min-height: 0; padding: 0; border: 0; background: transparent; box-shadow: none; position: static; }
 html.rhw-focus-pass .app-secondary-nav .workspace-subnav { margin: 0; border: 0; background: transparent; box-shadow: none; }
 html.rhw-focus-pass #workspaceCommand main { padding-top: 6px; gap: 0; }
 html.rhw-focus-pass #commandControlDeck { display: grid; grid-template-columns: minmax(200px,1fr) auto minmax(260px,1fr); gap: 10px; align-items: start; margin: 0 0 12px; padding: 0; }
@@ -1345,6 +1345,7 @@ html.rhw-focus-pass #rhwToolsInstallSlot #rhwPwaInstallBtn small { display: bloc
   html.rhw-focus-pass #inventoryStatusPanel .feedstock-panel { grid-column: 1 / -1; }
 }
 @media (max-width: 760px) {
+  html.rhw-focus-pass { --rhw-mobile-dock-height: 0px; }
   html.rhw-focus-pass body { padding-bottom: calc(16px + env(safe-area-inset-bottom,0px)); }
   html.rhw-focus-pass .app-secondary-nav { gap: 8px; }
   html.rhw-focus-pass .app-secondary-nav #commandNodeNav button { gap: 4px; }
