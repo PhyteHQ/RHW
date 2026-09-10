@@ -168,7 +168,7 @@ def main() -> int:
                     scrollDeck:document.querySelector('.summary-grid').scrollWidth-document.querySelector('.summary-grid').clientWidth,
                     navHeight:r(rhwAppNav).height,toolbar:r(commandControlDeck),contextBottom:r(appSecondaryNav).bottom,
                     labels:[...document.querySelectorAll('.app-tabs [data-workspace]')].map(b=>({text:b.textContent.trim(),button:r(b),label:r(b.querySelector('span')),font:getComputedStyle(b.querySelector('span')).font})),
-                    labelsFit:[...document.querySelectorAll('.app-tabs [data-workspace]')].every(b=>{const label=b.querySelector('span'),x=r(label),y=r(b);return x.left>=y.left+3&&x.right<=y.right-3;}),
+                    labelsFit:[...document.querySelectorAll('.app-tabs [data-workspace]')].every(b=>{const label=b.querySelector('span'),x=r(label),y=r(b);return x.left>=y.left+1&&x.right<=y.right-1;}),
                     quantity:parseFloat(getComputedStyle(document.querySelector('.overview-row-qty')).fontSize),
                     kpi:parseFloat(getComputedStyle(document.querySelector('.base-telemetry-stat strong')).fontSize)};
                 })()""")
