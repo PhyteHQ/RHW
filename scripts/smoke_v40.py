@@ -68,18 +68,4 @@ if __name__ == '__main__':
 
     _v402.test_pr7_diagnostics = _focused_diagnostics_test
 
-    # The legacy mobile Forum test predates the Focus Pass and requires the old
-    # context-navigation slot to consume 44px. Daily FORUM intentionally removes
-    # that subnav. Preserve all legacy Forum preview/BBCode/touch checks while
-    # providing only the obsolete height contract during this one legacy test.
-    _legacy_mobile_forum_test = _v402.test_mobile_forum_controls
-
-    def _focused_mobile_forum_test(cdp):
-        _base.ev(cdp, """(()=>{let s=document.getElementById('rhwLegacyForumContextSmokeStyle');if(!s){s=document.createElement('style');s.id='rhwLegacyForumContextSmokeStyle';s.textContent='html.rhw-focus-pass body[data-workspace="comms"] #appContextNavSlot{display:block!important;min-height:44px!important;height:44px!important}';document.head.appendChild(s);}return true;})()""")
-        try:
-            return _legacy_mobile_forum_test(cdp)
-        finally:
-            _base.ev(cdp, "(()=>{document.getElementById('rhwLegacyForumContextSmokeStyle')?.remove();return true;})()")
-
-    _v402.test_mobile_forum_controls = _focused_mobile_forum_test
     raise SystemExit(_v402.main())

@@ -177,7 +177,23 @@
 
   function installAlertDeepLinks() {
     const panel = document.getElementById('commandGlobalAlerts'); if (!panel || panel.dataset.rhwDeepLinks === 'true') return;
-    panel.dataset.rhwDeepLinks = 'true'; panel.addEventListener('click', event => { const target = event.target.closest('[data-priority-jump]'); if (!target) return; event.preventDefault(); event.stopPropagation(); const node = target.dataset.priorityJump; const phrase = `${target.querySelector('strong')?.textContent || ''} ${target.querySelector('small')?.textContent || ''}`; openCommandTarget(node, meaningfulPhrase(phrase)); }, true);
+    panel.dataset.rhwDeepLinks = 'true';
+    panel.addEventListener('click', event => {
+      const target = event.target.closest('[data-priority-jump]');
+      if (!target) return;
+      event.preventDefault();
+      event.stopPropagation();
+      app.commandCompactPolish?.closeAlerts();
+      if (target.dataset.priorityAction === 'connection') {
+        const details = document.querySelector('.uplink-details');
+        if (details) details.open = true;
+        document.querySelector('.uplink-panel')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        details?.querySelector('summary')?.focus({ preventScroll: true });
+        return;
+      }
+      const phrase = target.dataset.priorityTarget || `${target.querySelector('strong')?.textContent || ''} ${target.querySelector('small')?.textContent || ''}`;
+      openCommandTarget(target.dataset.priorityJump, meaningfulPhrase(phrase));
+    }, true);
   }
 
   function candidateElements(node) {

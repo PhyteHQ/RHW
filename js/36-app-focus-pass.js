@@ -79,7 +79,7 @@
       const tool = TOOL_META[key];
       return `<button type="button" class="rhw-focus-tool-card" data-rhw-tool="${key}"><span class="rhw-focus-tool-index">${index}</span><span class="rhw-focus-tool-copy"><strong>${tool.label}</strong><small>${tool.sub}</small></span><span class="rhw-focus-tool-arrow" aria-hidden="true">›</span></button>`;
     }).join('');
-    return `<aside class="rhw-focus-tools-overlay" id="rhwFocusToolsPanel" role="dialog" aria-modal="true" aria-labelledby="rhwFocusToolsTitle" data-focus-trap="true" hidden><section class="rhw-focus-tools-sheet"><header class="rhw-focus-tools-head"><div><strong id="rhwFocusToolsTitle">TOOLS</strong></div><button type="button" id="rhwFocusToolsClose">CLOSE</button></header><div class="rhw-focus-tools-grid">${cards}</div></section></aside>`;
+    return `<aside class="rhw-focus-tools-overlay" id="rhwFocusToolsPanel" role="dialog" aria-modal="true" aria-labelledby="rhwFocusToolsTitle" data-focus-trap="true" hidden><section class="rhw-focus-tools-sheet"><header class="rhw-focus-tools-head"><div><strong id="rhwFocusToolsTitle">TOOLS</strong></div><button type="button" id="rhwFocusToolsClose">CLOSE</button></header><div class="rhw-focus-tools-grid">${cards}</div><div id="rhwToolsInstallSlot" class="rhw-tools-install-slot"></div></section></aside>`;
   }
 
   function toolsFocusable(panel = document.getElementById('rhwFocusToolsPanel')) {
@@ -130,11 +130,14 @@
       button.setAttribute('aria-expanded', 'false');
       button.innerHTML = '<span>TOOLS</span>';
       const install = document.getElementById('rhwPwaInstallBtn');
-      if (install) brand.insertBefore(button, install);
+      if (install?.parentElement === brand) brand.insertBefore(button, install);
       else brand.appendChild(button);
     }
     if (!document.getElementById('rhwFocusToolsPanel')) document.body.insertAdjacentHTML('beforeend', toolsMarkup());
     const panel = document.getElementById('rhwFocusToolsPanel');
+    const install = document.getElementById('rhwPwaInstallBtn');
+    const installSlot = document.getElementById('rhwToolsInstallSlot');
+    if (install && installSlot && install.parentElement !== installSlot) installSlot.appendChild(install);
     if (panel) panel.dataset.focusTrap = 'true';
     if (button.dataset.rhwFocusBound !== 'true') {
       button.dataset.rhwFocusBound = 'true';
@@ -258,7 +261,7 @@
     };
     if (tabs.command !== 'COMMAND' || tabs.calculator !== 'CALCULATOR' || tabs.forum !== 'FORUM') failures.push('primary-tabs');
     if (!document.getElementById('rhwFocusToolsBtn') || !document.getElementById('rhwFocusToolsPanel')) failures.push('tools-surface');
-    if (document.querySelectorAll('#rhwFocusToolsPanel [data-rhw-tool]').length !== 5) failures.push('tool-count');
+    if (document.querySelectorAll('#rhwFocusToolsPanel [data-rhw-tool]').length !== 4) failures.push('tool-count');
     if (document.getElementById('rhwFocusToolsPanel')?.dataset.focusTrap !== 'true') failures.push('tools-focus-trap');
     if (!document.documentElement.classList.contains('rhw-focus-pass')) failures.push('focus-class');
     return failures;

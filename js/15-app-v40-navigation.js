@@ -47,7 +47,7 @@
       <button type="button" id="inventoryStatusTab" role="tab" aria-controls="inventoryStatusPanel" data-inventory-view="status"><span>STATUS BOARD</span><small>FACILITY + EXPORT + FEEDSTOCK</small></button>
       <button type="button" id="inventoryManifestTab" role="tab" aria-controls="inventoryManifestPanel" data-inventory-view="manifest"><span>FULL MANIFEST</span><small>SEARCH + FILTER + PRICES</small></button>
     </div>
-    <section id="inventoryStatusPanel" class="inventory-view-panel" role="tabpanel" aria-labelledby="inventoryStatusTab" data-inventory-panel="status"><div class="inventory-mobile-hint" aria-hidden="true"><span>SWIPE STATUS CARDS</span><i></i></div></section>
+    <section id="inventoryStatusPanel" class="inventory-view-panel" role="tabpanel" aria-labelledby="inventoryStatusTab" data-inventory-panel="status"></section>
     <section id="inventoryManifestPanel" class="inventory-view-panel" role="tabpanel" aria-labelledby="inventoryManifestTab" data-inventory-panel="manifest" hidden></section>`;
   }
 
@@ -102,8 +102,11 @@
     const actions = [];
     const snapshot = window.telemetrySnapshot();
     const verified = snapshot.available;
-    if (!verified) return [{ state: 'critical', node: 'inventory', title: 'RESTORE VERIFIED TELEMETRY', meta: snapshot.detail }];
-    if (snapshot.stale) actions.push({ state: 'critical', node: 'inventory', title: 'REFRESH CACHED STOCK', meta: snapshot.detail });
+    if (!verified) {
+      const failed = /UNAVAILABLE|FAILED/i.test(snapshot.label);
+      return [{ state: failed ? 'critical' : 'low', node: 'inventory', action: 'connection', title: failed ? 'STOCK DATA UNAVAILABLE' : 'CONNECTING TO STOCK DATA', meta: 'Stock and coverage are unknown until the uplink succeeds. Open connection details to retry.' }];
+    }
+    if (snapshot.stale) actions.push({ state: 'low', node: 'inventory', action: 'connection', title: 'REFRESH CACHED STOCK', meta: snapshot.detail });
 
     safeOperationalItems().forEach(item => {
       const severity = roleSeverity(item);
@@ -113,13 +116,14 @@
       let deficit = 0;
       try { if (typeof window.needAmount === 'function') deficit = Number(window.needAmount(item)) || 0; } catch {}
       const node = severity.role === 'shipyard' ? 'shipyard' : 'inventory';
-      actions.push({ state: severity.state, node, title: `${String(severity.role || 'asset').toUpperCase()} // ${String(name).toUpperCase()}`, meta: deficit > 0 ? `DEFICIT ${app.util.number(deficit)} UNITS` : `${severity.state.toUpperCase()} THRESHOLD BREACH` });
+      actions.push({ state: severity.state, node, target: name, title: `${String(severity.role || 'asset').toUpperCase()} // ${String(name).toUpperCase()}`, meta: deficit > 0 ? `DEFICIT ${app.util.number(deficit)} UNITS` : `${severity.state.toUpperCase()} THRESHOLD BREACH` });
     });
 
     const constrained = productionAnalysis().find(entry => entry.cardState !== 'ok');
     if (constrained?.bottleneck) actions.push({
       state: constrained.cardState,
       node: 'production',
+      target: constrained.recipe.product,
       title: `PRODUCTION // ${String(constrained.recipe.product).toUpperCase()}`,
       meta: `BOTTLENECK ${String(constrained.bottleneck.displayName || constrained.bottleneck.name).toUpperCase()} // NEXT CYCLE +${app.util.number(constrained.nextCycleGap)}`
     });
@@ -128,12 +132,13 @@
     if (yard && yard.buildable <= 1 && yard.bottleneck) actions.push({
       state: yard.buildable <= 0 ? 'critical' : 'low',
       node: 'shipyard',
+      target: yard.bottleneck.name,
       title: `SHIPYARD // ${yard.buildable <= 0 ? 'NO HULL READY' : 'RESERVE THIN'}`,
       meta: `NEXT HULL NEEDS +${app.util.number(yard.bottleneck.gap)} ${String(yard.bottleneck.name).toUpperCase()}`
     });
 
     const order = { critical: 0, low: 1, ok: 2 };
-    return actions.sort((a, b) => (order[a.state] ?? 9) - (order[b.state] ?? 9)).slice(0, 6);
+    return actions.sort((a, b) => (order[a.state] ?? 9) - (order[b.state] ?? 9));
   }
 
   function renderPriorities() {
@@ -141,10 +146,17 @@
     const count = document.getElementById('v40PriorityCount');
     if (!list || !count) return;
     const actions = priorityActions();
-    count.textContent = `${actions.length} ACTIVE`;
-    list.innerHTML = actions.length
-      ? actions.map(action => `<button type="button" class="command-priority-item state-${action.state}" data-priority-jump="${action.node}"><span class="priority-state">${action.state.toUpperCase()}</span><span><strong>${app.util.escape(action.title)}</strong><small>${app.util.escape(action.meta)}</small></span><b>OPEN</b></button>`).join('')
+    const countText = `${actions.length} ACTIVE`;
+    if (count.textContent !== countText) count.textContent = countText;
+    const markup = actions.length
+      ? actions.map(action => `<button type="button" class="command-priority-item state-${action.state}" data-priority-jump="${action.node}" data-priority-target="${app.util.escape(action.target || '')}" data-priority-action="${action.action || 'stock'}"><span class="priority-state">${action.state.toUpperCase()}</span><span><strong>${app.util.escape(action.title)}</strong><small>${app.util.escape(action.meta)}</small></span><b>OPEN</b></button>`).join('')
       : '<div class="command-priority-empty"><strong>NO PRIORITY ACTIONS</strong><span>ALL MONITORED COMMAND THRESHOLDS ARE NOMINAL</span></div>';
+    // Preserve the focused action during unchanged background refreshes.
+    const signature = JSON.stringify(actions);
+    if (list.dataset.prioritySignature !== signature) {
+      list.innerHTML = markup;
+      list.dataset.prioritySignature = signature;
+    }
   }
 
   function write(id, value) {

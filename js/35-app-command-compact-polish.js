@@ -64,14 +64,38 @@
   }
 
   function mountInventoryNav() {
-    const commandNav = document.getElementById('commandNodeNav');
     const nav = decorateInventoryNav();
-    const shell = document.getElementById('appContextNavSlot') || commandNav?.parentElement;
-    if (!commandNav || !nav || !shell) return false;
-    shell.classList.add('rhw-command-compact-shell');
-    if (commandNav.parentElement !== shell) shell.appendChild(commandNav);
-    if (commandNav.nextElementSibling !== nav) commandNav.insertAdjacentElement('afterend', nav);
+    const deck = document.getElementById('commandControlDeck');
+    const panel = document.getElementById('commandGlobalAlerts');
+    if (!nav || !deck || !panel) return false;
+    if (nav.parentElement !== deck) deck.prepend(nav);
+    if (panel.parentElement !== deck) deck.appendChild(panel);
+    let details = document.getElementById('commandAlertDetails');
+    if (!details) {
+      details = document.createElement('div');
+      details.id = 'commandAlertDetails';
+      details.className = 'command-alert-details';
+      details.appendChild(document.getElementById('v40PriorityList'));
+      panel.appendChild(details);
+      document.getElementById('commandAlertToggle')?.setAttribute('aria-controls', details.id);
+      panel.addEventListener('keydown', event => {
+        if (event.key !== 'Escape' || !panel.classList.contains('expanded')) return;
+        event.preventDefault();
+        closeAlerts();
+        document.getElementById('commandAlertToggle')?.focus();
+      });
+      document.addEventListener('pointerdown', event => {
+        if (!panel.contains(event.target)) closeAlerts();
+      });
+    }
+    const group = document.querySelector('.command-focus-modes');
+    if (group && group.parentElement !== details) details.prepend(group);
     return true;
+  }
+
+  function closeAlerts() {
+    document.getElementById('commandGlobalAlerts')?.classList.remove('expanded');
+    document.getElementById('commandAlertToggle')?.setAttribute('aria-expanded', 'false');
   }
 
   function installAttentionToggle() {
@@ -80,6 +104,7 @@
     const attention = group?.querySelector('[data-command-focus-mode="attention"]');
     if (!group || !all || !attention) return false;
     group.classList.add('rhw-attention-only');
+    if (attention.firstChild?.nodeType === Node.TEXT_NODE) attention.firstChild.textContent = 'FILTER AFFECTED AREAS ';
     all.hidden = true;
     all.tabIndex = -1;
     all.setAttribute('aria-hidden', 'true');
@@ -104,6 +129,7 @@
     const total = Number(result.total) || 0;
     group.classList.toggle('rhw-attention-empty', total === 0);
     if (total === 0 && document.body.dataset.commandFocus === 'attention') app.unifiedUi.applyCommandFocus('all');
+    document.getElementById('commandGlobalAlerts')?.toggleAttribute('data-filter-active', document.body.dataset.commandFocus === 'attention');
   }
 
   function syncAlerts() {
@@ -137,13 +163,14 @@
 
   function selfTest() {
     const failures = [];
-    const commandNav = document.getElementById('commandNodeNav');
     const inventoryNav = document.querySelector('.rhw-inventory-mode-nav');
-    const shell = document.querySelector('.rhw-command-compact-shell');
+    const deck = document.getElementById('commandControlDeck');
     const all = document.querySelector('[data-command-focus-mode="all"]');
     const attention = document.querySelector('[data-command-focus-mode="attention"]');
     if (!document.getElementById('rhwCommandCompactPolishStyle')) failures.push('style');
-    if (!shell || !commandNav || !inventoryNav || commandNav.nextElementSibling !== inventoryNav) failures.push('inventory-nav-stack');
+    if (!deck || inventoryNav?.parentElement !== deck) failures.push('inventory-toolbar');
+    if (document.getElementById('commandGlobalAlerts')?.parentElement !== deck) failures.push('alerts-toolbar');
+    if (!document.querySelector('#commandAlertDetails .command-focus-modes')) failures.push('unified-attention');
     if (inventoryNav?.querySelectorAll('.rhw-subview-index').length !== 2) failures.push('inventory-mode-indexes');
     if (inventoryNav?.dataset.rhwCompactInteraction !== 'true') failures.push('inventory-interaction');
     if (!all?.hidden) failures.push('all-areas-visible');
@@ -175,6 +202,7 @@
     installAttentionToggle,
     syncAlerts,
     syncAttentionState,
+    closeAlerts,
     selfTest
   };
 })();

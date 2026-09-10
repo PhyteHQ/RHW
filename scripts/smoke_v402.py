@@ -108,7 +108,7 @@ def test_mobile_forum_controls(cdp):
           RHWV4.mobileUi.setForumView('write');
           return{
             mode:document.documentElement.dataset.rhwMobileUi,
-            dock:{position:getComputedStyle(dock).position,height:dock.getBoundingClientRect().height},
+            dock:{position:getComputedStyle(document.getElementById('rhwAppNav')).position,height:document.getElementById('rhwAppNav').getBoundingClientRect().height},
             context:{position:getComputedStyle(context).position,height:context.getBoundingClientRect().height},
             preview,bbcode,touch,operations,comms,
             activeView:document.body.dataset.commsMobileView
@@ -116,9 +116,9 @@ def test_mobile_forum_controls(cdp):
         })()""")
     finally:
         cdp.call("Emulation.clearDeviceMetricsOverride")
-    if result.get("error") or result.get("mode") != "true" or result.get("dock", {}).get("position") != "fixed" or result.get("dock", {}).get("height", 0) < 54:
+    if result.get("error") or result.get("mode") != "true" or result.get("dock", {}).get("position") != "sticky" or not 47.5 <= result.get("dock", {}).get("height", 0) <= 54:
         raise RuntimeError(f"Mobile workspace dock failed: {result}")
-    if result.get("context", {}).get("height", 0) < 44 or result.get("touch") or result.get("operations") != "operations" or result.get("comms") != "comms":
+    if result.get("context", {}).get("position") == "sticky" or result.get("touch") or result.get("operations") != "operations" or result.get("comms") != "comms":
         raise RuntimeError(f"Mobile navigation / touch targets failed: {result}")
     preview, bbcode = result.get("preview", {}), result.get("bbcode", {})
     if preview.get("composer") or not preview.get("panel") or "RHW MOBILE UI TEST" not in preview.get("text", ""):
@@ -523,7 +523,10 @@ def test_pr4_pwa(cdp, workspace, node):
     })
     try:
         result = base.ev(cdp, """(async()=>{
-          RHWPWA.showManualInstructions();
+          RHWV4.focusPass.openTools();
+          const installHeight=document.getElementById('rhwPwaInstallBtn')?.getBoundingClientRect().height||0;
+          document.getElementById('rhwPwaInstallBtn')?.click();
+          const toolsClosed=document.getElementById('rhwFocusToolsPanel')?.hidden;
           Object.defineProperty(navigator,'onLine',{configurable:true,get:()=>false});
           RHWPWA.syncConnectionState();
           const install=document.getElementById('rhwPwaInstallBtn');
@@ -531,8 +534,8 @@ def test_pr4_pwa(cdp, workspace, node):
           const primary=document.getElementById('rhwPwaPrimary');
           const offline=document.getElementById('rhwPwaOffline');
           const snapshot={
-            api:!!window.RHWPWA, install:!!install, installHeight:install?.getBoundingClientRect().height||0,
-            inAppHeader:!!document.querySelector('.app-nav-brand #rhwPwaInstallBtn'),
+            api:!!window.RHWPWA, install:!!install, installHeight,toolsClosed,
+            inTools:!!document.querySelector('#rhwToolsInstallSlot #rhwPwaInstallBtn'),
             inTelemetry:!!document.querySelector('.uplink-actions #rhwPwaInstallBtn'),
             ios:RHWPWA.manualInstructions('Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X)','iPhone',5),
             panelVisible:!panel?.hidden, primaryHeight:primary?.getBoundingClientRect().height||0,
@@ -556,7 +559,7 @@ def test_pr4_pwa(cdp, workspace, node):
     finally:
         cdp.call("Emulation.clearDeviceMetricsOverride")
     if (not result.get("api") or not result.get("install") or result.get("installHeight", 0) < 43.5
-            or not result.get("inAppHeader") or result.get("inTelemetry")
+            or not result.get("inTools") or not result.get("toolsClosed") or result.get("inTelemetry")
             or "SAFARI" not in result.get("ios", {}).get("message", "")
             or "IPHONE / IPAD" not in result.get("ios", {}).get("title", "")
             or not result.get("panelVisible") or result.get("primaryHeight", 0) < 47.5

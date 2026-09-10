@@ -84,7 +84,7 @@
       const head = panel.querySelector('.command-priority-head');
       if (head) head.innerHTML = `<button type="button" class="command-alert-toggle" id="commandAlertToggle" aria-expanded="false" aria-controls="v40PriorityList">
         <i class="command-alert-signal" aria-hidden="true"></i>
-        <span class="command-alert-copy"><strong>COMMAND ALERTS</strong><small>PRIORITY ACTIONS FROM CURRENT VERIFIED STATUS</small></span>
+        <span class="command-alert-copy"><strong>ATTENTION</strong><small>PRIORITY ACTIONS FROM CURRENT VERIFIED STATUS</small></span>
         <span class="command-alert-meta"><b id="v40PriorityCount">0 ACTIVE</b><i class="command-alert-chevron" aria-hidden="true">⌄</i></span>
       </button>`;
       host.insertAdjacentElement('beforebegin', panel);
@@ -111,9 +111,10 @@
     panel.dataset.alertCount = String(items.length);
     const hint = panel.querySelector('.command-alert-copy small');
     if (hint) hint.textContent = items.length
-      ? (items.length === 1 ? '1 PRIORITY ACTION // OPEN BELOW' : `${items.length} PRIORITY ACTIONS // FIRST SHOWN BELOW`)
+      ? items[0].querySelector('strong')?.textContent || 'OPEN PRIORITY ACTIONS'
       : 'NO PRIORITY ACTIONS // MONITORED THRESHOLDS NOMINAL';
-    if (items.length <= 1) {
+    if (hint) hint.title = hint.textContent;
+    if (items.length === 0) {
       panel.classList.remove('expanded');
       document.getElementById('commandAlertToggle')?.setAttribute('aria-expanded', 'false');
     }
