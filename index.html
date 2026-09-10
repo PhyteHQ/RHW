@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="rhw-loading">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="description" content="Resolution Heavy Works live logistics and production command dashboard." />
-  <meta name="theme-color" content="#05080c" />
+  <meta name="theme-color" content="#0D1014" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -45,17 +45,17 @@
           <div class="base-telemetry-bar">
             <div class="base-telemetry-stat health-telemetry" id="baseHealthCard">
               <small>STRUCTURAL INTEGRITY</small>
-              <strong class="scramble" id="baseHealthVal">SCANNING...</strong>
+              <strong class="" id="baseHealthVal">SCANNING...</strong>
             </div>
             <div class="telemetry-divider"></div>
             <div class="base-telemetry-stat credits">
               <small>BASE CREDITS</small>
-              <strong class="scramble" id="baseMoneyVal">DECRYPTING...</strong>
+              <strong class="" id="baseMoneyVal">DECRYPTING...</strong>
             </div>
             <div class="telemetry-divider"></div>
             <div class="base-telemetry-stat">
               <small>FREE STORAGE</small>
-              <strong class="scramble" id="baseStorageVal">CALCULATING...</strong>
+              <strong class="" id="baseStorageVal">CALCULATING...</strong>
             </div>
           </div>
         </div>
@@ -66,7 +66,7 @@
           <span class="live-dot" id="liveDot"></span>
           <div>
             <small class="uplink-label">UPLINK STATUS</small>
-            <strong class="scramble uplink-value" id="liveStatus" aria-live="polite">SYNCING TELEMETRY...</strong>
+            <strong class=" uplink-value" id="liveStatus" aria-live="polite">SYNCING TELEMETRY...</strong>
           </div>
         </div>
         <details class="uplink-details" id="uplinkDetails">
@@ -77,7 +77,7 @@
           <div class="uplink-stat"><small class="uplink-label">NEXT SYNC</small><strong class="uplink-value" id="syncCountdown">–</strong></div>
           <div class="uplink-stat"><small class="uplink-label">REFRESH CYCLE</small><strong class="uplink-value">5 MIN</strong></div>
           <div class="uplink-actions">
-            <div class="uplink-stat"><small class="uplink-label">DATALINK</small><strong class="scramble uplink-value" id="telemetryStateVal" aria-live="polite">POLLING</strong></div>
+            <div class="uplink-stat"><small class="uplink-label">DATALINK</small><strong class=" uplink-value" id="telemetryStateVal" aria-live="polite">POLLING</strong></div>
             <button id="ecoToggleBtn" class="uplink-button header-uplink-button fx-mode-button" type="button" title="Reduce visual effects on slower devices" aria-label="Visual effects mode: automatic"><span>FX: AUTO</span></button>
           </div>
           </div>

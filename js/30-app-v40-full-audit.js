@@ -7,11 +7,7 @@
   const app = window.RHWV4;
   if (!app || app.fullAudit) return;
 
-  const EXPECTED_ROUTES = Object.freeze({
-    command: Object.freeze(['overview', 'inventory', 'shipyard', 'production', 'logistics']),
-    operations: Object.freeze(['calculator', 'orders']),
-    comms: Object.freeze(['forum', 'ticker', 'drafts', 'senders'])
-  });
+  const EXPECTED_ROUTES = app.config.routes;
   const state = { results: [], lastRunAt: 0, running: false, autoRun: false };
   const esc = value => app.util.escape(String(value ?? ''));
   const makeResult = (key, label, tone, status, detail) => ({ key, label, tone, status, detail });
@@ -28,6 +24,7 @@
     const selectors = {
       command: '[data-command-panel]',
       operations: '[data-operations-panel]',
+      pricecheck: '[data-pricecheck-panel]',
       comms: '[data-comms-panel]'
     };
     const discovered = {};
@@ -43,14 +40,14 @@
     const found = Object.values(discovered).reduce((total, routes) => total + routes.length, 0);
     return missing.length || found !== totalRoutes()
       ? makeResult('routes', 'ROUTE TOPOLOGY', 'danger', 'INCOMPLETE', `${found} / ${totalRoutes()} expected route panels detected.`)
-      : makeResult('routes', 'ROUTE TOPOLOGY', 'good', `${found} READY`, 'All Command, Operations and Comms destinations are mounted.');
+      : makeResult('routes', 'ROUTE TOPOLOGY', 'good', `${found} READY`, 'All published workspaces and destinations are mounted.');
   }
 
   function moduleContracts() {
     const contracts = [
       app.command?.activate, app.operations?.activate, app.comms?.activate,
       app.storage?.exportPayload, app.storage?.importPayload,
-      app.productionOrders?.buildBbcode, app.transferCenter?.previewFile,
+      app.pricecheck?.refresh, app.transferCenter?.previewFile,
       app.newswireManager?.parseSource, app.newswireManager?.serializeSource,
       app.newswire2?.buildForumBbcode, app.newswireReview?.buildReviewPackage,
       app.discoveryStatus?.init, app.diagnostics?.init,
@@ -67,6 +64,7 @@
     const meta = {
       command: ['commandNode', 'data-command-panel'],
       operations: ['operationsNode', 'data-operations-panel'],
+      pricecheck: ['pricecheckNode', 'data-pricecheck-panel'],
       comms: ['commsNode', 'data-comms-panel']
     }[workspace];
     const workspaces = [...document.querySelectorAll('.app-workspace')].filter(element => !element.hidden);
@@ -102,7 +100,9 @@
   function controlName(element) {
     const explicit = element.getAttribute('aria-label') || element.getAttribute('title');
     if (explicit?.trim()) return explicit.trim();
-    if (['BUTTON', 'A'].includes(element.tagName) && element.textContent.trim()) return element.textContent.trim();
+    const labelled = String(element.getAttribute('aria-labelledby') || '').split(/\s+/).filter(Boolean).map(id => document.getElementById(id)?.textContent || '').join(' ').trim();
+    if (labelled) return labelled;
+    if (['BUTTON', 'A', 'SUMMARY'].includes(element.tagName) && element.textContent.trim()) return element.textContent.trim();
     if (element.id) {
       const label = document.querySelector(`label[for="${CSS.escape(element.id)}"]`);
       if (label?.textContent.trim()) return label.textContent.trim();
@@ -114,7 +114,7 @@
 
   function accessibleControls() {
     const controls = [...document.querySelectorAll('button,a[href],input:not([type="hidden"]),select,textarea,summary')]
-      .filter(element => !element.closest('[hidden]'));
+      .filter(visible);
     const unnamed = controls.filter(element => !controlName(element)).length;
     return unnamed
       ? makeResult('controls', 'CONTROL NAMES', 'warn', `${unnamed} REVIEW`, `${controls.length - unnamed} / ${controls.length} controls expose a readable name.`)
@@ -191,19 +191,11 @@
     }
   }
 
-  function productionParity() {
-    try {
-      const output = app.productionOrders.buildBbcode({
-        generatedAt: new Date(0).toISOString(), telemetryReady: false,
-        orders: [], materials: [], totalOutput: 0, bottlenecks: null
-      });
-      const ready = output.includes('RHW PRODUCTION ORDER BOARD') && output.includes('AGGREGATED DIRECT MATERIALS');
-      return ready
-        ? makeResult('production-parity', 'PRODUCTION FORUM REPORT', 'good', 'SYNCHRONIZED', 'The empty-order boundary still produces the complete forum report structure.')
-        : makeResult('production-parity', 'PRODUCTION FORUM REPORT', 'danger', 'PARITY FAILED', 'The production forum report contract is incomplete.');
-    } catch {
-      return makeResult('production-parity', 'PRODUCTION FORUM REPORT', 'danger', 'BUILDER ERROR', 'The production report contract could not complete.');
-    }
+  function priceCheckContract() {
+    const failures = app.pricecheck?.selfTest?.() || ['module'];
+    return failures.length
+      ? makeResult('pricecheck', 'PRICE CHECK', 'danger', 'INCOMPLETE', 'Fixed-route controls or data contracts are unavailable.')
+      : makeResult('pricecheck', 'PRICE CHECK', 'good', 'READY', 'Fixed routes, manual prices and data provenance are available.');
   }
 
   function catalogTruth() {
@@ -249,7 +241,7 @@
     return [
       routeTopology(), moduleContracts(), activeRouteConsistency(), domIdentity(), accessibleControls(),
       dialogSafety(), viewportHealth(), touchTargets(), motionContract(), forumParity(), newswireParity(),
-      productionParity(), catalogTruth(), localSaveProbe(), pwaContract()
+      priceCheckContract(), catalogTruth(), localSaveProbe(), pwaContract()
     ];
   }
 

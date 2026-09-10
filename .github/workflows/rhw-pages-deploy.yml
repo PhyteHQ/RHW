@@ -52,6 +52,9 @@ jobs:
       - name: Validate audit regressions
         run: node scripts/test_audit_regressions.js
 
+      - name: Validate Price Check provenance and backup
+        run: node scripts/test_price_check.js
+
       - name: Validate Logistics market scans
         run: node scripts/test_logistics_scans.js
 

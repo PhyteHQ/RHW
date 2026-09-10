@@ -1,22 +1,22 @@
 :root {
-      --bg: #030405;
-      --panel: rgba(10, 12, 15, 0.70);
-      --line: #333333;
-      --line-soft: rgba(51, 51, 51, 0.6);
-      --text: #E0E0E0;
-      --muted: #808080;
-      --gold: #d4af37;
+      --bg: #0D1014;
+      --panel: #161B22;
+      --line: #343B45;
+      --line-soft: #29313B;
+      --text: #ECE9E1;
+      --muted: #ADB3BC;
+      --gold: #C6A566;
       --gold-soft: rgba(212, 175, 55, 0.1);
-      --danger: #A52A2A; 
-      --warn: #c28722;
-      --good: #4a8f62;
+      --danger: #E28A8A;
+      --warn: #D7B96D;
+      --good: #82BA95;
       --blue-soft: rgba(47, 128, 237, 0.16);
-      --remote: #7da7ea;
+      --remote: #8BA9CC;
       --waste: #a89f91;
       --waste-soft: rgba(168, 159, 145, 0.15);
       
-      --font-main: Tahoma, Arial, sans-serif;
-      --font-title: 'Agency FB', 'Teko', sans-serif;
+      --font-main: 'Segoe UI', Arial, sans-serif;
+      --font-title: 'Teko', 'Arial Narrow', sans-serif;
       --font-tech: 'Consolas', 'Share Tech Mono', monospace;
     }
 
@@ -48,7 +48,7 @@
       }
     }
 
-    body { cursor: crosshair; }
+    body { cursor: default; }
     button, select, th, a { cursor: pointer; }
     input { cursor: text; }
 
@@ -209,3 +209,6 @@
     .ticker .ticker-item.lore .ticker-message { color: rgba(224,224,224,0.72); }
     .ticker .ticker-message { padding-right: 0; }
     .ticker .ticker-separator { padding-right: 0; color: rgba(212,175,55,0.34); font-family: var(--font-tech); font-size: 11px; letter-spacing: 0.14em; padding: 0 4px; }
+
+html.rhw-loading main, html.rhw-loading .command-strip { visibility: hidden; }
+html.rhw-loading .command-header { animation: none; opacity: 1; transform: none; }

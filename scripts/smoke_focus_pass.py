@@ -98,7 +98,9 @@ def main() -> int:
             math_state = base.ev(cdp, """(()=>{
               const originalFind=window.findCommodity,originalPrice=window.priceSell;
               window.__priceCheckSmokeOriginal={originalFind,originalPrice};
-              window.findCommodity=name=>({name,missing:false});
+              window.findCommodity=name=>({name,missing:false,sell_price:100});
+              window.telemetrySnapshot=()=>({available:true,stale:false,fetchedAt:new Date().toISOString(),label:'LIVE STOCK'});
+              allBases.push({name:'Copperland',nickname:'copperland',system:'Coronado',shop_items:[{name:'Copper',price:80,sell_price:60}]});
               window.priceSell=item=>100;
               const now=new Date().toISOString();
               RHWV4.pricecheck.state.marketCache={fetchedAt:now,routes:{

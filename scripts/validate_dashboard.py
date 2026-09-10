@@ -159,7 +159,7 @@ def main() -> int:
     ), 'Stable dashboard storage recovery')
     require_tokens(errors, 'js/14-app-v40-cache.js', (
         'app.storage', 'saveDraft', 'upsertSender', 'importPayload', 'senderSnapshotName',
-        "version: 4", 'inspectPayload', 'priceProfiles:', 'shipyardPlanner:', 'productionOrders:', 'newswireDraft:', 'preferences:'
+        "version: 5", 'inspectPayload', 'priceProfiles:', 'shipyardPlanner:', 'productionOrders:', 'newswireDraft:', 'preferences:'
     ), 'V4 storage')
     require_tokens(errors, 'js/15-app-v40-navigation.js', (
         'PRIORITY ACTIONS', 'inventory-view-nav', 'priorityActions', 'activateInventoryView',
@@ -256,7 +256,7 @@ def main() -> int:
     ), 'PR5 Newswire 2.0 presentation')
     require_tokens(errors, 'js/25-app-v40-discovery-status.js', (
         'discoveryDataStatus', 'CHECK LATEST RUN', 'OPEN SYNC CONTROL', 'VIEW CHANGE REPORT',
-        'DRAFT PR ONLY · AUTO-MERGE DISABLED', 'app.discoveryStatus', 'checkLatestRun', 'selfTest'
+        'REVIEWED BRANCH / DRAFT PR · AUTO-MERGE DISABLED', 'app.discoveryStatus', 'checkLatestRun', 'selfTest'
     ), 'PR6 Discovery status runtime')
     require_tokens(errors, 'css/29-app-pr6-discovery-sync.css', (
         '.discovery-data-panel', '.discovery-data-grid', '.discovery-data-actions',
@@ -379,7 +379,7 @@ def main() -> int:
     ), 'PR10 Newswire review model tests')
     require_tokens(errors, 'js/30-app-v40-full-audit.js', (
         'FULL APP AUDIT', 'EXPECTED_ROUTES', 'ROUTE TOPOLOGY', 'DOM IDENTITY + LINKS',
-        'TOUCH TARGETS', 'FORUM BB CODE', 'NEWSWIRE CHANNELS', 'PRODUCTION FORUM REPORT',
+        'TOUCH TARGETS', 'FORUM BB CODE', 'NEWSWIRE CHANNELS', 'PRICE CHECK',
         'PRIVACY: This audit uses synthetic markers', 'app.fullAudit'
     ), 'PR11 full app audit runtime')
     require_tokens(errors, 'css/34-app-pr11-full-audit.css', (

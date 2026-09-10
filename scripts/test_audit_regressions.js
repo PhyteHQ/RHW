@@ -9,7 +9,7 @@ const zlib = require('node:zlib');
 const root = path.join(__dirname, '..');
 const run = (ctx, file) => vm.runInContext(fs.readFileSync(path.join(root, file), 'utf8'), ctx, { filename: file });
 const node = () => ({ textContent: '', value: '', dataset: {}, innerHTML: '', listeners: {},
-  addEventListener(type, fn) { this.listeners[type] = fn; }, setAttribute() {},
+  addEventListener(type, fn) { this.listeners[type] = fn; }, setAttribute() {}, focus() {}, setSelectionRange() {},
   classList: { remove() {}, add() {} } });
 
 async function models() {
@@ -67,7 +67,7 @@ async function models() {
   const mount = node(); nodes.set('operationsCalculatorMount', mount);
   app.operations.renderCalculator();
   const rendered = id => mount.innerHTML.match(new RegExp(`id="${id}"[^>]*>([^<]*)<`))?.[1];
-  assert.equal(rendered('opsUnitCost'), '2,500,000 CR');
+  assert.equal(rendered('opsUnitCost'), '$2,500,000');
   assert.equal(rendered('opsMobileUnitCost'), rendered('opsUnitCost'));
   assert.equal(rendered('opsMobileSellUnit'), rendered('opsSellUnit'));
   assert.match(mount.innerHTML, /ACTUAL OUTPUT<\/small><strong>1\.000<\/strong>/);
@@ -77,7 +77,7 @@ async function models() {
   app.operations.renderCalculator();
   nodes.get('opsMargin').listeners.input({ target: { value: '20' } });
   assert.equal(nodes.get('opsMobileUnitCost').textContent, nodes.get('opsUnitCost').textContent);
-  assert.equal(nodes.get('opsMobileSellUnit').textContent, '3,125,000 CR');
+  assert.equal(nodes.get('opsMobileSellUnit').textContent, '$3,125,000');
   assert.equal(nodes.get('opsMobileProfit').textContent, nodes.get('opsProfit').textContent);
   const miners = app.operations.matchingRecipes('Archon');
   assert.equal(miners.length, 2);
@@ -95,6 +95,22 @@ async function models() {
   app.operations.renderCalculator();
   assert.match(mount.innerHTML, /"Longhorn" Liberty Heavy Frigate/);
   assert.match(mount.innerHTML, /value="ship_assembly_li_frigate" selected/);
+  assert.equal(app.operations.matchingRecipes('Gold')[0].outputs[0].id, 'commodity_gold', 'Exact material name outranks Golden Blade');
+  nodes.set('opsRecipeSearch', node());
+  nodes.set('opsRecipe', node());
+  app.state.calculator = { ...calc, recipeId: 'recipe_gold_advanced', productId: 'commodity_gold',
+    search: 'Gold refining', affiliationId: '__none__', materialPrices: { commodity_gold_ore: 123 } };
+  app.operations.renderCalculator();
+  nodes.get('opsRecipeSearch').listeners.input({ target: { value: 'Gold refinin' } });
+  await new Promise(resolve => setTimeout(resolve, 180));
+  assert.equal(app.state.calculator.recipeId, 'recipe_gold_advanced');
+  assert.equal(app.state.calculator.materialPrices.commodity_gold_ore, 123, 'Refining a search preserves prices for the same recipe');
+  assert.equal(app.state.calculator.affiliationId, '__none__', 'Same-recipe search preserves deliberate IFF choice');
+  nodes.get('opsRecipeSearch').listeners.input({ target: { value: 'Niobium' } });
+  await new Promise(resolve => setTimeout(resolve, 180));
+  assert.equal(Object.keys(app.state.calculator.materialPrices).length, 0, 'A different recipe starts with blank prices');
+  assert.equal(app.state.calculator.affiliationId, 'br_m_grp');
+  assert.doesNotMatch(mount.innerHTML, /opsAddProductionOrder|ADD TO ORDER BOARD/);
   let plans = 0;
   for (const r of core.state.catalog.recipes) {
     const affiliationId = r.restricted ? r.bonuses?.[0]?.id : 'br_m_grp';

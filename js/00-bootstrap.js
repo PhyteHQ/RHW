@@ -99,6 +99,7 @@ if (!window.__RHW_SMOKE_INLINE__) {
 
       const showBootFailure = (src, reason = 'LOAD ERROR') => {
         document.documentElement.dataset.rhwBootError = 'true';
+        document.documentElement.classList.remove('rhw-loading');
         document.documentElement.dataset.rhwBootAsset = src;
         let panel = document.getElementById('rhwBootFailure');
         if (!panel) {
@@ -152,6 +153,12 @@ if (!window.__RHW_SMOKE_INLINE__) {
         }, { once: true });
         document.body.appendChild(script);
       };
+      // Fetch ahead while preserving deterministic script execution order.
+      files.forEach(([src]) => {
+        const preload = document.createElement('link');
+        preload.rel = 'preload'; preload.as = 'script'; preload.href = versioned(src);
+        document.head.appendChild(preload);
+      });
       loadNext(0);
     }, { once: true });
   })();

@@ -13,7 +13,9 @@
   const WORKFLOW_URL = `https://github.com/${REPOSITORY}/actions/workflows/discovery-catalog-sync.yml`;
   const REPORT_URL = `https://github.com/${REPOSITORY}/blob/main/docs/discovery-sync-report.md`;
   const RUNS_API = `https://api.github.com/repos/${REPOSITORY}/actions/workflows/discovery-catalog-sync.yml/runs?per_page=1&exclude_pull_requests=true`;
-  const state = { status: null, latestRun: null, checking: false };
+  const PROPOSAL_URL = `https://raw.githubusercontent.com/${REPOSITORY}/automation/discovery-catalog-sync/assets/discovery-status.json`;
+  const REVIEW_URL = `https://github.com/${REPOSITORY}/compare/main...automation/discovery-catalog-sync`;
+  const state = { status: null, latestRun: null, proposal: null, checking: false };
   const esc = value => app.util.escape(String(value ?? ''));
 
   function fallbackStatus() {
@@ -72,6 +74,11 @@
     if (state.checking) return { tone: 'warn', label: 'CHECKING', detail: 'CONTACTING SYNC CONTROL' };
     if (state.checkError) return { tone: 'warn', label: 'CHECK UNAVAILABLE', detail: 'LATEST RUN COULD NOT BE VERIFIED' };
     if (!run) return { tone: 'muted', label: 'NO LIVE CHECK YET', detail: 'TAP CHECK LATEST RUN' };
+    const proposalHashes = state.proposal?.source?.sha256;
+    const currentHashes = state.status?.source?.sha256;
+    if (proposalHashes && currentHashes && Object.keys(currentHashes).some(key => currentHashes[key] !== proposalHashes[key])) {
+      return { tone: 'warn', label: 'UPDATE AWAITS REVIEW', detail: `SOURCE CHECK ${dateLabel(state.proposal.lastSuccessfulSync || state.proposal.catalogUpdatedAt)}` };
+    }
     const conclusion = String(run.conclusion || run.status || 'unknown').toUpperCase();
     const runTime = Date.parse(run.updated_at || run.created_at);
     if (conclusion === 'SUCCESS' && (!Number.isFinite(runTime) || Date.now() - runTime > 8 * 86400000)) return { tone: 'warn', label: 'CHECK OVERDUE', detail: dateLabel(run.updated_at || run.created_at) };
@@ -101,10 +108,11 @@
       <div class="discovery-data-actions">
         <button type="button" id="discoveryCheckRun">CHECK LATEST RUN</button>
         <a href="${WORKFLOW_URL}" target="_blank" rel="noopener noreferrer">OPEN SYNC CONTROL</a>
+        <a href="${REVIEW_URL}" target="_blank" rel="noopener noreferrer">REVIEW PENDING UPDATE</a>
         <a href="${REPORT_URL}" target="_blank" rel="noopener noreferrer">VIEW CHANGE REPORT</a>
       </div>
-      <details class="discovery-source-details"><summary>CFG SOURCE HASHES + SAFETY POLICY</summary><div>${files.map(file => `<p><b>${esc(file)}</b><code>${esc(hashes[file] || 'UNAVAILABLE')}</code></p>`).join('')}<p><b>REVIEW GATE</b><code>DRAFT PR ONLY · AUTO-MERGE DISABLED</code></p></div></details>
-      <p class="discovery-data-note">SYNC DOWNLOADS TO A TEMPORARY WORKSPACE, VALIDATES IDS / OUTPUTS / QUANTITIES / IFF + CHANGE SIZE, THEN PREPARES A DRAFT PR ONLY WHEN DATA ACTUALLY CHANGED.</p>
+      <details class="discovery-source-details"><summary>CFG SOURCE HASHES + SAFETY POLICY</summary><div>${files.map(file => `<p><b>${esc(file)}</b><code>${esc(hashes[file] || 'UNAVAILABLE')}</code></p>`).join('')}<p><b>REVIEW GATE</b><code>REVIEWED BRANCH / DRAFT PR · AUTO-MERGE DISABLED</code></p></div></details>
+      <p class="discovery-data-note">SYNC DOWNLOADS TO A TEMPORARY WORKSPACE, VALIDATES IDS / OUTPUTS / QUANTITIES / IFF + CHANGE SIZE, THEN PREPARES A REVIEW BRANCH WHEN DATA CHANGES. IF REPOSITORY POLICY ALLOWS IT, A DRAFT PR IS OPENED. OTHERWISE USE REVIEW PENDING UPDATE.</p>
     </section>`;
   }
 
@@ -143,6 +151,13 @@
       if (!response.ok) throw new Error(`GitHub status ${response.status}`);
       const payload = await response.json();
       state.latestRun = Array.isArray(payload.workflow_runs) ? payload.workflow_runs[0] || null : null;
+      try {
+        const proposalResponse = await fetchWithTimeout(PROPOSAL_URL, { cache: 'no-store' }, 10000);
+        if (proposalResponse.ok) {
+          const proposal = await proposalResponse.json();
+          state.proposal = validStatus(proposal) ? proposal : null;
+        } else state.proposal = null;
+      } catch { state.proposal = null; }
       if (state.latestRun?.html_url && !String(state.latestRun.html_url).startsWith(`https://github.com/${REPOSITORY}/actions/runs/`)) {
         state.latestRun.html_url = null;
       }

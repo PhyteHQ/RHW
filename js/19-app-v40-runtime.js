@@ -23,28 +23,6 @@
     const style = document.getElementById('rhwV40ReleasePolishStyle');
     if (!style || style.dataset.fullReadability === 'true') return;
     style.dataset.fullReadability = 'true';
-    style.textContent += `
-      @media (min-width:1200px){
-        [data-command-panel="inventory"] .alert-list li>span>strong{font-size:13px!important}
-        [data-command-panel="inventory"] .alert-list li small{font-size:9px!important;line-height:1.35}
-        [data-command-panel="inventory"] .overview-row-qty{font-size:13px!important}
-        [data-command-panel="inventory"] .pill{font-size:9px!important}
-        [data-command-panel="inventory"] .inventory-view-nav span{font-size:10px!important}
-        [data-command-panel="inventory"] .inventory-view-nav small{font-size:8.5px!important}
-        [data-command-panel="production"] .production-kicker{font-size:11px!important}
-        [data-command-panel="production"] .module-state{font-size:10px!important}
-        [data-command-panel="production"] .recipe-column-head{font-size:9.5px!important}
-        [data-command-panel="production"] .recipe-short{font-size:9px!important}
-        [data-command-panel="production"] .byproduct-strip{font-size:10px!important}
-        [data-command-panel="production"] .footnote{font-size:12px!important}
-        [data-command-panel="logistics"] .remote-route small,
-        [data-command-panel="logistics"] .logistics-subhead-kicker,
-        [data-command-panel="logistics"] .logistics-subhead-meta{font-size:9px!important}
-        [data-command-panel="logistics"] .market-sort-button{font-size:9px!important}
-        [data-command-panel="logistics"] .supplier-grid small,
-        [data-command-panel="logistics"] .market-scan-grid small{font-size:9px!important;line-height:1.35}
-      }
-    `;
   }
 
   function selfTest() {
@@ -103,7 +81,7 @@
     (app.mobileUi?.selfTest?.() || []).forEach(failure => failures.push(`mobile:${failure}`));
     if (!document.querySelector('[data-command-panel="overview"]')) failures.push('route:command-overview');
     if (!document.querySelector('[data-operations-panel="calculator"]')) failures.push('route:operations-calculator');
-    if (!document.querySelector('[data-operations-panel="orders"]')) failures.push('route:operations-orders');
+    if (!document.querySelector('[data-pricecheck-panel="routes"]')) failures.push('route:pricecheck-routes');
     if (!document.querySelector('[data-comms-panel="ticker"]')) failures.push('route:comms-ticker');
     return failures;
   }
@@ -117,6 +95,7 @@
       workspace: app.state.activeWorkspace,
       commandNode: app.state.commandNode,
       operationsNode: app.state.operationsNode,
+      pricecheckNode: app.state.pricecheckNode,
       commsNode: app.state.commsNode,
       route,
       recipeCount: app.operationsCore?.state?.catalog?.meta?.recipeCount || 0
@@ -154,6 +133,7 @@
       }
 
       app.ready = true;
+      document.documentElement.classList.remove('rhw-loading');
       const failures = selfTest();
       exposeSmoke(failures);
       if (failures.length) throw new Error(`V4 SELF TEST FAILED: ${failures.join(', ')}`);

@@ -9,8 +9,7 @@
   if (!app || !core) return;
 
   const NODES = Object.freeze([
-    ['calculator', 'ITEM CALCULATOR', 'RECIPE + COSTING'],
-    ['orders', 'PRODUCTION ORDERS', 'QUEUE + MATERIALS']
+    ['calculator', 'ITEM CALCULATOR', 'RECIPE + COSTING']
   ]);
   const RECIPE_ALIASES = Object.freeze({
     ship_assembly_li_frigate: Object.freeze({
@@ -41,7 +40,7 @@
   function clampMargin(value) { return Math.max(0, Math.min(95, num(value, 20))); }
   function money(value) {
     if (value === null || value === undefined || !Number.isFinite(Number(value))) return '—';
-    return `${Math.round(Number(value)).toLocaleString('en-US')} CR`;
+    return `$${Math.round(Number(value)).toLocaleString('en-US')}`;
   }
 
   function currentState() {
@@ -58,7 +57,9 @@
   }
 
   function saveState(patch) {
-    app.state.calculator = { ...currentState(), ...patch };
+    const current = currentState();
+    const changedRecipe = patch.recipeId && patch.recipeId !== current.recipeId;
+    app.state.calculator = { ...current, ...(changedRecipe ? { materialPrices: {}, affiliationId: app.config.operations.defaultAffiliation } : {}), ...patch, ...(changedRecipe ? { materialPrices: {} } : {}) };
     app.store.set(app.config.storageKeys.calculatorState, app.state.calculator);
   }
 
@@ -66,7 +67,7 @@
     return `<div class="operations-frame">
       <header class="workspace-heading operations-heading"><div><div class="workspace-kicker"><span>OPERATIONS</span> RHW INDUSTRIAL COSTING NETWORK</div><h2>ITEM CALCULATOR</h2><p>RECIPE LOOKUP // IFF MATERIAL REQUIREMENTS // BUILD COST // SALE PRICE</p></div><div class="workspace-status" id="operationsStatus" data-tone="muted">LOADING RECIPE DATABASE</div></header>
       <nav id="operationsNodeNav" class="workspace-subnav operations-subnav" aria-label="Operations tools"><div class="workspace-subnav-label">OPERATIONS NODES</div><div class="workspace-subnav-tabs">${NODES.map(([key, label, sub]) => `<button type="button" data-operations-node="${key}"><span>${label}</span><small>${sub}</small></button>`).join('')}</div></nav>
-      <div id="operationsNodeHost" class="operations-node-host"><section data-operations-panel="calculator" class="operations-node-panel"><div id="operationsCalculatorMount" class="ops-loading">LOADING DISCOVERY RECIPE DATABASE…</div></section><section data-operations-panel="orders" class="operations-node-panel" hidden><div id="productionOrdersMount" class="ops-loading">LOADING PRODUCTION ORDER BOARD…</div></section></div>
+      <div id="operationsNodeHost" class="operations-node-host"><section data-operations-panel="calculator" class="operations-node-panel"><div id="operationsCalculatorMount" class="ops-loading">LOADING DISCOVERY RECIPE DATABASE…</div></section></div>
     </div>`;
   }
 
@@ -91,11 +92,23 @@
       ...(recipe?.outputs || []).flatMap(output => [output.name, output.id])
     ].filter(Boolean).join(' '));
   }
-  function matchingRecipes(search = '') {
+  function matchingRecipes(search) {
     const query = app.util.normalize(search);
+    const score = recipe => {
+      if (!query) return 0;
+      const alias = recipeAlias(recipe);
+      const names = [recipeDisplayName(recipe), recipeProduct(recipe)?.name, recipe.name,
+        recipe.id, alias?.terms].filter(Boolean).map(app.util.normalize);
+      if (names.some(name => name === query)) return 4;
+      if (names.some(name => name.startsWith(query))) return 3;
+      if (names.some(name => name.split(/[^a-z0-9]+/).includes(query))) return 2;
+      return recipeSearchText(recipe).includes(query) ? 1 : 0;
+    };
     return [...(core.state.catalog?.recipes || [])]
-      .filter(recipe => !query || recipeSearchText(recipe).includes(query))
-      .sort((a, b) => recipeDisplayName(a).localeCompare(recipeDisplayName(b)) || a.id.localeCompare(b.id));
+      .map(recipe => ({ recipe, score: score(recipe) }))
+      .filter(entry => !query || entry.score > 0)
+      .sort((a, b) => b.score - a.score || recipeDisplayName(a.recipe).localeCompare(recipeDisplayName(b.recipe)) || a.recipe.id.localeCompare(b.recipe.id))
+      .map(entry => entry.recipe);
   }
   function recipeLabel(recipe) {
     const product = recipeProduct(recipe);
@@ -109,6 +122,11 @@
     return recipes.length
       ? recipes.map(recipe => `<option value="${esc(recipe.id)}"${recipe.id === selectedId ? ' selected' : ''}>${esc(recipeLabel(recipe))}</option>`).join('')
       : '<option value="">NO MATCHING RECIPES</option>';
+  }
+
+  function materialFactorLabel(value) {
+    const percentage = Math.round(Math.abs(1 - Number(value)) * 100);
+    return percentage ? `${percentage}% ${value < 1 ? 'LESS' : 'MORE'} MATERIAL` : 'NO BONUS';
   }
 
   function iffEntries(recipe, selectedId) {
@@ -131,10 +149,10 @@
     const seen = new Set();
     const add = (id, name, factor) => { if (!id || seen.has(id)) return; seen.add(id); entries.push({ id, name, factor }); };
     const bmmFactor = core.factorFor(recipe, 'br_m_grp');
-    add('br_m_grp', bmmFactor !== 1 ? `BMM · ${bmmFactor.toFixed(2)}×` : 'BMM · NO BONUS', bmmFactor);
+    add('br_m_grp', bmmFactor !== 1 ? `BMM · ${materialFactorLabel(bmmFactor)}` : 'BMM · NO BONUS', bmmFactor);
     add('__none__', 'NO IFF BONUS · 1.00×', 1);
     for (const bonus of bonuses) {
-      if (bonus.id !== 'br_m_grp') add(bonus.id, `${bonus.name || bonus.id} · ${Number(bonus.factor || 1).toFixed(2)}×`, Number(bonus.factor || 1));
+      if (bonus.id !== 'br_m_grp') add(bonus.id, `${bonus.name || bonus.id} · ${materialFactorLabel(Number(bonus.factor || 1))}`, Number(bonus.factor || 1));
     }
     if (selectedId && !seen.has(selectedId)) {
       const faction = core.state.catalog?.factions?.find(entry => entry.id === selectedId);
@@ -148,10 +166,14 @@
     const matches = matchingRecipes(calc.search);
     if (calc.search && !matches.length) return { calc, matches, recipe: null };
     let recipe = core.recipe(calc.recipeId);
+    if (!recipe && !calc.search && calc.productId) recipe = core.recipesFor(calc.productId)[0] || null;
     if (!recipe || (calc.search && !matches.some(entry => entry.id === recipe.id))) recipe = matches[0] || null;
-    if (!recipe && calc.productId) recipe = core.recipesFor(calc.productId)[0] || null;
     if (!recipe) recipe = core.state.catalog?.recipes?.[0] || null;
     if (!recipe) return { calc, matches, recipe: null };
+    if (recipe.id !== raw.recipeId) {
+      calc.materialPrices = {};
+      calc.affiliationId = app.config.operations.defaultAffiliation;
+    }
     const output = primaryOutput(recipe);
     calc.recipeId = recipe.id;
     calc.productId = output?.id || calc.productId;
@@ -204,7 +226,7 @@
     if (!rows.length) return '<div class="ops-empty good">THIS RECIPE HAS NO CONSUMED MATERIAL INPUTS</div>';
     return `<div class="ops-material-table-wrap"><table class="ops-material-table"><thead><tr><th>MATERIAL</th><th>REQUIRED</th><th>PRICE / UNIT</th><th>LINE COST</th></tr></thead><tbody>${rows.map(row => {
       const price = storedPrice(calc.materialPrices, row.id);
-      return `<tr class="ops-material-row" data-material-id="${esc(row.id)}" data-required="${row.required}"><td><strong>${esc(row.name)}</strong><details class="ops-material-id"><summary>ITEM ID</summary><small>${esc(row.id)}</small></details></td><td>${fmt(row.required)}</td><td><div class="ops-price-input-wrap"><input class="ops-price-input" aria-label="${esc(row.name)} price per unit" data-material-price="${esc(row.id)}" type="number" inputmode="decimal" min="0" step="1" value="${price === null ? '' : esc(String(price))}" placeholder="0"><span>CR</span></div></td><td data-line-cost>${money(price === null ? null : row.required * price)}</td></tr>`;
+      return `<tr class="ops-material-row" data-material-id="${esc(row.id)}" data-required="${row.required}"><td><strong>${esc(row.name)}</strong><details class="ops-material-id"><summary>ITEM ID</summary><small>${esc(row.id)}</small></details></td><td>${fmt(row.required)}</td><td><div class="ops-price-input-wrap"><input class="ops-price-input" aria-label="${esc(row.name)} price per unit" data-material-price="${esc(row.id)}" type="number" inputmode="decimal" min="0" step="1" value="${price === null ? '' : esc(String(price))}" placeholder="0"><span>$</span></div></td><td data-line-cost>${money(price === null ? null : row.required * price)}</td></tr>`;
     }).join('')}</tbody></table></div>`;
   }
 
@@ -295,7 +317,7 @@
           <label class="comms-field"><span>AFFILIATION / IFF</span><select id="opsAffiliation">${iff.map(entry => `<option value="${esc(entry.id)}"${entry.id === calc.affiliationId ? ' selected' : ''}>${esc(entry.name)}</option>`).join('')}</select><small>${esc(iffHint)}</small></label>
         </div>
         <div class="ops-recipe-meta"><div><small>OUTPUT / CYCLE</small><strong>${fmt(outputPerCycle)}</strong></div><div><small>CYCLES</small><strong>${fmt(plan.cycles)}</strong></div><div><small>ACTUAL OUTPUT</small><strong>${fmt(plan.actualOutput)}</strong></div></div>
-        <div class="ops-order-bridge"><div><strong>PRODUCTION ORDER</strong><span>Keep this target, quantity and IFF together in the local build queue.</span></div><button id="opsAddProductionOrder" type="button">ADD TO ORDER BOARD</button></div>
+
         <div class="ops-mobile-decision" aria-label="Current quote summary"><div><small>RECOMMENDED SALE</small><strong id="opsMobileSellUnit">${money(pricing.sellPerUnit)}</strong></div><div><small>COST / ITEM</small><strong id="opsMobileUnitCost">${money(pricing.unitCost)}</strong></div><div><small>TOTAL PROFIT</small><strong id="opsMobileProfit">${money(pricing.profit)}</strong></div></div>
         <nav class="ops-mobile-jumps" aria-label="Calculator sections"><button type="button" data-ops-jump="opsMaterialPanel">ENTER MATERIAL PRICES</button><button type="button" data-ops-jump="opsQuotePanel">VIEW FULL QUOTE</button></nav>
       </section>
@@ -389,15 +411,7 @@
       saveState({ marginPercent: value });
       updatePricing(plan, rows);
     });
-    document.getElementById('opsAddProductionOrder')?.addEventListener('click', () => {
-      const target = currentOrderTarget();
-      if (!target || typeof app.productionOrders?.add !== 'function') {
-        app.notify('PRODUCTION ORDER BOARD IS NOT READY', 'danger');
-        return;
-      }
-      if (!app.productionOrders.add(target)) return;
-      app.notify(`${target.productName.toUpperCase()} ADDED TO ORDER BOARD`, 'good');
-    });
+
   }
 
   function installShipyardBridge() {

@@ -23,18 +23,7 @@
     if (document.getElementById(STYLE_ID)) return;
     const style = document.createElement('style');
     style.id = STYLE_ID;
-    style.textContent = `
-      .production-calc-button{
-        display:inline-flex;align-items:center;justify-content:center;margin-top:8px;min-height:27px;padding:5px 9px;
-        border:1px solid rgba(212,175,55,.30);background:rgba(212,175,55,.075);color:#e7c963;box-shadow:none;
-        font-family:var(--font-tech);font-size:9px;font-weight:700;letter-spacing:.08em;line-height:1.2;cursor:pointer
-      }
-      .production-calc-button:hover,.production-calc-button:focus-visible{
-        background:rgba(212,175,55,.14);color:#f3d77b;border-color:rgba(212,175,55,.52)
-      }
-      @media (min-width:1200px){.production-calc-button{font-size:9.5px}}
-      @media (max-width:700px){.production-calc-button{width:100%;margin-top:7px}}
-    `;
+    style.dataset.stylesheet = '35-app-interface-cleanup.css';
     document.head.appendChild(style);
   }
 
@@ -98,15 +87,8 @@
     if (workspace.dataset.v40SessionPriceMode === 'true') return;
     workspace.dataset.v40SessionPriceMode = 'true';
 
-    // A new recipe/target starts from RHW defaults: blank prices + BMM IFF.
-    // Quantity, margin and a deliberate IFF change keep the current session.
-    workspace.addEventListener('input', event => {
-      if (event.target?.id === 'opsRecipeSearch') startFreshRecipeSession();
-    }, true);
-    workspace.addEventListener('change', event => {
-      if (event.target?.id === 'opsRecipe') startFreshRecipeSession();
-    }, true);
-
+    // Recipe transitions are handled by operations.saveState after resolution.
+    // Editing a search without changing the recipe preserves the current quote.
     operationsObserver = new MutationObserver(cleanCalculatorUi);
     operationsObserver.observe(workspace, { childList: true, subtree: true });
 

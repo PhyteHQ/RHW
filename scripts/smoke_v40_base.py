@@ -11,9 +11,13 @@ except ImportError as exc:
     raise SystemExit("websocket-client is required for scripts/smoke_v40.py") from exc
 
 ROOT = Path(__file__).resolve().parents[1]
+from build_recipe_catalog import read_catalog
+from sync_discovery_catalog import effective_counts
+_COUNTS = effective_counts(read_catalog(ROOT / 'assets' / 'recipes'))
+CATALOG_COUNTS = {'recipeCount': _COUNTS['recipes'], 'productCount': _COUNTS['products']}
 ROUTES = [
     ("command","overview"),("command","inventory"),("command","shipyard"),("command","production"),("command","logistics"),
-    ("operations","calculator"),("operations","orders"),("comms","forum"),("comms","ticker"),("comms","drafts"),("comms","senders"),
+    ("operations","calculator"),("pricecheck","routes"),("comms","forum"),("comms","ticker"),("comms","drafts"),("comms","senders"),
 ]
 V4_CSS = [
     "css/12-app-v40.css","css/13-app-v40-navigation.css","css/14-app-v40-composer.css","css/15-app-v40-audit.css",
@@ -107,7 +111,7 @@ def ev(cdp,expression):
     raw=result.get("result",{}).get("value"); return json.loads(raw) if raw else {}
 
 def snapshot(cdp):
-    return ev(cdp,"({ready:document.documentElement.dataset.v40Ready||'',error:document.documentElement.dataset.v40Error||'',workspace:document.body?.dataset.workspace||'',commandNode:document.body?.dataset.commandNode||'',operationsNode:document.body?.dataset.operationsNode||'',commsNode:document.body?.dataset.commsNode||'',mountedNav:document.querySelector('#appContextNavSlot > .workspace-subnav')?.id||'',recipes:window.RHWV4?.operationsCore?.state?.catalog?.meta?.recipeCount||0,products:window.RHWV4?.operationsCore?.state?.catalog?.meta?.productCount||0,errors:window.__RHW_V4_SMOKE__?.errors||[]})")
+    return ev(cdp,"({ready:document.documentElement.dataset.v40Ready||'',error:document.documentElement.dataset.v40Error||'',workspace:document.body?.dataset.workspace||'',commandNode:document.body?.dataset.commandNode||'',operationsNode:document.body?.dataset.operationsNode||'',commsNode:document.body?.dataset.commsNode||'',pricecheckNode:document.body?.dataset.pricecheckNode||'',mountedNav:document.querySelector('#appContextNavSlot > .workspace-subnav')?.id||'',recipes:window.RHWV4?.operationsCore?.state?.catalog?.meta?.recipeCount||0,products:window.RHWV4?.operationsCore?.state?.catalog?.meta?.productCount||0,errors:window.__RHW_V4_SMOKE__?.errors||[]})")
 
 def ui_number(value):
     digits=re.sub(r"[^0-9-]","",value or ""); return int(digits) if digits and digits!="-" else 0
@@ -116,7 +120,7 @@ def test_overview(cdp):
     result=ev(cdp,"(()=>{window.hasVerifiedTelemetry=()=>true;window.operationalItems=()=>[];window.stockFor=()=>100;window.analyzeRecipe=r=>({recipe:r,possibleCycles:r.product==='Reactor Systems'?2:3,cardState:'low',bottleneck:{name:'test'},nextCycleGap:5});RHWV4.command.updateOverview();return{ship:v40OverviewShipyard.textContent,prod:v40OverviewProduction.textContent}})()")
     if "HULL" not in result["ship"] or not result["prod"].startswith("MIN "): raise RuntimeError(f"Overview telemetry analysis failed: {result}")
     stale=ev(cdp,"(()=>{window.hasVerifiedTelemetry=()=>false;RHWV4.command.updateOverview();return{ship:v40OverviewShipyard.textContent,meta:v40OverviewShipyardMeta.textContent,prod:v40OverviewProductionMeta.textContent,log:v40OverviewLogisticsMeta.textContent}})()")
-    if stale["ship"]!="AWAITING UPLINK" or "NO VERIFIED" not in stale["meta"] or "AWAITING VERIFIED" not in stale["prod"] or "AWAITING VERIFIED" not in stale["log"]: raise RuntimeError(f"Overview stale reset failed: {stale}")
+    if stale["ship"] not in {"CONNECTING", "DATA UNAVAILABLE"} or "NO VERIFIED" not in stale["meta"] or "AWAITING VERIFIED" not in stale["prod"] or "AWAITING VERIFIED" not in stale["log"]: raise RuntimeError(f"Overview stale reset failed: {stale}")
     print("V4 interaction smoke passed: COMMAND overview")
 
 def test_production_bridge(cdp):
@@ -207,10 +211,10 @@ def main():
                     snap=snapshot(cdp)
                     if snap.get("ready") in {"true","false"}: break
                     time.sleep(.1)
-                key={"command":"commandNode","operations":"operationsNode","comms":"commsNode"}[workspace]
-                expected_nav={"command":"commandNodeNav","operations":"operationsNodeNav","comms":"commsNodeNav"}[workspace]
+                key={"command":"commandNode","operations":"operationsNode","pricecheck":"pricecheckNode","comms":"commsNode"}[workspace]
+                expected_nav={"command":"commandNodeNav","operations":"operationsNodeNav","pricecheck":"","comms":"commsNodeNav"}[workspace]
                 if snap.get("ready")!="true" or snap.get("error")=="true" or snap.get("workspace")!=workspace or snap.get(key)!=node or snap.get("mountedNav")!=expected_nav or snap.get("errors"): raise RuntimeError(f"V4 route failed {workspace}/{node}: {snap}")
-                if workspace=="operations" and snap.get("recipes")!=285: raise RuntimeError(f"Recipe catalog missing: {snap}")
+                if workspace=="operations" and snap.get("recipes")!=CATALOG_COUNTS["recipeCount"]: raise RuntimeError(f"Recipe catalog missing: {snap}")
                 print(f"V4 runtime smoke passed: {workspace}/{node} (recipes={snap.get('recipes',0)} products={snap.get('products',0)} nav={snap.get('mountedNav','')})")
                 if (workspace,node)==("command","overview"): test_overview(cdp)
                 elif (workspace,node)==("command","production"): test_production_bridge(cdp)

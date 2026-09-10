@@ -9,6 +9,7 @@ global.innerHeight = 820;
 global.location = { protocol: 'https:' };
 window.RHWV4 = {
   version: 'V4.0.2',
+  config: { routes: { command: ['overview', 'inventory', 'shipyard', 'production', 'logistics'], operations: ['calculator'], pricecheck: ['routes'], comms: ['forum', 'ticker', 'drafts', 'senders'] } },
   util: { escape: value => String(value) },
   route: { parse: () => ({ workspace: 'command', node: 'overview' }) }
 };
@@ -17,6 +18,8 @@ require('../js/30-app-v40-full-audit.js');
 
 const audit = window.RHWV4.fullAudit;
 assert.ok(audit, 'Full audit API must be registered');
+assert.deepEqual(audit.EXPECTED_ROUTES.pricecheck, ['routes']);
+assert.ok(!audit.EXPECTED_ROUTES.operations.includes('orders'));
 assert.equal(Object.values(audit.EXPECTED_ROUTES).flat().length, 11, 'Route model must cover all 11 app destinations');
 
 const results = [

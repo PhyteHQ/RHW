@@ -314,7 +314,6 @@
   function selfTest() {
     const failures = [];
     if (!app.config.storageKeys.productionOrders) failures.push('storage-key');
-    if (!document.querySelector('[data-operations-panel="orders"]')) failures.push('orders-route');
     if (typeof buildReport !== 'function' || typeof buildBbcode !== 'function') failures.push('report-api');
     if (!buildBbcode({ generatedAt: new Date().toISOString(), telemetryReady: false, orders: [], materials: [], totalOutput: 0, bottlenecks: null }).includes('PRODUCTION ORDER BOARD')) failures.push('bbcode');
     return failures;

@@ -13,7 +13,7 @@
   const AUTO_REFRESH_MS = 300000;
   const SOURCE_RESOLVE_RETRY_MS = 21600000;
   const STORAGE = Object.freeze({
-    overrides: 'rhw-webapp-v4:price-check-overrides',
+    overrides: app.config.storageKeys.priceCheckOverrides || 'rhw-webapp-v4:price-check-overrides',
     sources: 'rhw-webapp-v4:price-check-sources',
     market: 'rhw-webapp-v4:price-check-market-cache'
   });
@@ -46,7 +46,8 @@
     marketTone: 'waiting',
     marketLabel: 'AWAITING MARKET DATA',
     marketDetail: '',
-    lastError: ''
+    lastError: '',
+    receivedAt: 0
   };
 
   const base = {
@@ -95,56 +96,7 @@
     if (document.getElementById('rhwPriceCheckStyle')) return;
     const style = document.createElement('style');
     style.id = 'rhwPriceCheckStyle';
-    style.textContent = `
-      html.rhw-pricecheck-enabled .app-tabs{grid-template-columns:repeat(4,minmax(0,1fr))!important}
-      body[data-workspace="pricecheck"]{--app-nav-accent:#78ad8a;--app-nav-accent-rgb:120,173,138}
-      body[data-workspace="pricecheck"] #appContextNavSlot{display:none!important}
-      body[data-workspace="pricecheck"] .app-tabs [data-workspace="pricecheck"].active{background:linear-gradient(180deg,rgba(120,173,138,.14),rgba(120,173,138,.035))!important;color:#91c9a3!important}
-      body[data-workspace="pricecheck"] .app-tabs [data-workspace="pricecheck"].active::before{background:#78ad8a!important;box-shadow:0 0 10px rgba(120,173,138,.5)!important}
-      body[data-workspace="pricecheck"] .app-tabs [data-workspace="pricecheck"].active small{color:rgba(145,201,163,.72)!important}
-      .pricecheck-workspace[hidden]{display:none!important}
-      .pricecheck-workspace{position:relative;width:100%;min-height:60vh;padding:22px var(--layout-gutter,28px) 52px;background:radial-gradient(circle at 10% 0%,rgba(120,173,138,.045),transparent 28%),linear-gradient(180deg,rgba(4,6,8,.97),rgba(3,4,5,.995))}
-      .pricecheck-frame{width:min(100%,var(--content-max,1560px));margin:0 auto}
-      .pricecheck-heading{display:flex;align-items:center;justify-content:space-between;gap:18px;margin-bottom:12px;padding:14px 16px;border:1px solid rgba(120,173,138,.2);border-left:3px solid #78ad8a;border-radius:8px;background:linear-gradient(90deg,rgba(120,173,138,.075),rgba(7,9,12,.94) 52%)}
-      .pricecheck-heading h2{margin:0;color:#e8e6df;font-family:var(--font-title);font-size:clamp(28px,2.5vw,38px);font-weight:600;letter-spacing:.055em;line-height:1}
-      .pricecheck-heading p{margin:5px 0 0;color:#bcbebf;font-family:var(--font-tech);font-size:11px;line-height:1.4;letter-spacing:.045em}
-      .pricecheck-refresh{min-height:44px;padding:9px 13px;border:1px solid rgba(120,173,138,.35);border-radius:5px;background:rgba(120,173,138,.075);color:#b8dec3;font-family:var(--font-tech);font-size:11px;font-weight:700;letter-spacing:.07em;clip-path:none;box-shadow:none;white-space:nowrap}
-      .pricecheck-refresh:hover,.pricecheck-refresh:focus-visible{border-color:rgba(120,173,138,.58);background:rgba(120,173,138,.13);color:#d0eed8}
-      .pricecheck-refresh:disabled{opacity:.5;cursor:wait}
-      .pricecheck-status-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;margin-bottom:12px}
-      .pricecheck-status{min-width:0;padding:10px 11px;border:1px solid rgba(255,255,255,.07);border-radius:6px;background:rgba(255,255,255,.018)}
-      .pricecheck-status small{display:block;color:#979da4;font-family:var(--font-tech);font-size:9px;letter-spacing:.065em}
-      .pricecheck-status strong{display:block;margin-top:5px;color:#deddd7;font-family:var(--font-tech);font-size:13px;line-height:1.3;overflow-wrap:anywhere}
-      .pricecheck-status[data-tone="positive"] strong{color:#8fc6a0}.pricecheck-status[data-tone="negative"] strong{color:#d47b7b}.pricecheck-status[data-tone="warn"] strong{color:#d3b766}
-      .pricecheck-note{margin:0 0 12px;padding:8px 10px;border:1px solid rgba(255,255,255,.065);border-radius:5px;background:rgba(0,0,0,.12);color:#aeb2b5;font-family:var(--font-tech);font-size:10px;line-height:1.5}
-      .pricecheck-note strong{color:#d7d5cf}.pricecheck-note[data-tone="warn"]{border-color:rgba(211,183,102,.25);color:#c9b979}.pricecheck-note[data-tone="error"]{border-color:rgba(199,94,94,.3);color:#d28b8b}
-      .pricecheck-table-wrap{overflow:auto;border:1px solid rgba(120,173,138,.13);border-radius:7px;background:rgba(2,4,6,.7)}
-      .pricecheck-table{width:100%;border-collapse:collapse;table-layout:fixed}
-      .pricecheck-table th{padding:9px 10px;border-bottom:1px solid rgba(120,173,138,.16);background:rgba(120,173,138,.035);color:#9aa2a2;font-family:var(--font-tech);font-size:9px;letter-spacing:.07em;text-align:left}
-      .pricecheck-table th:nth-child(1){width:20%}.pricecheck-table th:nth-child(2){width:28%}.pricecheck-table th:nth-child(3){width:20%}.pricecheck-table th:nth-child(4){width:15%}.pricecheck-table th:nth-child(5){width:17%;text-align:right}
-      .pricecheck-row td{padding:11px 10px;border-bottom:1px solid rgba(255,255,255,.045);vertical-align:middle;color:#d8d7d1;font-family:var(--font-tech);font-size:11px}
-      .pricecheck-row:last-child td{border-bottom:0}
-      .pricecheck-commodity{display:grid;gap:3px}.pricecheck-commodity strong{font-family:var(--font-title);font-size:18px;letter-spacing:.04em;color:#e3e1da}.pricecheck-commodity small,.pricecheck-source small{color:#8f969b;font-size:9px;line-height:1.35}
-      .pricecheck-source{display:grid;gap:3px}.pricecheck-source strong{font-size:11px;color:#d3d4d0}
-      .pricecheck-price-editor{display:grid;grid-template-columns:minmax(90px,130px) auto;align-items:center;gap:6px}.pricecheck-price-input{width:100%;min-height:40px;padding:7px 8px;border:1px solid rgba(255,255,255,.12);border-radius:4px;background:#080b0e;color:#e0ded6;font:12px var(--font-tech);box-shadow:none}.pricecheck-price-input:focus{outline:2px solid rgba(120,173,138,.45);outline-offset:1px;border-color:rgba(120,173,138,.45)}
-      .pricecheck-live{grid-column:1/-1;color:#8d9498;font-size:9px;line-height:1.35}.pricecheck-live b{color:#b8bbb9;font-weight:700}.pricecheck-live.manual{color:#d1b868}.pricecheck-reset{min-height:40px;padding:6px 8px;border:1px solid rgba(211,183,102,.24);border-radius:4px;background:rgba(211,183,102,.045);color:#cfbd7c;font:9px var(--font-tech);clip-path:none;box-shadow:none}
-      .pricecheck-payout strong{display:block;color:#d8d6cf;font-size:12px}.pricecheck-payout small{display:block;margin-top:3px;color:#8f969b;font-size:9px}
-      .pricecheck-difference{text-align:right!important}.pricecheck-difference strong{display:inline-block;min-width:90px;padding:6px 8px;border:1px solid rgba(255,255,255,.08);border-radius:4px;background:rgba(255,255,255,.02);font-size:12px;text-align:center}.pricecheck-difference.positive strong{border-color:rgba(120,173,138,.3);background:rgba(120,173,138,.075);color:#8fc6a0}.pricecheck-difference.negative strong{border-color:rgba(199,94,94,.34);background:rgba(199,94,94,.08);color:#df8585}.pricecheck-difference.neutral strong{color:#b7b7b1}.pricecheck-difference.unknown strong{color:#8d9296}
-      .pricecheck-mobile-label{display:none}
-      @media(max-width:900px){.pricecheck-status-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.pricecheck-table{min-width:820px}}
-      @media(max-width:760px){
-        html.rhw-pricecheck-enabled .app-tabs{grid-template-columns:repeat(4,minmax(0,1fr))!important}
-        html.rhw-pricecheck-enabled .app-tabs button{min-width:0!important;padding-left:5px!important;padding-right:5px!important}
-        html.rhw-pricecheck-enabled .app-tabs button span{font-size:13px!important;letter-spacing:.025em!important;white-space:nowrap}
-        html.rhw-pricecheck-enabled .app-tabs [data-workspace="pricecheck"] span{font-size:11px!important}
-        .pricecheck-workspace{padding:10px 9px calc(var(--rhw-mobile-dock-height,70px) + 26px)}
-        .pricecheck-heading{align-items:stretch;flex-direction:column;padding:11px 12px}.pricecheck-heading h2{font-size:27px}.pricecheck-refresh{width:100%}
-        .pricecheck-status-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:5px}.pricecheck-status{padding:8px}.pricecheck-status strong{font-size:12px}
-        .pricecheck-table-wrap{border:0;background:transparent;overflow:visible}.pricecheck-table,.pricecheck-table tbody{display:block;min-width:0}.pricecheck-table thead{display:none}.pricecheck-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-bottom:7px;padding:10px;border:1px solid rgba(120,173,138,.13);border-radius:7px;background:rgba(3,5,7,.82)}
-        .pricecheck-row td{display:block;padding:0;border:0!important;min-width:0}.pricecheck-row td:nth-child(1),.pricecheck-row td:nth-child(2){grid-column:1/-1}.pricecheck-row td:nth-child(3){grid-column:1/-1}.pricecheck-row td:nth-child(4){grid-column:1}.pricecheck-row td:nth-child(5){grid-column:2;align-self:end}.pricecheck-mobile-label{display:block;margin-bottom:4px;color:#858c91;font-size:8px;letter-spacing:.06em}.pricecheck-difference{text-align:left!important}.pricecheck-difference strong{width:100%;min-width:0}.pricecheck-price-editor{grid-template-columns:minmax(0,1fr) auto}.pricecheck-price-input{font-size:16px}.pricecheck-payout strong{font-size:13px}
-      }
-      @media(max-width:390px){html.rhw-pricecheck-enabled .app-tabs button span{font-size:12px!important}html.rhw-pricecheck-enabled .app-tabs [data-workspace="pricecheck"] span{font-size:10px!important}.pricecheck-row{grid-template-columns:minmax(0,1fr)}.pricecheck-row td:nth-child(4),.pricecheck-row td:nth-child(5){grid-column:1}.pricecheck-difference{align-self:auto}}
-    `;
+    style.dataset.stylesheet = '35-app-interface-cleanup.css';
     document.head.appendChild(style);
     document.documentElement.classList.add('rhw-pricecheck-enabled');
   }
@@ -159,7 +111,7 @@
   }
 
   function workspaceMarkup() {
-    return `<div class="pricecheck-frame">
+    return `<div class="pricecheck-frame" data-pricecheck-panel="routes">
       <header class="pricecheck-heading">
         <div><h2>PRICE CHECK</h2><p>FIXED PROCUREMENT // SOURCE COST VS RHW PAYOUT</p></div>
         <button type="button" class="pricecheck-refresh" id="priceCheckRefresh">REFRESH MARKET</button>
@@ -282,6 +234,7 @@
 
   function sourceScore(baseEntry, route) {
     const name = normalize(baseEntry?.name);
+    if (!name || !String(baseEntry?.nickname || '').trim()) return -1;
     const system = normalize(baseSystem(baseEntry));
     const aliases = [...new Set([route.source, ...(route.aliases || [])].map(normalize).filter(Boolean))];
     let nameScore = 0;
@@ -299,14 +252,18 @@
   function resolveSource(route, bases) {
     let best = null;
     let bestScore = -1;
+    let ambiguous = false;
     for (const baseEntry of bases || []) {
       const score = sourceScore(baseEntry, route);
       if (score > bestScore) {
         best = baseEntry;
         bestScore = score;
+        ambiguous = false;
+      } else if (score === bestScore && best?.nickname !== baseEntry?.nickname) {
+        ambiguous = true;
       }
     }
-    return bestScore >= 75 ? best : null;
+    return bestScore >= 75 && !ambiguous ? best : null;
   }
 
   function rhwPrice(route) {
@@ -314,9 +271,8 @@
       const finder = typeof findCommodity === 'function' ? findCommodity : window.findCommodity;
       const item = typeof finder === 'function' ? finder(route.commodity) : null;
       if (!item || item.missing) return null;
-      const getter = typeof priceSell === 'function' ? priceSell : window.priceSell;
-      if (typeof getter === 'function') return finite(getter(item));
-      return finite(item.price_to_sell_to_base ?? item.sell_price ?? item.price_sell);
+      // Asking prices are not evidence of what RHW pays the delivering player.
+      return [item.price_to_sell_to_base, item.sell_price, item.price_sell].map(finite).find(value => value !== null) ?? null;
     } catch {
       return null;
     }
@@ -363,10 +319,12 @@
 
   function snapshotRoutes(bases, { resolve = false } = {}) {
     const previous = state.marketCache?.routes || {};
+    const checkedAt = new Date().toISOString();
+    state.receivedAt = Date.now();
     const next = {};
     const sources = { ...(state.sourceCache?.sources || {}) };
 
-    for (const route of ROUTES) {
+    for (const route of ROUTES.filter(route => route.sourceType !== 'pob')) {
       let source = null;
       const known = sources[route.key];
       if (known?.nickname) source = (bases || []).find(baseEntry => String(baseEntry?.nickname || '') === String(known.nickname));
@@ -385,15 +343,17 @@
         sourceName: source?.name || sources[route.key]?.name || previous[route.key]?.sourceName || route.source,
         system: baseSystem(source) || sources[route.key]?.system || previous[route.key]?.system || route.system,
         goodNickname: good?.nickname || previous[route.key]?.goodNickname || '',
-        livePrice: livePrice !== null ? livePrice : (source ? null : finite(previous[route.key]?.livePrice)),
+        livePrice,
+        checkedAt,
+        priceAt: livePrice !== null ? checkedAt : null,
         found: Boolean(source),
         sold: good ? good.base_sells !== false : false
       };
     }
 
-    state.sourceCache = { resolvedAt: Date.now(), sources };
+    state.sourceCache = { resolvedAt: resolve ? Date.now() : Number(state.sourceCache?.resolvedAt) || 0, sources };
     app.store.set(STORAGE.sources, state.sourceCache);
-    state.marketCache = { fetchedAt: new Date().toISOString(), routes: next };
+    state.marketCache = { fetchedAt: checkedAt, routes: next };
     app.store.set(STORAGE.market, state.marketCache);
   }
 
@@ -432,8 +392,9 @@
         snapshotRoutes(bases, { resolve: true });
       }
 
-      state.marketTone = 'positive';
-      state.marketLabel = 'NPC MARKET LIVE';
+      const complete = ROUTES.filter(route => route.sourceType !== 'pob').every(route => finite(state.marketCache.routes[route.key]?.livePrice) !== null);
+      state.marketTone = complete ? 'positive' : 'warn';
+      state.marketLabel = complete ? 'NPC MARKET LIVE' : 'MARKET UPDATED · SOME PRICES UNAVAILABLE';
       state.marketDetail = `UPDATED ${new Date().toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}`;
     } catch (error) {
       state.lastError = String(error?.message || error || 'MARKET UPLINK FAILED');
@@ -454,6 +415,7 @@
   }
 
   function effectiveRow(route) {
+    const rhw = rhwSnapshot();
     let market = state.marketCache?.routes?.[route.key] || {};
     if (route.sourceType === 'pob') {
       const source = pobSourceFor(route);
@@ -470,17 +432,23 @@
           livePrice: pobLivePrice,
           found: true,
           sold: pobLivePrice !== null,
-          sourceType: 'pob'
+          sourceType: 'pob',
+          priceAt: rhw.fetchedAt || null
         };
-      }
+      } else market = { found: false, sold: false, sourceType: 'pob' };
     }
-    const live = finite(market.livePrice);
+    const live = market.found === false || market.sold === false ? null : finite(market.livePrice);
+    const priceAt = market.priceAt || state.marketCache?.fetchedAt;
+    const age = Date.now() - Date.parse(priceAt || '');
+    const fresh = route.sourceType === 'pob'
+      ? rhw.available && !rhw.stale
+      : state.receivedAt > 0 && Number.isFinite(age) && age >= 0 && age < AUTO_REFRESH_MS * 2 && !state.lastError;
     const hasOverride = Object.prototype.hasOwnProperty.call(state.overrides, route.key) && finite(state.overrides[route.key]) !== null;
     const sourcePrice = hasOverride ? finite(state.overrides[route.key]) : live;
-    const payout = rhwPrice(route);
+    const payout = rhw.available ? rhwPrice(route) : null;
     const difference = sourcePrice !== null && payout !== null ? payout - sourcePrice : null;
     const tone = difference === null ? 'unknown' : (difference > 0 ? 'positive' : (difference < 0 ? 'negative' : 'neutral'));
-    return { route, market, live, hasOverride, sourcePrice, payout, difference, tone };
+    return { route, market, live, hasOverride, sourcePrice, payout, difference, tone, fresh, priceAt, rhw };
   }
 
   function statusMarkup(rows) {
@@ -498,21 +466,22 @@
   }
 
   function rowMarkup(row) {
-    const { route, market, live, hasOverride, payout, difference, tone } = row;
+    const { route, market, live, hasOverride, payout, difference, tone, fresh, priceAt, rhw } = row;
     const overrideValue = hasOverride ? String(state.overrides[route.key]) : '';
     const sourceName = market.sourceName || route.source;
     const system = market.system || route.system;
     const sourceMeta = market.sourceType === 'pob'
       ? `${system} // POB ${market.sourceNickname || route.sourceNickname || route.source}`
       : (market.sourceNickname ? `${system} // ${market.sourceNickname}` : `${system} // SOURCE MATCH PENDING`);
-    const liveCopy = live === null ? 'LIVE PRICE UNAVAILABLE' : `LIVE ${money(live)}`;
+    const stamp = Number.isFinite(Date.parse(priceAt || '')) ? new Date(priceAt).toLocaleString('de-DE', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : 'TIME UNKNOWN';
+    const liveCopy = live === null ? 'SOURCE PRICE UNAVAILABLE' : `${fresh ? 'LIVE' : 'CACHED'} ${money(live)} · ${stamp}`;
     const payoutCopy = payout === null ? 'RHW PRICE UNAVAILABLE' : money(payout);
     return `<tr class="pricecheck-row" data-route-key="${esc(route.key)}">
       <td><span class="pricecheck-mobile-label">COMMODITY</span><span class="pricecheck-commodity"><strong>${esc(route.commodity)}</strong><small>${route.sourceType === 'pob' ? 'FIXED POB ROUTE' : 'FIXED NPC ROUTE'}</small></span></td>
       <td><span class="pricecheck-mobile-label">SOURCE</span><span class="pricecheck-source"><strong>${esc(sourceName)}</strong><small>${esc(sourceMeta)}</small></span></td>
       <td><span class="pricecheck-mobile-label">SOURCE PRICE / OVERRIDE</span><div class="pricecheck-price-editor"><input class="pricecheck-price-input" data-pricecheck-override="${esc(route.key)}" type="number" inputmode="decimal" min="0" step="1" value="${esc(overrideValue)}" placeholder="${live === null ? '' : esc(String(Math.round(live)))}" aria-label="${esc(route.commodity)} manual source price">${hasOverride ? `<button type="button" class="pricecheck-reset" data-pricecheck-reset="${esc(route.key)}">RESET</button>` : ''}<small class="pricecheck-live ${hasOverride ? 'manual' : ''}">${hasOverride ? `MANUAL ACTIVE // ${liveCopy}` : liveCopy}</small></div></td>
-      <td><span class="pricecheck-mobile-label">RHW PAYS</span><span class="pricecheck-payout"><strong>${payoutCopy}</strong><small>${rhwSnapshot().stale ? 'RHW CACHED' : 'CURRENT RHW BUY'}</small></span></td>
-      <td class="pricecheck-difference ${tone}"><span class="pricecheck-mobile-label">DIFFERENCE</span><strong>${signedMoney(difference)}</strong></td>
+      <td><span class="pricecheck-mobile-label">RHW PAYS</span><span class="pricecheck-payout"><strong>${payoutCopy}</strong><small>${!rhw.available ? 'RHW DATA UNAVAILABLE' : rhw.stale ? 'RHW CACHED' : 'CURRENT RHW BUY'}</small></span></td>
+      <td class="pricecheck-difference ${tone}"><span class="pricecheck-mobile-label">DIFFERENCE</span><strong>${signedMoney(difference)}</strong>${difference !== null && ((!fresh && !hasOverride) || rhw.stale) ? '<small class="pricecheck-estimate">FROM CACHED PRICES</small>' : ''}</td>
     </tr>`;
   }
 
@@ -542,6 +511,17 @@
   function scheduleRefresh() {
     window.clearTimeout(state.timer);
     state.timer = window.setTimeout(() => refreshMarket({ quiet: true }), AUTO_REFRESH_MS);
+  }
+
+  function normalizeOverrides(raw) {
+    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) throw new Error('INVALID PRICE CHECK OVERRIDES');
+    const result = {};
+    for (const [key, value] of Object.entries(raw)) {
+      if (!ROUTES.some(route => route.key === key)) throw new Error('UNKNOWN PRICE CHECK ROUTE');
+      if (typeof value !== 'number' || finite(value) === null) throw new Error('INVALID SOURCE PRICE');
+      result[key] = value;
+    }
+    return result;
   }
 
   function init() {
@@ -677,7 +657,15 @@
     refresh: options => refreshMarket(options || {}),
     selfTest,
     resolveSource,
-    marketGoodFor
+    marketGoodFor,
+    snapshotRoutes, shouldResolveSources, effectiveRow, rowMarkup,
+    importOverrides(raw) {
+      const merged = { ...state.overrides, ...normalizeOverrides(raw) };
+      if (app.store.set(STORAGE.overrides, merged) === false) throw new Error('PRICE CHECK IMPORT COULD NOT BE SAVED');
+      state.overrides = merged;
+      render();
+    },
+    normalizeOverrides
   };
 
   installStyles();

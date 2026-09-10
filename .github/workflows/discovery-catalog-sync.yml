@@ -1,6 +1,9 @@
 name: Discovery Catalog Sync
 
 on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/discovery-catalog-sync.yml']
   schedule:
     - cron: '17 4 * * 1'
   workflow_dispatch:
@@ -103,8 +106,21 @@ jobs:
           set -euo pipefail
           number="$(gh pr list --repo "${GITHUB_REPOSITORY}" --base main --head "${SYNC_BRANCH}" --state open --json number --jq '.[0].number // empty')"
           if [[ -z "${number}" ]]; then
-            gh pr create --repo "${GITHUB_REPOSITORY}" --base main --head "${SYNC_BRANCH}" --draft \
-              --title "data: review Discovery catalog update" --body-file /tmp/discovery-pr-body.md
+            if gh pr create --repo "${GITHUB_REPOSITORY}" --base main --head "${SYNC_BRANCH}" --draft \
+              --title "data: review Discovery catalog update" --body-file /tmp/discovery-pr-body.md 2> /tmp/discovery-pr-error.txt; then
+              echo "Draft PR prepared for review." >> "${GITHUB_STEP_SUMMARY}"
+            else
+              error="$(cat /tmp/discovery-pr-error.txt)"
+              if [[ "${error}" == *"GitHub Actions is not permitted to create or approve pull requests"* ]]; then
+                echo "::warning::Catalog proposal is ready. Repository policy requires a person to open the review PR."
+                echo "### Catalog update ready for review" >> "${GITHUB_STEP_SUMMARY}"
+                echo "The validated update is safely stored on ${SYNC_BRANCH}. Repository policy prevents an automatic PR; no permissions were changed." >> "${GITHUB_STEP_SUMMARY}"
+                echo "[Review changes and open a PR](https://github.com/${GITHUB_REPOSITORY}/compare/main...${SYNC_BRANCH}?expand=1)" >> "${GITHUB_STEP_SUMMARY}"
+              else
+                cat /tmp/discovery-pr-error.txt >&2
+                exit 1
+              fi
+            fi
           else
             gh pr edit "${number}" --repo "${GITHUB_REPOSITORY}" \
               --title "data: review Discovery catalog update" --body-file /tmp/discovery-pr-body.md

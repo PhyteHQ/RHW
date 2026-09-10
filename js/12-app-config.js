@@ -7,12 +7,19 @@ const RHW_APP_VERSION = 'V4.0.2';
 const RHW_APP_CONFIG = Object.freeze({
   build: window.RHW_BUILD,
   repository: window.RHW_BUILD.repository,
+  routes: Object.freeze({
+    command: Object.freeze(['overview', 'inventory', 'shipyard', 'production', 'logistics']),
+    operations: Object.freeze(['calculator']),
+    pricecheck: Object.freeze(['routes']),
+    comms: Object.freeze(['forum', 'ticker', 'drafts', 'senders'])
+  }),
   storageKeys: Object.freeze({
     activeWorkspace: 'rhw-webapp-v4:workspace',
     commandNode: 'rhw-webapp-v4:command-node',
     inventoryView: 'rhw-webapp-v4:inventory-view',
     operationsNode: 'rhw-webapp-v4:operations-node',
     calculatorState: 'rhw-webapp-v4:calculator-state',
+    priceCheckOverrides: 'rhw-webapp-v4:price-check-overrides',
     calculatorPriceProfiles: 'rhw-webapp-v4:calculator-price-profiles',
     productionOrders: 'rhw-webapp-v4:production-orders',
     shipyardPlanner: 'rhw-webapp-v4:shipyard-planner',
