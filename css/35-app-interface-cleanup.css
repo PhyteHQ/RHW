@@ -1159,8 +1159,8 @@ html.rhw-focus-pass .app-tabs button[data-workspace].active {
 html.rhw-focus-pass .app-tabs button[data-workspace] span { color: inherit; }
 html.rhw-focus-pass .app-tabs button[data-workspace]:not(.active):hover { background: var(--rhw-surface); color: var(--text); }
 html.rhw-focus-pass .command-control-deck { margin-top: 8px; }
-html.rhw-focus-pass #workspaceOperations>.workspace-heading,
-html.rhw-focus-pass #workspaceComms>.workspace-heading { display: none; }
+html.rhw-focus-pass #workspaceOperations .workspace-heading,
+html.rhw-focus-pass body[data-comms-node="forum"] #workspaceComms .workspace-heading { display: none; }
 html.rhw-focus-pass .ops-price-input-wrap>span { color: var(--muted); font: 12px var(--font-main); }
 html.rhw-focus-pass .ops-details summary { font: 12px/1.4 var(--font-main); }
 html.rhw-focus-pass .ops-priced-state :is(span,strong),
