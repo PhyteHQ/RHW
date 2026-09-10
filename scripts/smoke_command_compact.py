@@ -155,6 +155,7 @@ def main() -> int:
               feedstockList.innerHTML=names.map(name=>renderOverviewRow({state:'low',role:'procurement',name,quantityValue:1000,detail:'4 CYCLES AVAILABLE'})).join('');
               return true;
             })()""")
+            layout_failures=[]
             for width in [360, 390, 430, 820, 1024, 1366, 1920]:
                 cdp.call('Emulation.setDeviceMetricsOverride', {'width':width,'height':900,'deviceScaleFactor':1,'mobile':width<760})
                 base.ev(cdp, "(()=>{scrollTo({top:0,behavior:'instant'});return true;})()")
@@ -166,30 +167,34 @@ def main() -> int:
                     rows:cards.map(c=>c.querySelector('ul')?.id),
                     scrollDeck:document.querySelector('.summary-grid').scrollWidth-document.querySelector('.summary-grid').clientWidth,
                     navHeight:r(rhwAppNav).height,toolbar:r(commandControlDeck),contextBottom:r(appSecondaryNav).bottom,
+                    labels:[...document.querySelectorAll('.app-tabs [data-workspace]')].map(b=>({text:b.textContent.trim(),button:r(b),label:r(b.querySelector('span')),font:getComputedStyle(b.querySelector('span')).font})),
                     labelsFit:[...document.querySelectorAll('.app-tabs [data-workspace]')].every(b=>{const label=b.querySelector('span'),x=r(label),y=r(b);return x.left>=y.left+3&&x.right<=y.right-3;}),
                     quantity:parseFloat(getComputedStyle(document.querySelector('.overview-row-qty')).fontSize),
                     kpi:parseFloat(getComputedStyle(document.querySelector('.base-telemetry-stat strong')).fontSize)};
                 })()""")
                 if geometry['overflow']>2 or geometry['scrollDeck']>2 or len(geometry['cards'])!=5 or not geometry['labelsFit']:
-                    raise RuntimeError(f'Inventory overflow at {width}px: {geometry}')
+                    layout_failures.append(f'Inventory overflow at {width}px: {geometry}')
                 if geometry['rows']!=['maintenanceList','exportList','feedstockList','byproductList','confiscatedList']:
-                    raise RuntimeError(f'Inventory reading order at {width}px: {geometry}')
+                    layout_failures.append(f'Inventory reading order at {width}px: {geometry}')
                 cards=geometry['cards']
                 if width>=1200:
                     if max(c['top'] for c in cards[:3])-min(c['top'] for c in cards[:3])>2 or cards[0]['height']>=cards[1]['height'] or cards[3]['top']<max(c['bottom'] for c in cards[:3])-2:
-                        raise RuntimeError(f'Inventory row sizing at {width}px: {geometry}')
+                        layout_failures.append(f'Inventory row sizing at {width}px: {geometry}')
                     if cards[0]['top']>455 or geometry['quantity']<19 or geometry['kpi']<20:
-                        raise RuntimeError(f'Desktop HUD density at {width}px: {geometry}')
+                        layout_failures.append(f'Desktop HUD density at {width}px: {geometry}')
                 if width<760 and any(cards[i+1]['top']<cards[i]['bottom']-2 for i in range(4)):
-                    raise RuntimeError(f'Mobile card order at {width}px: {geometry}')
+                    layout_failures.append(f'Mobile card order at {width}px: {geometry}')
                 base.ev(cdp, "(()=>{scrollTo({top:700,behavior:'instant'});return true;})()")
                 time.sleep(.15)
                 sticky=base.ev(cdp, """(()=>{const r=rhwAppNav.getBoundingClientRect();return{top:r.top,height:r.height,
                   context:appSecondaryNav.getBoundingClientRect().bottom,offset:parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--rhw-sticky-nav-offset')),
                   scrollY:scrollY,toolsInside:rhwAppNav.contains(rhwFocusToolsBtn)}})()""")
                 if sticky['height']>54 or sticky['toolsInside'] or abs(sticky['offset']-sticky['height']-12)>2 or (sticky['scrollY']>400 and abs(sticky['top'])>2) or abs(sticky['context']+sticky['scrollY']-geometry['contextBottom'])>2:
-                    raise RuntimeError(f'Primary-only sticky navigation at {width}px: {sticky}')
+                    layout_failures.append(f'Primary-only sticky navigation at {width}px: {sticky}')
                 print(f'HUD {width}px: cards start at {cards[0]["top"]:.0f}px; sticky navigation {sticky["height"]:.0f}px')
+
+            if layout_failures:
+                raise RuntimeError("\n".join(layout_failures))
 
             runtime_failures = [
                 failure for failure in cdp.take_runtime_failures()
