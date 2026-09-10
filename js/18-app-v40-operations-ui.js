@@ -126,7 +126,7 @@
 
   function materialFactorLabel(value) {
     const percentage = Math.round(Math.abs(1 - Number(value)) * 100);
-    return percentage ? `${percentage}% ${value < 1 ? 'LESS' : 'MORE'} MATERIAL` : 'NO BONUS';
+    return percentage ? `${value < 1 ? '−' : '+'}${percentage}% MATERIALS` : 'NO BONUS';
   }
 
   function iffEntries(recipe, selectedId) {
@@ -150,7 +150,7 @@
     const add = (id, name, factor) => { if (!id || seen.has(id)) return; seen.add(id); entries.push({ id, name, factor }); };
     const bmmFactor = core.factorFor(recipe, 'br_m_grp');
     add('br_m_grp', bmmFactor !== 1 ? `BMM · ${materialFactorLabel(bmmFactor)}` : 'BMM · NO BONUS', bmmFactor);
-    add('__none__', 'NO IFF BONUS · 1.00×', 1);
+    add('__none__', 'NO IFF BONUS', 1);
     for (const bonus of bonuses) {
       if (bonus.id !== 'br_m_grp') add(bonus.id, `${bonus.name || bonus.id} · ${materialFactorLabel(Number(bonus.factor || 1))}`, Number(bonus.factor || 1));
     }

@@ -1016,8 +1016,9 @@ html.rhw-focus-pass #commandStrip { display: none; }
 html.rhw-focus-pass .command-area-heading, html.rhw-focus-pass .inventory-view-heading { display: none; }
 html.rhw-focus-pass .command-control-deck { background: transparent; padding: 0; border: 0; box-shadow: none; margin-bottom: 12px; grid-template-columns: minmax(200px,1fr) auto auto; }
 html.rhw-focus-pass #commandGlobalSearch { font: 14px/1.4 var(--font-main) !important; }
-html.rhw-focus-pass .command-finder-label { background: var(--rhw-surface); border-color: var(--rhw-border); }
-html.rhw-focus-pass .command-finder-label>span, html.rhw-focus-pass .command-finder-key { display: none; }
+html.rhw-focus-pass .command-finder-label { grid-template-columns: minmax(0,1fr); background: var(--rhw-surface); border-color: var(--rhw-border); }
+html.rhw-focus-pass .command-finder-label>span:first-child, html.rhw-focus-pass .command-finder-key { display: none; }
+html.rhw-focus-pass .command-finder-label>.command-finder-input-wrap { display: block; }
 html.rhw-focus-pass .command-context-action { max-width: 280px; }
 
 /* Reading surfaces and the calculator. */
@@ -1141,3 +1142,26 @@ html.rhw-focus-pass .command-global-alerts .command-alert-copy strong { font-siz
 html.rhw-focus-pass .command-global-alerts .command-alert-copy small { font-size: 12px; }
 html.rhw-focus-pass body[data-comms-node="ticker"] .comms-panel-head { display: none; }
 html.rhw-focus-pass .rhw-command-compact-shell { background: var(--bg); }
+
+/* Final live review: reading text and controls use the shared working typeface. */
+html.rhw-focus-pass .app-workspace button { font-family: var(--font-main); font-size: 12px !important; }
+html.rhw-focus-pass .app-workspace small { font-family: var(--font-main); }
+html.rhw-focus-pass :is(.ops-material-table,.manifest-table,.pricecheck-table) :is(th,td) {
+  font-family: var(--font-main); font-size: 14px; font-variant-numeric: tabular-nums;
+}
+html.rhw-focus-pass :is(.pricecheck-source strong,.pricecheck-payout strong) { font: 600 14px/1.4 var(--font-main); }
+html.rhw-focus-pass .pricecheck-commodity strong { font: 600 15px/1.4 var(--font-main); }
+html.rhw-focus-pass .pricecheck-status strong { font: 600 18px/1.4 var(--font-main); }
+html.rhw-focus-pass .pricecheck-note { font: 12px/1.5 var(--font-main); }
+html.rhw-focus-pass .app-tabs button[data-workspace].active {
+  color: var(--gold); border-bottom-color: var(--gold); background: #222018; box-shadow: none;
+}
+html.rhw-focus-pass .app-tabs button[data-workspace] span { color: inherit; }
+html.rhw-focus-pass .app-tabs button[data-workspace]:not(.active):hover { background: var(--rhw-surface); color: var(--text); }
+html.rhw-focus-pass .command-control-deck { margin-top: 8px; }
+html.rhw-focus-pass #workspaceOperations>.workspace-heading,
+html.rhw-focus-pass #workspaceComms>.workspace-heading { display: none; }
+html.rhw-focus-pass .ops-price-input-wrap>span { color: var(--muted); font: 12px var(--font-main); }
+html.rhw-focus-pass .ops-details summary { font: 12px/1.4 var(--font-main); }
+html.rhw-focus-pass .ops-priced-state :is(span,strong),
+html.rhw-focus-pass .ops-flow-card :is(span,em,b) { font: 12px/1.5 var(--font-main); color: var(--muted); }
