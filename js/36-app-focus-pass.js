@@ -12,14 +12,12 @@
   const TOOL_META = Object.freeze({
     data: Object.freeze({ label: 'DATA STATUS', sub: 'DISCOVERY CATALOG + SYNC', workspace: 'operations', node: 'calculator' }),
     backup: Object.freeze({ label: 'BACKUP + DRAFTS', sub: 'DEVICE TRANSFER + LOCAL ARCHIVE', workspace: 'comms', node: 'drafts' }),
-    newswire: Object.freeze({ label: 'NEWSWIRE', sub: 'EDITORIAL MANAGER', workspace: 'comms', node: 'ticker' }),
     senders: Object.freeze({ label: 'SENDERS', sub: 'PROFILE REGISTRY', workspace: 'comms', node: 'senders' }),
     system: Object.freeze({ label: 'SYSTEM + DATA', sub: 'APP HEALTH + CATALOG + SYNC', workspace: null, node: null })
   });
 
   const ROUTE_TOOL = Object.freeze({
     'comms/drafts': 'backup',
-    'comms/ticker': 'newswire',
     'comms/senders': 'senders'
   });
 
@@ -74,7 +72,7 @@
 
   function toolsMarkup() {
     const cards = [
-      ['backup', '01'], ['newswire', '02'], ['senders', '03'], ['system', '04']
+      ['backup', '01'], ['senders', '02'], ['system', '03']
     ].map(([key, index]) => {
       const tool = TOOL_META[key];
       return `<button type="button" class="rhw-focus-tool-card" data-rhw-tool="${key}"><span class="rhw-focus-tool-index">${index}</span><span class="rhw-focus-tool-copy"><strong>${tool.label}</strong><small>${tool.sub}</small></span><span class="rhw-focus-tool-arrow" aria-hidden="true">›</span></button>`;
@@ -261,7 +259,7 @@
     };
     if (tabs.command !== 'COMMAND' || tabs.calculator !== 'CALCULATOR' || tabs.forum !== 'FORUM') failures.push('primary-tabs');
     if (!document.getElementById('rhwFocusToolsBtn') || !document.getElementById('rhwFocusToolsPanel')) failures.push('tools-surface');
-    if (document.querySelectorAll('#rhwFocusToolsPanel [data-rhw-tool]').length !== 4) failures.push('tool-count');
+    if (document.querySelectorAll('#rhwFocusToolsPanel [data-rhw-tool]').length !== 3) failures.push('tool-count');
     if (document.getElementById('rhwFocusToolsPanel')?.dataset.focusTrap !== 'true') failures.push('tools-focus-trap');
     if (!document.documentElement.classList.contains('rhw-focus-pass')) failures.push('focus-class');
     return failures;

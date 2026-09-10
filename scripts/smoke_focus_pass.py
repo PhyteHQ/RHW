@@ -143,7 +143,7 @@ def main() -> int:
                 raise RuntimeError(f"Price Check manual override failed: {override}")
 
             # TOOLS is now genuinely secondary and no longer exposes the obsolete
-            # Production Orders / Build Queue entry.
+            # Production Orders / Build Queue or Newswire entries.
             base.ev(cdp, "(()=>{RHWV4.focusPass.openTools();return true;})()")
             settle(.06)
             tools = base.ev(cdp, f"""(()=>{{
@@ -158,7 +158,7 @@ def main() -> int:
               const back=document.activeElement===last;
               return{{open:visible(panel),count:cards.length,keys:cards.map(x=>x.dataset.rhwTool),trap:forward&&back}};
             }})()""")
-            if not tools.get("open") or tools.get("count") != 4 or "build-queue" in tools.get("keys", []) or not tools.get("trap"):
+            if not tools.get("open") or tools.get("keys") != ["backup", "senders", "system"] or not tools.get("trap"):
                 raise RuntimeError(f"TOOLS cleanup/focus failed: {tools}")
             base.ev(cdp, "(()=>{RHWV4.focusPass.closeTools();return true;})()")
 
