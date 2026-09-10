@@ -300,7 +300,5 @@ body[data-workspace="command"] {
 #commandTelemetryStatus[data-tone="good"] { color:#a6c4ae; }
 @media(max-width:760px) {
   .base-telemetry-stat small, .uplink-label { font-size:11px; line-height:1.4; }
-  .shipyard-build-planner :is(button, input, select), .production-calc-button { min-height:44px; }
-  .shipyard-build-planner :is(small, .shipyard-plan-note) { font-size:11px; line-height:1.5; color:#c6c2b7; }
-  .shipyard-build-planner input { font-size:16px; }
+  .production-calc-button { min-height:44px; }
 }

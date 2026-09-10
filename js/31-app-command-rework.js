@@ -11,7 +11,7 @@
 
   const MODULES = Object.freeze([
     Object.freeze({ key: 'inventory', label: 'INVENTORY', sub: 'STATUS + MANIFEST', index: '01' }),
-    Object.freeze({ key: 'shipyard', label: 'SHIPYARD', sub: 'HULLS + COMPONENTS + PLANNER', index: '02' }),
+    Object.freeze({ key: 'shipyard', label: 'SHIPYARD', sub: 'HULLS + COMPONENTS', index: '02' }),
     Object.freeze({ key: 'production', label: 'PRODUCTION', sub: 'MODULES + CAPACITY + BOTTLENECKS', index: '03' }),
     Object.freeze({ key: 'logistics', label: 'LOGISTICS', sub: 'REMOTE BASES + MARKET + SUPPLY', index: '04' })
   ]);

@@ -546,7 +546,6 @@
     app.state.pricecheckNode = 'routes';
     document.body.dataset.pricecheckNode = 'routes';
     app.setActiveNode('PRICE CHECK / FIXED ROUTES');
-    document.title = `RHW PRICE CHECK · ${app.version}`;
     render();
     if (updateRoute) app.route.write('pricecheck', 'routes');
     return 'routes';

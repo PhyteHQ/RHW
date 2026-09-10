@@ -340,11 +340,20 @@ def test_qol_profiles(cdp):
 
 
 def test_qol_shipyard(cdp):
-    result = base.ev(cdp, "(()=>{window.hasVerifiedTelemetry=()=>true;window.stockFor=()=>50000;if(typeof renderShipyardControl==='function')renderShipyardControl();RHWV4.qol.ensureShipyardPlanner();const panel=document.getElementById('shipyardBuildPlanner');if(!panel)return{ok:false};const qty=document.getElementById('shipyardPlanQuantity'),target=document.getElementById('shipyardPlanTarget'),button=document.getElementById('shipyardPlanOpenCalculator');qty.value='3';qty.dispatchEvent(new Event('input',{bubbles:true}));const targetText=target.textContent;const rows=document.querySelectorAll('.shipyard-plan-component-row').length;button.click();return{ok:true,target:targetText,rows,hash:location.hash,qty:document.getElementById('opsQuantity')?.value||'',ws:document.body.dataset.workspace}})()")
-    if not result.get("ok") or result.get("rows", 0) <= 0 or "3" not in result.get("target", "") or result.get("hash") != "#operations/calculator" or result.get("qty") != "3" or result.get("ws") != "operations":
-        raise RuntimeError(f"Shipyard multi-hull planner failed: {result}")
-    print("V4 interaction smoke passed: Shipyard multi-hull planner → Calculator")
-
+    base.ev(cdp, "(()=>{window.hasVerifiedTelemetry=()=>true;window.stockFor=()=>50000;renderShipyardControl();return true;})()")
+    time.sleep(.12)  # Let the existing per-hull Calculator bridge attach.
+    result = base.ev(cdp, """(()=>{
+      const retired=!!document.getElementById('shipyardBuildPlanner');
+      const grid=document.querySelector('#shipyardControl .shipyard-control-grid');
+      const button=grid?.querySelector('.shipyard-plan-button');
+      if(!button)return{ok:false,retired};
+      const label=button.textContent;
+      button.click();
+      return{ok:true,retired,label,hash:location.hash,qty:document.getElementById('opsQuantity')?.value||'',ws:document.body.dataset.workspace};
+    })()""")
+    if not result.get("ok") or result.get("retired") or result.get("label") != "PRICE 1 HULL" or result.get("hash") != "#operations/calculator" or result.get("qty") != "1" or result.get("ws") != "operations":
+        raise RuntimeError(f"Shipyard planner retirement / Calculator shortcut failed: {result}")
+    print("V4 interaction smoke passed: Shipyard has no multi-hull planner; per-hull Calculator shortcut works")
 
 
 def test_pr3_decision_ui(cdp, workspace, node):
@@ -353,7 +362,6 @@ def test_pr3_decision_ui(cdp, workspace, node):
           window.hasVerifiedTelemetry=()=>true;
           window.stockFor=()=>50000;
           if(typeof renderShipyardControl==='function')renderShipyardControl();
-          RHWV4.qol.ensureShipyardPlanner();
           const strip=document.querySelector('.shipyard-decision-strip');
           const grid=document.querySelector('#shipyardControl .shipyard-control-grid');
           const planner=document.getElementById('shipyardBuildPlanner');
@@ -361,12 +369,12 @@ def test_pr3_decision_ui(cdp, workspace, node):
             metrics:strip?.querySelectorAll('.shipyard-decision-metric').length||0,
             labels:[...(strip?.querySelectorAll('small')||[])].map(x=>x.textContent.trim()),
             mobileLabels:[...document.querySelectorAll('.shipyard-component-required,.shipyard-component-stock,.shipyard-component-coverage')].every(x=>Boolean(x.dataset.label)),
-            plannerOrder:Boolean(grid&&planner&&grid.nextElementSibling===planner)
+            plannerAbsent:!planner,stockSections:grid?.querySelectorAll('.shipyard-control-section').length||0
           };
         })()""")
-        if result.get("metrics") != 3 or result.get("labels") != ["BUILDABLE NOW", "BOTTLENECK", "MISSING FOR NEXT HULL"] or not result.get("mobileLabels") or not result.get("plannerOrder"):
+        if result.get("metrics") != 3 or result.get("labels") != ["BUILDABLE NOW", "BOTTLENECK", "MISSING FOR NEXT HULL"] or not result.get("mobileLabels") or not result.get("plannerAbsent") or result.get("stockSections") != 2:
             raise RuntimeError(f"PR3 Shipyard decision UI failed: {result}")
-        print("PR3 smoke passed: Shipyard readiness strip + planner below stock")
+        print("PR3 smoke passed: Shipyard readiness strip + stock and hull registry without planner")
     elif (workspace, node) == ("command", "production"):
         cdp.call("Emulation.setDeviceMetricsOverride", {
             "width": 390, "height": 820, "deviceScaleFactor": 1, "mobile": True,
@@ -1008,6 +1016,9 @@ def main():
                     raise RuntimeError(f"V4.0.2 production route failed {workspace}/{node}: {snap}")
                 if snap.get("recipes") != base.CATALOG_COUNTS["recipeCount"] or snap.get("products") != base.CATALOG_COUNTS["productCount"]:
                     raise RuntimeError(f"V4.0.2 corrected catalog mismatch {workspace}/{node}: {snap}")
+                title = base.ev(cdp, "document.title")
+                if title != "RHW COMMAND":
+                    raise RuntimeError(f"Browser title changed on {workspace}/{node}: {title}")
                 test_v402(cdp, workspace, node)
                 test_pr3_decision_ui(cdp, workspace, node)
                 test_pr3_calculator_ui(cdp, workspace, node)

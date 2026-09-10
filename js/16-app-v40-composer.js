@@ -824,7 +824,6 @@
     if (valid === 'senders') renderSenderRegistry();
     if (app.state.activeWorkspace === 'comms') {
       app.setActiveNode(`COMMS / ${valid.toUpperCase()}`);
-      document.title = `RHW COMMS ${valid.toUpperCase()} · ${app.version}`;
       if (updateRoute) app.route.write('comms', valid);
     }
   }
