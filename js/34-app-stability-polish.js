@@ -125,19 +125,24 @@
       if (document.body.dataset.workspace !== 'command' || document.body.dataset.commandNode !== 'logistics') return;
       runs += 1;
       const root = document.scrollingElement || document.documentElement;
-      const dock = document.querySelector('.app-tabs');
+      const primary = document.getElementById('rhwAppNav');
+      const nav = document.getElementById('rhwLogisticsViewNav');
       const section = document.getElementById(document.body.dataset.logisticsView === 'materials' ? 'materialsScanSection' : 'marketScanSection');
       const price = section?.querySelector('[data-market-sort="price"]');
       const stock = section?.querySelector('[data-market-sort="stock"]');
       let delta = 0;
-      if (dock && price && stock) {
-        const dockTop = dock.getBoundingClientRect().top;
+      if (primary && nav && price && stock) {
+        const visibleTop = primary.getBoundingClientRect().height + 12;
+        const visibleBottom = window.innerHeight - 12;
+        const navTop = nav.getBoundingClientRect().top;
         const sortBottom = Math.max(price.getBoundingClientRect().bottom, stock.getBoundingClientRect().bottom);
-        const clearance = 12;
-        delta = Math.max(0, sortBottom - (dockTop - clearance));
-        if (delta > 2) {
+        // Keep the view switch below the sticky top row and sorting inside
+        // the viewport. If the screen is short, prioritize the view switch.
+        if (navTop < visibleTop) delta = navTop - visibleTop;
+        else if (sortBottom > visibleBottom) delta = Math.min(sortBottom - visibleBottom, navTop - visibleTop);
+        if (Math.abs(delta) > 2) {
           const maxScroll = Math.max(0, root.scrollHeight - window.innerHeight);
-          root.scrollTop = Math.min(maxScroll, root.scrollTop + delta);
+          root.scrollTop = Math.max(0, Math.min(maxScroll, root.scrollTop + delta));
         }
       }
       document.documentElement.dataset.rhwLogisticsRevealRuns = String(runs);
