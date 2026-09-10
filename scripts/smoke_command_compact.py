@@ -83,6 +83,8 @@ def main() -> int:
                 alertCount:Number(alerts?.dataset.alertCount||0),alertVisible:visible(alerts),alertHeight:rect(alerts).height,
                 alertListVisible:visible(alertList),
                 statusVisible:visible(status),manifestVisible:visible(manifest),
+                searchVisible:visible(document.getElementById('commandGlobalSearch')),
+                searchHeight:rect(document.getElementById('commandGlobalSearch')).height,
                 overflow:Math.max(document.documentElement.scrollWidth,document.body.scrollWidth)-window.innerWidth,
                 indexes:modeNav?.querySelectorAll('.rhw-subview-index').length||0
               };
@@ -100,6 +102,8 @@ def main() -> int:
             initial = result.get("initial", {})
             if initial.get("selfFailures"):
                 raise RuntimeError(f"Compact COMMAND self-test failed: {result}")
+            if not initial.get("searchVisible") or initial.get("searchHeight", 0) < 43.5:
+                raise RuntimeError(f"COMMAND search is hidden or too small to use: {result}")
             if initial.get("commandCount") != 4 or any(h < 43.5 or h > 68 for h in initial.get("commandHeights", [])):
                 raise RuntimeError(f"COMMAND module cards are not compact/touch-safe: {result}")
             if initial.get("modeCount") != 2 or initial.get("indexes") != 2 or any(h < 43.5 or h > 58 for h in initial.get("modeHeights", [])):

@@ -1,41 +1,13 @@
-function scrambleText(el, finalStr, duration = 500) {
+function scrambleText(el, finalStr) {
   if (!el) return;
-  finalStr = String(finalStr);
-
-  if (el.dataset.finalText === finalStr && el.textContent === finalStr) return;
-  el.dataset.finalText = finalStr;
-
-  if (prefersReducedMotion.matches || duration <= 0) {
-    el.textContent = finalStr;
-    return;
+  // Operational values stay readable throughout every telemetry refresh.
+  if (el.dataset.scrambleInterval) {
+    clearInterval(Number(el.dataset.scrambleInterval));
+    delete el.dataset.scrambleInterval;
   }
-
-  const chars = '0123456789@#$X%&*+';
-  const steps = Math.max(1, Math.ceil(duration / 25));
-  let step = 0;
-
-  if (el.dataset.scrambleInterval) clearInterval(Number(el.dataset.scrambleInterval));
-
-  const interval = setInterval(() => {
-    let result = '';
-    for (let i = 0; i < finalStr.length; i++) {
-      if ([' ', '$', '%', '–', ',', '.', ':', '/', '-'].includes(finalStr[i])) {
-        result += finalStr[i];
-      } else if (step / steps > i / Math.max(1, finalStr.length)) {
-        result += finalStr[i];
-      } else {
-        result += chars[Math.floor(Math.random() * chars.length)];
-      }
-    }
-    el.textContent = result;
-    if (step >= steps) {
-      clearInterval(interval);
-      el.textContent = finalStr;
-    }
-    step++;
-  }, 25);
-
-  el.dataset.scrambleInterval = String(interval);
+  const text = String(finalStr);
+  el.dataset.finalText = text;
+  if (el.textContent !== text) el.textContent = text;
 }
 
 function debounce(func, wait) {
