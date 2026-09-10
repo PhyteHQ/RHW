@@ -272,4 +272,39 @@ async function updates() {
   console.log('Service-worker cache provenance and update lifecycle passed.');
 }
 
-(async () => { await models(); await serviceWorker(); await updates(); })().catch(error => { console.error(error); process.exitCode = 1; });
+function overviewReferences() {
+  const ctx = vm.createContext({
+    quantity: item => Number(item?.quantity || 0),
+    commodityKey: item => String(item?.name || '').toLowerCase(),
+    keyFromName: name => name.toLowerCase(),
+    minStock: item => Number(item?.min_stock || 0),
+    number: value => Number(value).toLocaleString('de-DE'),
+    escapeHTML: value => String(value).replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char])),
+    statusPill: () => '<span class="pill">STABLE</span>',
+    readinessText: () => 'READY', needAmount: () => 0
+  });
+  run(ctx, 'js/config.js');
+  vm.runInContext('const CUSTOM_ALERTS=DASHBOARD_CONFIG.alerts, FEEDSTOCK=DASHBOARD_CONFIG.roles.feedstock, RECIPES=DASHBOARD_CONFIG.recipes;', ctx);
+  run(ctx, 'js/07-overview.js');
+  const evaluate = code => vm.runInContext(code, ctx);
+  const ref = (item, role) => JSON.parse(evaluate(`JSON.stringify(overviewStockReference(${JSON.stringify(item)},${JSON.stringify(role)}))`));
+  // Dashboard targets must not be confused with the API's trading reserve or capacity.
+  const reactor = {name:'Reactor Systems',quantity:350,min_stock:50,max_stock:2000};
+  assert.deepEqual(ref(reactor,'export'), {value:500,label:'TARGET'});
+  assert.equal(evaluate(`overviewDetail(${JSON.stringify(reactor)},'low','export')`), '150 TO TARGET');
+  assert.deepEqual(ref({name:'Toxic Waste',quantity:17000,max_stock:50000},'byproduct'), {value:15000,label:'DISPOSAL AT'});
+  assert.deepEqual(ref({name:'Wildcat Gold',quantity:0},'confiscated'), {value:25000,label:'REVIEW AT'});
+  assert.equal(evaluate("overviewDetail({name:'Toxic Waste',quantity:17000},'low','byproduct')"), 'DISPOSAL REQUIRED');
+  assert.deepEqual(ref({name:'Gold Ore',quantity:400},'procurement'), {value:425,label:'BATCH INPUT'});
+  assert.deepEqual(ref({name:'Scrap Metal',quantity:0,missing:true},'procurement'), {value:750,label:'BATCH INPUT'});
+  assert.equal(ref(null,'export'), null);
+  assert.equal(ref({name:'Unconfigured Material',quantity:50},'export'), null);
+  const markup=evaluate(`renderOverviewRow({state:'low',role:'export',name:'Reactor Systems',item:${JSON.stringify(reactor)},quantityValue:350,detail:'150 TO TARGET'})`);
+  assert.match(markup, /overview-row-qty">350</);
+  assert.match(markup, /500 <small>TARGET/);
+  assert.match(markup, /150 TO TARGET/);
+  assert.match(evaluate('telemetryPlaceholderRow()'), /STOCK UNKNOWN/);
+  console.log('Inventory targets, handling thresholds and input-batch references passed.');
+}
+
+(async () => { overviewReferences(); await models(); await serviceWorker(); await updates(); })().catch(error => { console.error(error); process.exitCode = 1; });

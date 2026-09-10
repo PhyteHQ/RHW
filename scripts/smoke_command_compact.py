@@ -149,12 +149,33 @@ def main() -> int:
             # list must not stretch unrelated cards; all categories stay reachable.
             base.ev(cdp, """(()=>{
               document.querySelector('.uplink-details')?.removeAttribute('open');
+              uplinkPanel.classList.remove('offline');uplinkPanel.classList.add('online');
+              liveStatus.textContent='CONNECTION SECURE';
+              baseHealthVal.textContent='100%';baseMoneyVal.textContent='$123.456.789';baseStorageVal.textContent='1.234.567';
               const names=['Basic Alloy','Consumer Goods','Food Rations'];
-              maintenanceList.innerHTML=names.map(name=>renderOverviewRow({state:'ok',role:'maintenance',name,quantityValue:123456,detail:'FACILITY STABLE'})).join('');
-              exportList.innerHTML=Array.from({length:5},(_,i)=>renderOverviewRow({state:'ok',role:'export',name:'Export component '+i,quantityValue:23456,detail:'EXPORT READY'})).join('');
-              feedstockList.innerHTML=names.map(name=>renderOverviewRow({state:'low',role:'procurement',name,quantityValue:1000,detail:'4 CYCLES AVAILABLE'})).join('');
+              const stock=(name,quantity)=>({name,quantity,min_stock:50,max_stock:150000});
+              renderList(maintenanceList,names.map(name=>stock(name,123456)),'','maintenance');
+              renderList(exportList,EXPORT_ORDER.map(name=>stock(name,name==='Reactor Systems'?350:23456)),'','export');
+              feedstockList.innerHTML=['Gold Ore','Niobium Ore','Scrap Metal'].map(name=>{
+                const item=stock(name,400),a=feedstockAnalysis(item);
+                return renderOverviewRow({state:a.state,role:'procurement',name,item,quantityValue:400,detail:`${a.required-400} NEEDED FOR 1 BATCH`,progress:renderFeedstockProgress(item,a.state,commodityKey(item))});
+              }).join('');
+              renderList(byproductList,[stock('Toxic Waste',17000)],'','byproduct');
+              renderList(confiscatedList,[stock('Wildcat Gold',0)],'','confiscated');
               return true;
             })()""")
+            uplink = base.ev(cdp, """(()=>{
+              const visible=el=>!!el.getClientRects().length;
+              const details=document.querySelector('.uplink-details');
+              const compact=!visible(headerRefreshBtn);
+              details.open=true;const refreshInDetails=visible(headerRefreshBtn);
+              details.open=false;uplinkPanel.classList.replace('online','offline');
+              const refreshOnFailure=visible(headerRefreshBtn);
+              uplinkPanel.classList.replace('offline','online');
+              return{compact,refreshInDetails,refreshOnFailure,retired:!document.getElementById('newswirePanel')&&!document.getElementById('newswireFilter')};
+            })()""")
+            if not all(uplink.values()):
+                raise RuntimeError(f"Newswire retirement / compact Uplink controls failed: {uplink}")
             layout_failures=[]
             for width in [360, 390, 430, 820, 1024, 1366, 1920]:
                 cdp.call('Emulation.setDeviceMetricsOverride', {'width':width,'height':900,'deviceScaleFactor':1,'mobile':width<760})
@@ -164,6 +185,7 @@ def main() -> int:
                   const r=el=>{const x=el.getBoundingClientRect();return{top:x.top,bottom:x.bottom,left:x.left,right:x.right,height:x.height,width:x.width}};
                   const cards=[...document.querySelectorAll('#inventoryStatusPanel .alert-card')];
                   return{overflow:document.documentElement.scrollWidth-innerWidth,cards:cards.map(r),
+                    contentOverflow:[...document.querySelectorAll('.base-telemetry-stat,.overview-row-meta,.overview-item-copy')].filter(el=>el.scrollWidth>el.clientWidth+2).map(el=>el.textContent),
                     rows:cards.map(c=>c.querySelector('ul')?.id),
                     scrollDeck:document.querySelector('.summary-grid').scrollWidth-document.querySelector('.summary-grid').clientWidth,
                     navHeight:r(rhwAppNav).height,toolbar:r(commandControlDeck),contextBottom:r(appSecondaryNav).bottom,
@@ -172,7 +194,7 @@ def main() -> int:
                     quantity:parseFloat(getComputedStyle(document.querySelector('.overview-row-qty')).fontSize),
                     kpi:parseFloat(getComputedStyle(document.querySelector('.base-telemetry-stat strong')).fontSize)};
                 })()""")
-                if geometry['overflow']>2 or geometry['scrollDeck']>2 or len(geometry['cards'])!=5 or not geometry['labelsFit']:
+                if geometry['overflow']>2 or geometry['scrollDeck']>2 or len(geometry['cards'])!=5 or not geometry['labelsFit'] or geometry['contentOverflow']:
                     layout_failures.append(f'Inventory overflow at {width}px: {geometry}')
                 if geometry['rows']!=['maintenanceList','exportList','feedstockList','byproductList','confiscatedList']:
                     layout_failures.append(f'Inventory reading order at {width}px: {geometry}')

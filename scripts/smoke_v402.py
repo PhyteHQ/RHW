@@ -316,9 +316,14 @@ def test_v402(cdp, workspace, node):
         states = base.ev(cdp, "(()=>{const f=(verified,stale)=>{window.hasVerifiedTelemetry=()=>verified;dataIsStale=stale;lastSyncError='';lastLoaded=verified?new Date():null;RHWV4.command.updateOverview();RHWV4.v402Fixes.sync();return [v40OverviewTelemetryState.textContent.trim(),v40OverviewTelemetryState.dataset.state]};return{live:f(true,false),cache:f(true,true),offline:f(false,false)}})()")
         if states != {"live": ["LIVE TELEMETRY", "live"], "cache": ["CACHE TELEMETRY", "stale"], "offline": ["AWAITING VERIFIED TELEMETRY", "offline"]}:
             raise RuntimeError(f"V4.0.2 telemetry truth-state failed: {states}")
-        cache = base.ev(cdp, "(()=>{lastLoaded=null;updateNetworkFeed('error','test outage');return tickerContainer.textContent})()")
-        if "NO VERIFIED CACHE AVAILABLE" not in cache:
-            raise RuntimeError(f"V4.0.2 no-cache Newswire state failed: {cache}")
+        cache = base.ev(cdp, """(()=>{
+          lastLoaded=null;updateNetworkFeed('error','test outage');renderOverview();
+          return{retired:!document.getElementById('newswirePanel')&&!document.getElementById('newswireFilter'),
+            navigation:!!document.querySelector('#rhwAppNav .app-tabs'),
+            unknown:[...document.querySelectorAll('.summary-grid .telemetry-placeholder')].every(row=>row.textContent.includes('STOCK UNKNOWN'))};
+        })()""")
+        if cache != {"retired": True, "navigation": True, "unknown": True}:
+            raise RuntimeError(f"No-cache stock / navigation without Newswire failed: {cache}")
     elif workspace == "operations":
         labels = base.ev(cdp, "(()=>{RHWV4.v402Fixes.sync();return [...document.querySelectorAll('[data-material-price]')].map(x=>x.getAttribute('aria-label')||'')})()")
         if not labels or any(not label.strip() for label in labels):
