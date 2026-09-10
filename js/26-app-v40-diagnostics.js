@@ -75,7 +75,7 @@
     const reviewed = status.workflow?.reviewRequired === true && status.workflow?.autoMerge === false;
     if (!reviewed) return result('discovery', 'DISCOVERY SYNC', 'danger', 'POLICY ERROR', 'The catalog review gate is not active.');
     const run = app.discoveryStatus.runSnapshot();
-    return result('discovery', 'DISCOVERY SYNC', run.tone === 'muted' ? 'warn' : run.tone, run.label, `${run.detail} // DRAFT PR ONLY; AUTO-MERGE DISABLED`);
+    return result('discovery', 'DISCOVERY SYNC', run.tone === 'muted' ? 'warn' : run.tone, run.label, `${run.detail} // REVIEW REQUIRED; AUTO-MERGE DISABLED`);
   }
 
   function newswireHealth() {
