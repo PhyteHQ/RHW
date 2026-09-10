@@ -425,7 +425,7 @@
       const target = text.includes('dunkirk') ? app.config.operations.shipyardTargets.dunkirk : text.includes('invincible') ? app.config.operations.shipyardTargets.invincible : null;
       if (!target) return;
       const button = document.createElement('button');
-      button.type = 'button'; button.className = 'shipyard-plan-button'; button.textContent = 'PRICE / PLAN 1 HULL';
+      button.type = 'button'; button.className = 'shipyard-plan-button'; button.textContent = 'PRICE 1 HULL';
       button.addEventListener('click', event => { event.stopPropagation(); openTarget(target, 1); });
       label.appendChild(button);
     });
@@ -470,7 +470,6 @@
     if (heading) heading.textContent = orders ? 'PRODUCTION ORDERS' : 'ITEM CALCULATOR';
     if (subheading) subheading.textContent = orders ? 'PRIORITY QUEUE // AGGREGATED MATERIALS // FORUM REPORT' : 'RECIPE LOOKUP // IFF MATERIAL REQUIREMENTS // BUILD COST // SALE PRICE';
     app.setActiveNode(`OPERATIONS / ${orders ? 'PRODUCTION ORDERS' : 'ITEM CALCULATOR'}`);
-    document.title = `RHW ${orders ? 'PRODUCTION ORDERS' : 'ITEM CALCULATOR'} · ${app.version}`;
     if (updateRoute && app.state.activeWorkspace === 'operations') app.route.write('operations', valid);
     if (orders) app.productionOrders?.activate?.();
     else if (core.state.catalog) renderCalculator();

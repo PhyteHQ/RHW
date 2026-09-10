@@ -7,14 +7,9 @@
   --content-max: 1560px;
   --layout-gutter: clamp(14px, 2.2vw, 34px);
   --layout-gap: clamp(16px, 1.4vw, 22px);
-  --text: #e4e6e8;
-  --muted: #8b9198;
-  --panel: rgba(10, 12, 15, 0.78);
-  --line: #373b40;
-  --line-soft: rgba(69, 74, 80, 0.62);
 }
 
-html { background: #030405; }
+html { background: var(--bg); }
 body {
   min-width: 0;
   background-image:

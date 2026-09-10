@@ -231,7 +231,6 @@
     });
     if (app.state.activeWorkspace === 'command') {
       app.setActiveNode(`COMMAND / ${valid.toUpperCase()}`);
-      document.title = `RHW ${valid.toUpperCase()} · ${app.version}`;
       if (updateRoute) app.route.write('command', valid);
     }
     if (valid === 'overview') updateOverview();

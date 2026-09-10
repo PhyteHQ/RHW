@@ -15,7 +15,7 @@
     Object.freeze({ key: 'priceCheckOverrides', label: 'PRICE CHECK', detail: 'Manual source prices', mode: 'MERGE', selected: true }),
     Object.freeze({ key: 'productionOrders', label: 'LEGACY DATA', detail: 'Archived order data from earlier versions', mode: 'MERGE', selected: false }),
     Object.freeze({ key: 'current', label: 'CURRENT MESSAGE', detail: 'Autosaved Forum composer', mode: 'REPLACE', selected: false }),
-    Object.freeze({ key: 'shipyardPlanner', label: 'SHIPYARD PLAN', detail: 'Current build-planner state', mode: 'REPLACE', selected: false }),
+    Object.freeze({ key: 'shipyardPlanner', label: 'ARCHIVED SHIPYARD PLAN', detail: 'Saved planner data from earlier versions', mode: 'REPLACE', selected: false }),
     Object.freeze({ key: 'newswireDraft', label: 'NEWSWIRE WORK', detail: 'Unpublished working copy', mode: 'REPLACE', selected: false }),
     Object.freeze({ key: 'preferences', label: 'APP SETTINGS', detail: 'Last views and workspace', mode: 'REPLACE', selected: false })
   ]);

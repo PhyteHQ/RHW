@@ -335,7 +335,7 @@ def main() -> int:
     require_tokens(errors, 'js/18-app-v40-operations-ui.js', (
         'ITEM CALCULATOR', 'SEARCH RECIPE', 'PRICE / UNIT', 'TARGET PROFIT MARGIN', 'materialPrices',
         'NO MATCHING RECIPE', 'core.priceQuote(rows, calc, plan)', 'AUTHORIZED IFF', 'RESTRICTED RECIPE',
-        'installShipyardBridge', 'PRICE / PLAN 1 HULL', 'ops-mobile-decision',
+        'installShipyardBridge', 'PRICE 1 HULL', 'ops-mobile-decision',
         'data-ops-quantity', 'data-ops-jump', 'opsMobileSellUnit'
     ), 'V4 OPERATIONS UI')
     require_tokens(errors, 'js/19-app-v40-runtime.js', (
@@ -448,8 +448,8 @@ def main() -> int:
         if token not in index_text:
             errors.append(f'index.html PWA metadata is incomplete: {token}')
     title_match = re.search(r'<title>(.*?)</title>', index_text, flags=re.I | re.S)
-    if not title_match or version not in title_match.group(1):
-        errors.append(f'index.html title does not advertise the current app version {version}.')
+    if not title_match or title_match.group(1).strip() != 'RHW COMMAND':
+        errors.append('index.html must use the stable RHW COMMAND browser title.')
 
     build_info = (ROOT / 'js/build-info.js').read_text(encoding='utf-8')
     if not re.search(r"revision:\s*'[^']+'", build_info) or 'window.RHW_BUILD?.revision' not in bootstrap or 'self.RHW_BUILD.revision' not in (ROOT / 'sw.js').read_text():

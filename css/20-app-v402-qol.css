@@ -1,38 +1,22 @@
 /* ==========================================================================
    RHW WEB APP · V4.0.2 QUALITY-OF-LIFE TOOLS
-   Explicit calculator price profiles + compact capital shipyard planner.
+   Explicit calculator price profiles.
    ========================================================================== */
-.ops-price-profiles{margin-top:12px;border:1px solid rgba(125,167,234,.18);background:rgba(125,167,234,.035)}
-.ops-price-profiles-head,.shipyard-build-planner-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 12px;border-bottom:1px solid rgba(255,255,255,.055)}
-.ops-price-profiles-head>div,.shipyard-build-planner-head>div{display:grid;gap:2px}
-.ops-price-profiles-head small,.shipyard-build-planner-head small{font-family:var(--font-tech);font-size:8px;letter-spacing:.085em;color:rgba(224,224,224,.45)}
-.ops-price-profiles-head strong,.shipyard-build-planner-head strong{font-family:var(--font-tech);font-size:10px;letter-spacing:.07em;color:#cbd8e8}
+.ops-price-profiles{margin-top:12px;border:1px solid rgba(163,163,163,.18);background:rgba(163,163,163,.035)}
+.ops-price-profiles-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 12px;border-bottom:1px solid rgba(255,255,255,.055)}
+.ops-price-profiles-head>div{display:grid;gap:2px}
+.ops-price-profiles-head small{font-family:var(--font-tech);font-size:8px;letter-spacing:.085em;color:rgba(224,224,224,.45)}
+.ops-price-profiles-head strong{font-family:var(--font-tech);font-size:10px;letter-spacing:.07em;color:#d6d6d6}
 .ops-profile-controls{display:grid;grid-template-columns:minmax(150px,.8fr) minmax(190px,1fr);gap:10px;padding:11px 12px 8px}
 .ops-profile-actions{display:flex;flex-wrap:wrap;gap:7px;padding:0 12px 10px}
-.ops-profile-actions button,.shipyard-plan-open{min-height:30px;padding:6px 10px;border:1px solid rgba(125,167,234,.22);background:rgba(125,167,234,.055);color:#a9bddb;font-family:var(--font-tech);font-size:8px;font-weight:700;letter-spacing:.07em;box-shadow:none;clip-path:none;cursor:pointer}
-.ops-profile-actions button:hover,.ops-profile-actions button:focus-visible,.shipyard-plan-open:hover,.shipyard-plan-open:focus-visible{background:rgba(125,167,234,.12);color:#d5e1f2}
-.ops-profile-actions .primary,.shipyard-plan-open{border-color:rgba(212,175,55,.34);background:rgba(212,175,55,.07);color:#e7c963}
+.ops-profile-actions button{min-height:30px;padding:6px 10px;border:1px solid rgba(163,163,163,.22);background:rgba(163,163,163,.055);color:#bbbbbb;font-family:var(--font-tech);font-size:8px;font-weight:700;letter-spacing:.07em;box-shadow:none;clip-path:none;cursor:pointer}
+.ops-profile-actions button:hover,.ops-profile-actions button:focus-visible{background:rgba(163,163,163,.12);color:#e0e0e0}
+.ops-profile-actions .primary{border-color:rgba(212,175,55,.34);background:rgba(212,175,55,.07);color:#e7c963}
 .ops-profile-actions .danger{border-color:rgba(199,94,94,.20);color:#c98282}
 .ops-profile-status{padding:8px 12px;border-top:1px solid rgba(255,255,255,.045);font-family:var(--font-tech);font-size:8px;line-height:1.4;letter-spacing:.055em;color:rgba(224,224,224,.52)}
 .ops-profile-status[data-tone="good"]{color:#78ad8a}.ops-profile-status[data-tone="warn"]{color:#d0a254}
 
-.shipyard-build-planner{margin:0 0 14px;border:1px solid rgba(212,175,55,.18);background:linear-gradient(90deg,rgba(212,175,55,.045),rgba(5,9,13,.3))}
-.shipyard-build-planner-controls{display:grid;grid-template-columns:minmax(180px,1fr) 130px auto;gap:10px;align-items:end;padding:11px 12px}
-.shipyard-build-planner .comms-field{min-width:0}
-.shipyard-plan-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border-top:1px solid rgba(255,255,255,.05);border-bottom:1px solid rgba(255,255,255,.05)}
-.shipyard-plan-summary>div{display:grid;gap:3px;padding:9px 12px;border-right:1px solid rgba(255,255,255,.05)}
-.shipyard-plan-summary>div:last-child{border-right:0}.shipyard-plan-summary small{font-family:var(--font-tech);font-size:7.5px;letter-spacing:.08em;color:rgba(224,224,224,.4)}
-.shipyard-plan-summary strong{font-family:var(--font-tech);font-size:10px;letter-spacing:.055em;color:#e1e5e7}
-.shipyard-plan-summary strong.good{color:#78ad8a}.shipyard-plan-summary strong.warn{color:#d4aa5c}
-.shipyard-plan-component-head,.shipyard-plan-component-row{display:grid;grid-template-columns:minmax(150px,1.3fr) .65fr .65fr .65fr;gap:10px;align-items:center;padding:7px 12px}
-.shipyard-plan-component-head{font-family:var(--font-tech);font-size:7.5px;letter-spacing:.08em;color:rgba(224,224,224,.4);text-transform:uppercase}
-.shipyard-plan-component-row{border-top:1px solid rgba(255,255,255,.04);font-family:var(--font-tech);font-size:9px;color:rgba(224,224,224,.68)}
-.shipyard-plan-component-row strong{color:#dfe4e7}.shipyard-plan-component-row .gap{color:#d4aa5c}.shipyard-plan-component-row .gap.zero{color:#78ad8a}
-.shipyard-plan-note{padding:8px 12px;border-top:1px solid rgba(255,255,255,.045);font-family:var(--font-tech);font-size:8px;line-height:1.45;letter-spacing:.045em;color:rgba(224,224,224,.5)}
 
 @media(max-width:760px){
   .ops-profile-controls{grid-template-columns:1fr}.ops-profile-actions button{flex:1 1 140px}
-  .shipyard-build-planner-controls{grid-template-columns:1fr 110px}.shipyard-plan-open{grid-column:1/-1;width:100%}
-  .shipyard-plan-summary{grid-template-columns:1fr}.shipyard-plan-summary>div{border-right:0;border-bottom:1px solid rgba(255,255,255,.04)}.shipyard-plan-summary>div:last-child{border-bottom:0}
-  .shipyard-plan-component-head{display:none}.shipyard-plan-component-row{grid-template-columns:1fr auto;gap:4px 12px}.shipyard-plan-component-row span:nth-child(2)::before{content:'REQ ';color:rgba(224,224,224,.35)}.shipyard-plan-component-row span:nth-child(3)::before{content:'STOCK ';color:rgba(224,224,224,.35)}.shipyard-plan-component-row span:nth-child(4)::before{content:'GAP ';color:rgba(224,224,224,.35)}
 }
