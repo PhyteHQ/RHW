@@ -166,10 +166,11 @@ def main() -> int:
                     rows:cards.map(c=>c.querySelector('ul')?.id),
                     scrollDeck:document.querySelector('.summary-grid').scrollWidth-document.querySelector('.summary-grid').clientWidth,
                     navHeight:r(rhwAppNav).height,toolbar:r(commandControlDeck),contextBottom:r(appSecondaryNav).bottom,
+                    labelsFit:[...document.querySelectorAll('.app-tabs [data-workspace]')].every(b=>{const label=b.querySelector('span'),x=r(label),y=r(b);return x.left>=y.left+3&&x.right<=y.right-3;}),
                     quantity:parseFloat(getComputedStyle(document.querySelector('.overview-row-qty')).fontSize),
                     kpi:parseFloat(getComputedStyle(document.querySelector('.base-telemetry-stat strong')).fontSize)};
                 })()""")
-                if geometry['overflow']>2 or geometry['scrollDeck']>2 or len(geometry['cards'])!=5:
+                if geometry['overflow']>2 or geometry['scrollDeck']>2 or len(geometry['cards'])!=5 or not geometry['labelsFit']:
                     raise RuntimeError(f'Inventory overflow at {width}px: {geometry}')
                 if geometry['rows']!=['maintenanceList','exportList','feedstockList','byproductList','confiscatedList']:
                     raise RuntimeError(f'Inventory reading order at {width}px: {geometry}')
