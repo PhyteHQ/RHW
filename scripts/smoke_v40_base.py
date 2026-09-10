@@ -111,7 +111,7 @@ def ev(cdp,expression):
     raw=result.get("result",{}).get("value"); return json.loads(raw) if raw else {}
 
 def snapshot(cdp):
-    return ev(cdp,"({ready:document.documentElement.dataset.v40Ready||'',error:document.documentElement.dataset.v40Error||'',workspace:document.body?.dataset.workspace||'',commandNode:document.body?.dataset.commandNode||'',operationsNode:document.body?.dataset.operationsNode||'',commsNode:document.body?.dataset.commsNode||'',mountedNav:document.querySelector('#appContextNavSlot > .workspace-subnav')?.id||'',recipes:window.RHWV4?.operationsCore?.state?.catalog?.meta?.recipeCount||0,products:window.RHWV4?.operationsCore?.state?.catalog?.meta?.productCount||0,errors:window.__RHW_V4_SMOKE__?.errors||[]})")
+    return ev(cdp,"({ready:document.documentElement.dataset.v40Ready||'',error:document.documentElement.dataset.v40Error||'',workspace:document.body?.dataset.workspace||'',commandNode:document.body?.dataset.commandNode||'',operationsNode:document.body?.dataset.operationsNode||'',commsNode:document.body?.dataset.commsNode||'',pricecheckNode:document.body?.dataset.pricecheckNode||'',mountedNav:document.querySelector('#appContextNavSlot > .workspace-subnav')?.id||'',recipes:window.RHWV4?.operationsCore?.state?.catalog?.meta?.recipeCount||0,products:window.RHWV4?.operationsCore?.state?.catalog?.meta?.productCount||0,errors:window.__RHW_V4_SMOKE__?.errors||[]})")
 
 def ui_number(value):
     digits=re.sub(r"[^0-9-]","",value or ""); return int(digits) if digits and digits!="-" else 0
@@ -211,8 +211,8 @@ def main():
                     snap=snapshot(cdp)
                     if snap.get("ready") in {"true","false"}: break
                     time.sleep(.1)
-                key={"command":"commandNode","operations":"operationsNode","comms":"commsNode"}[workspace]
-                expected_nav={"command":"commandNodeNav","operations":"operationsNodeNav","comms":"commsNodeNav"}[workspace]
+                key={"command":"commandNode","operations":"operationsNode","pricecheck":"pricecheckNode","comms":"commsNode"}[workspace]
+                expected_nav={"command":"commandNodeNav","operations":"operationsNodeNav","pricecheck":"","comms":"commsNodeNav"}[workspace]
                 if snap.get("ready")!="true" or snap.get("error")=="true" or snap.get("workspace")!=workspace or snap.get(key)!=node or snap.get("mountedNav")!=expected_nav or snap.get("errors"): raise RuntimeError(f"V4 route failed {workspace}/{node}: {snap}")
                 if workspace=="operations" and snap.get("recipes")!=CATALOG_COUNTS["recipeCount"]: raise RuntimeError(f"Recipe catalog missing: {snap}")
                 print(f"V4 runtime smoke passed: {workspace}/{node} (recipes={snap.get('recipes',0)} products={snap.get('products',0)} nav={snap.get('mountedNav','')})")

@@ -11,6 +11,7 @@
   const SUBNAV_IDS = Object.freeze({
     command: 'commandNodeNav',
     operations: 'operationsNodeNav',
+    pricecheck: null,
     comms: 'commsNodeNav'
   });
   let observer = null;
@@ -117,9 +118,12 @@
       if (nav !== target) restore(nav);
     });
 
-    /* data-workspace is reserved for the three actual workspace tabs. */
+    /* data-workspace is reserved for the actual workspace tabs. */
     slot.dataset.activeWorkspace = active;
-    if (!target) return false;
+    if (!target) {
+      requestAnimationFrame(updateStickyOffset);
+      return SUBNAV_IDS[active] === null;
+    }
 
     ensureHome(target, active);
     if (target.parentElement !== slot) slot.appendChild(target);
@@ -139,7 +143,7 @@
     if (!slot) failures.push('missing-context-slot');
     if (slot?.hasAttribute('data-workspace')) failures.push('context-slot-workspace-collision');
     if (slot?.dataset.activeWorkspace !== active) failures.push(`context-slot-state:${active}`);
-    if (!mounted || mounted.id !== expectedId) failures.push(`mounted-subnav:${expectedId}`);
+    if (expectedId ? mounted?.id !== expectedId : Boolean(mounted)) failures.push(`mounted-subnav:${expectedId || 'none'}`);
     if (!document.querySelector(`.app-tabs [data-workspace="${active}"].active`)) failures.push(`active-workspace-tab:${active}`);
     if (!document.getElementById('rhwV40StickyUxStyle')) failures.push('missing-sticky-ux-style');
     if (!document.getElementById('toggleBbcodePanelBtn')) failures.push('missing-bbcode-collapse');

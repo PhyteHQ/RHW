@@ -95,6 +95,7 @@
       workspace: app.state.activeWorkspace,
       commandNode: app.state.commandNode,
       operationsNode: app.state.operationsNode,
+      pricecheckNode: app.state.pricecheckNode,
       commsNode: app.state.commsNode,
       route,
       recipeCount: app.operationsCore?.state?.catalog?.meta?.recipeCount || 0

@@ -1002,8 +1002,8 @@ def main():
                     if snap.get("ready") in {"true", "false"}:
                         break
                     time.sleep(.1)
-                key = {"command": "commandNode", "operations": "operationsNode", "comms": "commsNode"}[workspace]
-                nav = {"command": "commandNodeNav", "operations": "operationsNodeNav", "comms": "commsNodeNav"}[workspace]
+                key = {"command": "commandNode", "operations": "operationsNode", "pricecheck": "pricecheckNode", "comms": "commsNode"}[workspace]
+                nav = {"command": "commandNodeNav", "operations": "operationsNodeNav", "pricecheck": "", "comms": "commsNodeNav"}[workspace]
                 if snap.get("ready") != "true" or snap.get("error") == "true" or snap.get("workspace") != workspace or snap.get(key) != node or snap.get("mountedNav") != nav or snap.get("errors"):
                     raise RuntimeError(f"V4.0.2 production route failed {workspace}/{node}: {snap}")
                 if snap.get("recipes") != base.CATALOG_COUNTS["recipeCount"] or snap.get("products") != base.CATALOG_COUNTS["productCount"]:
