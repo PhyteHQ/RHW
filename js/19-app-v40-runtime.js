@@ -23,7 +23,6 @@
     const style = document.getElementById('rhwV40ReleasePolishStyle');
     if (!style || style.dataset.fullReadability === 'true') return;
     style.dataset.fullReadability = 'true';
-    style.dataset.fullReadability = 'true';
   }
 
   function selfTest() {
@@ -82,7 +81,7 @@
     (app.mobileUi?.selfTest?.() || []).forEach(failure => failures.push(`mobile:${failure}`));
     if (!document.querySelector('[data-command-panel="overview"]')) failures.push('route:command-overview');
     if (!document.querySelector('[data-operations-panel="calculator"]')) failures.push('route:operations-calculator');
-    if (!document.querySelector('[data-operations-panel="orders"]')) failures.push('route:operations-orders');
+    if (!document.querySelector('[data-pricecheck-panel="routes"]')) failures.push('route:pricecheck-routes');
     if (!document.querySelector('[data-comms-panel="ticker"]')) failures.push('route:comms-ticker');
     return failures;
   }
