@@ -174,16 +174,20 @@ def main() -> int:
 
             for width in (360, 390, 430, 820, 1024, 1366, 1920):
                 cdp.call('Emulation.setDeviceMetricsOverride', {'width':width,'height':900,'deviceScaleFactor':1,'mobile':width<=430})
+                base.ev(cdp, "(()=>{document.getElementById('opsComparisonPanel').scrollIntoView({block:'start',behavior:'instant'});return true;})()")
                 time.sleep(.12)
                 layout = base.ev(cdp, """(()=>{
                   const panel=document.getElementById('opsComparisonPanel');
                   const controls=[...panel.querySelectorAll('button,input')];
+                  const setup=document.querySelector('.ops-setup-panel').getBoundingClientRect();
+                  const bounds=panel.getBoundingClientRect();
                   return {overflow:Math.max(document.documentElement.scrollWidth,document.body.scrollWidth)-innerWidth,
+                    overlap:setup.bottom>bounds.top+1&&setup.top<bounds.bottom&&setup.right>bounds.left&&setup.left<bounds.right,
                     panelWidth:panel.getBoundingClientRect().width,
                     small:controls.filter(x=>x.getBoundingClientRect().height<43).map(x=>x.outerHTML),
                     tableOverflow:panel.scrollWidth-panel.clientWidth};
                 })()""")
-                if layout.get('overflow',0)>2 or layout.get('tableOverflow',0)>2 or layout.get('small'):
+                if layout.get('overflow',0)>2 or layout.get('tableOverflow',0)>2 or layout.get('small') or layout.get('overlap'):
                     raise RuntimeError(f"Comparison layout failed at {width}: {layout}")
 
             adopted = base.ev(cdp, """(()=>{

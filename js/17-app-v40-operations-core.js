@@ -220,7 +220,7 @@
     const complete = available.length > 0 && available.every(entry => entry.pricing.complete);
     const best = complete ? Math.min(...available.map(entry => entry.pricing.unitCost)) : null;
     const bestIds = complete ? available.filter(entry => Math.abs(entry.pricing.unitCost - best) < 1e-8).map(entry => entry.recipe.id) : [];
-    return { output, entries, materials: [...materials.values()], complete, bestIds };
+    return { output: { ...output, name: displayName(product(output.id)) }, entries, materials: [...materials.values()], complete, bestIds };
   }
 
   app.operationsCore = { state, loadCatalog, product, recipe, recipesFor, factorFor, authorizedFor, telemetryReady, telemetryQuantity, buildPlan, priceQuote, displayName, materialRows, effectiveOutput, compareRecipes };
