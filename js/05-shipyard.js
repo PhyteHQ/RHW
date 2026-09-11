@@ -96,7 +96,7 @@ function renderShipyardControl() {
     const isBottleneck = bottleneck && keyFromName(component.name) === keyFromName(bottleneck.name);
     return `
       <div class="shipyard-component-row component-${component.state}${isBottleneck ? ' bottleneck' : ''}">
-        <div class="shipyard-component-name">${escapeHTML(component.name)}</div>
+        <div class="shipyard-component-name">${escapeHTML(component.name)}${typeof purchaseSourceButton === 'function' ? purchaseSourceButton(component.name, component.nextHullGap) : ''}</div>
         <div class="shipyard-component-required" data-label="REQ / HULL">${number(component.required)}</div>
         <div class="shipyard-component-stock scramble-shipyard" data-label="STOCK" data-val="${number(component.stock)}"></div>
         <div class="shipyard-component-coverage scramble-shipyard" data-label="HULLS" data-val="${number(component.coverage)}x"></div>
@@ -192,4 +192,3 @@ function renderShipyardControl() {
   mount.querySelectorAll('.scramble-shipyard').forEach(el => scrambleText(el, el.dataset.val));
   updateDataFreshnessIndicators();
 }
-

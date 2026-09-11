@@ -111,6 +111,48 @@ async function models() {
   assert.equal(Object.keys(app.state.calculator.materialPrices).length, 0, 'A different recipe starts with blank prices');
   assert.equal(app.state.calculator.affiliationId, 'br_m_grp');
   assert.doesNotMatch(mount.innerHTML, /opsAddProductionOrder|ADD TO ORDER BOARD/);
+  // Same requested output, independently known BMM quantities, shared prices,
+  // whole-batch surplus and zero-valued self-mined ore.
+  const comparisonCalc = { recipeId: 'recipe_niobium_basic', productId: 'commodity_niobium',
+    quantity: 801, affiliationId: 'br_m_grp', marginPercent: 20, comparisonOpen: true,
+    materialPrices: { commodity_niobium_ore: 0, commodity_mox_fuel: 100,
+      commodity_industrial: 20, commodity_mining_machinery: 30 } };
+  const comparison = core.compareRecipes(comparisonCalc);
+  assert.equal(comparison.entries.length, 3);
+  assert.equal(comparison.complete, true);
+  const variant = id => comparison.entries.find(entry => entry.recipe.id === id);
+  assert.equal(variant('recipe_niobium_basic').plan.actualOutput, 1300);
+  assert.equal(variant('recipe_niobium_basic').pricing.totalCost, 34000);
+  assert.equal(variant('recipe_niobium_advanced').plan.actualOutput, 1600);
+  assert.equal(variant('recipe_niobium_advanced').plan.surplus, 799);
+  assert.equal(variant('recipe_niobium_advanced').pricing.totalCost, 37400);
+  assert.equal(variant('recipe_niobium_advanced').pricing.unitCost, 23.375);
+  assert.equal(variant('recipe_niobium_bulk').pricing.totalCost, 140250);
+  assert.deepEqual([...comparison.bestIds], ['recipe_niobium_advanced']);
+  const partialComparison = core.compareRecipes({ ...comparisonCalc, materialPrices: {
+    ...comparisonCalc.materialPrices, commodity_mining_machinery: '' } });
+  assert.equal(partialComparison.complete, false);
+  assert.equal(partialComparison.bestIds.length, 0, 'Do not crown a winner while a comparable recipe is unpriced');
+  const goldCalc = { ...comparisonCalc, recipeId: 'recipe_gold_basic', productId: 'commodity_gold' };
+  const beforeOutputs = JSON.stringify(core.recipe('recipe_gold_basic').outputs);
+  assert.equal(core.compareRecipes(goldCalc).entries.length, 4);
+  const wildcat = core.compareRecipes({ ...goldCalc, affiliationId: '__none__' });
+  assert.equal(wildcat.output.id, 'commodity_pirate_gold');
+  assert.equal(wildcat.entries.length, 3, 'Gold conversion is not comparable to Wildcat Gold output');
+  assert.ok(wildcat.entries.every(entry => entry.plan.product.id === 'commodity_pirate_gold'));
+  assert.equal(JSON.stringify(core.recipe('recipe_gold_basic').outputs), beforeOutputs, 'Comparisons must restore the catalog');
+  assert.equal(core.compareRecipes(calc).entries[0].pricing.recipeFee, 2500000000, 'Fixed fees agree with the main quote');
+  app.state.calculator = { ...comparisonCalc, search: 'Niobium' };
+  app.operations.renderCalculator();
+  assert.match(mount.innerHTML, /id="opsComparisonPanel"/);
+  assert.equal(app.operations.useComparisonVariant('recipe_niobium_bulk'), true);
+  assert.equal(app.state.calculator.recipeId, 'recipe_niobium_bulk');
+  assert.equal(app.state.calculator.affiliationId, 'br_m_grp');
+  assert.equal(app.state.calculator.materialPrices.commodity_niobium_ore, 0);
+  assert.equal(app.state.calculator.materialPrices.commodity_industrial, 20);
+  assert.equal(app.state.calculator.quantity, 801);
+  assert.equal(app.operations.useComparisonVariant('recipe_gold_basic'), false, 'Cannot adopt an unrelated output');
+  console.log('Shared-price recipe comparison passed: IFF outputs, batch rounding, zero ore value, fees, incomplete prices and variant adoption.');
   let plans = 0;
   for (const r of core.state.catalog.recipes) {
     const affiliationId = r.restricted ? r.bonuses?.[0]?.id : 'br_m_grp';

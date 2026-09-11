@@ -182,5 +182,46 @@
     return { materialCost, recipeFee, knownCost, pricedCount, missingCount, complete, totalCost, unitCost, sellPerUnit, profitUnit, revenue, profit };
   }
 
-  app.operationsCore = { state, loadCatalog, product, recipe, recipesFor, factorFor, authorizedFor, telemetryReady, telemetryQuantity, buildPlan, priceQuote, displayName };
+  function materialRows(plan) {
+    const rows = new Map();
+    for (const entry of plan.directRequirements || []) {
+      const id = entry.item.id;
+      const row = rows.get(id) || { id, name: entry.item.name || id, required: 0 };
+      row.required += entry.required;
+      rows.set(id, row);
+    }
+    return [...rows.values()];
+  }
+
+  function effectiveOutput(entry, affiliationId) {
+    return app.recipeCorrections?.outputFor(entry, affiliationId) || entry?.outputs?.[0] || null;
+  }
+
+  // Every variant uses the same requested quantity, IFF and price map. Build
+  // through the public corrected planner so fees, rounding and IFF outputs agree
+  // with the main quote. Stock and byproduct values never discount build cost.
+  function compareRecipes(calc) {
+    const selected = recipe(calc.recipeId);
+    const output = effectiveOutput(selected, calc.affiliationId);
+    if (!output) return { output: null, entries: [], materials: [], bestIds: [], complete: false };
+    const materials = new Map();
+    const entries = (state.catalog?.recipes || [])
+      .filter(entry => effectiveOutput(entry, calc.affiliationId)?.id === output.id)
+      .map(entry => {
+        if (!authorizedFor(entry, calc.affiliationId)) return { recipe: entry, authorized: false };
+        const plan = app.operationsCore.buildPlan({ productId: output.id, recipeId: entry.id,
+          quantity: calc.quantity, affiliationId: calc.affiliationId, recursive: false,
+          useInventory: false, routingPolicy: 'first', altSelections: {} });
+        const rows = materialRows(plan);
+        for (const row of rows) if (!materials.has(row.id)) materials.set(row.id, row);
+        return { recipe: entry, authorized: true, plan, rows, pricing: priceQuote(rows, calc, plan) };
+      });
+    const available = entries.filter(entry => entry.authorized);
+    const complete = available.length > 0 && available.every(entry => entry.pricing.complete);
+    const best = complete ? Math.min(...available.map(entry => entry.pricing.unitCost)) : null;
+    const bestIds = complete ? available.filter(entry => Math.abs(entry.pricing.unitCost - best) < 1e-8).map(entry => entry.recipe.id) : [];
+    return { output, entries, materials: [...materials.values()], complete, bestIds };
+  }
+
+  app.operationsCore = { state, loadCatalog, product, recipe, recipesFor, factorFor, authorizedFor, telemetryReady, telemetryQuantity, buildPlan, priceQuote, displayName, materialRows, effectiveOutput, compareRecipes };
 })();

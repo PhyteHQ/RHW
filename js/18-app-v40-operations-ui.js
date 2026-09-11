@@ -52,14 +52,16 @@
       affiliationId: base.affiliationId || app.config.operations.defaultAffiliation,
       search: typeof base.search === 'string' ? base.search : '',
       marginPercent: clampMargin(base.marginPercent),
+      comparisonOpen: base.comparisonOpen === true,
       materialPrices: base.materialPrices && typeof base.materialPrices === 'object' ? { ...base.materialPrices } : {}
     };
   }
 
-  function saveState(patch) {
+  function saveState(patch, { keepComparison = false } = {}) {
     const current = currentState();
     const changedRecipe = patch.recipeId && patch.recipeId !== current.recipeId;
-    app.state.calculator = { ...current, ...(changedRecipe ? { materialPrices: {}, affiliationId: app.config.operations.defaultAffiliation } : {}), ...patch, ...(changedRecipe ? { materialPrices: {} } : {}) };
+    const reset = changedRecipe && !keepComparison;
+    app.state.calculator = { ...current, ...(reset ? { materialPrices: {}, affiliationId: app.config.operations.defaultAffiliation, comparisonOpen: false } : {}), ...patch, ...(reset ? { materialPrices: {}, comparisonOpen: false } : {}) };
     app.store.set(app.config.storageKeys.calculatorState, app.state.calculator);
   }
 
@@ -204,14 +206,70 @@
   }
 
   function materialRows(plan) {
-    const map = new Map();
-    for (const row of plan.directRequirements || []) {
-      const id = row.item?.id || row.item?.name || 'unknown';
-      const current = map.get(id) || { id, name: row.item?.name || id, required: 0 };
-      current.required += Math.max(0, Number(row.required) || 0);
-      map.set(id, current);
-    }
-    return [...map.values()];
+    return core.materialRows(plan);
+  }
+
+  const comparisonLabel = recipe => app.finalUiPolish?.recipeLabel(recipe) || recipeLabel(recipe);
+  const preciseMoney = value => value === null || value === undefined ? '—'
+    : `$${Number(value).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+  function comparisonResultsMarkup(comparison, calc) {
+    const available = comparison.entries.filter(entry => entry.authorized);
+    const missing = comparison.materials.filter(row => storedPrice(calc.materialPrices, row.id) === null).length;
+    const status = comparison.complete
+      ? `ALL ${available.length} AVAILABLE VARIANTS PRICED · LOWEST COST / PRODUCED UNIT HIGHLIGHTED`
+      : `${missing} SHARED MATERIAL PRICE${missing === 1 ? '' : 'S'} MISSING · COMPARISON INCOMPLETE`;
+    return `<p class="ops-comparison-status" role="status">${esc(status)}</p>
+      <table class="ops-comparison-table"><caption class="sr-only">Recipe variants for ${esc(comparison.output.name)} using the same prices and IFF</caption>
+        <thead><tr><th scope="col">VARIANT</th><th scope="col">MATERIALS</th><th scope="col">FEES</th><th scope="col">BATCH COST</th><th scope="col">OUTPUT</th><th scope="col">COST / UNIT</th><th scope="col">SELECTION</th></tr></thead>
+        <tbody>${comparison.entries.map(entry => {
+          const selected = entry.recipe.id === calc.recipeId;
+          const best = comparison.bestIds.includes(entry.recipe.id);
+          const label = comparisonLabel(entry.recipe);
+          if (!entry.authorized) return `<tr class="ops-comparison-locked"><th scope="row">${esc(label)}</th><td colspan="6">UNAVAILABLE WITH SELECTED IFF</td></tr>`;
+          const { plan, pricing } = entry;
+          return `<tr data-comparison-recipe="${esc(entry.recipe.id)}" class="${best ? 'ops-comparison-best' : ''}${selected ? ' ops-comparison-selected' : ''}">
+            <th scope="row"><strong>${esc(label)}</strong><small>${esc(materialFactorLabel(plan.rootFactor))}${best ? ' · LOWEST UNIT COST' : ''}</small></th>
+            <td data-label="MATERIALS">${pricing.complete ? preciseMoney(pricing.materialCost) : '—'}${!pricing.complete ? `<small>${pricing.missingCount} PRICE${pricing.missingCount === 1 ? '' : 'S'} MISSING</small>` : ''}</td>
+            <td data-label="FEES">${preciseMoney(pricing.recipeFee)}</td>
+            <td data-label="BATCH COST">${preciseMoney(pricing.totalCost)}</td>
+            <td data-label="OUTPUT">${fmt(plan.actualOutput)}<small>${fmt(plan.cycles)} CYCLE${plan.cycles === 1 ? '' : 'S'} · +${fmt(plan.surplus)} SURPLUS</small></td>
+            <td class="ops-comparison-unit" data-label="COST / UNIT">${preciseMoney(pricing.unitCost)}</td>
+            <td data-label="SELECTION"><button type="button" data-use-variant="${esc(entry.recipe.id)}" aria-label="${selected ? 'Selected' : 'Use'} ${esc(label)}"${selected ? ' disabled' : ''}>${selected ? 'SELECTED' : 'USE VARIANT'}</button></td>
+          </tr>`;
+        }).join('')}</tbody>
+      </table>`;
+  }
+
+  function comparisonMarkup(comparison, calc, selectedRows) {
+    if (!calc.comparisonOpen || comparison.entries.length < 2) return '';
+    const selectedIds = new Set(selectedRows.map(row => row.id));
+    const extra = comparison.materials.filter(row => !selectedIds.has(row.id));
+    const faction = core.state.catalog.factions?.find(entry => entry.id === calc.affiliationId);
+    const iff = calc.affiliationId === 'br_m_grp' ? 'BMM' : calc.affiliationId === '__none__' ? 'NO IFF' : faction?.name || calc.affiliationId;
+    return `<section class="ops-panel ops-comparison-panel" id="opsComparisonPanel" tabindex="-1" aria-label="Recipe comparison">
+      <div class="ops-panel-head"><div><strong>RECIPE COMPARISON</strong></div><small>${esc(comparison.output.name)} · ${fmt(calc.quantity)} REQUESTED · ${esc(iff)}</small></div>
+      <p class="ops-comparison-note">One price per material applies to every variant. Enter an assigned value for self-mined ore in its price field; an explicit $0 is allowed. Whole batches may produce extra units. Byproducts are not credited.</p>
+      ${extra.length ? `<div class="ops-comparison-prices"><strong>ADDITIONAL MATERIALS FOR OTHER VARIANTS</strong><div>${extra.map(row => {
+        const price = storedPrice(calc.materialPrices, row.id);
+        return `<label><span>${esc(row.name)}</span><div class="ops-price-input-wrap"><input class="ops-price-input" data-material-price="${esc(row.id)}" aria-label="${esc(row.name)} price per unit" type="number" inputmode="decimal" min="0" step="any" value="${price === null ? '' : esc(String(price))}"><span>$</span></div></label>`;
+      }).join('')}</div></div>` : ''}
+      <div id="opsComparisonResults">${comparisonResultsMarkup(comparison, calc)}</div>
+      <p class="ops-comparison-note">Required catalysts and byproducts remain in each variant’s Recipe Notes. Alternative inputs use the same default option as the calculator.</p>
+    </section>`;
+  }
+
+  function useComparisonVariant(recipeId) {
+    const calc = currentState();
+    const entry = core.compareRecipes(calc).entries.find(entry => entry.recipe.id === recipeId && entry.authorized);
+    if (!entry) return false;
+    saveState({ recipeId, productId: entry.plan.product.id, search: recipeDisplayName(entry.recipe), comparisonOpen: true }, { keepComparison: true });
+    renderCalculator();
+    const button = [...document.querySelectorAll('[data-use-variant]')].find(node => node.dataset.useVariant === recipeId);
+    const panel = document.getElementById('opsComparisonPanel');
+    panel?.focus({ preventScroll: true });
+    button?.scrollIntoView({ block: 'nearest' });
+    return true;
   }
 
   function storedPrice(prices, id) {
@@ -300,6 +358,7 @@
 
     core.state.currentPlan = plan;
     const rows = materialRows(plan);
+    const comparison = core.compareRecipes(calc);
     const pricing = core.priceQuote(rows, calc, plan);
     const iff = iffEntries(recipe, calc.affiliationId);
     const outputPerCycle = Math.max(1, Number(plan.tree?.outputPerCycle) || Number(primaryOutput(recipe)?.qty) || 1);
@@ -317,12 +376,14 @@
           <label class="comms-field"><span>AFFILIATION / IFF</span><select id="opsAffiliation">${iff.map(entry => `<option value="${esc(entry.id)}"${entry.id === calc.affiliationId ? ' selected' : ''}>${esc(entry.name)}</option>`).join('')}</select><small>${esc(iffHint)}</small></label>
         </div>
         <div class="ops-recipe-meta"><div><small>OUTPUT / CYCLE</small><strong>${fmt(outputPerCycle)}</strong></div><div><small>CYCLES</small><strong>${fmt(plan.cycles)}</strong></div><div><small>ACTUAL OUTPUT</small><strong>${fmt(plan.actualOutput)}</strong></div></div>
+        ${comparison.entries.length > 1 ? `<button type="button" id="opsCompareToggle" aria-expanded="${calc.comparisonOpen}"${calc.comparisonOpen ? ' aria-controls="opsComparisonPanel"' : ''}>${calc.comparisonOpen ? 'CLOSE COMPARISON' : `COMPARE ${comparison.entries.length} VARIANTS`}</button>` : ''}
 
         <div class="ops-mobile-decision" aria-label="Current quote summary"><div><small>RECOMMENDED SALE</small><strong id="opsMobileSellUnit">${money(pricing.sellPerUnit)}</strong></div><div><small>COST / ITEM</small><strong id="opsMobileUnitCost">${money(pricing.unitCost)}</strong></div><div><small>TOTAL PROFIT</small><strong id="opsMobileProfit">${money(pricing.profit)}</strong></div></div>
         <nav class="ops-mobile-jumps" aria-label="Calculator sections"><button type="button" data-ops-jump="opsMaterialPanel">ENTER MATERIAL PRICES</button><button type="button" data-ops-jump="opsQuotePanel">VIEW FULL QUOTE</button></nav>
       </section>
       <section class="ops-panel ops-cost-panel" id="opsMaterialPanel"><div class="ops-panel-head"><div><span>02</span><strong>MATERIAL COST</strong></div><small>ENTER YOUR UNIT PRICES</small></div>${materialsMarkup(rows, calc)}${plan.recipeFeeTotal ? `<div class="ops-recipe-fee"><div><small>FIXED RECIPE FEE · INCLUDED IN QUOTE</small><strong>${money(plan.recipeFeePerCycle)} / CYCLE × ${fmt(plan.cycles)}</strong></div><b>${money(plan.recipeFeeTotal)}</b></div>` : ''}<div class="ops-price-memory">Prices apply to this calculation. Save a price profile to reuse them.</div>${notesMarkup(plan)}<button class="ops-mobile-quote-jump" type="button" data-ops-jump="opsQuotePanel">VIEW UPDATED QUOTE</button></section>
       <section class="ops-panel ops-quote-panel" id="opsQuotePanel"><div class="ops-panel-head"><div><span>03</span><strong>PRICE CALCULATION</strong></div><small>COST → MARGIN → SELL PRICE</small></div>${quoteMarkup(pricing, calc, rows, plan.actualOutput)}</section>
+      ${comparisonMarkup(comparison, calc, rows)}
     </div>`;
     bindCalculator(plan, rows);
     if (focusSearch) {
@@ -367,9 +428,23 @@
       warning.className = `ops-cost-note ${pricing.complete ? 'good' : 'warn'}`;
       warning.textContent = pricingMessage(pricing);
     }
+    const comparison = document.getElementById('opsComparisonResults');
+    if (comparison) comparison.innerHTML = comparisonResultsMarkup(core.compareRecipes(calc), calc);
   }
 
   function bindCalculator(plan, rows) {
+    document.getElementById('opsCompareToggle')?.addEventListener('click', () => {
+      const open = !currentState().comparisonOpen;
+      saveState({ comparisonOpen: open });
+      renderCalculator();
+      const target = document.getElementById(open ? 'opsComparisonPanel' : 'opsCompareToggle');
+      target?.focus({ preventScroll: true });
+      if (open) target?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+    document.getElementById('opsComparisonResults')?.addEventListener('click', event => {
+      const button = event.target.closest('[data-use-variant]');
+      if (button) useComparisonVariant(button.dataset.useVariant);
+    });
     document.getElementById('opsCompletePrices')?.addEventListener('click', () => {
       const missing = [...document.querySelectorAll('[data-material-price]')].find(input => input.value.trim() === '');
       if (!missing) return;
@@ -499,5 +574,5 @@
     installShipyardBridge();
   }
 
-  app.operations = { init, activate, openTarget, openSelection, renderCalculator, currentOrderTarget, matchingRecipes, nodes: NODES, recipeAliases: RECIPE_ALIASES };
+  app.operations = { init, activate, openTarget, openSelection, renderCalculator, currentOrderTarget, matchingRecipes, useComparisonVariant, nodes: NODES, recipeAliases: RECIPE_ALIASES };
 })();
