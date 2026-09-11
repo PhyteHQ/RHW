@@ -293,15 +293,6 @@ function apiStockBoundary(item) {
   };
 }
 
-function needAmount(item) {
-  const nm = commodityKey(item);
-  const custom = CUSTOM_ALERTS[nm];
-  const q = quantity(item);
-  if (custom && custom.type === 'max') return Math.max(0, q - custom.yellow);
-  if (custom && custom.type === 'min') return Math.max(0, custom.yellow - q);
-  return Math.max(0, minStock(item) - q);
-}
-
 function maxStock(item) {
   const value = item?.max_stock ?? item?.max ?? item?.maxStock ?? item?.max_quantity ?? item?.maxQuantity ?? 0;
   return finiteNumber(value, 0, 0);

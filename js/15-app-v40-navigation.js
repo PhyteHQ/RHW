@@ -113,10 +113,10 @@
       if (!['critical', 'low'].includes(severity.state)) return;
       let name = item?.name || 'UNKNOWN ASSET';
       try { if (typeof window.displayName === 'function') name = window.displayName(item); } catch {}
-      let deficit = 0;
-      try { if (typeof window.needAmount === 'function') deficit = Number(window.needAmount(item)) || 0; } catch {}
+      const detail = typeof window.overviewDetail === 'function' ? window.overviewDetail(item, severity.state, severity.role) : '';
+      const meta = detail && detail !== 'TRACKED' ? detail : `${severity.state.toUpperCase()} STOCK`;
       const node = severity.role === 'shipyard' ? 'shipyard' : 'inventory';
-      actions.push({ state: severity.state, node, target: name, title: `${String(severity.role || 'asset').toUpperCase()} // ${String(name).toUpperCase()}`, meta: deficit > 0 ? `DEFICIT ${app.util.number(deficit)} UNITS` : `${severity.state.toUpperCase()} THRESHOLD BREACH` });
+      actions.push({ state: severity.state, node, target: name, title: `${String(severity.role || 'asset').toUpperCase()} // ${String(name).toUpperCase()}`, meta });
     });
 
     const constrained = productionAnalysis().find(entry => entry.cardState !== 'ok');

@@ -51,7 +51,8 @@ function renderOverviewRow({ state, role, name, item = null, detail = '', quanti
           </li>`;
 }
 
-// These are operational thresholds, not the API's reserve or storage capacity.
+// Only recipe inputs and handling thresholds get a numeric reference.
+// Maintenance and export stock have no artificial target inventory.
 // Feedstock coverage describes this input only; other recipe inputs may limit output.
 function overviewStockReference(item, role) {
   if (!item) return null;
@@ -65,8 +66,7 @@ function overviewStockReference(item, role) {
       ? { value: custom.yellow, label: role === 'byproduct' ? 'DISPOSAL AT' : 'REVIEW AT' }
       : null;
   }
-  const target = custom?.type === 'min' ? custom.yellow : minStock(item);
-  return target > 0 ? { value: target, label: 'TARGET' } : null;
+  return null;
 }
 
 function renderOverviewEmptyRow(text, statusText = 'SECURE') {
@@ -83,8 +83,7 @@ function overviewDetail(item, state, role) {
     if (state !== 'ok') return state === 'low' ? 'REVIEW REQUIRED' : 'VAULT OVERFLOW';
     return reference ? `${number(Math.max(0, reference.value - quantity(item)))} UNTIL REVIEW` : 'EVIDENCE SECURED';
   }
-  const deficit = reference ? Math.max(0, reference.value - quantity(item)) : needAmount(item);
-  return deficit > 0 ? `${number(deficit)} TO TARGET` : readinessText(state, role);
+  return readinessText(state, role);
 }
 
 function renderList(target, list, emptyText, roleOverride = null) {
