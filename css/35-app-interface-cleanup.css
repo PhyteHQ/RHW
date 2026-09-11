@@ -1508,10 +1508,12 @@ html.rhw-focus-pass .ops-comparison-note { margin: 16px; color: #c0bcb3; font: 4
 html.rhw-focus-pass .ops-comparison-status { margin: 16px; color: #e3cc94; font: 600 12px/1.6 var(--font-main); }
 html.rhw-focus-pass .ops-comparison-prices { padding: 16px; background: #20201e; border-block: 1px solid #454239; }
 html.rhw-focus-pass .ops-comparison-prices>strong { color: #d4c398; font: 600 12px/1.5 var(--font-main); }
-html.rhw-focus-pass .ops-comparison-prices>div { display: grid; grid-template-columns: repeat(auto-fit,minmax(180px,1fr)); gap: 16px; margin-top: 12px; }
+html.rhw-focus-pass .operations-layout-simple:has(.ops-comparison-panel) .ops-setup-panel { position: static; }
+html.rhw-focus-pass .ops-comparison-prices>div { display: grid; grid-template-columns: repeat(auto-fit,minmax(180px,280px)); gap: 16px; margin-top: 12px; }
 html.rhw-focus-pass .ops-comparison-prices label { display: grid; align-content: start; gap: 8px; min-width: 0; color: #e1ded6; font: 400 14px/1.5 var(--font-main); }
 html.rhw-focus-pass .ops-comparison-prices input { min-height: 44px; width: 100%; max-width: none; font-size: 15px; }
 html.rhw-focus-pass .ops-comparison-table { width: 100%; min-width: 0; table-layout: fixed; border-collapse: collapse; color: #dedbd3; font: 400 14px/1.5 var(--font-main); }
+html.rhw-focus-pass .ops-comparison-table caption { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 html.rhw-focus-pass .ops-comparison-table :is(th,td) { padding: 14px 12px; border-block: 1px solid #403d35; text-align: right; vertical-align: top; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
 html.rhw-focus-pass .ops-comparison-table th:first-child { width: 24%; text-align: left; }
 html.rhw-focus-pass .ops-comparison-table thead th { font-size: 11px; color: #bfb8a7; background: #242320; }
