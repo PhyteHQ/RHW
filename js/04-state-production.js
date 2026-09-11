@@ -357,7 +357,7 @@ function renderProductionModules() {
         : '';
 
       return `<li class="${isBottleneck ? 'bottleneck' : ''}">
-                <span class="recipe-name">${escapeHTML(item.displayName)}${item.extraHtml || ''}</span>
+                <span class="recipe-name">${escapeHTML(item.displayName)}${item.extraHtml || ''}${typeof purchaseSourceButton === 'function' ? purchaseSourceButton(item.name, item.currentCycleGap) : ''}</span>
                 <span class="recipe-required">${number(item.required)}</span>
                 <span class="recipe-stock">${number(item.stock)}${shortText}</span>
               </li>`;

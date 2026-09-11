@@ -34,6 +34,35 @@
     return safe;
   }
 
+  let pendingPurchaseTarget = null;
+  function openPurchaseSource(name) {
+    const target = typeof purchaseSourceTarget === 'function' ? purchaseSourceTarget(name) : null;
+    if (!target) return false;
+    pendingPurchaseTarget = target;
+    app.navigate('command', 'logistics');
+    return true;
+  }
+
+  function revealPurchaseTarget(target) {
+    setLogisticsView(target.view);
+    const section = document.getElementById(target.view === 'materials' ? 'materialsScanSection' : 'marketScanSection');
+    const card = [...(section?.querySelectorAll('[data-market-commodity]') || [])].find(node => node.dataset.marketCommodity === target.key);
+    const focus = card || section;
+    if (!focus) return;
+    focus.setAttribute('tabindex', '-1');
+    focus.classList.add('rhw-target-highlight');
+    focus.focus({ preventScroll: true });
+    focus.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    window.setTimeout(() => focus.classList.remove('rhw-target-highlight'), 4200);
+  }
+
+  document.addEventListener('click', event => {
+    const button = event.target.closest?.('[data-purchase-source]');
+    if (!button) return;
+    event.preventDefault();
+    openPurchaseSource(button.dataset.purchaseSource);
+  });
+
   function disableLegacyCommandAutoScroll() {
     const nav = document.getElementById('commandNodeNav');
     if (!nav?.classList.contains('command-module-nav')) return false;
@@ -190,10 +219,16 @@
       const previous = app.state.commandNode;
       const result = base.commandActivate.call(this, node, options);
       if (node === 'logistics') {
+        const purchaseTarget = pendingPurchaseTarget;
+        pendingPurchaseTarget = null;
         requestAnimationFrame(() => {
+          if (app.state.activeWorkspace !== 'command' || app.state.commandNode !== 'logistics') return;
           ensureLogisticsSwitcher();
-          if (previous !== 'logistics') setLogisticsView('market');
-          revealLogistics();
+          if (purchaseTarget) revealPurchaseTarget(purchaseTarget);
+          else {
+            if (previous !== 'logistics') setLogisticsView('market');
+            revealLogistics();
+          }
         });
       }
       return result;
@@ -203,6 +238,7 @@
   app.stabilityPolish = {
     ensureLogisticsSwitcher,
     setLogisticsView,
+    openPurchaseSource,
     revealLogistics,
     disableLegacyCommandAutoScroll,
     selfTest

@@ -133,6 +133,8 @@
 
   function clearCurrentPrices(announce = false) {
     const inputs = currentPriceInputs();
+    // Comparison-only prices may be hidden when its panel is closed.
+    if (app.state.calculator) app.state.calculator.materialPrices = {};
     inputs.forEach(input => {
       if (input.value === '') return;
       input.value = '';
@@ -148,6 +150,13 @@
     const profile = selectedProfile();
     if (!profile) { setProfileStatus('SELECT A SAVED PROFILE FIRST', 'warn'); return; }
     const inputs = currentPriceInputs();
+    const shared = core.compareRecipes(app.state.calculator || {}).materials;
+    const sharedPrices = {};
+    for (const row of shared) {
+      const price = profile.prices[row.id];
+      if (price !== '' && price != null && Number.isFinite(Number(price)) && Number(price) >= 0) sharedPrices[row.id] = Number(price);
+    }
+    if (app.state.calculator) app.state.calculator.materialPrices = sharedPrices;
     let applied = 0;
     inputs.forEach(input => {
       const id = input.dataset.materialPrice;

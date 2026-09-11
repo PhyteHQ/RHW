@@ -8,6 +8,9 @@ import shutil
 import time
 
 import smoke_v40 as base
+import smoke_v402  # noqa: F401  # use the deployed desktop and mobile asset order
+
+base._ensure_app_layer_assets()
 
 ORDERING = "js/16c-app-v40-newswire-ordering.js"
 CORRECTION = "js/18c-app-v40-recipe-corrections.js"
@@ -142,7 +145,89 @@ def main() -> int:
             if abs(unit - expected_unit) > 1.1:
                 raise RuntimeError(f"Unit cost does not reconcile with batch cost: {costing}, expected≈{expected_unit:.2f}")
 
-            print("V4.0.2 interaction smoke passed: meaningful recipe variants + unit costing + clock top-left")
+            # Exercise the real shared-price comparison controls. This runs in
+            # GitHub CI using the existing synthetic telemetry browser harness.
+            base.ev(cdp, """(()=>{
+              opsRecipeSearch.value='recipe_niobium_basic';
+              opsRecipeSearch.dispatchEvent(new Event('input',{bubbles:true}));return true;
+            })()""")
+            time.sleep(.3)
+            base.ev(cdp, """(()=>{
+              opsQuantity.value='801';opsQuantity.dispatchEvent(new Event('change',{bubbles:true}));return true;
+            })()""")
+            time.sleep(.15)
+            base.ev(cdp, "(()=>{opsCompareToggle.click();return true;})()")
+            time.sleep(.15)
+            state = base.ev(cdp, """(()=>{
+              const prices={commodity_niobium_ore:0,commodity_mox_fuel:100,commodity_industrial:20,commodity_mining_machinery:30};
+              const inputs=[...document.querySelectorAll('[data-material-price]')];
+              inputs.forEach(input=>{input.value=String(prices[input.dataset.materialPrice]);input.dispatchEvent(new Event('input',{bubbles:true}));});
+              return {inputs:inputs.map(x=>x.dataset.materialPrice),count:document.querySelectorAll('[data-comparison-recipe]').length,
+                best:document.querySelector('.ops-comparison-best')?.dataset.comparisonRecipe,
+                unit:document.querySelector('[data-comparison-recipe="recipe_niobium_advanced"] .ops-comparison-unit')?.textContent,
+                errors:window.__errors||[]};
+            })()""")
+            if len(state.get('inputs', [])) != 4 or len(set(state['inputs'])) != 4 or state.get('count') != 3:
+                raise RuntimeError(f"Comparison input union/rows failed: {state}")
+            if state.get('best') != 'recipe_niobium_advanced' or state.get('unit') != '$23.38' or state.get('errors'):
+                raise RuntimeError(f"Comparison price input recalculation failed: {state}")
+
+            for width in (360, 390, 430, 820, 1024, 1366, 1920):
+                cdp.call('Emulation.setDeviceMetricsOverride', {'width':width,'height':900,'deviceScaleFactor':1,'mobile':width<=430})
+                time.sleep(.12)
+                layout = base.ev(cdp, """(()=>{
+                  const panel=document.getElementById('opsComparisonPanel');
+                  const controls=[...panel.querySelectorAll('button,input')];
+                  return {overflow:Math.max(document.documentElement.scrollWidth,document.body.scrollWidth)-innerWidth,
+                    panelWidth:panel.getBoundingClientRect().width,
+                    small:controls.filter(x=>x.getBoundingClientRect().height<43).map(x=>x.outerHTML),
+                    tableOverflow:panel.scrollWidth-panel.clientWidth};
+                })()""")
+                if layout.get('overflow',0)>2 or layout.get('tableOverflow',0)>2 or layout.get('small'):
+                    raise RuntimeError(f"Comparison layout failed at {width}: {layout}")
+
+            adopted = base.ev(cdp, """(()=>{
+              document.querySelector('[data-use-variant="recipe_niobium_bulk"]').click();
+              return {recipe:opsRecipe.value,iff:opsAffiliation.value,quantity:opsQuantity.value,
+                prices:[...document.querySelectorAll('[data-material-price]')].map(x=>[x.dataset.materialPrice,x.value]),
+                output:document.querySelector('[data-comparison-recipe="recipe_niobium_bulk"] td[data-label="OUTPUT"]')?.textContent};
+            })()""")
+            if adopted.get('recipe')!='recipe_niobium_bulk' or adopted.get('iff')!='br_m_grp' or adopted.get('quantity')!='801':
+                raise RuntimeError(f"Adopting a variant lost shared context: {adopted}")
+            if dict(adopted.get('prices',[]))!={'commodity_niobium_ore':'0','commodity_mox_fuel':'100','commodity_industrial':'20','commodity_mining_machinery':'30'}:
+                raise RuntimeError(f"Adopting a variant lost prices: {adopted}")
+
+            # The two destination types must work on a phone even when the
+            # other Logistics tab was selected. Ores receive no buying prompt.
+            cdp.call('Emulation.setDeviceMetricsOverride', {'width':390,'height':820,'deviceScaleFactor':1,'mobile':True})
+            for material, view in [('Reactor Systems','market'),('Prototype Components','materials')]:
+                base.ev(cdp, f"""(()=>{{
+                  hasVerifiedTelemetry=()=>true;stockFor=()=>0;findCommodity=()=>null;
+                  renderShipyardControl();renderProductionModules();
+                  RHWV4.navigate('command',{json.dumps('shipyard' if view=='market' else 'production')});return true;
+                }})()""")
+                clicked = base.ev(cdp, f"""(()=>{{
+                  const button=[...document.querySelectorAll('[data-purchase-source]')].find(x=>x.dataset.purchaseSource==={json.dumps(material)});
+                  if(!button)return false;
+                  const card=button.closest('.production-card-collapsed');card?.querySelector('.production-card-toggle')?.click();
+                  button.click();return true;
+                }})()""")
+                if not clicked:
+                    raise RuntimeError(f"Missing sourcing shortcut for {material}")
+                time.sleep(1)
+                destination = base.ev(cdp, """(()=>({
+                  hash:location.hash,view:document.body.dataset.logisticsView,
+                  focused:document.activeElement?.dataset.marketCommodity||document.activeElement?.id,
+                  overflow:Math.max(document.documentElement.scrollWidth,document.body.scrollWidth)-innerWidth,
+                  oreButtons:[...document.querySelectorAll('[data-purchase-source]')].filter(x=>/ore/i.test(x.dataset.purchaseSource)).length
+                }))()""")
+                if destination.get('hash')!='#command/logistics' or destination.get('view')!=view or destination.get('oreButtons') or destination.get('overflow',0)>2:
+                    raise RuntimeError(f"Sourcing destination failed: {destination}")
+                expected_fallback = 'marketScanSection' if view=='market' else 'materialsScanSection'
+                if destination.get('focused') not in [material.lower(), expected_fallback]:
+                    raise RuntimeError(f"Sourcing focus missed {material}: {destination}")
+
+            print("V4.0.2 interaction smoke passed: recipe variants, shared-price comparison, responsive layout, seller links and costing")
         finally:
             cdp.close()
     finally:

@@ -3,6 +3,22 @@ function sellableStock(item) {
   return Math.max(0, quantity(item) - Math.max(0, minStock(item)));
 }
 
+function purchaseSourceTarget(name) {
+  const key = keyFromName(name);
+  // Mining inputs stay out of the purchasing workflow. Only offer channels
+  // already available in Logistics receive a shortcut.
+  const ships = typeof MARKET_SCAN !== 'undefined' ? MARKET_SCAN : [];
+  const materials = typeof MATERIALS_SCAN !== 'undefined' ? MATERIALS_SCAN : [];
+  const match = [...ships, ...materials].find(target => keyFromName(target) === key && !/\bore\b/i.test(target));
+  return match ? { name: match, key, view: ships.includes(match) ? 'market' : 'materials' } : null;
+}
+
+function purchaseSourceButton(name, gap) {
+  const target = purchaseSourceTarget(name);
+  if (!target || !(gap > 0)) return '';
+  return `<button type="button" class="rhw-source-button" data-purchase-source="${escapeHTML(target.name)}" aria-label="Find sellers for ${escapeHTML(target.name)}">FIND SELLERS</button>`;
+}
+
 function marketBaseSystem(base) {
   const value = base?.system_name ?? base?.system ?? base?.systemName;
   return String(value || 'UNKNOWN SYSTEM').trim() || 'UNKNOWN SYSTEM';

@@ -34,6 +34,14 @@ run('js/04-state-production.js');
 run('js/06-logistics.js');
 assert.deepEqual([...ctx.MARKET_SCAN], ['Avionics Systems', 'Interior Systems', 'Propulsion Systems', 'Superstructure Systems', 'Reactor Systems', 'Exotic Systems']);
 assert.deepEqual([...ctx.MATERIALS_SCAN], ['Gold', 'Gold Ore', 'Niobium', 'Niobium Ore', 'Prototype Components']);
+for (const name of ['Gold Ore', 'Niobium Ore', 'Unknown commodity']) {
+  assert.equal(ctx.purchaseSourceTarget(name), null);
+  assert.equal(ctx.purchaseSourceButton(name, 10), '');
+}
+assert.equal(ctx.purchaseSourceTarget('Reactor Systems').view, 'market');
+assert.equal(ctx.purchaseSourceTarget('Prototype Components').view, 'materials');
+assert.match(ctx.purchaseSourceButton('Prototype Components', 1), /data-purchase-source="Prototype Components"/);
+assert.equal(ctx.purchaseSourceButton('Prototype Components', 0), '', 'No purchasing prompt without a shortage');
 
 const good = (name, quantity, min_stock, price) => ({ name, quantity, min_stock, price_to_buy_from_base: price });
 const pob = (name, shop_items) => ({ name, system_name: 'Test System', shop_items });
