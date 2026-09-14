@@ -135,9 +135,10 @@ def main() -> int:
               input.value='150';input.dispatchEvent(new Event('input',{bubbles:true}));
               const after=document.querySelector('[data-route-key="copper"] .pricecheck-difference');
               const afterText=after?.querySelector('strong')?.textContent||'';
+              const afterTone=after?.className||'';
               document.querySelector('[data-pricecheck-reset="copper"]')?.click();
               const reset=document.querySelector('[data-route-key="copper"] .pricecheck-difference');
-              return{after:after?.className||'',afterText,reset:reset?.className||'',resetText:reset?.querySelector('strong')?.textContent||'',saved:RHWV4.pricecheck.state.overrides.copper};
+              return{after:afterTone,afterText,reset:reset?.className||'',resetText:reset?.querySelector('strong')?.textContent||'',saved:RHWV4.pricecheck.state.overrides.copper};
             })()""")
             if "negative" not in override.get("after", "") or override.get("afterText") != "-$50" or "positive" not in override.get("reset", "") or override.get("resetText") != "+$20" or override.get("saved") is not None:
                 raise RuntimeError(f"Price Check manual override failed: {override}")
