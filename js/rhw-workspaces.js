@@ -4786,6 +4786,8 @@ window.__RHW_RECIPE_CATALOG_GZIP_BASE64__ = (window.__RHW_RECIPE_CATALOG_GZIP_BA
     if (banner) banner.hidden = online;
     document.getElementById('headerRefreshBtn')?.toggleAttribute('disabled', !online);
     document.getElementById('refreshBtn')?.toggleAttribute('disabled', !online);
+    window.updateDataFreshnessIndicators?.();
+    window.RHWV4?.requestUiUpdate?.();
   }
 
   function announceUpdate(worker) {

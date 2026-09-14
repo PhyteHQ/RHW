@@ -32,11 +32,12 @@ class QuietHandler(http.server.SimpleHTTPRequestHandler):
         pass
 
 
-def wait_ready(cdp):
+def wait_ready(cdp, previous_document=None):
     deadline = time.time() + 15
     while time.time() < deadline:
         snap = base.snapshot(cdp)
-        if snap.get('ready') == 'true':
+        new_document = previous_document is None or base.ev(cdp, 'performance.timeOrigin') != previous_document
+        if snap.get('ready') == 'true' and new_document:
             base.ev(cdp, 'document.fonts.ready.then(()=>true)')
             return
         if snap.get('errors'):
@@ -94,6 +95,7 @@ def main():
                     tabClipping:[...document.querySelectorAll('.app-tabs button')].some(b=>b.scrollWidth>b.clientWidth+2),
                     noticeVisible:visible(document.getElementById('telemetryNotice')),
                     font:document.fonts.check('16px Barlow'),
+                    priceLabelSizes:[...document.querySelectorAll('#opsMaterialPanel td:nth-child(3)')].filter(visible).map(e=>parseFloat(getComputedStyle(e,'::before').fontSize)),
                     inventoryStyled:[...document.querySelectorAll('#inventoryStatusPanel .alert-list')].every(e=>getComputedStyle(e).listStyleType==='none')&&[...document.querySelectorAll('#inventoryStatusPanel .alert-title')].every(e=>getComputedStyle(e).display==='flex'),
                     inputs:[...document.querySelectorAll('#opsMaterialPanel [data-material-price]')].filter(visible).map(e=>e.getBoundingClientRect().width)};
                 })()""")
@@ -105,6 +107,8 @@ def main():
                 assert result['font'] and result['inventoryStyled'] and not result['noticeVisible'], (width, route, result)
                 if width >= 1100 and workspace == 'operations':
                     assert result['inputs'] and all(0 < n <= 145 for n in result['inputs']), result
+                if width <= 760 and workspace == 'operations':
+                    assert result['priceLabelSizes'] and min(result['priceLabelSizes']) >= 11, result
                 report.append({'width': width, 'route': route, **result})
         # The old URL must resolve to a current view; no retired editor is mounted.
         retired = base.ev(cdp, """(()=>{RHWV4.navigate('comms','ticker');return {route:location.hash,
@@ -120,13 +124,18 @@ def main():
         focused = base.ev(cdp, """(()=>{const e=document.activeElement,r=e.getBoundingClientRect();return {price:e.value,kind:!!e.dataset.materialPrice,top:r.top,bottom:r.bottom,nav:rhwAppNav.getBoundingClientRect().bottom};})()""")
         assert focused['kind'] and focused['price'] == '123' and focused['top'] >= focused['nav'] and focused['bottom'] <= 430, focused
         # Offline reload must boot the same bundles and retain local font access.
+        previous_document = base.ev(cdp, 'performance.timeOrigin')
         cdp.call('Network.emulateNetworkConditions', {'offline': True, 'latency': 0, 'downloadThroughput': 0, 'uploadThroughput': 0})
+        time.sleep(.15)
+        cached = base.ev(cdp, '({available:telemetrySnapshot().available,stale:telemetrySnapshot().stale,notice:!telemetryNotice.hidden})')
+        assert all(cached.values()), cached
         cdp.call('Page.reload')
-        wait_ready(cdp)
-        offline = base.ev(cdp, """(()=>{RHWV4.navigate('command','inventory');return {revision:RHW_BUILD.revision,
+        wait_ready(cdp, previous_document)
+        offline = base.ev(cdp, """(()=>{RHWV4.navigate('command','inventory');scrollTo(0,0);return {revision:RHW_BUILD.revision,
           unknown:!telemetrySnapshot().available,notice:!telemetryNotice.hidden,
           font:document.fonts.check('16px Barlow'),body:document.body.textContent.includes('Stock unknown')};})()""")
         assert offline['unknown'] and offline['notice'] and offline['font'] and offline['body'], offline
+        capture(cdp, '390-inventory-offline')
         (OUT / 'checks.json').write_text(json.dumps({'layouts': report, 'retired': retired, 'keyboard': focused, 'offline': offline}, indent=2))
         print(f'Bundled interface passed: {len(report)} layouts, retired routes, keyboard focus, local fonts and offline reload.')
         return 0
