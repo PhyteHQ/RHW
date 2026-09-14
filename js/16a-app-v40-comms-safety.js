@@ -166,7 +166,7 @@
     queueMicrotask(() => { previewQueued = false; enhancePreviewBody(); });
   }
 
-  function installPreviewObserver() {
+  function installPreviewFormatting() {
     const preview = document.getElementById('forumLivePreview');
     if (!preview || preview.dataset.v40BbcodePreview === 'true') return;
     preview.dataset.v40BbcodePreview = 'true';
@@ -211,7 +211,7 @@
 
   function init() {
     enhanceToolbar();
-    installPreviewObserver();
+    installPreviewFormatting();
     installPreviewCopy();
   }
 

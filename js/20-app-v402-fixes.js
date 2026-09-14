@@ -1,6 +1,6 @@
 /* ==========================================================================
    RHW WEB APP · V4.0.2 BUGFIX LAYER
-   Keeps overview telemetry status truthful and fills generated control labels.
+   Keeps overview telemetry status truthful when data changes.
    ========================================================================== */
 (function initRhwV402Fixes() {
   'use strict';

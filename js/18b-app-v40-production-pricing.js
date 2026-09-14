@@ -149,7 +149,7 @@
     });
   }
 
-  function installProductionObserver() {
+  function installProductionBridge() {
     const mount = document.getElementById('productionGrid');
     if (!mount) return;
     enhanceProduction();
@@ -186,7 +186,7 @@
     if (installed) return;
     installed = true;
 
-    installProductionObserver();
+    installProductionBridge();
     installCalculatorLifecycle();
   }
 

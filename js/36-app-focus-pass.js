@@ -174,7 +174,7 @@
   function syncHeadings(toolKey) {
     if (app.state.activeWorkspace === 'operations') {
       const kicker = document.querySelector('#workspaceOperations .workspace-kicker');
-      if (kicker) kicker.innerHTML = toolKey === 'build-queue' ? '<span>TOOLS</span> RHW BUILD QUEUE' : '<span>CALCULATOR</span> RHW INDUSTRIAL COSTING';
+      if (kicker) kicker.innerHTML = '<span>CALCULATOR</span> RHW INDUSTRIAL COSTING';
     }
     if (app.state.activeWorkspace === 'comms') {
       const kicker = document.querySelector('#workspaceComms .workspace-kicker');
@@ -183,7 +183,7 @@
     const active = document.getElementById('appActiveNode');
     if (!active || app.state.activeWorkspace === 'command') return;
     if (toolKey) active.textContent = `ACTIVE NODE: TOOLS / ${TOOL_META[toolKey]?.label || toolKey.toUpperCase()}`;
-    else active.textContent = `ACTIVE NODE: ${app.state.activeWorkspace === 'operations' ? 'CALCULATOR' : 'FORUM'}`;
+    else active.textContent = `ACTIVE NODE: ${{ operations: 'CALCULATOR', pricecheck: 'PRICE CHECK / FIXED ROUTES', comms: 'FORUM' }[app.state.activeWorkspace]}`;
   }
 
   function sync() {

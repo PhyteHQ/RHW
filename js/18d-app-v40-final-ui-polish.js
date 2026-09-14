@@ -248,7 +248,7 @@
     });
   }
 
-  function installCalculatorObserver() {
+  function installCalculatorPolish() {
     const workspace = document.getElementById('workspaceOperations');
     if (!workspace || workspace.dataset.v40FinalUiPolish === 'true') return;
     workspace.dataset.v40FinalUiPolish = 'true';
@@ -269,7 +269,7 @@
   if (typeof baseOperationsInit === 'function') {
     app.operations.init = async function finalUiPolishOperationsInit(...args) {
       const result = await baseOperationsInit.apply(this, args);
-      installCalculatorObserver();
+      installCalculatorPolish();
       queuePolish();
       return result;
     };
@@ -302,7 +302,7 @@
   }
 
   fixHeaderClockLayout();
-  installCalculatorObserver();
+  installCalculatorPolish();
 
   app.finalUiPolish = {
     recipeLabel,
