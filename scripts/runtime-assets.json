@@ -2,6 +2,7 @@
   "styles": [
     "./css/00-fonts.css",
     "./css/01-core.css",
+    "./css/02-dashboard.css",
     "./css/03-production.css",
     "./css/04-responsive.css",
     "./css/05-shipyard.css",

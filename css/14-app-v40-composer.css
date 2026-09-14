@@ -3,6 +3,9 @@
    Document controls, signature automation and BBCode preview v2.
    ========================================= */
 
+.comms-field > span { display: flex; justify-content: space-between; gap: 10px; }
+.comms-field > span > b { color: var(--muted); font-weight: 700; white-space: nowrap; }
+
 .comms-document-control {
   margin: 0 18px 16px;
   border: 1px solid rgba(212,175,55,0.18);

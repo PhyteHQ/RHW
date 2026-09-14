@@ -157,7 +157,7 @@ def test_comms(cdp):
     fmt["preview"]=ev(cdp,"({html:document.querySelector('#forumLivePreview .forum-preview-body')?.innerHTML||''})").get("html","")
     if "[sp2]classified fragment[/sp2]" not in fmt["blur"] or "[spoiler=COMMUNICATION LOG]channel transcript[/spoiler]" not in fmt["log"] or "[spoiler=COMMUNICATION LOG]" not in fmt["bb"] or "forum-preview-spoiler" not in fmt["preview"]: raise RuntimeError(f"COMMS log/blur integration failed: {fmt}")
     route=ev(cdp,"(()=>{RHWV4.navigate('comms','ticker');return{hash:location.hash,ws:document.body.dataset.workspace,node:document.body.dataset.commsNode}})()")
-    if route!={"hash":"#comms/ticker","ws":"comms","node":"ticker"}: raise RuntimeError(f"COMMS navigation failed: {route}")
+    if route!={"hash":"#comms/forum","ws":"comms","node":"forum"}: raise RuntimeError(f"Retired COMMS route fallback failed: {route}")
     print("V4 interaction smoke passed: COMMS formatting + drafts")
 
 def test_ticker(cdp):

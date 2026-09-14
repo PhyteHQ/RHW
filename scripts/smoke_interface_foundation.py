@@ -21,7 +21,7 @@ STOCK = {'Basic Alloy': 19129, 'Consumer Goods': 24793, 'Food Rations': 22451,
          'Superstructure Systems': 110, 'Avionics Systems': 420, 'Interior Systems': 300,
          'Propulsion Systems': 350, 'Exotic Systems': 250}
 DATA = [{'name': 'Resolution Heavy Works', 'system_name': 'New London', 'money': 46385683,
-         'cargospace': 63777, 'health': 1000000,
+         'cargospace': 63777, 'health': 24000000,
          'shop_items': [{'name': k, 'quantity': v, 'sell_price': 100, 'buy_price': 80} for k, v in STOCK.items()]},
         {'name': 'Lissheen Logistics Depot', 'system_name': 'Dublin', 'shop_items': [
             {'name': k, 'quantity': v, 'sell_price': 105, 'buy_price': 80} for k, v in STOCK.items()]}]
@@ -94,16 +94,17 @@ def main():
                     tabClipping:[...document.querySelectorAll('.app-tabs button')].some(b=>b.scrollWidth>b.clientWidth+2),
                     noticeVisible:visible(document.getElementById('telemetryNotice')),
                     font:document.fonts.check('16px Barlow'),
-                    inputs:[...document.querySelectorAll('#opsMaterialPanel input')].map(e=>e.getBoundingClientRect().width)};
+                    inventoryStyled:[...document.querySelectorAll('#inventoryStatusPanel .alert-list')].every(e=>getComputedStyle(e).listStyleType==='none')&&[...document.querySelectorAll('#inventoryStatusPanel .alert-title')].every(e=>getComputedStyle(e).display==='flex'),
+                    inputs:[...document.querySelectorAll('#opsMaterialPanel [data-material-price]')].filter(visible).map(e=>e.getBoundingClientRect().width)};
                 })()""")
                 if width in (390, 1366) and route in ('command/inventory', 'command/logistics', 'operations/calculator', 'pricecheck/routes', 'comms/forum'):
                     capture(cdp, f'{width}-{workspace}-{node}')
                 assert result['overflow'] <= 2 and not result['tabClipping'], (width, route, result)
                 assert result['toolsInNav'] and result['toolsHeight'] >= 44 and result['panels'] == 1, (width, route, result)
                 assert result['contextVisible'] == (workspace == 'command'), (width, route, result)
-                assert result['font'] and not result['noticeVisible'], (width, route, result)
+                assert result['font'] and result['inventoryStyled'] and not result['noticeVisible'], (width, route, result)
                 if width >= 1100 and workspace == 'operations':
-                    assert all(0 < n <= 145 for n in result['inputs']), result
+                    assert result['inputs'] and all(0 < n <= 145 for n in result['inputs']), result
                 report.append({'width': width, 'route': route, **result})
         # The old URL must resolve to a current view; no retired editor is mounted.
         retired = base.ev(cdp, """(()=>{RHWV4.navigate('comms','ticker');return {route:location.hash,
@@ -115,6 +116,7 @@ def main():
         cdp.call('Emulation.setDeviceMetricsOverride', {'width': 390, 'height': 430, 'deviceScaleFactor': 1, 'mobile': True})
         base.ev(cdp, """(()=>{RHWV4.navigate('operations','calculator');const e=document.querySelector('[data-material-price]');e.value='123';e.dispatchEvent(new Event('input',{bubbles:true}));e.focus();e.scrollIntoView({block:'center'});return true;})()""")
         time.sleep(.5)
+        capture(cdp, '390-calculator-keyboard')
         focused = base.ev(cdp, """(()=>{const e=document.activeElement,r=e.getBoundingClientRect();return {price:e.value,kind:!!e.dataset.materialPrice,top:r.top,bottom:r.bottom,nav:rhwAppNav.getBoundingClientRect().bottom};})()""")
         assert focused['kind'] and focused['price'] == '123' and focused['top'] >= focused['nav'] and focused['bottom'] <= 430, focused
         # Offline reload must boot the same bundles and retain local font access.
