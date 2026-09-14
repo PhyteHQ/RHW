@@ -12,12 +12,9 @@ import smoke_v402  # noqa: F401  # use the deployed desktop and mobile asset ord
 
 base._ensure_app_layer_assets()
 
-ORDERING = "js/16c-app-v40-newswire-ordering.js"
 CORRECTION = "js/18c-app-v40-recipe-corrections.js"
 POLISH = "js/18d-app-v40-final-ui-polish.js"
 
-if ORDERING not in base.V4_JS:
-    base.V4_JS.insert(base.V4_JS.index("js/16b-app-v40-newswire-manager.js") + 1, ORDERING)
 if CORRECTION not in base.V4_JS:
     base.V4_JS.insert(base.V4_JS.index("js/18b-app-v40-production-pricing.js") + 1, CORRECTION)
 if POLISH not in base.V4_JS:

@@ -35,6 +35,21 @@
   };
   window.__RHW_STORAGE_RECOVERIES__ = app.state.storageRecoveries;
 
+  // One coalesced update per data/user change. No recurring DOM polling.
+  const uiSubscribers = new Set();
+  let uiFrame = 0;
+  app.onUiUpdate = callback => { uiSubscribers.add(callback); return () => uiSubscribers.delete(callback); };
+  app.requestUiUpdate = () => {
+    if (uiFrame || document.hidden) return;
+    uiFrame = requestAnimationFrame(() => {
+      uiFrame = 0;
+      if (document.hidden) return;
+      uiSubscribers.forEach(callback => callback());
+    });
+  };
+  window.addEventListener('rhw:telemetry', app.requestUiUpdate);
+  document.addEventListener('visibilitychange', app.requestUiUpdate);
+
   app.util = {
     escape(value) {
       return String(value ?? '').replace(/[&<>"']/g, char => ({
@@ -234,7 +249,7 @@
       const parts = location.hash.replace(/^#/, '').toLowerCase().split('/').filter(Boolean);
       const workspace = WORKSPACES.includes(parts[0]) ? parts[0] : null;
       let node = parts[1] || null;
-      if (workspace === 'comms' && node === 'newswire') node = 'ticker';
+      if (workspace === 'comms' && ['newswire', 'ticker'].includes(node)) node = 'forum';
       if (workspace === 'operations' && node === 'orders') node = 'calculator';
       if (workspace && node && !app.config.routes[workspace].includes(node)) node = WORKSPACE_META[workspace].fallback;
       return { workspace, node };
@@ -375,6 +390,7 @@
     /* Invalid/legacy node hashes are normalized immediately so history and copied
        links always describe the panel that is actually visible. */
     if (replace || location.hash !== canonicalHash) app.route.write(safeWorkspace, activeNode, { replace: true });
+    app.requestUiUpdate();
   };
 
   app.navigate = function navigate(workspace, node, { replace = false } = {}) {
@@ -383,6 +399,7 @@
     const meta = WORKSPACE_META[safeWorkspace];
     app.workspaceModule(safeWorkspace)?.activate(node || meta.fallback, { updateRoute: false });
     app.route.write(safeWorkspace, app.state[meta.nodeKey] || meta.fallback, { replace });
+    app.requestUiUpdate();
   };
 
   window.addEventListener('popstate', () => app.applyRoute());

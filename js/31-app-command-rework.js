@@ -19,7 +19,7 @@
   const baseInit = app.command.init;
   const baseActivate = app.command.activate;
   const baseStoredNode = app.workspaceStoredNode;
-  let statusTimer = null;
+  let unsubscribeStatus = null;
 
   function installStyles() {
     if (document.getElementById('rhwCommandReworkStyle')) return;
@@ -151,11 +151,11 @@
     buildNavigation();
     movePriorityActions();
     clearInterval(app.commandOverviewTimer);
-    clearInterval(statusTimer);
+    unsubscribeStatus?.();
     syncModuleStatuses();
-    statusTimer = window.setInterval(() => {
+    unsubscribeStatus = app.onUiUpdate(() => {
       if (app.state.activeWorkspace === 'command') syncModuleStatuses();
-    }, 2500);
+    });
     app.command.nodes = MODULES.map(module => [module.key, module.label, module.sub]);
     const failures = selfTest();
     if (failures.length) throw new Error(`COMMAND REWORK SELF TEST FAILED: ${failures.join(', ')}`);

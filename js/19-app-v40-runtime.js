@@ -33,12 +33,9 @@
     if (typeof app.command?.activate !== 'function') failures.push('module:command');
     if (typeof app.operations?.activate !== 'function') failures.push('module:operations');
     if (typeof app.operationsCore?.buildPlan !== 'function') failures.push('feature:operations-planner');
-    if (typeof app.productionOrders?.buildReport !== 'function') failures.push('module:production-orders');
-    (app.productionOrders?.selfTest?.() || []).forEach(failure => failures.push(`orders:${failure}`));
+    if (typeof app.legacyArchive?.prepareImport !== 'function') failures.push('module:legacy-archive');
     if (typeof app.transferCenter?.previewFile !== 'function') failures.push('module:transfer-center');
     (app.transferCenter?.selfTest?.() || []).forEach(failure => failures.push(`transfer:${failure}`));
-    if (typeof app.newswireReview?.buildReviewPackage !== 'function') failures.push('module:newswire-review');
-    (app.newswireReview?.selfTest?.() || []).forEach(failure => failures.push(`newswire-review:${failure}`));
     if (typeof app.discoveryStatus?.init !== 'function') failures.push('module:discovery-status');
     (app.discoveryStatus?.selfTest?.() || []).forEach(failure => failures.push(`discovery:${failure}`));
     if (typeof app.diagnostics?.init !== 'function') failures.push('module:diagnostics');
@@ -82,7 +79,6 @@
     if (!document.querySelector('[data-command-panel="overview"]')) failures.push('route:command-overview');
     if (!document.querySelector('[data-operations-panel="calculator"]')) failures.push('route:operations-calculator');
     if (!document.querySelector('[data-pricecheck-panel="routes"]')) failures.push('route:pricecheck-routes');
-    if (!document.querySelector('[data-comms-panel="ticker"]')) failures.push('route:comms-ticker');
     return failures;
   }
 
@@ -113,7 +109,6 @@
       app.command?.init();
       app.comms?.init();
       if (!app.transferCenter?.init?.()) throw new Error('RHW TRANSFER CENTER COULD NOT MOUNT');
-      if (!app.newswireReview?.init?.()) throw new Error('RHW NEWSWIRE REVIEW DESK COULD NOT MOUNT');
       app.commsSafety?.init();
       installDesktopReadabilityCoverage();
       await app.operations?.init();

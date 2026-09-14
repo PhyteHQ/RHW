@@ -12,7 +12,7 @@ const buttons = ['ships', 'materials'].flatMap(marketGroup => ['price', 'stock']
   setAttribute(key, value) { this.attrs[key] = value; }
 })));
 const ctx = vm.createContext({ console, setInterval() {}, clearInterval() {},
-  document: { getElementById: () => null },
+  document: { getElementById: () => null, addEventListener() {} },
   localStorage: { getItem: k => memory.get(k) ?? null, setItem: (k, v) => memory.set(k, v) },
   numFormatter: new Intl.NumberFormat('de-DE'), CANONICAL_NAMES: {},
   escapeHTML: value => String(value).replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('"', '&quot;'),

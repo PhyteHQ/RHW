@@ -9,20 +9,14 @@
 
   const NODES = Object.freeze([
     ['forum', 'FORUM', 'TRANSMISSION COMPOSER'],
-    ['ticker', 'TICKER', 'DASHBOARD BULLETIN'],
     ['drafts', 'DRAFTS', 'LOCAL ARCHIVE'],
     ['senders', 'SENDERS', 'IDENTITY REGISTRY']
   ]);
 
   const HEADING = Object.freeze({
     forum: ['FORUM TRANSMISSION COMPOSER', 'WRITE NORMAL TEXT // RHW BUILDS THE FORUM BB CODE'],
-    ticker: ['BMM INDUSTRIAL NEWSWIRE BUILDER', 'BUILD ONE READY-TO-PASTE DASHBOARD TICKER ENTRY'],
     drafts: ['LOCAL DRAFT ARCHIVE', 'SAVED TRANSMISSIONS // CACHE EXPORT + IMPORT'],
     senders: ['SENDER IDENTITY REGISTRY', 'BUILT-IN + BROWSER-LOCAL RHW CHARACTERS']
-  });
-
-  const TICKER_TONES = Object.freeze({
-    good: '#78ad8a', warn: '#c98b2c', danger: '#c75e5e', remote: '#7da7ea', lore: '#c6a75a', muted: '#8b9198'
   });
 
   let autosaveTimer = null;
@@ -118,24 +112,6 @@
     </section>`;
   }
 
-  function tickerMarkup() {
-    return `<section class="comms-node-panel" data-comms-panel="ticker" hidden>
-      <section class="comms-panel v40-tool-panel">
-        <div class="comms-panel-head"><div><span>NW</span><strong>BMM INDUSTRIAL NEWSWIRE BUILDER</strong></div><small>MOVING DASHBOARD TICKER</small></div>
-        <div class="v40-newswire-explainer"><strong>WHAT IS THIS?</strong><span>BUILDS ONE READY-TO-PASTE ENTRY FOR THE MOVING BMM INDUSTRIAL NEWSWIRE ABOVE THE RHW APP. IT DOES NOT CREATE A FORUM POST AND IT DOES NOT PUBLISH AUTOMATICALLY.</span></div>
-        <div class="v40-tool-grid">
-          <label class="comms-field"><span>CATEGORY</span><select id="v40TickerCategory"><option value="market">MARKET</option><option value="regional">REGIONAL</option><option value="security">SECURITY</option><option value="operations">OPERATIONS</option><option value="corporate">CORPORATE</option></select></label>
-          <label class="comms-field"><span>TONE</span><select id="v40TickerTone"><option value="good">GOOD</option><option value="warn">WARN</option><option value="danger">DANGER</option><option value="remote">REMOTE</option><option value="lore">LORE</option><option value="muted">MUTED</option></select></label>
-          <label class="comms-field"><span>TAG <b id="v40TickerTagCount">14 / 40</b></span><input id="v40TickerTag" type="text" maxlength="40" value="RHW OPERATIONS" /></label>
-          <label class="comms-field comms-wide"><span>MESSAGE <b id="v40TickerMessageCount">0 / 240</b></span><textarea id="v40TickerMessage" rows="5" maxlength="240" placeholder="Transmission headline..."></textarea></label>
-        </div>
-        <div class="ticker-builder-preview"><small>LIVE TICKER PREVIEW</small><div class="ticker-builder-bar"><span class="ticker-builder-label">BMM INDUSTRIAL NEWSWIRE</span><span class="ticker-builder-copy"><b id="v40TickerPreviewTag">RHW OPERATIONS</b><span id="v40TickerPreviewText">AWAITING BULLETIN</span></span></div></div>
-        <div class="v40-generated-block"><small>TICKER SOURCE BLOCK // RHW_NEWSWIRE.MD</small><textarea id="v40TickerOutput" readonly spellcheck="false"></textarea></div>
-        <div class="comms-actions"><button class="comms-primary" type="button" id="v40CopyTickerBtn"><span>COPY TICKER BLOCK</span></button></div>
-      </section>
-    </section>`;
-  }
-
   function draftsMarkup() {
     return `<section class="comms-node-panel" data-comms-panel="drafts" hidden>
       <section class="comms-panel drafts-panel">
@@ -179,7 +155,7 @@
     return `<div class="workspace-frame comms-frame">
       <header class="workspace-heading"><div><div class="workspace-kicker"><span>COMMS</span> RHW COMMUNICATION NETWORK</div><h2 id="commsWorkspaceTitle">FORUM TRANSMISSION COMPOSER</h2><p id="commsWorkspaceSubtitle">WRITE NORMAL TEXT // RHW BUILDS THE FORUM BB CODE</p></div><div class="workspace-status" id="commsStatus" data-tone="muted">LOCAL COMMAND CACHE READY</div></header>
       ${subnavMarkup()}
-      <div id="commsNodeHost" class="comms-node-host">${forumMarkup()}${tickerMarkup()}${draftsMarkup()}${sendersMarkup()}</div>
+      <div id="commsNodeHost" class="comms-node-host">${forumMarkup()}${draftsMarkup()}${sendersMarkup()}</div>
     </div>`;
   }
 
@@ -543,22 +519,6 @@
     }).join('');
   }
 
-  function renderTicker() {
-    const category = document.getElementById('v40TickerCategory')?.value || 'operations';
-    const tone = document.getElementById('v40TickerTone')?.value || 'good';
-    const tag = document.getElementById('v40TickerTag')?.value.trim() || 'RHW NEWSWIRE';
-    const message = document.getElementById('v40TickerMessage')?.value.trim() || 'AWAITING BULLETIN';
-    const output = document.getElementById('v40TickerOutput');
-    if (output) output.value = `## ${category}\n- [${tag} | ${tone}] ${message}`;
-    const previewTag = document.getElementById('v40TickerPreviewTag');
-    const previewText = document.getElementById('v40TickerPreviewText');
-    const bar = document.querySelector('.ticker-builder-bar');
-    if (previewTag) previewTag.textContent = tag;
-    if (previewText) previewText.textContent = message;
-    if (bar) bar.style.setProperty('--ticker-tone', TICKER_TONES[tone] || TICKER_TONES.muted);
-    app.store.set(app.config.storageKeys.tickerComposer, { category, tone, tag, message });
-  }
-
   function renderSenderRegistry() {
     const target = document.getElementById('v40SenderRegistry');
     if (!target) return;
@@ -704,23 +664,6 @@
     });
   }
 
-  function bindTicker() {
-    const saved = app.store.get(app.config.storageKeys.tickerComposer, {}) || {};
-    ['Category', 'Tone', 'Tag', 'Message'].forEach(name => {
-      const el = document.getElementById(`v40Ticker${name}`);
-      const key = name.toLowerCase();
-      if (el && typeof saved[key] === 'string') el.value = saved[key];
-      el?.addEventListener('input', renderTicker);
-      el?.addEventListener('change', renderTicker);
-    });
-    document.getElementById('v40CopyTickerBtn')?.addEventListener('click', async () => {
-      const output = document.getElementById('v40TickerOutput');
-      const copied = await app.util.copy(output?.value || '');
-      app.notify(copied ? 'TICKER BLOCK COPIED' : 'COPY FAILED', copied ? 'good' : 'warn');
-    });
-    renderTicker();
-  }
-
   function bindDrafts() {
     document.getElementById('commsDraftList')?.addEventListener('click', event => {
       const load = event.target.closest('[data-load-draft]');
@@ -836,7 +779,7 @@
       const button = event.target.closest('[data-comms-node]');
       if (button) app.navigate('comms', button.dataset.commsNode);
     });
-    bindForum(); bindTicker(); bindDrafts(); bindSenders();
+    bindForum(); bindDrafts(); bindSenders();
     renderForm(); renderDrafts(); renderSenderRegistry();
   }
 

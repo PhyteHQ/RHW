@@ -137,8 +137,8 @@
     const panel = document.getElementById('commandGlobalAlerts');
     if (!panel) return;
     const count = Number(panel.dataset.alertCount) || panel.querySelectorAll('.command-priority-item').length;
-    panel.hidden = count <= 0;
-    panel.setAttribute('aria-hidden', count <= 0 ? 'true' : 'false');
+    panel.hidden = count <= 0 || !window.telemetrySnapshot().available;
+    panel.setAttribute('aria-hidden', panel.hidden ? 'true' : 'false');
     if (count <= 0) {
       panel.classList.remove('expanded');
       document.getElementById('commandAlertToggle')?.setAttribute('aria-expanded', 'false');

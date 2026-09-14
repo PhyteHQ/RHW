@@ -1,0 +1,27 @@
+/* GENERATED offline shell. */
+self.RHW_APP_SHELL = [
+  "./",
+  "./index.html",
+  "./manifest.webmanifest",
+  "./js/build-info.js",
+  "./js/00-bootstrap.js",
+  "./css/rhw-app.css",
+  "./js/rhw-dashboard.js",
+  "./js/rhw-workspaces.js",
+  "./assets/discovery-status.json",
+  "./assets/rhw-crest.png",
+  "./assets/favicon.png",
+  "./assets/apple-touch-icon.png",
+  "./assets/pwa-icon-192.png",
+  "./assets/pwa-icon-512.png",
+  "./assets/pwa-icon-maskable-512.png",
+  "./assets/fonts/7cHpv4kjgoGqM7E_Ass52Hs.woff2",
+  "./assets/fonts/7cHpv4kjgoGqM7E_DMs5.woff2",
+  "./assets/fonts/7cHqv4kjgoGqM7E30-8s51os.woff2",
+  "./assets/fonts/7cHqv4kjgoGqM7E30-8s6VospT4.woff2",
+  "./assets/fonts/7cHqv4kjgoGqM7E3_-gs51os.woff2",
+  "./assets/fonts/7cHqv4kjgoGqM7E3_-gs6VospT4.woff2",
+  "./assets/fonts/J7aHnp1uDWRBEqV98dVQztYldFcLowEF.woff2",
+  "./assets/fonts/LYjNdG7kmE0gfa19pRtB.woff2",
+  "./assets/fonts/LYjNdG7kmE0gfaN9pQ.woff2"
+];

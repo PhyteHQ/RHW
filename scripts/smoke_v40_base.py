@@ -17,27 +17,11 @@ _COUNTS = effective_counts(read_catalog(ROOT / 'assets' / 'recipes'))
 CATALOG_COUNTS = {'recipeCount': _COUNTS['recipes'], 'productCount': _COUNTS['products']}
 ROUTES = [
     ("command","overview"),("command","inventory"),("command","shipyard"),("command","production"),("command","logistics"),
-    ("operations","calculator"),("pricecheck","routes"),("comms","forum"),("comms","ticker"),("comms","drafts"),("comms","senders"),
+    ("operations","calculator"),("pricecheck","routes"),("comms","forum"),("comms","drafts"),("comms","senders"),
 ]
-V4_CSS = [
-    "css/12-app-v40.css","css/13-app-v40-navigation.css","css/14-app-v40-composer.css","css/15-app-v40-audit.css",
-    "css/16-app-v40-operations.css","css/17-app-v40-calculator-polish.css","css/18-app-v40-nav-hierarchy.css",
-    "css/19-app-v402-fixes.css","css/20-app-v402-qol.css","css/21-app-v402-mobile-ui.css",
-    "css/29-app-pr6-discovery-sync.css","css/30-app-pr7-diagnostics.css","css/31-app-pr8-production-orders.css",
-    "css/32-app-pr9-transfer-center.css","css/33-app-pr10-newswire-review.css","css/34-app-pr11-full-audit.css", "css/35-app-interface-cleanup.css",
-]
-V4_JS = [
-    "js/12-app-config.js","js/13-app-v40.js","js/14-app-v40-cache.js","js/15-app-v40-navigation.js",
-    "js/16-app-v40-composer.js","js/16a-app-v40-comms-safety.js","js/16b-app-v40-newswire-manager.js",
-    "js/16c-app-v40-newswire-ordering.js",
-    *[f"assets/recipes/catalog-v1-part-{i:02d}.js" for i in range(1,7)],
-    "js/17-app-v40-operations-core.js","js/18-app-v40-operations-ui.js","js/18a-app-v40-nav-hierarchy.js",
-    "js/18b-app-v40-production-pricing.js","js/18c-app-v40-recipe-corrections.js",
-    "js/18d-app-v40-final-ui-polish.js","js/20-app-v402-fixes.js","js/21-app-v402-qol.js",
-    "js/22-app-v402-mobile-ui.js","js/23-app-v40-pwa.js","js/24-app-v40-newswire-2.js",
-    "js/25-app-v40-discovery-status.js","js/26-app-v40-diagnostics.js","js/27-app-v40-production-orders.js",
-    "js/28-app-v40-transfer-center.js","js/29-app-v40-newswire-review.js","js/30-app-v40-full-audit.js","js/19-app-v40-runtime.js",
-]
+_ASSETS = json.loads((ROOT / 'scripts/runtime-assets.json').read_text())
+V4_CSS = []  # the HTML stylesheet contains the exact complete production cascade
+V4_JS = [p.removeprefix('./') for p in _ASSETS['workspaces']]
 
 def free_port():
     with socket.socket() as sock:
@@ -90,10 +74,18 @@ def document(route):
     source=(ROOT/"index.html").read_text(encoding="utf-8")
     source=re.sub(r'\s*<link[^>]+href="https://[^>]+>\s*',"\n",source,flags=re.I)
     def css(match):
-        href=match.group(1); path=ROOT/href.removeprefix("./")
-        return f'<style>{path.read_text(encoding="utf-8")}</style>' if path.is_file() else match.group(0)
+        href=match.group(1); path=ROOT/href.split('?')[0].removeprefix("./")
+        if not path.is_file(): return match.group(0)
+        text = path.read_text(encoding="utf-8")
+        import base64
+        def font_url(m):
+            font = ROOT / 'assets/fonts' / m.group(1)
+            encoded = base64.b64encode(font.read_bytes()).decode()
+            return f'url(data:font/woff2;base64,{encoded})'
+        text = re.sub(r'url\(\.\./assets/fonts/([^\)]+)\)', font_url, text)
+        return f'<style>{text}</style>'
     def js(match):
-        src=match.group(1); path=ROOT/src.removeprefix("./")
+        src=match.group(1); path=ROOT/src.split('?')[0].removeprefix("./")
         return f'<script>{safe(path.read_text(encoding="utf-8"))}</script>' if path.is_file() else match.group(0)
     source=re.sub(r'<link\s+rel="stylesheet"\s+href="(\./css/[^"]+)"\s*>',css,source,flags=re.I)
     source=re.sub(r'<script\s+src="(\./js/[^"]+)"\s*></script>',js,source,flags=re.I)
@@ -111,7 +103,7 @@ def ev(cdp,expression):
     raw=result.get("result",{}).get("value"); return json.loads(raw) if raw else {}
 
 def snapshot(cdp):
-    return ev(cdp,"({ready:document.documentElement.dataset.v40Ready||'',error:document.documentElement.dataset.v40Error||'',workspace:document.body?.dataset.workspace||'',commandNode:document.body?.dataset.commandNode||'',operationsNode:document.body?.dataset.operationsNode||'',commsNode:document.body?.dataset.commsNode||'',pricecheckNode:document.body?.dataset.pricecheckNode||'',mountedNav:document.querySelector('#appContextNavSlot > .workspace-subnav')?.id||'',recipes:window.RHWV4?.operationsCore?.state?.catalog?.meta?.recipeCount||0,products:window.RHWV4?.operationsCore?.state?.catalog?.meta?.productCount||0,errors:window.__RHW_V4_SMOKE__?.errors||[]})")
+    return ev(cdp,"({ready:document.documentElement?.dataset.v40Ready||'',error:document.documentElement?.dataset.v40Error||'',workspace:document.body?.dataset.workspace||'',commandNode:document.body?.dataset.commandNode||'',operationsNode:document.body?.dataset.operationsNode||'',commsNode:document.body?.dataset.commsNode||'',pricecheckNode:document.body?.dataset.pricecheckNode||'',mountedNav:document.querySelector('#appContextNavSlot > .workspace-subnav')?.id||'',recipes:window.RHWV4?.operationsCore?.state?.catalog?.meta?.recipeCount||0,products:window.RHWV4?.operationsCore?.state?.catalog?.meta?.productCount||0,errors:window.__RHW_V4_SMOKE__?.errors||[]})")
 
 def ui_number(value):
     digits=re.sub(r"[^0-9-]","",value or ""); return int(digits) if digits and digits!="-" else 0
@@ -165,7 +157,7 @@ def test_comms(cdp):
     fmt["preview"]=ev(cdp,"({html:document.querySelector('#forumLivePreview .forum-preview-body')?.innerHTML||''})").get("html","")
     if "[sp2]classified fragment[/sp2]" not in fmt["blur"] or "[spoiler=COMMUNICATION LOG]channel transcript[/spoiler]" not in fmt["log"] or "[spoiler=COMMUNICATION LOG]" not in fmt["bb"] or "forum-preview-spoiler" not in fmt["preview"]: raise RuntimeError(f"COMMS log/blur integration failed: {fmt}")
     route=ev(cdp,"(()=>{RHWV4.navigate('comms','ticker');return{hash:location.hash,ws:document.body.dataset.workspace,node:document.body.dataset.commsNode}})()")
-    if route!={"hash":"#comms/ticker","ws":"comms","node":"ticker"}: raise RuntimeError(f"COMMS navigation failed: {route}")
+    if route!={"hash":"#comms/forum","ws":"comms","node":"forum"}: raise RuntimeError(f"Retired COMMS route fallback failed: {route}")
     print("V4 interaction smoke passed: COMMS formatting + drafts")
 
 def test_ticker(cdp):

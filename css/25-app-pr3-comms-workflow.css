@@ -8,7 +8,7 @@
   grid-template-columns: minmax(150px, 1.25fr) repeat(4, minmax(76px, .75fr));
   gap: 1px;
   margin: 14px 16px 0;
-  border: 1px solid rgba(125, 167, 234, .14);
+  border: 1px solid var(--line);
   background: rgba(255, 255, 255, .035);
 }
 
@@ -19,7 +19,7 @@
   display: flex;
   align-items: center;
   padding: 9px 11px;
-  background: rgba(5, 8, 12, .96);
+  background: var(--surface-input);
   font-family: var(--font-tech);
 }
 
@@ -35,14 +35,14 @@
 }
 
 .comms-workflow-score small {
-  color: rgba(151, 163, 178, .58);
+  color: var(--muted);
   font-size: 6.5px;
   letter-spacing: .09em;
 }
 
 .comms-workflow-score strong {
   margin-top: 4px;
-  color: #b9cbe5;
+  color: var(--text);
   font-size: 9px;
   letter-spacing: .075em;
 }
@@ -50,9 +50,9 @@
 .comms-workflow-status > span {
   gap: 6px;
   justify-content: center;
-  color: rgba(167, 176, 187, .52);
-  font-size: 7px;
-  letter-spacing: .075em;
+  color: var(--muted);
+  font-size: 12px;
+  letter-spacing: .025em;
   white-space: nowrap;
 }
 
@@ -206,15 +206,16 @@
 }
 
 @media (max-width: 1100px) {
+  .comms-workflow-score { grid-column: 1 / -1; }
   .comms-workflow-status {
-    grid-template-columns: minmax(150px, 1fr) repeat(4, minmax(70px, .65fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
 
 @media (max-width: 760px) {
   .comms-mobile-view-switch button span::before {
     margin-right: 5px;
-    color: rgba(125, 167, 234, .58);
+    color: var(--muted);
   }
 
   .comms-mobile-view-switch button[data-comms-mobile-view="write"] span::before { content: "01"; }
@@ -222,7 +223,7 @@
   .comms-mobile-view-switch button[data-comms-mobile-view="bbcode"] span::before { content: "03"; }
 
   .comms-workflow-status {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     margin: 11px 11px 0;
   }
 
@@ -234,7 +235,7 @@
   .comms-workflow-status > span {
     min-height: 42px;
     padding: 7px 3px;
-    font-size: 6.2px;
+    font-size: 12px;
   }
 
   .comms-workflow-status > span i {
@@ -323,20 +324,5 @@
   .sender-registry-actions button:first-child:last-child,
   .sender-registry-actions button:first-child:nth-last-child(3) {
     grid-column: auto;
-  }
-}
-
-@media (orientation: landscape) and (max-height: 520px) {
-  .comms-workflow-status {
-    grid-template-columns: minmax(150px, 1fr) repeat(4, minmax(70px, .65fr));
-  }
-
-  .comms-workflow-score {
-    grid-column: auto;
-  }
-
-  .comms-workflow-status > span {
-    min-height: 48px;
-    justify-content: center;
   }
 }

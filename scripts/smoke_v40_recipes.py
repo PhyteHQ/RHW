@@ -75,12 +75,12 @@ def main() -> int:
                 raise RuntimeError(f"Calculator search/session regression: {preserved}")
             heading=base.ev(cdp, """(()=>{
               const before=document.querySelector('#baseHealthCard small').textContent;
-              RHWV4.navigate('comms','ticker'); RHWV4.newswireManager.enhance();
+              RHWV4.navigate('comms','ticker');
               RHWV4.navigate('operations','calculator');
               return {before,after:document.querySelector('#baseHealthCard small').textContent};
             })()""")
             if heading.get('before') != heading.get('after'):
-                raise RuntimeError(f"Newswire changed global telemetry labels: {heading}")
+                raise RuntimeError(f"Retired route changed global telemetry labels: {heading}")
 
             catalog = base.ev(cdp, """(()=>({
               deprecated:[!!RHWV4.operationsCore.recipe('module_m_hyperspace_scanner'),!!RHWV4.operationsCore.recipe('module_m_cloakdisruptor')],

@@ -202,10 +202,11 @@
   .ops-material-table td::before {
     display: block;
     margin-bottom: 6px;
-    color: rgba(145, 153, 149, .58);
+    color: var(--muted);
     font-family: var(--font-tech);
-    font-size: 6.5px;
-    letter-spacing: .085em;
+    font-size: var(--rhw-label-size);
+    line-height: 1.45;
+    letter-spacing: .025em;
   }
 
   .ops-material-table td:nth-child(1) {

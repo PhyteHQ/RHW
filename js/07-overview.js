@@ -21,10 +21,30 @@ function updateDataFreshnessIndicators() {
     badge.textContent = stale ? `CACHE · ${time}` : '';
     badge.title = stale ? `Displaying the last verified local inventory from ${time}` : '';
   });
+  updateTelemetryNotice();
+}
+
+function updateTelemetryNotice() {
+  const notice = document.getElementById('telemetryNotice');
+  if (!notice) return;
+  const snapshot = telemetrySnapshot();
+  notice.hidden = snapshot.available && !snapshot.stale;
+  notice.dataset.state = isLoading ? 'loading' : snapshot.available ? 'stale' : lastSyncError ? 'error' : 'loading';
+  const title = isLoading ? 'Updating inventory' : snapshot.available ? 'Showing saved inventory' : lastSyncError ? 'Inventory unavailable' : 'Connecting to inventory';
+  const detail = snapshot.available
+    ? `${snapshot.detail} Prices and stock may have changed.`
+    : 'Stock remains unknown until a verified response arrives.';
+  const heading = document.getElementById('telemetryNoticeTitle');
+  const copy = document.getElementById('telemetryNoticeCopy');
+  if (heading.textContent !== title) heading.textContent = title;
+  if (copy.textContent !== detail) copy.textContent = detail;
+  const retry = document.getElementById('telemetryRetry');
+  retry.hidden = !lastSyncError && !snapshot.stale;
+  retry.disabled = isLoading || !navigator.onLine;
 }
 
 function telemetryPlaceholderRow() {
-  return '<li class="telemetry-placeholder"><span>STOCK UNKNOWN<small>Awaiting verified inventory</small></span><strong aria-label="Stock unknown">—</strong></li>';
+  return '<li class="telemetry-placeholder"><span>Stock unknown</span><strong aria-label="Stock unknown">—</strong></li>';
 }
 
 function renderOverviewTelemetryState(message, state = 'low') {
@@ -225,6 +245,7 @@ function renderAll() {
   renderManifest();
   updateBaseTelemetry();
   updateDataFreshnessIndicators();
+  window.dispatchEvent(new Event('rhw:telemetry'));
 }
 
 function findRemoteFacility(data, facility) {

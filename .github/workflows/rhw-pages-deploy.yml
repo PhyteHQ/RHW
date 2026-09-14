@@ -25,6 +25,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
+      - name: Verify generated app assets
+        run: python3 scripts/build_app_assets.py --check
+
       - name: Validate dashboard structure
         run: python3 scripts/validate_dashboard.py
 
@@ -42,6 +45,9 @@ jobs:
 
       - name: Validate Production Order model
         run: node scripts/test_production_orders.js
+
+      - name: Validate retired-data archive compatibility
+        run: node scripts/test_legacy_archive.js
 
       - name: Validate Transfer Center model
         run: node scripts/test_transfer_center.js
@@ -67,22 +73,36 @@ jobs:
       - name: Runtime smoke test
         run: python3 scripts/smoke_v40.py
 
+      - name: Bundled interface, fonts and offline reload
+        if: always()
+        run: python3 scripts/smoke_interface_foundation.py
+
+      - name: Save interface checks and screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rhw-interface-review
+          path: artifacts/interface
+          if-no-files-found: ignore
+
       - name: Mobile Logistics discoverability smoke test
+        if: ${{ !cancelled() }}
         run: python3 scripts/smoke_stability_polish.py
 
       - name: Compact COMMAND hierarchy smoke test
+        if: ${{ !cancelled() }}
         run: python3 scripts/smoke_command_compact.py
 
       - name: Focused daily-navigation smoke test
+        if: ${{ !cancelled() }}
         run: python3 scripts/smoke_focus_pass.py
 
-      - name: Newswire working-copy smoke test
-        run: python3 scripts/smoke_v40_newsmanager.py
-
       - name: Recipe correctness smoke test
+        if: ${{ !cancelled() }}
         run: python3 scripts/smoke_v40_recipes.py
 
       - name: Final recipe label, costing and header smoke test
+        if: ${{ !cancelled() }}
         run: python3 scripts/smoke_v40_final_polish.py
 
   deploy:

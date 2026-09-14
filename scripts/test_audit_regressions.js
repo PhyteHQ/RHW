@@ -16,7 +16,7 @@ async function models() {
   const memory = new Map();
   let uid = 0;
   const nodes = new Map();
-  const ctx = vm.createContext({ console, setTimeout, clearTimeout, AbortController,
+  const ctx = vm.createContext({ console, setTimeout, clearTimeout, AbortController, Event, dispatchEvent() {},
     navigator: { onLine: true }, addEventListener() {},
     document: { getElementById: id => nodes.get(id) || null, querySelector: () => null,
       querySelectorAll: () => [], documentElement: { dataset: {} } },
@@ -233,52 +233,26 @@ async function serviceWorker() {
     fetch: async () => { if (!network) throw new Error('offline'); return new Response('## operations\n- [RHW | good] TEST'); }
   });
   ctx.self = ctx;
-  ctx.importScripts = file => run(ctx, file.replace(/^\.\//, ''));
+  ctx.importScripts = (...files) => files.forEach(file => run(ctx, file.replace(/^\.\//, '')));
   run(ctx, 'sw.js');
   let installed;
   handlers.install({ waitUntil: p => { installed = p; } });
   await installed;
   assert.equal(skipCalls, 0, 'Installing an update must not activate it over a live session');
-  assert.ok(shellRequests.length > 50, 'Install the full app shell');
+  assert.ok(shellRequests.length >= 20, 'Install the bundles, fonts and icons for offline use');
+  assert.ok(!shellRequests.some(r => /newswire|production-orders/i.test(r.url)), 'Retired UI must not enter the offline cache');
   assert.ok(shellRequests.every(request => request.cache === 'reload'), 'Every shell request must bypass old HTTP cache');
-  assert.equal(await entries.get('https://example.invalid/RHW/js/config.js').clone().text(), 'NEW RELEASE');
-  assert.equal(await entries.get('https://example.invalid/RHW/js/34-app-stability-polish.js').clone().text(), 'NEW RELEASE');
+  assert.equal(await entries.get('https://example.invalid/RHW/js/rhw-dashboard.js').clone().text(), 'NEW RELEASE');
+  assert.equal(await entries.get('https://example.invalid/RHW/js/rhw-workspaces.js').clone().text(), 'NEW RELEASE');
   entries.set('./index.html', new Response('INSTALLED HTML'));
   assert.equal(await (await ctx.appShellNavigation('https://example.invalid/RHW/')).text(), 'INSTALLED HTML',
     'Navigation must keep the installed HTML together with its cached scripts while an update waits');
   entries.delete('./index.html');
   assert.equal((await ctx.appShellNavigation('https://example.invalid/RHW/')).status, 200, 'A missing shell falls back to network');
-  const fresh = await ctx.newswireResponse('news');
-  const originalTime = fresh.headers.get('X-RHW-Fetched-At');
-  assert.equal(fresh.headers.get('X-RHW-Source'), 'network');
+  const fresh = await ctx.cacheFirst('compiled-app.js');
   network = false;
-  const offline = await ctx.newswireResponse('news');
-  assert.equal(offline.status, 200);
-  assert.equal(offline.headers.get('X-RHW-Source'), 'cache');
-  assert.equal(offline.headers.get('X-RHW-Fetched-At'), originalTime, 'Offline reads preserve the original fetch timestamp');
-  assert.equal(await offline.text(), await fresh.text());
-  // Feed a successful cached HTTP response into the actual editorial loader.
-  const drafts = new Map();
-  const managerCtx = vm.createContext({ console, navigator: { serviceWorker: { controller: {} } },
-    document: { getElementById: () => null, querySelectorAll: () => [], documentElement: { dataset: {} } },
-    addEventListener() {}, confirm: () => true,
-    fetchWithTimeout: async () => ctx.newswireResponse('news'),
-    RHWV4: { comms: { init() {}, activate() {} }, config: { storageKeys: { newswireManagerDraft: 'draft' } },
-      util: { escape: v => String(v ?? '') },
-      store: { get: (k, d) => drafts.get(k) ?? d, set: (k, v) => { drafts.set(k, v); return true; }, remove: k => drafts.delete(k) } }
-  });
-  managerCtx.window = managerCtx;
-  run(managerCtx, 'js/16b-app-v40-newswire-manager.js');
-  const manager = managerCtx.RHWV4.newswireManager;
-  await manager.loadCurrentSource();
-  assert.equal(manager.state.sourceMode, 'cache', 'HTTP 200 from SW cache cannot become a current repository source');
-  assert.equal(manager.state.sourceFetchedAt, originalTime);
-  manager.applyAdd({ category: 'operations', tag: 'LOCAL', tone: 'good', message: 'KEEP THIS DRAFT' });
-  await manager.loadCurrentSource({ force: true });
-  assert.ok(manager.state.entries.some(e => e.message === 'KEEP THIS DRAFT'), 'A forced offline reload must preserve local edits');
-  network = true;
-  await manager.loadCurrentSource();
-  assert.equal(manager.state.sourceMode, 'repository', 'A fresh network response unlocks the repository source gate');
+  const offline = await ctx.cacheFirst('compiled-app.js');
+  assert.equal(await offline.text(), await fresh.text(), 'Offline app bytes must match the installed release');
   handlers.message({ data: { type: 'SKIP_WAITING' } });
   assert.equal(skipCalls, 1, 'Explicit restart can activate the waiting worker');
 }
@@ -346,7 +320,7 @@ function overviewReferences() {
   const markup=evaluate(`renderOverviewRow({state:'low',role:'export',name:'Reactor Systems',item:${JSON.stringify(reactor)},quantityValue:350,detail:overviewDetail(${JSON.stringify(reactor)},'low','export')})`);
   assert.match(markup, /overview-row-qty">350</);
   assert.doesNotMatch(markup, /TARGET|DEFICIT|overview-stock-reference/);
-  assert.match(evaluate('telemetryPlaceholderRow()'), /STOCK UNKNOWN/);
+  assert.match(evaluate('telemetryPlaceholderRow()'), /STOCK UNKNOWN/i);
   console.log('Stock-only inventory, handling thresholds and input-batch references passed.');
 }
 
