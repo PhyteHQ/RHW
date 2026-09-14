@@ -86,18 +86,23 @@ jobs:
           if-no-files-found: ignore
 
       - name: Mobile Logistics discoverability smoke test
+        if: ${{ !cancelled() }}
         run: python3 scripts/smoke_stability_polish.py
 
       - name: Compact COMMAND hierarchy smoke test
+        if: ${{ !cancelled() }}
         run: python3 scripts/smoke_command_compact.py
 
       - name: Focused daily-navigation smoke test
+        if: ${{ !cancelled() }}
         run: python3 scripts/smoke_focus_pass.py
 
       - name: Recipe correctness smoke test
+        if: ${{ !cancelled() }}
         run: python3 scripts/smoke_v40_recipes.py
 
       - name: Final recipe label, costing and header smoke test
+        if: ${{ !cancelled() }}
         run: python3 scripts/smoke_v40_final_polish.py
 
   deploy:

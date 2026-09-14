@@ -6,8 +6,8 @@
   },
   "js/rhw-dashboard.js": {
     "sources": 12,
-    "bytes": 129044,
-    "sha256": "2695b0c279c34d5d00e44a20d78e9280926adc9637df48673f8f312703a926e4"
+    "bytes": 128726,
+    "sha256": "b12f264876ce1f6083faed6d208203df9f3bdcb54933c1ea2d06c2e287de6d4f"
   },
   "js/rhw-workspaces.js": {
     "sources": 35,

@@ -150,9 +150,3 @@ els.tableHeaders.forEach(th => {
   th.addEventListener('click', handleSort);
   th.addEventListener('keydown', handleSortKeydown);
 });
-
-// ============================================================
-// RHW NEWSWIRE · EDITABLE MARKDOWN + LAST-GOOD CACHE
-// The remote file extends the built-in pools category by category.
-// If it is unavailable, the most recently verified file is used.
-// ============================================================

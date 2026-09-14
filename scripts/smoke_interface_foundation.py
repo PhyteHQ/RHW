@@ -128,6 +128,10 @@ def main():
         (OUT / 'checks.json').write_text(json.dumps({'layouts': report, 'retired': retired, 'keyboard': focused, 'offline': offline}, indent=2))
         print(f'Bundled interface passed: {len(report)} layouts, retired routes, keyboard focus, local fonts and offline reload.')
         return 0
+    except Exception:
+        if cdp:
+            capture(cdp, 'failure')
+        raise
     finally:
         if cdp:
             cdp.close()

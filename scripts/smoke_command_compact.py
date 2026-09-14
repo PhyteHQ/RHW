@@ -48,6 +48,16 @@ def main() -> int:
                 raise RuntimeError(f"Compact COMMAND route did not boot: {snap}")
 
             time.sleep(.18)
+            unavailable = base.ev(cdp, "({notice:!telemetryNotice.hidden,alerts:commandGlobalAlerts.hidden})")
+            if not all(unavailable.values()):
+                raise RuntimeError(f"Unknown stock should have one connection notice: {unavailable}")
+            base.ev(cdp, """(()=>{
+              lastLoaded=new Date();lastSyncError='';dataIsStale=false;isLoading=false;
+              items=['Basic Alloy','Consumer Goods','Food Rations','Gold Ore','Niobium Ore'].map(name=>({name,quantity:0}));
+              rhwBase={name:'Resolution Heavy Works',shop_items:items};
+              rebuildItemCaches();renderAll();RHWV4.command.updateOverview();RHWV4.commandCompactPolish.syncAlerts();
+              return true;
+            })()""")
             result = base.ev(cdp, """(()=>{
               const visible=el=>{
                 if(!el)return false;
@@ -211,7 +221,7 @@ def main() -> int:
                 sticky=base.ev(cdp, """(()=>{const r=rhwAppNav.getBoundingClientRect();return{top:r.top,height:r.height,
                   context:appSecondaryNav.getBoundingClientRect().bottom,offset:parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--rhw-sticky-nav-offset')),
                   scrollY:scrollY,toolsInside:rhwAppNav.contains(rhwFocusToolsBtn)}})()""")
-                if sticky['height']>54 or sticky['toolsInside'] or abs(sticky['offset']-sticky['height']-12)>2 or (sticky['scrollY']>400 and abs(sticky['top'])>2) or abs(sticky['context']+sticky['scrollY']-geometry['contextBottom'])>2:
+                if sticky['height']>54 or not sticky['toolsInside'] or abs(sticky['offset']-sticky['height']-12)>2 or (sticky['scrollY']>400 and abs(sticky['top'])>2) or abs(sticky['context']+sticky['scrollY']-geometry['contextBottom'])>2:
                     layout_failures.append(f'Primary-only sticky navigation at {width}px: {sticky}')
                 print(f'HUD {width}px: cards start at {cards[0]["top"]:.0f}px; sticky navigation {sticky["height"]:.0f}px')
 

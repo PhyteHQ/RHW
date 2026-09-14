@@ -296,7 +296,7 @@ def test_v402(cdp, workspace, node):
           lastLoaded=null;updateNetworkFeed('error','test outage');renderOverview();
           return{retired:!document.getElementById('newswirePanel')&&!document.getElementById('newswireFilter'),
             navigation:!!document.querySelector('#rhwAppNav .app-tabs'),
-            unknown:[...document.querySelectorAll('.summary-grid .telemetry-placeholder')].every(row=>row.textContent.includes('STOCK UNKNOWN'))};
+            unknown:document.querySelectorAll('.summary-grid .telemetry-placeholder').length===5&&[...document.querySelectorAll('.summary-grid .telemetry-placeholder')].every(row=>/stock unknown/i.test(row.textContent))};
         })()""")
         if cache != {"retired": True, "navigation": True, "unknown": True}:
             raise RuntimeError(f"No-cache stock / navigation without Newswire failed: {cache}")

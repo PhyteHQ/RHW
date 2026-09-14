@@ -103,7 +103,7 @@ def ev(cdp,expression):
     raw=result.get("result",{}).get("value"); return json.loads(raw) if raw else {}
 
 def snapshot(cdp):
-    return ev(cdp,"({ready:document.documentElement.dataset.v40Ready||'',error:document.documentElement.dataset.v40Error||'',workspace:document.body?.dataset.workspace||'',commandNode:document.body?.dataset.commandNode||'',operationsNode:document.body?.dataset.operationsNode||'',commsNode:document.body?.dataset.commsNode||'',pricecheckNode:document.body?.dataset.pricecheckNode||'',mountedNav:document.querySelector('#appContextNavSlot > .workspace-subnav')?.id||'',recipes:window.RHWV4?.operationsCore?.state?.catalog?.meta?.recipeCount||0,products:window.RHWV4?.operationsCore?.state?.catalog?.meta?.productCount||0,errors:window.__RHW_V4_SMOKE__?.errors||[]})")
+    return ev(cdp,"({ready:document.documentElement?.dataset.v40Ready||'',error:document.documentElement?.dataset.v40Error||'',workspace:document.body?.dataset.workspace||'',commandNode:document.body?.dataset.commandNode||'',operationsNode:document.body?.dataset.operationsNode||'',commsNode:document.body?.dataset.commsNode||'',pricecheckNode:document.body?.dataset.pricecheckNode||'',mountedNav:document.querySelector('#appContextNavSlot > .workspace-subnav')?.id||'',recipes:window.RHWV4?.operationsCore?.state?.catalog?.meta?.recipeCount||0,products:window.RHWV4?.operationsCore?.state?.catalog?.meta?.productCount||0,errors:window.__RHW_V4_SMOKE__?.errors||[]})")
 
 def ui_number(value):
     digits=re.sub(r"[^0-9-]","",value or ""); return int(digits) if digits and digits!="-" else 0
