@@ -31,7 +31,7 @@
     -webkit-backdrop-filter: none;
   }
   .app-nav-inner { gap: 0; padding: 0; }
-  .app-nav-brand { display: none; }
+
   .app-navigation-cluster {
     overflow: visible;
     border-width: 0 0 1px;

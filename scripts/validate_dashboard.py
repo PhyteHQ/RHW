@@ -392,10 +392,10 @@ def main() -> int:
 
     require_tokens(errors, 'js/20-app-v402-fixes.js', (
         'v40OverviewTelemetryState', "'CACHE TELEMETRY'", 'window.telemetrySnapshot()',
-        'price per unit', 'Generated Newswire source block', 'Updated RHW Newswire Markdown source'
+        'app.onUiUpdate(syncTelemetryBadge)'
     ), 'V4.0.2 runtime fixes')
-    require_tokens(errors, 'js/03-telemetry.js', (
-        'NO VERIFIED CACHE AVAILABLE // WAITING FOR FIRST SUCCESSFUL SYNC',
+    require_tokens(errors, 'js/07-overview.js', (
+        'Stock unknown', 'updateTelemetryNotice',
     ), 'Telemetry cache fallback')
     require_tokens(errors, 'css/19-app-v402-fixes.css', (
         '@media (max-width: 700px)', '.crest-frame.crest-fallback::after', 'width: 72px', 'height: 72px',

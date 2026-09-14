@@ -13,14 +13,6 @@
     commandActivate: app.command.activate
   };
 
-  function installStyles() {
-    if (document.getElementById('rhwStabilityPolishStyle')) return;
-    const style = document.createElement('style');
-    style.id = 'rhwStabilityPolishStyle';
-    style.dataset.stylesheet = '35-app-interface-cleanup.css';
-    document.head.appendChild(style);
-  }
-
   function setLogisticsView(view = 'market') {
     const safe = view === 'materials' ? 'materials' : 'market';
     document.body.dataset.logisticsView = safe;
@@ -191,7 +183,6 @@
     const materials = document.getElementById('materialsScanSection');
     const legacy = document.getElementById('externalLogisticsPanel');
     const commandButtons = [...document.querySelectorAll('#commandNodeNav [data-command-node]')];
-    if (!document.getElementById('rhwStabilityPolishStyle')) failures.push('style');
     if (!panel || !nav || nav.parentElement !== panel || nav.nextElementSibling !== market) failures.push('logistics-nav-order');
     if (market?.nextElementSibling !== materials || materials?.nextElementSibling !== legacy) failures.push('logistics-surface-order');
     if (nav?.querySelectorAll('[data-logistics-view]').length !== 2) failures.push('logistics-tabs');
@@ -201,7 +192,6 @@
     return failures;
   }
 
-  installStyles();
 
   if (typeof base.commandInit === 'function') {
     app.command.init = function stabilityCommandInit(...args) {

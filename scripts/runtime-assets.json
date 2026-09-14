@@ -31,9 +31,13 @@
     "./css/30-app-pr7-diagnostics.css",
     "./css/32-app-pr9-transfer-center.css",
     "./css/34-app-pr11-full-audit.css",
-    "./css/35-app-interface-cleanup.css"
+    "./css/interface/00-component-extensions.css",
+    "./css/interface/10-console-foundation.css",
+    "./css/interface/20-hud-layout.css",
+    "./css/interface/30-recipe-comparison.css"
   ],
   "dashboard": [
+    "./js/00-runtime.js",
     "./js/config.js",
     "./js/01-wire.js",
     "./js/02-utils.js",

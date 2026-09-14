@@ -134,6 +134,7 @@
     if (label) { label.textContent = run.label; label.dataset.tone = run.tone; }
     if (detail) detail.textContent = run.detail;
     app.diagnostics?.render?.();
+    app.rendered?.('discovery');
     if (button) { button.disabled = state.checking; button.textContent = state.checking ? 'CHECKING…' : 'CHECK LATEST RUN'; }
   }
 
@@ -185,7 +186,6 @@
   async function init() {
     state.status = await loadStatus();
     mount(state.status);
-    checkLatestRun();
     return state.status;
   }
 

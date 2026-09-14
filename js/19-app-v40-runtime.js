@@ -19,12 +19,6 @@
   window.addEventListener('error', event => recordError(event.error || event.message));
   window.addEventListener('unhandledrejection', event => recordError(event.reason));
 
-  function installDesktopReadabilityCoverage() {
-    const style = document.getElementById('rhwV40ReleasePolishStyle');
-    if (!style || style.dataset.fullReadability === 'true') return;
-    style.dataset.fullReadability = 'true';
-  }
-
   function selfTest() {
     const failures = [];
     ['rhwAppNav','rhwWorkspaceRoot','workspaceCommand','workspaceOperations','workspaceComms','commandNodeNav','operationsNodeNav','commsNodeNav','appNavigationCluster','appContextNavSlot','commsForm','forumLivePreview'].forEach(id => {
@@ -71,7 +65,8 @@
     if (typeof app.comms?.activate !== 'function') failures.push('module:comms');
     if (typeof app.commsSafety?.init !== 'function') failures.push('module:comms-safety');
     (app.commsSafety?.selfTest?.() || []).forEach(failure => failures.push(`polish:${failure}`));
-    if (document.getElementById('rhwV40ReleasePolishStyle')?.dataset.fullReadability !== 'true') failures.push('polish:desktop-readability');
+    const bodySize = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--rhw-body-size'));
+    if (!Number.isFinite(bodySize) || bodySize < 15) failures.push('polish:readability-tokens');
     if (typeof app.storage?.saveDraft !== 'function') failures.push('module:storage');
     if (typeof app.comms?.buildBbcode !== 'function') failures.push('feature:bbcode');
     if (typeof app.mobileUi?.setForumView !== 'function') failures.push('module:mobile-ui');
@@ -110,14 +105,12 @@
       app.comms?.init();
       if (!app.transferCenter?.init?.()) throw new Error('RHW TRANSFER CENTER COULD NOT MOUNT');
       app.commsSafety?.init();
-      installDesktopReadabilityCoverage();
       await app.operations?.init();
       if (!app.diagnostics?.init?.()) throw new Error('RHW SYSTEM CHECK COULD NOT MOUNT');
       await app.discoveryStatus?.init();
       if (!app.fullAudit?.init?.()) throw new Error('RHW FULL APP AUDIT COULD NOT MOUNT');
       app.applyRoute({ replace: true });
       if (!app.navHierarchy?.init?.()) throw new Error('V4 NAVIGATION HIERARCHY COULD NOT MOUNT');
-      app.commsSafety?.polishOperations?.();
       document.querySelectorAll('#workspaceOperations .ops-price-input-wrap > span').forEach(node => {
         if (node.textContent.trim() === 'CR') node.textContent = '$';
       });

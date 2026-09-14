@@ -73,6 +73,10 @@ jobs:
       - name: Runtime smoke test
         run: python3 scripts/smoke_v40.py
 
+      - name: Background and render lifecycle
+        if: ${{ !cancelled() }}
+        run: node scripts/test_runtime_lifecycle.js
+
       - name: Bundled interface, fonts and offline reload
         if: always()
         run: python3 scripts/smoke_interface_foundation.py

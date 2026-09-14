@@ -292,7 +292,7 @@
     if (!rows.length) return '<div class="ops-empty good">THIS RECIPE HAS NO CONSUMED MATERIAL INPUTS</div>';
     return `<div class="ops-material-table-wrap"><table class="ops-material-table"><thead><tr><th>MATERIAL</th><th>REQUIRED</th><th>PRICE / UNIT</th><th>LINE COST</th></tr></thead><tbody>${rows.map(row => {
       const price = storedPrice(calc.materialPrices, row.id);
-      return `<tr class="ops-material-row" data-material-id="${esc(row.id)}" data-required="${row.required}"><td><strong>${esc(row.name)}</strong></td><td>${fmt(row.required)}</td><td><div class="ops-price-input-wrap"><input class="ops-price-input" aria-label="${esc(row.name)} price per unit" data-material-price="${esc(row.id)}" type="number" inputmode="decimal" min="0" step="1" value="${price === null ? '' : esc(String(price))}" placeholder="—"><span>$</span></div></td><td data-line-cost>${money(price === null ? null : row.required * price)}</td></tr>`;
+      return `<tr class="ops-material-row" data-material-id="${esc(row.id)}" data-required="${row.required}"><td><strong>${esc(row.name)}</strong></td><td>${fmt(row.required)}</td><td><div class="ops-price-input-wrap"><input class="ops-price-input" aria-label="${esc(row.name)} price per unit" data-material-price="${esc(row.id)}" type="number" inputmode="decimal" min="0" step="1" value="${price === null ? '' : esc(String(price))}" placeholder=""><span>$</span></div></td><td data-line-cost>${money(price === null ? null : row.required * price)}</td></tr>`;
     }).join('')}</tbody></table></div>`;
   }
 
@@ -394,6 +394,7 @@
       ${comparisonMarkup(comparison, calc, rows)}
     </div>`;
     bindCalculator(plan, rows);
+    app.rendered?.('calculator');
     if (focusSearch) {
       const search = document.getElementById('opsRecipeSearch');
       if (search) { search.focus(); try { search.setSelectionRange(search.value.length, search.value.length); } catch {} }
@@ -438,6 +439,7 @@
     }
     const comparison = document.getElementById('opsComparisonResults');
     if (comparison) comparison.innerHTML = comparisonResultsMarkup(core.compareRecipes(calc), calc);
+    app.rendered?.('pricing');
   }
 
   function bindCalculator(plan, rows) {
@@ -513,7 +515,7 @@
       label.appendChild(button);
     });
     enhance();
-    new MutationObserver(enhance).observe(mount, { childList: true, subtree: true });
+    app.onRender('shipyard', enhance);
   }
 
   function openTarget(productId, quantity = 1) {

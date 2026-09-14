@@ -1,14 +1,11 @@
 /* ==========================================================================
    RHW WEB APP · V4.0.2 BUGFIX LAYER
-   Keeps overview telemetry status truthful and fills generated control labels.
+   Keeps overview telemetry status truthful when data changes.
    ========================================================================== */
 (function initRhwV402Fixes() {
   'use strict';
   const app = window.RHWV4;
   if (!app || app.v402Fixes) return;
-
-  let queued = false;
-  let observer = null;
 
   function syncTelemetryBadge() {
     const badge = document.querySelector('.command-overview-live');
@@ -33,42 +30,7 @@
     if (text.textContent !== label) text.textContent = label;
   }
 
-  function labelGeneratedControls() {
-    document.querySelectorAll('#workspaceOperations [data-material-price]').forEach(input => {
-      if (input.getAttribute('aria-label')) return;
-      const name = input.closest('.ops-material-row')?.querySelector('td strong')?.textContent?.trim() || input.dataset.materialPrice || 'Material';
-      input.setAttribute('aria-label', `${name} price per unit`);
-    });
-
-    const tickerOutput = document.getElementById('v40TickerOutput');
-    if (tickerOutput && !tickerOutput.getAttribute('aria-label')) tickerOutput.setAttribute('aria-label', 'Generated Newswire source block');
-
-    const newswireOutput = document.getElementById('v40NewswireFileOutput');
-    if (newswireOutput && !newswireOutput.getAttribute('aria-label')) newswireOutput.setAttribute('aria-label', 'Updated RHW Newswire Markdown source');
-  }
-
-  function sync() {
-    syncTelemetryBadge();
-    labelGeneratedControls();
-  }
-
-  function queueSync() {
-    if (queued) return;
-    queued = true;
-    queueMicrotask(() => {
-      queued = false;
-      sync();
-    });
-  }
-
-  function init() {
-    if (observer) return;
-    observer = new MutationObserver(queueSync);
-    observer.observe(document.body, { childList: true, subtree: true });
-    app.onUiUpdate(syncTelemetryBadge);
-    sync();
-  }
-
-  app.v402Fixes = { init, sync, syncTelemetryBadge, labelGeneratedControls };
-  init();
+  app.onUiUpdate(syncTelemetryBadge);
+  app.v402Fixes = { init: syncTelemetryBadge, sync: syncTelemetryBadge, syncTelemetryBadge };
+  syncTelemetryBadge();
 })();

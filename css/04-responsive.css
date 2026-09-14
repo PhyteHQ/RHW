@@ -1,6 +1,6 @@
     /* RESPONSIVE TWEAKS */
     #dataTable th:first-child, #dataTable td:first-child { min-width: 250px; }
-    #dataTable th:nth-child(n+4), #dataTable td:nth-child(n+4) { text-align: right; }
+    #dataTable th:nth-child(n/**/+4), #dataTable td:nth-child(n/**/+4) { text-align: right; }
     #dataTable th[data-dir] { color: #fff; background: rgba(212,175,55,0.075); }
     .numeric-cell { font-variant-numeric: tabular-nums; }
     .price-cell { color: #b9c6d8; }
@@ -15,7 +15,7 @@
       .crest { width: 98px; }
       .base-telemetry-bar { display: grid; grid-template-columns: 1fr 1fr; width: 100%; padding: 10px 12px; gap: 10px 14px; align-items: start; }
       .base-telemetry-stat:first-child { grid-column: span 2; }
-      .ticker-wrap { display: none; }
+
       .command-strip { margin-top: 0; }
       .summary-grid { grid-template-columns: 1fr; }
       .remote-panel-head { align-items: stretch; }
@@ -39,7 +39,7 @@
       .manifest-panel-head { align-items: stretch; flex-direction: column; }
       .manifest-panel .panel-heading-copy, .manifest-controls { width: 100%; min-width: 0; }
       .manifest-controls > * { min-width: 0; max-width: 100%; }
-      .uplink-actions { grid-template-columns: 1fr; }
+
       .header-uplink-button { width: 100%; }
       .supplier-stats { flex-direction: column; }
       .remote-route { display: grid; grid-template-columns: 1fr; }
@@ -56,7 +56,7 @@
     @media (max-width: 390px) {
       .recipe-column-head, .recipe-list li { grid-template-columns: minmax(0, 1fr) 72px 78px; gap: 6px; }
       .recipe-column-head span:nth-child(2) { font-size: 0; }
-      .recipe-column-head span:nth-child(2):after { content: 'REQ / CYCLE'; font-size: 7px; }
+      .recipe-column-head span:nth-child(2):after { content: "REQ / CYCLE"; font-size: 7px; }
       .recipe-column-head span:nth-child(3) { font-size: 0; }
-      .recipe-column-head span:nth-child(3):after { content: 'ON HAND'; font-size: 7px; }
+      .recipe-column-head span:nth-child(3):after { content: "ON HAND"; font-size: 7px; }
     }

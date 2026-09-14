@@ -35,6 +35,9 @@
   };
   window.__RHW_STORAGE_RECOVERIES__ = app.state.storageRecoveries;
 
+  app.onRender = window.RHWRuntime.onRender;
+  app.rendered = window.RHWRuntime.rendered;
+
   // One coalesced update per data/user change. No recurring DOM polling.
   const uiSubscribers = new Set();
   let uiFrame = 0;
@@ -277,6 +280,7 @@
   };
 
   app.workspaceStoredNode = function workspaceStoredNode(workspace) {
+    if (workspace === 'pricecheck') return 'routes';
     const meta = WORKSPACE_META[workspace] || WORKSPACE_META.command;
     const storageKey = app.config.storageKeys[meta.nodeKey];
     return app.store.get(storageKey, meta.fallback);
@@ -362,7 +366,9 @@
     const safe = WORKSPACES.includes(workspace) ? workspace : 'command';
     app.state.activeWorkspace = safe;
     app.store.set(app.config.storageKeys.activeWorkspace, safe);
+    app.focusPass?.closeTools?.();
     document.body.dataset.workspace = safe;
+    window.RHWRuntime.reconcile();
 
     document.querySelectorAll('.app-workspace').forEach(panel => {
       panel.hidden = panel.id !== `workspace${safe[0].toUpperCase()}${safe.slice(1)}`;
@@ -373,6 +379,7 @@
       button.setAttribute('aria-selected', active ? 'true' : 'false');
       button.tabIndex = active ? 0 : -1;
     });
+    app.rendered('workspace');
   };
 
   app.applyRoute = function applyRoute({ replace = false } = {}) {

@@ -26,16 +26,25 @@ DATA = [{'name': 'Resolution Heavy Works', 'system_name': 'New London', 'money':
         {'name': 'Lissheen Logistics Depot', 'system_name': 'Dublin', 'shop_items': [
             {'name': k, 'quantity': v, 'sell_price': 105, 'buy_price': 80} for k, v in STOCK.items()]}]
 
+NPC_DATA = [{'name': name, 'nickname': f'test-source-{i}', 'system_name': system,
+             'market_goods': [{'name': commodity, 'base_sells': True, 'price_base_sells_for': 80}
+                              for commodity in ('Hull Panels', 'Industrial Materials', 'MOX', 'Niobium', 'Titanium',
+                                                'Energy Field Equipment', 'Super Alloy', 'Ablative Armor Plating',
+                                                'Food Rations', 'Hydrocarbons', 'Consumer Goods')]}
+            for i, (name, system) in enumerate((('Portsmouth Shipyard', 'Cambridge'), ('Planet New London', 'New London'),
+                ('Belvedere Refinery', 'New London'), ('Java Station', 'IMG'), ('Kensington Shipping Platform', 'New London'),
+                ('Planet Cambridge', 'Cambridge'), ('Durham Outpost', 'Leeds'), ('Oder Shipyard', 'New Berlin')))]
+
 
 class QuietHandler(http.server.SimpleHTTPRequestHandler):
     def log_message(self, *_):
         pass
 
     def do_POST(self):
-        if self.path != '/__rhw_test_pobs':
+        if self.path not in ('/__rhw_test_pobs', '/__rhw_test_npc'):
             self.send_error(404)
             return
-        payload = json.dumps(DATA).encode()
+        payload = json.dumps(NPC_DATA if self.path == '/__rhw_test_npc' else DATA).encode()
         self.send_response(200)
         self.send_header('Content-Type', 'application/json')
         self.send_header('Content-Length', str(len(payload)))
@@ -78,11 +87,16 @@ def main():
         # served unchanged, so a broken loader/cache cannot pass an inline fixture.
         fixture = """(() => {
           const original = window.fetch;
+          window.__rhwNpcRequests = 0;
           window.fetch = (input, options) => {
             if (String(input?.url || input).includes('darkstat.dd84ai.com/api/pobs')) {
               // Use real transport so the offline check cannot receive an
               // in-memory fixture when a new document resets navigator.onLine.
               return original('/__rhw_test_pobs', {...options, method:'POST'});
+            }
+            if (String(input?.url || input).includes('darkstat.dd84ai.com/api/npc_bases')) {
+              window.__rhwNpcRequests++;
+              return original('/__rhw_test_npc', {...options, method:'POST'});
             }
             return original(input, options);
           };
@@ -91,6 +105,7 @@ def main():
         cdp.call('Page.navigate', {'url': f'http://127.0.0.1:{server.server_port}/index.html#command/inventory'})
         wait_ready(cdp)
         base.ev(cdp, 'navigator.serviceWorker.ready.then(()=>true)')
+        assert base.ev(cdp, 'window.__rhwNpcRequests') == 0, 'COMMAND startup must not fetch the Price Check market'
         report = []
         for width in WIDTHS:
             cdp.call('Emulation.setDeviceMetricsOverride', {'width': width, 'height': 940 if width > 760 else 844, 'deviceScaleFactor': 1, 'mobile': width <= 760})
@@ -129,6 +144,21 @@ def main():
           archive:typeof RHWV4.legacyArchive.prepareImport==='function',scripts:[...document.scripts].map(s=>s.src)};})()""")
         assert retired['route'] == '#comms/forum' and not retired['editor'] and not retired['orders'] and retired['archive'], retired
         assert len(retired['scripts']) == 4, retired
+        # A completed market request and unrelated telemetry must keep the same
+        # input node and focus. Former whole-table rendering lost both while typing.
+        base.ev(cdp, """(()=>{RHWV4.navigate('pricecheck','routes');const e=document.querySelector('[data-pricecheck-override="hull-panels"]');
+          window.__rhwFocusedPrice=e;e.focus();e.value='0';e.dispatchEvent(new Event('input',{bubbles:true}));return true;})()""")
+        base.ev(cdp, "RHWV4.pricecheck.refresh({quiet:true}).then(()=>{RHWV4.requestUiUpdate();return true;})")
+        time.sleep(.15)
+        price_focus = base.ev(cdp, """(()=>{const e=document.querySelector('[data-pricecheck-override="hull-panels"]');
+          return {same:e===window.__rhwFocusedPrice,focused:document.activeElement===e,value:e.value,
+            stored:RHWV4.pricecheck.state.overrides['hull-panels'],live:RHWV4.pricecheck.state.marketLabel,
+            emptyStyleMarkers:document.querySelectorAll('style[data-stylesheet]').length};})()""")
+        assert price_focus['same'] and price_focus['focused'] and price_focus['value'] == '0' and price_focus['stored'] == 0, price_focus
+        assert price_focus['live'] == 'NPC MARKET LIVE' and price_focus['emptyStyleMarkers'] == 0, price_focus
+        base.ev(cdp, "(()=>{location.hash='#pricecheck/obsolete';return true;})()")
+        time.sleep(.15)
+        assert base.ev(cdp, 'location.hash') == '#pricecheck/routes', 'Price Check uses the shared canonical route model'
         # Keyboard-sized viewport: focus and price must survive status updates.
         cdp.call('Emulation.setDeviceMetricsOverride', {'width': 390, 'height': 430, 'deviceScaleFactor': 1, 'mobile': True})
         base.ev(cdp, """(()=>{RHWV4.navigate('operations','calculator');const e=document.querySelector('[data-material-price]');e.value='123';e.dispatchEvent(new Event('input',{bubbles:true}));e.focus();e.scrollIntoView({block:'center'});return true;})()""")
@@ -149,7 +179,7 @@ def main():
           font:document.fonts.check('16px Barlow'),body:document.body.textContent.includes('Stock unknown')};})()""")
         assert offline['unknown'] and offline['notice'] and offline['font'] and offline['body'], offline
         capture(cdp, '390-inventory-offline')
-        (OUT / 'checks.json').write_text(json.dumps({'layouts': report, 'retired': retired, 'keyboard': focused, 'offline': offline}, indent=2))
+        (OUT / 'checks.json').write_text(json.dumps({'layouts': report, 'retired': retired, 'keyboard': focused, 'priceFocus': price_focus, 'offline': offline}, indent=2))
         print(f'Bundled interface passed: {len(report)} layouts, retired routes, keyboard focus, local fonts and offline reload.')
         return 0
     except Exception:

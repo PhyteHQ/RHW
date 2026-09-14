@@ -2,21 +2,20 @@
    RHW WEB APP · V4.0.2 QUALITY-OF-LIFE TOOLS
    Explicit calculator price profiles.
    ========================================================================== */
-.ops-price-profiles{margin-top:12px;border:1px solid rgba(163,163,163,.18);background:rgba(163,163,163,.035)}
-.ops-price-profiles-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 12px;border-bottom:1px solid rgba(255,255,255,.055)}
-.ops-price-profiles-head>div{display:grid;gap:2px}
-.ops-price-profiles-head small{font-family:var(--font-tech);font-size:8px;letter-spacing:.085em;color:rgba(224,224,224,.45)}
-.ops-price-profiles-head strong{font-family:var(--font-tech);font-size:10px;letter-spacing:.07em;color:#d6d6d6}
-.ops-profile-controls{display:grid;grid-template-columns:minmax(150px,.8fr) minmax(190px,1fr);gap:10px;padding:11px 12px 8px}
-.ops-profile-actions{display:flex;flex-wrap:wrap;gap:7px;padding:0 12px 10px}
-.ops-profile-actions button{min-height:30px;padding:6px 10px;border:1px solid rgba(163,163,163,.22);background:rgba(163,163,163,.055);color:#bbbbbb;font-family:var(--font-tech);font-size:8px;font-weight:700;letter-spacing:.07em;box-shadow:none;clip-path:none;cursor:pointer}
-.ops-profile-actions button:hover,.ops-profile-actions button:focus-visible{background:rgba(163,163,163,.12);color:#e0e0e0}
-.ops-profile-actions .primary{border-color:rgba(212,175,55,.34);background:rgba(212,175,55,.07);color:#e7c963}
-.ops-profile-actions .danger{border-color:rgba(199,94,94,.20);color:#c98282}
-.ops-profile-status{padding:8px 12px;border-top:1px solid rgba(255,255,255,.045);font-family:var(--font-tech);font-size:8px;line-height:1.4;letter-spacing:.055em;color:rgba(224,224,224,.52)}
-.ops-profile-status[data-tone="good"]{color:#78ad8a}.ops-profile-status[data-tone="warn"]{color:#d0a254}
-
+.ops-price-profiles{margin-top:12px;border:1px solid rgba(163,163,163,.18);background:rgba(163,163,163,.035);}
+.ops-price-profiles-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 12px;border-bottom:1px solid rgba(255,255,255,.055);}
+.ops-price-profiles-head>div{display:grid;gap:2px;}
+.ops-price-profiles-head small{font-family:var(--font-tech);font-size:8px;letter-spacing:.085em;color:rgba(224,224,224,.45);}
+.ops-price-profiles-head strong{font-family:var(--font-tech);font-size:10px;letter-spacing:.07em;color:#d6d6d6;}
+.ops-profile-controls{display:grid;grid-template-columns:minmax(150px,.8fr) minmax(190px,1fr);gap:10px;padding:11px 12px 8px;}
+.ops-profile-actions{display:flex;flex-wrap:wrap;gap:7px;padding:0 12px 10px;}
+.ops-profile-actions button{min-height:30px;padding:6px 10px;border:1px solid rgba(163,163,163,.22);background:rgba(163,163,163,.055);color:#bbbbbb;font-family:var(--font-tech);font-size:8px;font-weight:700;letter-spacing:.07em;box-shadow:none;clip-path:none;cursor:pointer;}
+.ops-profile-actions button:hover,.ops-profile-actions button:focus-visible{background:rgba(163,163,163,.12);color:#e0e0e0;}
+.ops-profile-actions .primary{border-color:rgba(212,175,55,.34);background:rgba(212,175,55,.07);color:#e7c963;}
+.ops-profile-actions .danger{border-color:rgba(199,94,94,.20);color:#c98282;}
+.ops-profile-status{padding:8px 12px;border-top:1px solid rgba(255,255,255,.045);font-family:var(--font-tech);font-size:8px;line-height:1.4;letter-spacing:.055em;color:rgba(224,224,224,.52);}
+.ops-profile-status[data-tone="good"]{color:#78ad8a;}.ops-profile-status[data-tone="warn"]{color:#d0a254;}
 
 @media(max-width:760px){
-  .ops-profile-controls{grid-template-columns:1fr}.ops-profile-actions button{flex:1 1 140px}
+  .ops-profile-controls{grid-template-columns:1fr;}.ops-profile-actions button{flex:1 1 140px;}
 }

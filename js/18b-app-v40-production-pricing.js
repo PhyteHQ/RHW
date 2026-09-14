@@ -10,22 +10,11 @@
   if (!app || !core || !app.operations) return;
   if (app.productionPricing) return;
 
-  const STYLE_ID = 'rhwV40ProductionPricingStyle';
   const CALC_KEY = app.config.storageKeys.calculatorState;
   const DEFAULT_IFF = app.config.operations.defaultAffiliation;
-  let productionObserver = null;
-  let operationsObserver = null;
   let installed = false;
 
   const normalize = value => app.util.normalize(String(value || ''));
-
-  function installStyles() {
-    if (document.getElementById(STYLE_ID)) return;
-    const style = document.createElement('style');
-    style.id = STYLE_ID;
-    style.dataset.stylesheet = '35-app-interface-cleanup.css';
-    document.head.appendChild(style);
-  }
 
   function clearSessionPrices() {
     if (!app.state.calculator || typeof app.state.calculator !== 'object') return;
@@ -61,20 +50,6 @@
     app.store.__rhwV40SessionPriceGuard = true;
   }
 
-  function cleanCalculatorUi() {
-    const workspace = document.getElementById('workspaceOperations');
-    if (!workspace) return;
-    workspace.querySelectorAll('[data-material-price]').forEach(input => {
-      if (input.placeholder) input.placeholder = '';
-      input.removeAttribute('data-price-source');
-    });
-    workspace.querySelectorAll('.ops-price-source').forEach(node => node.remove());
-
-    const costHeadText = 'ENTER YOUR UNIT PRICES';
-    const costHead = workspace.querySelector('.ops-cost-panel .ops-panel-head small');
-    if (costHead && costHead.textContent !== costHeadText) costHead.textContent = costHeadText;
-  }
-
   function startFreshRecipeSession() {
     clearSessionPrices();
     resetAffiliationToDefault();
@@ -83,14 +58,8 @@
   function installCalculatorLifecycle() {
     const workspace = document.getElementById('workspaceOperations');
     if (!workspace) return;
-    cleanCalculatorUi();
     if (workspace.dataset.v40SessionPriceMode === 'true') return;
     workspace.dataset.v40SessionPriceMode = 'true';
-
-    // Recipe transitions are handled by operations.saveState after resolution.
-    // Editing a search without changing the recipe preserves the current quote.
-    operationsObserver = new MutationObserver(cleanCalculatorUi);
-    operationsObserver.observe(workspace, { childList: true, subtree: true });
 
     // The legacy Shipyard planner uses a lexical openTarget() helper, so reset
     // RHW costing defaults in capture phase before that click handler runs.
@@ -151,7 +120,6 @@
     }
     app.navigate('operations', 'calculator');
     app.operations.renderCalculator?.();
-    cleanCalculatorUi();
     return true;
   }
 
@@ -181,14 +149,13 @@
     });
   }
 
-  function installProductionObserver() {
+  function installProductionBridge() {
     const mount = document.getElementById('productionGrid');
     if (!mount) return;
     enhanceProduction();
     if (mount.dataset.v40ProductionCalculatorBridge === 'true') return;
     mount.dataset.v40ProductionCalculatorBridge = 'true';
-    productionObserver = new MutationObserver(enhanceProduction);
-    productionObserver.observe(mount, { childList: true, subtree: true });
+    app.onRender('production', enhanceProduction);
   }
 
   function selfTest() {
@@ -218,8 +185,8 @@
   function install() {
     if (installed) return;
     installed = true;
-    installStyles();
-    installProductionObserver();
+
+    installProductionBridge();
     installCalculatorLifecycle();
   }
 

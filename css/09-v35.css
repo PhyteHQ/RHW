@@ -1,7 +1,6 @@
     /* =========================================
        V3.5 PERFORMANCE + MODULAR LOGISTICS
        ========================================= */
-    [hidden] { display: none !important; }
 
     .eco *, .eco *::before, .eco *::after {
       animation: none !important;
@@ -25,11 +24,6 @@
     .eco th { background: #050608 !important; }
     .eco * { box-shadow: none !important; text-shadow: none !important; filter: none !important; }
     .eco .anim-boot { opacity: 1 !important; transform: none !important; }
-    .eco .ticker { display: none !important; }
-    .eco .ticker-single {
-      display: flex !important;
-      transition: opacity 0.28s ease !important;
-    }
 
     /* Header actions use two rows inside the compact uplink panel:
        datalink state above, both controls below. This prevents the buttons
@@ -127,9 +121,7 @@
 
     .market-scan-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(330px, 1fr));
-      gap: 12px;
-      padding: 14px;
+
       background: radial-gradient(circle at 50% 0%, rgba(107,164,255,0.045), transparent 62%);
     }
     .market-card {
@@ -139,7 +131,7 @@
       padding: 0;
       overflow: hidden;
     }
-    .market-card .remote-facility-head { min-height: 82px; }
+
     .market-card .supplier-title { font-size: 22px; }
     .market-card .supplier-commodity-row {
       grid-template-columns: minmax(145px, 1fr) 82px 82px;

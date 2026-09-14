@@ -180,8 +180,7 @@ async function models() {
   // Exercise the real render entry point after a failed first fetch.
   ctx.renderAll();
   assert.ok(Object.values(ctx.els).every(n => n.textContent === 'UNAVAILABLE'));
-  ctx.TICKER_DYNAMIC_SLOT_COUNT = 2;
-  assert.equal(ctx.buildIndustrialNewswireMessages()[0].text, 'TELEMETRY UNAVAILABLE');
+  assert.equal(typeof ctx.buildIndustrialNewswireMessages, 'undefined', 'Retired Newswire is absent from the shipped dashboard');
 
   nodes.clear();
   run(ctx, 'js/config.js');

@@ -15,7 +15,7 @@ async function loadData() {
   setTelemetryState('POLLING', 'warn');
   setFooterConnection('SYNCING', 'warn');
   if (FEATURES.materialsScan || FEATURES.marketScan) setSupplierLinkState('polling', 'SAT-LINK SCANNING');
-  updateNetworkFeed('loading');
+
 
   if (els.liveStatus) {
     els.liveStatus.style.color = 'var(--warn)';
@@ -71,7 +71,7 @@ async function loadData() {
     }
 
     renderAll();
-    updateNetworkFeed('live');
+
   } catch (error) {
     console.error(error);
     dataIsStale = Boolean(lastLoaded);
@@ -82,7 +82,7 @@ async function loadData() {
     if (!dataIsStale && (FEATURES.materialsScan || FEATURES.marketScan)) {
       setSupplierLinkState('offline', 'UPLINK FAILED // NO VERIFIED CACHE');
     }
-    updateNetworkFeed('error', lastSyncError);
+
 
     if (els.liveStatus) {
       els.liveStatus.style.color = dataIsStale ? 'var(--warn)' : 'var(--danger)';
@@ -120,11 +120,13 @@ async function loadData() {
 function scheduleTelemetryRefresh() {
   clearTimeout(refreshTimer);
   refreshTimer = null;
-  if (document.hidden || isLoading) return;
+  if (document.hidden || navigator.onLine === false || isLoading) return;
   refreshTimer = setTimeout(loadData, Math.max(0, nextSyncAt - Date.now()));
 }
 
 document.addEventListener('visibilitychange', scheduleTelemetryRefresh);
+window.addEventListener('offline', scheduleTelemetryRefresh);
+window.addEventListener('online', scheduleTelemetryRefresh);
 
 els.search?.addEventListener('input', debounce(() => { saveViewPreferences(); renderManifest(); }, 250));
 els.roleFilter?.addEventListener('change', () => { saveViewPreferences(); updateRoleSegments(); renderManifest(); });

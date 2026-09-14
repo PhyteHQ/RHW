@@ -15,13 +15,6 @@ formatBaseHealth = function(value) {
   return `${pct.toFixed(pct % 1 ? 1 : 0)}%`;
 };
 
-healthPercentValue = function(value) {
-  const n = Number(value);
-  if (!Number.isFinite(n)) return null;
-  if (n <= 100) return Math.max(0, Math.min(100, n));
-  return Math.max(0, Math.min(100, (n / configuredBaseHealthMax()) * 100));
-};
-
 feedstockAnalysis = function(item) {
   const key = commodityKey(item);
   const perRecipeRequirements = RECIPES.map(recipe => recipe.ingredients
@@ -69,103 +62,6 @@ renderProgress = function(item, options = {}) {
   `</div>`;
 };
 
-let rhwEditorialCategoryCursor = 0;
-
-buildIndustrialNewswireMessages = function() {
-  if (!rhwBase) {
-    return Array.from({ length: TICKER_DYNAMIC_SLOT_COUNT }, (_, index) => ({
-      tag: index === 0 ? 'BMM NEWSWIRE' : 'EDITORIAL DESK',
-      text: index === 0 ? 'AWAITING INITIAL TELEMETRY BURST' : 'ASSEMBLING MARKET AND REGIONAL BULLETINS',
-      tone: index === 0 ? 'warn' : 'muted'
-    }));
-  }
-
-  const recipeAnalyses = RECIPES.map(analyzeRecipe);
-  const priorityMessages = buildPriorityWire(recipeAnalyses);
-  const operationalMessages = [
-    buildFinanceDeskMessage(),
-    ...REMOTE_FACILITIES.map(facility => buildRemoteMarketMessage(facility.key)),
-    buildProductionDeskMessage(recipeAnalyses)
-  ];
-  const messages = [];
-  const usedTexts = new Set();
-
-  const selected = rhwNewswireFilter === 'all'
-    ? RHW_NEWSWIRE_FILTER_CATEGORIES
-    : [rhwNewswireFilter].filter(category => RHW_NEWSWIRE_FILTER_CATEGORIES.includes(category));
-  const available = selected.filter(category => (activeNewswirePools[category] || []).length);
-
-  // A selected editorial filter should feel immediate: put one matching story
-  // first, then preserve all priority/live operational messages behind it.
-  if (rhwNewswireFilter !== 'all' && available.length) {
-    const lead = pickNewswireMessage(available[0], []);
-    messages.push(lead);
-    usedTexts.add(lead.text);
-  }
-
-  [...priorityMessages, ...operationalMessages].forEach(message => {
-    if (messages.length >= TICKER_DYNAMIC_SLOT_COUNT) return;
-    messages.push(message);
-    usedTexts.add(message.text);
-  });
-
-  const openSlots = Math.max(0, TICKER_DYNAMIC_SLOT_COUNT - messages.length);
-  for (let slot = 0; slot < openSlots && available.length; slot++) {
-    const category = rhwNewswireFilter === 'all'
-      ? available[(rhwEditorialCategoryCursor + slot) % available.length]
-      : available[slot % available.length];
-    const message = pickNewswireMessage(category, [...usedTexts]);
-    messages.push(message);
-    usedTexts.add(message.text);
-  }
-
-  // When all categories compete for fewer slots, rotate the starting category
-  // on each rebuild so the same category is not permanently cut off.
-  if (rhwNewswireFilter === 'all' && available.length && openSlots) {
-    rhwEditorialCategoryCursor = (rhwEditorialCategoryCursor + openSlots) % available.length;
-  }
-
-  while (messages.length < TICKER_DYNAMIC_SLOT_COUNT) {
-    messages.push({ tag: 'BMM NEWSWIRE', text: 'EDITORIAL QUEUE CLEAR // AWAITING NEXT BULLETIN', tone: 'muted' });
-  }
-
-  return messages.slice(0, TICKER_DYNAMIC_SLOT_COUNT);
-};
-
-function restartNewswireTickerAtStart() {
-  ecoTickerIndex = 0;
-  renderEcoTickerMessage(0);
-  if (ecoMode) startEcoTicker();
-
-  if (!tickerContainer || ecoMode || prefersReducedMotion.matches) return;
-  tickerContainer.style.animation = 'none';
-  tickerContainer.style.transform = 'translateX(0)';
-  void tickerContainer.offsetWidth;
-  tickerContainer.style.removeProperty('animation');
-  tickerContainer.style.removeProperty('transform');
-}
-
-function installNewswireFilterUx() {
-  const filter = document.getElementById('newswireFilter');
-  if (!filter) return;
-
-  if (!filter.querySelector('.newswire-filter-label')) {
-    const label = document.createElement('span');
-    label.className = 'newswire-filter-label';
-    label.textContent = 'NEWS:';
-    label.setAttribute('aria-hidden', 'true');
-    filter.prepend(label);
-  }
-
-  // The original button listener rebuilds the messages first. This parent
-  // listener runs afterwards and makes that change immediately visible.
-  filter.addEventListener('click', event => {
-    const button = event.target.closest('button[data-newswire-category]');
-    if (!button) return;
-    window.requestAnimationFrame(restartNewswireTickerAtStart);
-  });
-}
-
 function installCrestFallback() {
   const crest = document.querySelector('.crest');
   const frame = crest?.closest('.crest-frame');
@@ -183,5 +79,4 @@ function installCrestFallback() {
 // V3.5 originally injected these styles from JavaScript. They now live in the
 // normal stylesheet cascade, so remove the temporary runtime copy if present.
 document.getElementById('rhwV35EnhancementStyles')?.remove();
-installNewswireFilterUx();
 installCrestFallback();

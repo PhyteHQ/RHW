@@ -293,7 +293,7 @@ def test_v402(cdp, workspace, node):
         if states != {"live": ["LIVE TELEMETRY", "live"], "cache": ["CACHE TELEMETRY", "stale"], "offline": ["AWAITING VERIFIED TELEMETRY", "offline"]}:
             raise RuntimeError(f"V4.0.2 telemetry truth-state failed: {states}")
         cache = base.ev(cdp, """(()=>{
-          lastLoaded=null;updateNetworkFeed('error','test outage');renderOverview();
+          lastLoaded=null;lastSyncError='test outage';renderOverview();
           return{retired:!document.getElementById('newswirePanel')&&!document.getElementById('newswireFilter'),
             navigation:!!document.querySelector('#rhwAppNav .app-tabs'),
             unknown:document.querySelectorAll('.summary-grid .telemetry-placeholder').length===5&&[...document.querySelectorAll('.summary-grid .telemetry-placeholder')].every(row=>/stock unknown/i.test(row.textContent))};

@@ -12,7 +12,7 @@
         linear-gradient(90deg, rgba(255,255,255,0.012) 1px, transparent 1px),
         linear-gradient(180deg, rgba(10,12,15,0.74), rgba(5,6,8,0.96));
       background-size: 22px 22px, 22px 22px, auto;
-      box-shadow: inset 0 0 28px rgba(255,255,255,0.012), 0 12px 28px rgba(0,0,0,0.24);
+
       clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 12px 100%, 0 calc(100% - 12px));
       overflow: hidden;
     }
@@ -24,11 +24,11 @@
     .shipyard-control-subline { margin-top: 5px; color: var(--muted); font-family: var(--font-tech); font-size: 9px; letter-spacing: 0.10em; text-transform: uppercase; }
     .shipyard-control-states { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 7px; }
     .shipyard-summary-badge, .shipyard-panel-state { --signal: #a0a09b; --signal-rgb: 160, 160, 155; display: inline-flex; align-items: center; gap: 6px; padding: 4px 9px; border: 1px solid rgba(var(--signal-rgb), 0.54); color: var(--signal); background: rgba(var(--signal-rgb), 0.095); font-family: var(--font-tech); font-size: 8px; font-weight: 700; letter-spacing: 0.09em; white-space: nowrap; box-shadow: inset 0 0 12px rgba(var(--signal-rgb), 0.05); }
-    .shipyard-summary-badge::before, .shipyard-panel-state::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--signal); box-shadow: 0 0 8px rgba(var(--signal-rgb), 0.72); }
+    .shipyard-summary-badge::before, .shipyard-panel-state::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--signal); box-shadow: 0 0 8px rgba(var(--signal-rgb), 0.72); }
     .state-critical { --signal: #f87171; --signal-rgb: 248, 113, 113; }
     .state-low { --signal: #fbbf24; --signal-rgb: 251, 191, 36; }
     .state-ok { --signal: #4ade80; --signal-rgb: 74, 222, 128; }
-    .capital-shipyard-control.stale .shipyard-summary-badge:last-child::after { content: ' · CACHED'; color: #d2a04d; }
+    .capital-shipyard-control.stale .shipyard-summary-badge:last-child::after { content: " · CACHED"; color: #d2a04d; }
 
     .shipyard-control-grid { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(340px, 0.85fr); gap: 12px; padding: 12px; }
     .shipyard-control-section { --panel-signal: #a0a09b; --panel-signal-rgb: 160, 160, 155; min-width: 0; padding: 12px 14px 13px; border: 1px solid rgba(var(--panel-signal-rgb), 0.27); border-top: 2px solid var(--panel-signal); background: linear-gradient(90deg, rgba(var(--panel-signal-rgb), 0.045), rgba(0,0,0,0.07) 38%, rgba(0,0,0,0.15)), rgba(7,7,6,0.56); box-shadow: inset 0 0 18px rgba(var(--panel-signal-rgb), 0.025); transition: border-color 0.22s ease, background 0.22s ease; }
@@ -41,7 +41,7 @@
 
     .shipyard-component-head, .shipyard-component-row { display: grid; grid-template-columns: minmax(0, 1fr) 92px 104px 74px; gap: 10px; align-items: center; }
     .shipyard-component-head { padding: 0 8px 5px; color: rgba(178,190,197,0.62); font-family: var(--font-tech); font-size: 7px; letter-spacing: 0.09em; text-transform: uppercase; }
-    .shipyard-component-head span:nth-child(n+2) { text-align: right; }
+    .shipyard-component-head span:nth-child(n/**/+2) { text-align: right; }
     .shipyard-component-row { --row-signal: #a0a09b; --row-signal-rgb: 160, 160, 155; min-height: 31px; padding: 6px 8px; border-bottom: 1px solid rgba(255,255,255,0.04); border-left: 2px solid rgba(var(--row-signal-rgb), 0.55); background: linear-gradient(90deg, rgba(var(--row-signal-rgb), 0.045), rgba(0,0,0,0.15)); }
     .shipyard-component-row.component-critical { --row-signal: #f87171; --row-signal-rgb: 248, 113, 113; }
     .shipyard-component-row.component-low { --row-signal: #fbbf24; --row-signal-rgb: 251, 191, 36; }
@@ -53,7 +53,7 @@
     .shipyard-component-coverage { color: var(--row-signal); font-weight: 700; text-shadow: 0 0 8px rgba(var(--row-signal-rgb), 0.17); }
     .shipyard-component-row.bottleneck { background: linear-gradient(90deg, rgba(var(--row-signal-rgb), 0.14), rgba(0,0,0,0.15)); box-shadow: inset 3px 0 12px rgba(var(--row-signal-rgb), 0.07); }
     .shipyard-component-row.bottleneck .shipyard-component-name { color: var(--row-signal); }
-    .shipyard-component-row.bottleneck .shipyard-component-name::after { content: 'BOTTLENECK'; display: block; margin-top: 2px; color: rgba(var(--row-signal-rgb), 0.80); font-family: var(--font-tech); font-size: 7px; letter-spacing: 0.09em; }
+    .shipyard-component-row.bottleneck .shipyard-component-name::after { content: "BOTTLENECK"; display: block; margin-top: 2px; color: rgba(var(--row-signal-rgb), 0.80); font-family: var(--font-tech); font-size: 7px; letter-spacing: 0.09em; }
 
     .hull-registry-list { display: grid; gap: 8px; }
     .hull-registry-row { --hull-signal: #a0a09b; --hull-signal-rgb: 160, 160, 155; display: grid; grid-template-columns: minmax(0, 1fr) 76px 144px; gap: 10px; align-items: center; min-height: 54px; padding: 9px 10px; border: 1px solid rgba(var(--hull-signal-rgb), 0.20); border-left: 3px solid var(--hull-signal); background: linear-gradient(90deg, rgba(var(--hull-signal-rgb), 0.065), rgba(0,0,0,0.17)); }
