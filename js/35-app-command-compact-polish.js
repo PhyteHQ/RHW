@@ -8,15 +8,7 @@
   if (!app?.command || !app?.unifiedUi || app.commandCompactPolish) return;
 
   const base = { commandInit: app.command.init, commandActivate: app.command.activate };
-  let alertObserver = null;
-
-  function installStyles() {
-    if (document.getElementById('rhwCommandCompactPolishStyle')) return;
-    const style = document.createElement('style');
-    style.id = 'rhwCommandCompactPolishStyle';
-    style.dataset.stylesheet = '35-app-interface-cleanup.css';
-    document.head.appendChild(style);
-  }
+  let unsubscribeAlerts = null;
 
   function installInventoryInteraction(nav) {
     if (!nav || nav.dataset.rhwCompactInteraction === 'true') return;
@@ -147,14 +139,12 @@
   }
 
   function watchAlerts() {
-    const list = document.getElementById('v40PriorityList');
-    if (!list || alertObserver) return;
-    alertObserver = new MutationObserver(() => requestAnimationFrame(syncAlerts));
-    alertObserver.observe(list, { childList: true, subtree: true, characterData: true });
+    if (unsubscribeAlerts) return;
+    unsubscribeAlerts = app.onUiUpdate(syncAlerts);
   }
 
   function sync() {
-    installStyles();
+
     mountInventoryNav();
     installAttentionToggle();
     syncAlerts();
@@ -167,7 +157,6 @@
     const deck = document.getElementById('commandControlDeck');
     const all = document.querySelector('[data-command-focus-mode="all"]');
     const attention = document.querySelector('[data-command-focus-mode="attention"]');
-    if (!document.getElementById('rhwCommandCompactPolishStyle')) failures.push('style');
     if (!deck || inventoryNav?.parentElement !== deck) failures.push('inventory-toolbar');
     if (document.getElementById('commandGlobalAlerts')?.parentElement !== deck) failures.push('alerts-toolbar');
     if (!document.querySelector('#commandAlertDetails .command-focus-modes')) failures.push('unified-attention');
@@ -178,7 +167,6 @@
     return failures;
   }
 
-  installStyles();
   if (typeof base.commandInit === 'function') {
     app.command.init = function compactCommandInit(...args) {
       const result = base.commandInit.apply(this, args);
@@ -197,7 +185,7 @@
   }
 
   app.commandCompactPolish = {
-    installStyles,
+
     mountInventoryNav,
     installAttentionToggle,
     syncAlerts,

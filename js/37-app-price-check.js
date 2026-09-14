@@ -39,7 +39,6 @@
   const state = {
     initialized: false,
     loading: false,
-    timer: 0,
     overrides: app.store.get(STORAGE.overrides, {}) || {},
     sourceCache: app.store.get(STORAGE.sources, {}) || {},
     marketCache: app.store.get(STORAGE.market, {}) || {},
@@ -50,16 +49,12 @@
     receivedAt: 0
   };
 
-  const base = {
-    installShell: app.installShell,
-    activateWorkspace: app.activateWorkspace,
-    applyRoute: app.applyRoute,
-    navigate: app.navigate,
-    workspaceStoredNode: app.workspaceStoredNode,
-    workspaceModule: app.workspaceModule,
-    routeParse: app.route.parse,
-    routeWrite: app.route.write
-  };
+  const baseInstallShell = app.installShell;
+  const refreshTask = window.RHWRuntime.createRefreshTask({
+    interval: AUTO_REFRESH_MS,
+    enabled: () => state.initialized && app.state.activeWorkspace === 'pricecheck',
+    run: (options = { quiet: true }) => refreshMarket(options)
+  });
 
   const esc = value => app.util.escape(value);
   const normalize = value => String(value ?? '')
@@ -93,11 +88,6 @@
   }
 
   function installStyles() {
-    if (document.getElementById('rhwPriceCheckStyle')) return;
-    const style = document.createElement('style');
-    style.id = 'rhwPriceCheckStyle';
-    style.dataset.stylesheet = '35-app-interface-cleanup.css';
-    document.head.appendChild(style);
     document.documentElement.classList.add('rhw-pricecheck-enabled');
   }
 
@@ -164,7 +154,7 @@
     panel.dataset.priceCheckBound = 'true';
     panel.addEventListener('click', event => {
       if (event.target.closest('#priceCheckRefresh')) {
-        refreshMarket({ forceResolve: true });
+        refreshTask.refresh({ forceResolve: true });
         return;
       }
       const reset = event.target.closest('[data-pricecheck-reset]');
@@ -187,12 +177,7 @@
       }
       app.store.set(STORAGE.overrides, state.overrides);
       render();
-      const restored = document.querySelector(`[data-pricecheck-override="${CSS.escape(key)}"]`);
-      restored?.focus({ preventScroll: true });
-      if (restored && raw) {
-        restored.value = raw;
-        try { restored.setSelectionRange(raw.length, raw.length); } catch {}
-      }
+
     });
   }
 
@@ -410,7 +395,6 @@
     } finally {
       state.loading = false;
       render();
-      scheduleRefresh();
     }
   }
 
@@ -486,6 +470,7 @@
   }
 
   function render() {
+    if (app.state.activeWorkspace !== 'pricecheck') return;
     const grid = document.getElementById('priceCheckStatusGrid');
     const rowsNode = document.getElementById('priceCheckRows');
     const note = document.getElementById('priceCheckNote');
@@ -493,8 +478,36 @@
     if (!grid || !rowsNode || !note) return;
 
     const rows = ROUTES.map(effectiveRow);
-    grid.innerHTML = statusMarkup(rows);
-    rowsNode.innerHTML = rows.map(rowMarkup).join('');
+    const status = statusMarkup(rows);
+    if (grid.innerHTML !== status) grid.innerHTML = status;
+    rows.forEach(row => {
+      const key = row.route.key;
+      const existing = rowsNode.querySelector(`[data-route-key="${key}"]`);
+      if (!existing) { rowsNode.insertAdjacentHTML('beforeend', rowMarkup(row)); return; }
+      const fragment = document.createElement('tbody');
+      fragment.innerHTML = rowMarkup(row);
+      const next = fragment.firstElementChild;
+      [...next.children].forEach((cell, index) => {
+        const current = existing.children[index];
+        if (index !== 2) {
+          current.className = cell.className;
+          if (current.innerHTML !== cell.innerHTML) current.innerHTML = cell.innerHTML;
+          return;
+        }
+        // Keep the real input in place, including an incomplete number being typed.
+        const input = current.querySelector('input');
+        const nextInput = cell.querySelector('input');
+        input.placeholder = nextInput.placeholder;
+        if (document.activeElement !== input && input.value !== nextInput.value) input.value = nextInput.value;
+        const live = current.querySelector('.pricecheck-live');
+        const nextLive = cell.querySelector('.pricecheck-live');
+        live.className = nextLive.className;
+        if (live.textContent !== nextLive.textContent) live.textContent = nextLive.textContent;
+        const reset = current.querySelector('[data-pricecheck-reset]');
+        if (!row.hasOverride) reset?.remove();
+        else if (!reset) live.before(cell.querySelector('[data-pricecheck-reset]'));
+      });
+    });
 
     const rhw = rhwSnapshot();
     const parts = [state.marketLabel];
@@ -506,11 +519,6 @@
       refresh.disabled = state.loading;
       refresh.textContent = state.loading ? 'REFRESHING…' : 'REFRESH MARKET';
     }
-  }
-
-  function scheduleRefresh() {
-    window.clearTimeout(state.timer);
-    state.timer = window.setTimeout(() => refreshMarket({ quiet: true }), AUTO_REFRESH_MS);
   }
 
   function normalizeOverrides(raw) {
@@ -530,14 +538,14 @@
     state.initialized = true;
     render();
     const cachedAt = state.marketCache?.fetchedAt ? new Date(state.marketCache.fetchedAt).getTime() : 0;
-    if (!cachedAt || Date.now() - cachedAt >= AUTO_REFRESH_MS) refreshMarket({ quiet: Boolean(cachedAt) });
-    else {
+    if (cachedAt) {
       state.marketTone = 'warn';
       state.marketLabel = 'CACHED MARKET';
       state.marketDetail = `SNAPSHOT ${new Date(cachedAt).toLocaleString('de-DE')}`;
       render();
-      scheduleRefresh();
     }
+    refreshTask.setDueAt(Number.isFinite(cachedAt) && cachedAt > 0
+      ? Math.min(cachedAt, Date.now()) + AUTO_REFRESH_MS : Date.now());
     return true;
   }
 
@@ -551,92 +559,19 @@
     return 'routes';
   }
 
-  function activatePriceWorkspace() {
-    app.state.activeWorkspace = 'pricecheck';
-    app.store.set(app.config.storageKeys.activeWorkspace, 'pricecheck');
-    document.body.dataset.workspace = 'pricecheck';
-    document.body.removeAttribute('data-rhw-focus-tool');
-    app.focusPass?.closeTools?.();
-    document.querySelectorAll('.app-workspace').forEach(panel => {
-      panel.hidden = panel.id !== 'workspacePricecheck';
-    });
-    document.querySelectorAll('.app-tabs [data-workspace]').forEach(button => {
-      const active = button.dataset.workspace === 'pricecheck';
-      button.classList.toggle('active', active);
-      button.setAttribute('aria-selected', active ? 'true' : 'false');
-      button.tabIndex = active ? 0 : -1;
-    });
-  }
-
-  function isPriceRoute() {
-    const parts = location.hash.replace(/^#/, '').toLowerCase().split('/').filter(Boolean);
-    return parts[0] === 'pricecheck';
-  }
-
-  function priceRoute() {
-    const parts = location.hash.replace(/^#/, '').toLowerCase().split('/').filter(Boolean);
-    return { workspace: 'pricecheck', node: parts[1] || 'routes' };
-  }
-
   app.installShell = function priceCheckInstallShell(...args) {
-    const result = base.installShell.apply(this, args);
+    const result = baseInstallShell.apply(this, args);
     if (result) ensureShell();
     return result;
   };
 
-  app.activateWorkspace = function priceCheckActivateWorkspace(workspace) {
-    if (workspace === 'pricecheck') {
-      activatePriceWorkspace();
-      return;
-    }
-    return base.activateWorkspace.call(this, workspace);
-  };
-
-  app.workspaceStoredNode = function priceCheckStoredNode(workspace) {
-    if (workspace === 'pricecheck') return 'routes';
-    return base.workspaceStoredNode.call(this, workspace);
-  };
-
-  app.workspaceModule = function priceCheckWorkspaceModule(workspace) {
-    if (workspace === 'pricecheck') return app.pricecheck;
-    return base.workspaceModule.call(this, workspace);
-  };
-
-  app.route.parse = function priceCheckParse() {
-    if (isPriceRoute()) return priceRoute();
-    return base.routeParse.call(this);
-  };
-
-  app.route.write = function priceCheckWrite(workspace, node, { replace = false } = {}) {
-    if (workspace !== 'pricecheck') return base.routeWrite.call(this, workspace, node, { replace });
-    const next = '#pricecheck/routes';
-    if (location.hash === next) return;
-    const method = replace ? 'replaceState' : 'pushState';
-    history[method]({ rhwWorkspace: 'pricecheck', rhwNode: 'routes' }, '', next);
-  };
-
-  app.applyRoute = function priceCheckApplyRoute(options = {}) {
-    const route = app.route.parse();
-    const stored = app.store.get(app.config.storageKeys.activeWorkspace, 'command');
-    if (route.workspace === 'pricecheck' || (!route.workspace && stored === 'pricecheck')) {
-      activatePriceWorkspace();
-      activate(route.node || 'routes', { updateRoute: false });
-      if (options.replace || location.hash !== '#pricecheck/routes') app.route.write('pricecheck', 'routes', { replace: true });
-      return;
-    }
-    return base.applyRoute.call(this, options);
-  };
-
-  app.navigate = function priceCheckNavigate(workspace, node, options = {}) {
-    if (workspace !== 'pricecheck') return base.navigate.call(this, workspace, node, options);
-    activatePriceWorkspace();
-    activate(node || 'routes', { updateRoute: false });
-    app.route.write('pricecheck', 'routes', { replace: Boolean(options.replace) });
-  };
+  // RHW payout changes arrive through the same telemetry notifications as COMMAND.
+  app.onUiUpdate(() => {
+    if (state.initialized && app.state.activeWorkspace === 'pricecheck') render();
+  });
 
   function selfTest() {
     const failures = [];
-    if (!document.getElementById('rhwPriceCheckStyle')) failures.push('style');
     if (!document.querySelector('.app-tabs [data-workspace="pricecheck"]')) failures.push('tab');
     if (!document.getElementById('workspacePricecheck')) failures.push('workspace');
     if (ROUTES.length !== 12) failures.push('route-count');
@@ -653,7 +588,7 @@
     init,
     activate,
     render,
-    refresh: options => refreshMarket(options || {}),
+    refresh: options => refreshTask.refresh(options || {}),
     selfTest,
     resolveSource,
     marketGoodFor,

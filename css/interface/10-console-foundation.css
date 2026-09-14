@@ -1,0 +1,464 @@
+/* Daily workspace layout. Optional controls use native, keyboard-accessible details. */
+:is(.uplink-details,#opsPriceProfiles,.comms-format-more,.comms-advanced):not([open]) > :not(summary) { display: none !important; }
+
+html.rhw-focus-pass .brand-copy { display: block; }
+html.rhw-focus-pass .crest-frame {  grid-area: auto; }
+
+html.rhw-focus-pass .command-header h1 {  font-size: clamp(28px,3vw,40px); line-height: 1;  }
+html.rhw-focus-pass .base-telemetry-bar { display: grid;   gap: 0;   }
+html.rhw-focus-pass .base-telemetry-stat { min-width: 0;  }
+
+html.rhw-focus-pass .base-telemetry-stat small { font-size: 10px; min-height: 0;   }
+html.rhw-focus-pass .base-telemetry-stat strong { font-size: 15px; }
+html.rhw-focus-pass .telemetry-divider { display: none; }
+html.rhw-focus-pass #commandTelemetryStatus { grid-column: 1 / -1;   margin-top: 4px; }
+html.rhw-focus-pass .uplink-panel { display: grid; grid-template-columns: minmax(0,1fr) auto;  width: 100%; max-width: none;  }
+html.rhw-focus-pass .uplink-header { grid-column: 1 / -1; padding: 0;  border: 0; }
+html.rhw-focus-pass .uplink-label { font-size: 10px;  }
+html.rhw-focus-pass .uplink-details { min-width: 0; }
+html.rhw-focus-pass .uplink-details[open] { grid-column: 1 / -1; }
+html.rhw-focus-pass .uplink-details > summary { display: list-item; min-height: 44px; align-content: center; cursor: pointer; font: 11px var(--font-tech); color: #d7d7d7; padding: 10px 0; }
+html.rhw-focus-pass .uplink-details .uplink-grid { padding: 6px 0 10px; }
+html.rhw-focus-pass #headerRefreshBtn {  padding: 8px 10px; font-size: 11px; align-self: start; }
+html.rhw-focus-pass .uplink-details[open] + #headerRefreshBtn { grid-column: 1 / -1; }
+html.rhw-focus-pass .uplink-actions > .header-uplink-button { min-height: 44px; }
+
+/* Keep navigation labels and useful status; remove repeated orientation captions. */
+html.rhw-focus-pass .app-nav-brand > div > strong,
+html.rhw-focus-pass .app-nav-brand > div > small,
+html.rhw-focus-pass .workspace-kicker,
+html.rhw-focus-pass .app-context-nav-label { display: none !important; }
+
+html.rhw-focus-pass .workspace-heading h2 { margin: 0; }
+html.rhw-focus-pass .workspace-heading p { margin: 4px 0 0; font-size: 11px; color: #bebebe; }
+html.rhw-focus-pass .rhw-focus-tools-head { align-items: center; }
+html.rhw-focus-pass .rhw-focus-tool-card:last-child:nth-child(odd) { grid-column: 1 / -1; }
+html.rhw-focus-pass .rhw-focus-tools-button { border-color: #494949; color: #d7d7d7; background: #131313; }
+
+#opsPriceProfiles > summary,
+.comms-advanced > summary,
+.comms-format-more > summary { min-height: 44px; cursor: pointer; padding: 12px; color: #d7d7d7; font: 12px var(--font-tech); line-height: 1.5; }
+#opsPriceProfiles > summary small { margin-left: 10px; font-size: 11px; color: #bebebe; }
+#opsPriceProfiles[open] > summary { margin-bottom: 10px; border-bottom: 1px solid #343434; }
+html.rhw-focus-pass .ops-price-memory { font-size: 11px !important; line-height: 1.6;  }
+#opsCompletePrices { min-height: 44px; margin-top: 8px; padding: 10px 14px; border: 1px solid #bca04e; background: #242112; color: #f0d470; font: 12px var(--font-tech); }
+#opsCompletePrices[hidden] { display: none; }
+[data-material-price] { scroll-margin-block: 180px; }
+.comms-context-tools { display: flex; flex-wrap: wrap; gap: 8px; padding: 0 16px 12px; }
+.comms-context-tools button { min-height: 44px; padding: 8px 12px; border: 1px solid #414141; background: #141414; color: #d7d7d7; font: 11px var(--font-tech); }
+.message-field > label { font: 11px var(--font-tech); color: #d7d7d7; }
+.comms-format-more { width: 100%; border-top: 1px solid #343434; }
+.comms-format-more > summary { width: max-content; }
+.comms-format-options { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 0 8px; }
+.comms-advanced > summary > span { display: block; color: #bebebe; font-size: 11px; margin-top: 4px; }
+html.rhw-focus-pass .comms-advanced .comms-document-control { margin: 8px 0; }
+html.rhw-focus-pass .comms-advanced .comms-field-grid { padding: 0; }
+#rhwDiagnosticsPanel .rhw-data-status-utility { margin: 12px 16px; }
+#rhwDiagnosticsPanel .rhw-data-status-copy small { font-size: 11px; color: #bebebe; white-space: normal; line-height: 1.4; }
+#rhwDiagnosticsPanel .rhw-data-status-live { font-size: 11px; white-space: normal; }
+html.rhw-focus-pass #rhwDiagnosticsPanel .discovery-data-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
+html.rhw-focus-pass #rhwDiagnosticsPanel .discovery-data-grid article { min-width: 0; overflow-wrap: anywhere; }
+:is(.uplink-details,#opsPriceProfiles,.comms-format-more,.comms-advanced) > summary:focus-visible,
+#opsCompletePrices:focus-visible,
+.comms-context-tools button:focus-visible { outline: 2px solid #e6c866; outline-offset: 3px; }
+
+@media (max-width: 980px) {
+  html.rhw-focus-pass .command-header-inner { grid-template-columns: minmax(0,1fr); gap: 12px; }
+  html.rhw-focus-pass .uplink-panel { grid-template-columns: minmax(0,1fr) auto auto; }
+  html.rhw-focus-pass .uplink-header { grid-column: auto; margin: 0; align-self: center; }
+  html.rhw-focus-pass .uplink-details[open] { grid-column: 1 / -1; }
+}
+@media (max-width: 760px) {
+
+  html.rhw-focus-pass .command-header h1 {  margin-bottom: 7px; }
+  html.rhw-focus-pass .base-telemetry-stat { padding: 0 5px; }
+  html.rhw-focus-pass .base-telemetry-stat small { display: block;   line-height: 1.3; }
+
+  html.rhw-focus-pass .uplink-value { font-size: 12px; }
+
+  #opsCompletePrices { width: 100%; }
+  html.rhw-focus-pass .comms-editor-toolbar button { min-height: 44px; font-size: 11px !important; }
+  .comms-format-options { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); }
+  #rhwDiagnosticsPanel .rhw-data-status-utility { margin: 10px; }
+  html.rhw-focus-pass #rhwDiagnosticsPanel .discovery-data-grid { grid-template-columns: minmax(0,1fr); }
+}
+
+/* RHW industrial identity. Neutral charcoal surfaces, brass and silver details. */
+:root {
+  --app-surface: #10100f;
+  --app-surface-soft: #191918;
+  --app-blue-line: rgba(194,194,194,.2);
+  --rhw-surface-radius: 3px;
+  --rhw-surface: var(--panel);
+  --rhw-surface-raised: var(--surface-raised);
+  --rhw-border: var(--line);
+  --rhw-label-size: 12px;
+  --rhw-body-size: 15px;
+  --rhw-gold-rgb: 215,182,117;
+  --rhw-steel-rgb: 194,194,194;
+
+}
+html.rhw-focus-pass body {
+  --app-nav-accent: var(--gold); --app-nav-accent-rgb: var(--rhw-gold-rgb);
+  background: radial-gradient(ellipse at 12% 0%,#D7B67508,transparent 48%),var(--bg);
+  font-size: var(--rhw-body-size); line-height: 1.5;
+}
+/* Preserve stable reading. Motion is restricted to the ticker and crest halo. */
+html.rhw-focus-pass body *, html.rhw-focus-pass body *::before, html.rhw-focus-pass body *::after { text-shadow: none !important; }
+html.rhw-focus-pass body *:not(.ticker), html.rhw-focus-pass body *::before, html.rhw-focus-pass body *::after { animation: none !important; }
+html.rhw-focus-pass .anim-boot { opacity: 1; transform: none; filter: none; }
+html.rhw-focus-pass body::before, html.rhw-focus-pass body::after,
+html.rhw-focus-pass .app-nav-pulse, html.rhw-focus-pass .rhw-workspace-index,
+html.rhw-focus-pass .rhw-module-index { display: none !important; }
+html.rhw-focus-pass :is(button,input,select,textarea,summary) { border-radius: 2px; }
+html.rhw-focus-pass :is(button,input,select,textarea,summary,a):focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
+html.rhw-focus-pass :is(input,select,textarea) { color: var(--text); background: var(--surface-input); border-color: var(--rhw-border); font: var(--rhw-body-size)/1.5 var(--font-main); }
+html.rhw-focus-pass :is(input,select) { min-height: 44px; }
+html.rhw-focus-pass :is(input,textarea)::placeholder { color: #b4b4b4; opacity: 1; }
+html.rhw-focus-pass .app-workspace :is(small,.pill,.module-state,.recipe-short,.feedstock-stock,.market-scan-meta,.logistics-subhead-meta,.ops-price-memory),
+html.rhw-focus-pass :is(.comms-field>span,.comms-field>small,.ops-material-table th,.pricecheck-table th,.pricecheck-live,.pricecheck-status small) { font-size: var(--rhw-label-size) !important; line-height: 1.45; letter-spacing: .015em; }
+html.rhw-focus-pass .app-workspace small,
+html.rhw-focus-pass :is(.comms-field>span,.comms-field>small,.ops-material-table th,.pricecheck-table th) { color: var(--muted); }
+html.rhw-focus-pass .app-workspace :is(p,.footnote,.ops-cost-note,.production-note,.v40-newswire-explainer) { font: 14px/1.6 var(--font-main); letter-spacing: normal; }
+html.rhw-focus-pass .app-workspace :is(input,select,textarea) { font-size: 16px !important; }
+html.rhw-focus-pass .app-workspace button { min-height: 44px; font: 500 12px/1.4 var(--font-main); letter-spacing: .035em; }
+html.rhw-focus-pass :is(.uplink-button,.ops-button,.comms-button,.pricecheck-refresh,.market-sort-button,.command-refresh-button) { transition: border-color 160ms,background 160ms,box-shadow 160ms; }
+html.rhw-focus-pass :is(.uplink-button,.ops-button,.comms-button,.pricecheck-refresh,.market-sort-button,.command-refresh-button):not(:disabled):hover { border-color: var(--gold); box-shadow: 0 0 12px rgba(var(--rhw-gold-rgb),.12); }
+
+/* The crest anchors the header; operational telemetry stays in the same band. */
+html.rhw-focus-pass .command-header { padding: 16px var(--layout-gutter); border-top: 2px solid var(--gold); border-bottom: 1px solid #61553e;   backdrop-filter: none; }
+html.rhw-focus-pass .header-watermark { display: block !important; background-image: url("../assets/rhw-crest.png"); width: 320px; height: 430px; right: 2%; top: -136px; opacity: .075; transform: rotate(-8deg); filter: grayscale(.25); }
+html.rhw-focus-pass .command-header-inner { display: grid; grid-template-columns: minmax(0,1fr) 270px; align-items: center; gap: 26px; }
+html.rhw-focus-pass .command-brand { display: grid;  min-width: 0; align-items: center;  }
+html.rhw-focus-pass .crest-frame {  min-width: 0; }
+html.rhw-focus-pass .crest {   object-fit: contain;  transition: filter 220ms; }
+html.rhw-focus-pass .crest-frame:hover .crest { filter: drop-shadow(0 2px 17px #d7b67555); }
+html.rhw-focus-pass .crest-frame::before { display: block;    opacity: .65; }
+html.rhw-focus-pass .brand-copy { min-width: 0; }
+html.rhw-focus-pass .brand-kicker {  font: 12px/1.25 var(--font-tech); letter-spacing: .12em; margin-bottom: 5px; }
+html.rhw-focus-pass .command-header h1 { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px 15px; color: var(--text); font: 500 54px/.95 var(--font-title); margin: 0; letter-spacing: .06em; }
+html.rhw-focus-pass .brand-command {  font: 500 29px/1 var(--font-title); letter-spacing: .14em; }
+html.rhw-focus-pass .brand-subtitle { margin-top: 5px; color: #cbcbcb; font: 12px/1.3 var(--font-main); letter-spacing: .12em; }
+html.rhw-focus-pass .base-telemetry-bar {      border-top: 1px solid #606060; clip-path: none;  }
+html.rhw-focus-pass .base-telemetry-stat { padding: 0 14px; }
+html.rhw-focus-pass .base-telemetry-stat:first-child { padding-left: 0; }
+html.rhw-focus-pass .base-telemetry-stat small { color: var(--muted); font: 12px/1.3 var(--font-main); margin: 0 0 3px;  }
+html.rhw-focus-pass .base-telemetry-stat strong { font: 22px/1.3 var(--font-tech); font-variant-numeric: tabular-nums; letter-spacing: 0; }
+html.rhw-focus-pass .uplink-panel { padding: 12px; gap: 0 10px; border: 1px solid #4f4f4f; border-top: 2px solid var(--warn);  clip-path: none; box-shadow: inset 0 1px #ffffff08; }
+html.rhw-focus-pass .uplink-panel.online { border-top-color: var(--good); }
+
+html.rhw-focus-pass .uplink-header { margin: 0; }
+html.rhw-focus-pass .uplink-label { color: var(--muted); font: 12px/1.3 var(--font-main); }
+html.rhw-focus-pass .uplink-value { font: 13px/1.4 var(--font-tech); }
+html.rhw-focus-pass .uplink-details>summary { font: 12px/1.4 var(--font-main); }
+html.rhw-focus-pass #headerRefreshBtn { min-height: 44px; font: 12px var(--font-tech); background: linear-gradient(120deg,#352b1d,#222522); border-color: #978052; box-shadow: inset 0 1px #e4c79122; }
+html.rhw-focus-pass .live-dot, html.rhw-focus-pass .ticker-live-dot { width: 7px; height: 7px; }
+html.rhw-focus-pass .live-dot { box-shadow: 0 0 8px currentColor; }
+
+/* Workspaces have a strong primary row and a quieter contextual row. */
+html.rhw-focus-pass .rhw-app-nav {  border-color: var(--line); box-shadow: 0 5px 16px #00000030; }
+html.rhw-focus-pass .app-nav-inner { position: relative;      }
+html.rhw-focus-pass .app-navigation-cluster { grid-column: 1; grid-row: 1; border: 1px solid var(--rhw-border);   overflow: visible; }
+html.rhw-focus-pass .app-navigation-cluster::before { display: none; }
+html.rhw-focus-pass .app-nav-brand { grid-column: 2; grid-row: 1; min-height: 48px; padding: 0; gap: 8px; }
+html.rhw-focus-pass .app-nav-brand>div, html.rhw-focus-pass #rhwPwaInstallBtn small { display: none !important; }
+html.rhw-focus-pass :is(#rhwFocusToolsBtn,#rhwPwaInstallBtn) { min-height: 48px; padding: 8px 12px; color: var(--text); font: 12px var(--font-main); border: 1px solid var(--rhw-border); background: #212121; box-shadow: inset 0 1px #ffffff06; }
+html.rhw-focus-pass .app-tabs {   grid-template-columns: repeat(4,minmax(0,1fr)); background: transparent; border: 0; }
+html.rhw-focus-pass .app-tabs button[data-workspace] { --tab-accent: var(--gold); --tab-accent-rgb: var(--rhw-gold-rgb); display: flex !important; align-items: center; justify-content: center; min-height: 48px; padding: 8px 12px; border: 0; border-right: 1px solid #3f3f3f; border-bottom: 2px solid transparent; background: transparent; color: #c5c5c5; box-shadow: none; gap: 0; }
+html.rhw-focus-pass .app-tabs button[data-workspace]:last-child { border-right: 0; }
+html.rhw-focus-pass .app-tabs button[data-workspace] span { color: inherit; font: 500 23px/1.15 var(--font-title); letter-spacing: .06em; }
+html.rhw-focus-pass .app-tabs button small, html.rhw-focus-pass .app-tabs button::before, html.rhw-focus-pass .app-tabs button::after { display: none; }
+html.rhw-focus-pass .app-tabs button[data-workspace].active { color: #f2d8a7; border-bottom-color: var(--gold);   }
+html.rhw-focus-pass .app-tabs button[data-workspace]:not(.active):hover { background: #282828; color: var(--text); }
+html.rhw-focus-pass .app-context-nav-slot { margin-top: 0; padding: 4px; border: 0; border-top: 1px solid var(--line-soft); background: #181818; }
+html.rhw-focus-pass .app-context-nav-slot::before { display: none; }
+
+html.rhw-focus-pass #commandNodeNav button,
+html.rhw-focus-pass body[data-workspace="command"] #commandNodeNav.command-module-nav button[data-command-node] { display: flex; grid-template-columns: none; grid-template-rows: none; align-items: center; justify-content: center; height: 44px; min-height: 44px; max-height: none; padding: 8px 10px; gap: 8px;   box-shadow: none; color: var(--muted); }
+html.rhw-focus-pass #commandNodeNav button::before, html.rhw-focus-pass #commandNodeNav button::after { display: none; }
+
+html.rhw-focus-pass .command-module-index { display: inline-flex; min-width: 18px; padding: 0; font: 12px var(--font-tech);  background: transparent; border: 0; }
+html.rhw-focus-pass .command-module-copy strong,
+html.rhw-focus-pass body[data-workspace="command"] #commandNodeNav .command-module-copy strong { font: 500 13px/1.3 var(--font-main); letter-spacing: .035em; }
+html.rhw-focus-pass .command-module-copy small, html.rhw-focus-pass .command-module-state { display: none !important; }
+html.rhw-focus-pass .inventory-view-nav { padding: 0; min-height: 0; gap: 8px; border: 0; margin: 0; background: transparent; }
+html.rhw-focus-pass .inventory-view-nav button { min-height: 44px !important; padding: 8px 14px !important; border: 1px solid transparent; border-bottom: 2px solid transparent; background: transparent; box-shadow: none; }
+html.rhw-focus-pass .inventory-view-nav button span { display: inline; font: 500 13px/1.4 var(--font-main); }
+html.rhw-focus-pass .inventory-view-nav button small, html.rhw-focus-pass .rhw-subview-index { display: none; }
+html.rhw-focus-pass .inventory-view-nav button.active { background: #232720; border-bottom-color: var(--gold); }
+html.rhw-focus-pass #commandStrip, html.rhw-focus-pass .command-area-heading, html.rhw-focus-pass .inventory-view-heading { display: none; }
+html.rhw-focus-pass .command-control-deck { background: transparent; padding: 0; border: 0; box-shadow: none; margin: 8px 0 12px; grid-template-columns: minmax(200px,1fr) auto auto; }
+html.rhw-focus-pass #commandGlobalSearch { font: 14px/1.4 var(--font-main) !important; }
+html.rhw-focus-pass .command-finder-label { grid-template-columns: minmax(0,1fr); background: #191919; border-color: var(--rhw-border); }
+html.rhw-focus-pass .command-finder-label>span:first-child, html.rhw-focus-pass .command-finder-key { display: none; }
+html.rhw-focus-pass .command-finder-label>.command-finder-input-wrap { display: block; }
+
+html.rhw-focus-pass .command-global-alerts .command-alert-copy :is(strong,small) { font-size: 12px; }
+html.rhw-focus-pass .rhw-command-compact-shell { background: var(--bg); }
+
+/* Shared frames. Typography and header depth carry the industrial character. */
+html.rhw-focus-pass :is(.alert-card,.panel,.ops-panel,.comms-panel,.remote-card,.production-card,.production-module-card,.v40-tool-panel,.capital-shipyard-control) {  border-color: var(--rhw-border); border-radius: var(--rhw-surface-radius); clip-path: none;  }
+html.rhw-focus-pass :is(.alert-title,.panel-head,.ops-panel-head,.comms-panel-head) { background: var(--rhw-head-fill); border-bottom: 1px solid #5f5f5f; }
+html.rhw-focus-pass :is(.alert-title,.panel-title,.shipyard-control-title,.production-title,.production-module-title) { color: var(--text); font-family: var(--font-title); }
+html.rhw-focus-pass .alert-title { font-size: 25px; line-height: 1.15; letter-spacing: .025em; }
+html.rhw-focus-pass .alert-title .section-index { color: var(--gold); font: 12px var(--font-tech); }
+html.rhw-focus-pass .alert-card:first-child .alert-title { background: linear-gradient(110deg,#332d20,#232323 66%); }
+html.rhw-focus-pass :is(.feedstock-panel,.waste-panel,.confiscated-panel) .alert-title { background: var(--rhw-head-fill); }
+html.rhw-focus-pass :is(.panel-title,.shipyard-control-title) { font-size: 30px; line-height: 1.1; }
+html.rhw-focus-pass .workspace-heading { padding: 10px 0; margin-bottom: 16px; border: 0; background: transparent; box-shadow: none; }
+html.rhw-focus-pass .workspace-heading h2 { color: var(--text); font: 500 34px/1.1 var(--font-title); letter-spacing: .055em; }
+html.rhw-focus-pass .workspace-heading p { font: 13px/1.5 var(--font-main); text-transform: none; }
+html.rhw-focus-pass .workspace-status { border: 1px solid var(--rhw-border); background: #1a1a1a; font: 12px var(--font-main); color: var(--muted); }
+html.rhw-focus-pass #workspaceOperations .workspace-heading,
+html.rhw-focus-pass body[data-comms-node="forum"] #workspaceComms .workspace-heading { display: none; }
+html.rhw-focus-pass :is(.production-card,.production-module-card) { border-top-color: #8d7c59; }
+html.rhw-focus-pass :is(.production-title,.production-module-title) { font-size: 26px; line-height: 1.15; }
+html.rhw-focus-pass :is(.section-kicker,.remote-route small) { color: var(--muted); font-size: 12px; }
+html.rhw-focus-pass .remote-route strong { color: #e2e2e2; }
+
+/* Logistics: refined metals, compact ore inputs and a steel/gold components list. */
+html.rhw-focus-pass .rhw-logistics-view-nav { border-color: var(--rhw-border); background: #151514; }
+html.rhw-focus-pass .rhw-logistics-view-nav button { color: var(--muted); border-color: var(--line-soft); background: transparent; }
+html.rhw-focus-pass .rhw-logistics-view-nav button[aria-selected="true"] { color: var(--gold); border-color: #796646; background: linear-gradient(110deg,#30291d,#1d1d1b); box-shadow: inset 0 -2px var(--gold); }
+html.rhw-focus-pass .rhw-logistics-view-nav button small { color: var(--muted); }
+html.rhw-focus-pass .logistics-subsection { background: transparent; border-top-color: #5f5f5f; }
+html.rhw-focus-pass .logistics-subhead { background: linear-gradient(105deg,#2f2f2f70,transparent 72%); border-bottom: 1px solid var(--line-soft); padding: 16px; }
+html.rhw-focus-pass .logistics-subhead-kicker { color: var(--muted); font: 12px var(--font-tech); }
+html.rhw-focus-pass .logistics-subhead-title { color: var(--text); font: 500 32px/1.1 var(--font-title); letter-spacing: .06em; }
+html.rhw-focus-pass .market-sort-segments { background: #171717; border-color: #5e5e5e; }
+html.rhw-focus-pass .market-sort-button { color: #cbcbcb; background: transparent; font: 12px var(--font-tech); min-height: 42px; }
+html.rhw-focus-pass .market-sort-button.active { color: #f0d5a1; border-color: #a88b56; background: linear-gradient(115deg,#352b1c,#232522); }
+html.rhw-focus-pass .market-scan-grid { padding: 16px; gap: 16px; }
+html.rhw-focus-pass #marketScanGrid { grid-template-columns: repeat(3,minmax(0,1fr)); }
+html.rhw-focus-pass #marketScanGrid>.market-card:nth-child(n) { grid-column: auto; }
+html.rhw-focus-pass .market-card { --market-accent: #c2c2c2; --market-accent-rgb: var(--rhw-steel-rgb); --market-header: linear-gradient(110deg,#373737,#242424 70%); background: #161616; border: 1px solid #5f5f5f; border-top: 2px solid var(--market-accent); border-radius: 2px; clip-path: none; box-shadow: 0 7px 20px #0000003d; transition: border-color 180ms,box-shadow 180ms; }
+html.rhw-focus-pass .market-card[data-market-family="gold"] { --market-accent: var(--gold); --market-accent-rgb: var(--rhw-gold-rgb); --market-header: linear-gradient(110deg,#352e21,#252525 70%); }
+html.rhw-focus-pass .market-card[data-market-family="components"] { --market-header: linear-gradient(110deg,#303332,#2a2a2a 68%); border-top-color: var(--gold); }
+html.rhw-focus-pass .market-card:hover { border-color: var(--market-accent); box-shadow: 0 7px 20px #0000003d,0 0 14px rgba(var(--market-accent-rgb),.08); }
+html.rhw-focus-pass .market-card::after { content: ""; position: absolute; inset: auto -1px -1px auto; width: 13px; height: 13px; background: transparent; border-right: 2px solid var(--market-accent); border-bottom: 2px solid var(--market-accent); pointer-events: none; opacity: .75; }
+html.rhw-focus-pass .market-card .supplier-scanline { height: 1px; top: 0; background: var(--market-accent); box-shadow: 0 0 10px rgba(var(--market-accent-rgb),.3); opacity: .35; }
+html.rhw-focus-pass .market-card .remote-facility-head { min-height: 78px; padding: 14px; background: var(--market-header); border-bottom: 1px solid #5f5f5f; align-items: start; gap: 12px; }
+html.rhw-focus-pass .market-material-card .remote-facility-head { display: grid; grid-template-columns: 48px minmax(0,1fr) auto; align-items: center; }
+html.rhw-focus-pass .market-card-heading { min-width: 0; }
+html.rhw-focus-pass .market-material-symbol { display: grid; place-items: center; width: 48px; height: 50px; color: var(--market-accent); font: 500 34px/1 var(--font-title); border: 1px solid rgba(var(--market-accent-rgb),.45); background: linear-gradient(135deg,rgba(var(--market-accent-rgb),.12),#11111175); box-shadow: inset 0 0 0 3px #10101033; }
+html.rhw-focus-pass .market-card[data-market-kind="components"] .market-material-symbol { color: var(--gold); border-color: #a28b62; }
+html.rhw-focus-pass .market-card .supplier-title { color: var(--text); font: 500 29px/1.1 var(--font-title); letter-spacing: .045em; margin-top: 5px; }
+html.rhw-focus-pass .market-card .remote-badge { color: #cbcbcb; border-color: #6e6e6e; background: #16161644; font: 11px/1.2 var(--font-tech); letter-spacing: .02em; white-space: normal; }
+html.rhw-focus-pass .market-card .remote-facility-subline { color: #c5c5c5; font: 11px/1.35 var(--font-main); letter-spacing: .025em; margin-top: 4px; }
+html.rhw-focus-pass .market-card .remote-link-pill { font: 11px/1.3 var(--font-tech); letter-spacing: .025em; padding: 4px 7px; align-self: start; }
+html.rhw-focus-pass .remote-link-pill.online { color: #b7d4bf; border-color: #688f73; background: #14271d; }
+html.rhw-focus-pass .remote-link-pill.idle { color: #c8c8c8; border-color: #6f6f6f; background: #222222; }
+html.rhw-focus-pass .remote-link-pill:is(.stale,.degraded) { color: #e4c288; border-color: #9c8151; background: #2b2519; }
+html.rhw-focus-pass .market-card .supplier-commodity-row { grid-template-columns: minmax(0,1fr) 72px 78px; gap: 7px 10px; padding: 12px 14px; background: #161616; border-left-color: rgba(var(--market-accent-rgb),.7); border-bottom-color: #404040; transition: background 160ms; }
+html.rhw-focus-pass .market-card .supplier-commodity-row:hover { background: #212121; }
+html.rhw-focus-pass .market-card .supplier-commodity-name strong { display: block; overflow: visible; -webkit-line-clamp: unset; line-clamp: unset; color: #f0f0f0; font: 500 22px/1.12 var(--font-title); white-space: normal; overflow-wrap: anywhere; }
+html.rhw-focus-pass .market-card .supplier-commodity-name small { color: var(--muted); font: 12px/1.4 var(--font-main); text-transform: none; letter-spacing: .015em; }
+html.rhw-focus-pass .market-card .supplier-commodity-metric small { color: var(--muted); font: 12px var(--font-main); }
+html.rhw-focus-pass .market-card .supplier-commodity-metric strong { color: #f0f0f0; font: 16px/1.25 var(--font-tech); letter-spacing: 0; }
+html.rhw-focus-pass .market-card .supplier-commodity-metric.price strong { color: #efcf91; }
+html.rhw-focus-pass .market-card .supplier-commodity-metric.price strong.unlisted { color: #e4c288; font-size: 12px; }
+html.rhw-focus-pass .market-card .market-feedstock { grid-column: 1 / -1; gap: 4px 8px; color: var(--muted); font: 12px/1.4 var(--font-main); letter-spacing: 0; text-transform: none; }
+html.rhw-focus-pass .market-card .market-feedstock strong { color: #e3e3e3; font: 14px var(--font-tech); }
+html.rhw-focus-pass .market-card .market-feedstock.unknown strong { color: #bbbbbb; font-size: 12px; }
+html.rhw-focus-pass .market-card .market-feedstock.stale { color: #e4c288; }
+html.rhw-focus-pass .market-card .supplier-progress-wrap { grid-column: 1 / -1; height: 3px; margin-top: 3px; background: #363636; }
+html.rhw-focus-pass .market-card .supplier-progress-fill.info { background: var(--market-accent); box-shadow: 0 0 5px rgba(var(--market-accent-rgb),.2); }
+html.rhw-focus-pass .market-card .market-empty-row { grid-template-columns: minmax(0,1fr); border-left-color: #6f6f6f; padding-block: 16px; }
+html.rhw-focus-pass .market-card .market-empty-row strong { color: #cbcbcb; font-size: 21px; }
+html.rhw-focus-pass .market-card[data-market-kind="ore"] { border-top-width: 1px; border-left: 3px solid var(--market-accent); box-shadow: none; }
+html.rhw-focus-pass .market-card[data-market-kind="ore"] .remote-facility-head { min-height: 0; grid-template-columns: 31px minmax(0,1fr) auto; padding: 11px 12px; background: linear-gradient(110deg,#292929,#1d1d1d); }
+html.rhw-focus-pass .market-card[data-market-kind="ore"] .market-material-symbol { width: 31px; height: 34px; font-size: 24px; background: #181818; box-shadow: none; }
+html.rhw-focus-pass .market-card[data-market-kind="ore"] .supplier-title { font-size: 25px; margin-top: 3px; }
+html.rhw-focus-pass .market-card[data-market-kind="ore"] .remote-facility-subline { display: none; }
+html.rhw-focus-pass .market-card[data-market-kind="ore"] .supplier-commodity-row { padding-block: 10px; }
+html.rhw-focus-pass .market-card[data-market-kind="ore"] .supplier-scanline { display: none; }
+html.rhw-focus-pass :is(.market-row,.remote-route) { background: transparent; }
+html.rhw-focus-pass .market-row strong { font-size: 22px; }
+html.rhw-focus-pass :is(.market-row,.remote-route) small { color: var(--muted); }
+
+/* One connection explanation for all COMMAND views; unknown is never zero. */
+.telemetry-notice { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px 16px; margin: 0 0 16px; border: 1px solid var(--line); border-left: 3px solid var(--warn); background: var(--panel); color: var(--text); }
+.telemetry-notice[hidden] { display: none; }
+.telemetry-notice[data-state="error"] { border-left-color: var(--danger); }
+.telemetry-notice strong { font: 600 15px/1.4 var(--font-main); }
+.telemetry-notice p { margin: 4px 0 0; color: var(--muted); font: 14px/1.5 var(--font-main); }
+.telemetry-notice button { min-height: 44px; padding: 8px 12px; flex-shrink: 0; border: 1px solid var(--line); background: var(--surface-raised); color: var(--text); }
+@media (max-width: 760px) { .telemetry-notice { flex-wrap: wrap; } }
+
+/* Calculator: engineering setup, material ledger, then the commercial quote. */
+html.rhw-focus-pass .ops-panel-head { padding: 13px 16px; }
+html.rhw-focus-pass .ops-panel-head>div>span { display: inline-flex; color: var(--gold); font: 12px var(--font-tech); }
+html.rhw-focus-pass .ops-panel-head strong { color: var(--text); font: 500 25px/1.1 var(--font-title); letter-spacing: .055em; }
+html.rhw-focus-pass .ops-setup-panel .ops-panel-head { background: linear-gradient(110deg,#343022,#262626); }
+html.rhw-focus-pass .ops-quote-panel { border-top: 2px solid var(--gold); }
+html.rhw-focus-pass .ops-form-grid { padding: 16px; gap: 16px; }
+html.rhw-focus-pass .ops-form-grid :is(input,select) { font: 16px/1.5 var(--font-main); background: var(--surface-input); border-color: var(--rhw-border); }
+html.rhw-focus-pass :is(.ops-material-table,.manifest-table,.pricecheck-table) :is(th,td) { font-family: var(--font-main); font-size: 14px; font-variant-numeric: tabular-nums; }
+html.rhw-focus-pass .ops-material-table :is(th,td) { padding: 8px 14px; }
+html.rhw-focus-pass .ops-material-table :is(th,td):not(:first-child) { text-align: right; }
+html.rhw-focus-pass .ops-material-table th:nth-child(3) { width: 160px; }
+html.rhw-focus-pass .ops-material-table .ops-price-input-wrap { width: 132px; max-width: 100%; margin-left: auto; }
+html.rhw-focus-pass .ops-material-table .ops-price-input { text-align: right; }
+html.rhw-focus-pass .ops-material-table th { color: var(--muted); background: var(--surface-raised); white-space: normal; }
+html.rhw-focus-pass .ops-material-table td>strong { font: 500 15px/1.4 var(--font-main); }
+html.rhw-focus-pass .ops-price-input { font: 16px/1.4 var(--font-tech) !important; min-width: 72px; }
+html.rhw-focus-pass .ops-price-input-wrap>span { color: var(--muted); font: 12px var(--font-main); }
+html.rhw-focus-pass .ops-recipe-meta { margin: 0 16px 16px; padding: 13px 0; background: transparent; border: 0; border-top: 1px solid #5f5f5f; box-shadow: none; }
+html.rhw-focus-pass .ops-recipe-meta strong { color: var(--text); font: 500 27px/1.15 var(--font-title); }
+html.rhw-focus-pass .ops-price-memory { padding: 0; margin: 12px 16px; border: 0; background: transparent; color: var(--muted); }
+html.rhw-focus-pass .ops-price-calculation { gap: 12px; }
+html.rhw-focus-pass :is(.ops-price-flow,.ops-quote-grid) { box-shadow: none; }
+html.rhw-focus-pass .ops-flow-card { background: var(--surface-raised); border-color: var(--line-soft); border-radius: 2px; box-shadow: inset 0 1px #ffffff08; }
+html.rhw-focus-pass .ops-flow-card strong { font-family: var(--font-tech); }
+html.rhw-focus-pass .ops-flow-sell { background: linear-gradient(130deg,#332f21,#242424); border-color: #a68d5c; }
+html.rhw-focus-pass .ops-flow-sell>strong { color: #f0d49e; }
+html.rhw-focus-pass .ops-flow-margin { background: #202020; }
+html.rhw-focus-pass .ops-cost-note { padding: 12px 16px; text-transform: none; }
+html.rhw-focus-pass .ops-details summary { font: 12px/1.4 var(--font-main); }
+html.rhw-focus-pass .ops-priced-state :is(span,strong), html.rhw-focus-pass .ops-flow-card :is(span,em,b) { font: 12px/1.5 var(--font-main); color: var(--muted); }
+html.rhw-focus-pass :is(.ops-price-profiles,.ops-price-profile-tools) { background: #191919; border-color: #545454; }
+html.rhw-focus-pass .ops-price-profiles button { color: #dadada; background: #262626; border-color: #616161; }
+
+/* Price Check keeps sign colours meaningful; the ledger itself stays neutral. */
+html.rhw-focus-pass .pricecheck-heading h2 { color: var(--text); font: 500 34px/1.1 var(--font-title); letter-spacing: .055em; }
+html.rhw-focus-pass .pricecheck-status { background: var(--rhw-head-fill); box-shadow: inset 0 1px #ffffff08; border-color: var(--rhw-border); }
+html.rhw-focus-pass .pricecheck-status strong { font: 500 24px/1.2 var(--font-title); }
+html.rhw-focus-pass :is(.pricecheck-source strong,.pricecheck-payout strong) { font: 500 14px/1.4 var(--font-main); }
+html.rhw-focus-pass .pricecheck-commodity strong { font: 500 16px/1.4 var(--font-main); }
+html.rhw-focus-pass .pricecheck-note { font: 12px/1.5 var(--font-main); }
+html.rhw-focus-pass .pricecheck-price-input { min-height: 44px; }
+html.rhw-focus-pass .pricecheck-reset { min-height: 44px; font-size: 12px; }
+html.rhw-focus-pass .pricecheck-estimate { display: block; margin-top: 4px; font: 12px/1.4 var(--font-main); color: var(--muted); }
+html.rhw-focus-pass .pricecheck-row td { padding-block: 14px; }
+html.rhw-focus-pass .pricecheck-table th { background: var(--surface-raised); color: var(--muted); }
+html.rhw-focus-pass .pricecheck-table :is(th,td):nth-child(n/**/+3) { text-align: right; }
+html.rhw-focus-pass .pricecheck-price-input { text-align: right; }
+html.rhw-focus-pass .pricecheck-price-editor { justify-content: end; }
+html.rhw-focus-pass .pricecheck-difference.positive { color: var(--good); }
+html.rhw-focus-pass .pricecheck-difference.negative { color: var(--danger); }
+
+/* Composer frames share the identity; generated Forum message styling stays local. */
+html.rhw-focus-pass .comms-panel-head { padding: 13px 16px; }
+html.rhw-focus-pass .comms-panel-head>div>span { display: none; }
+html.rhw-focus-pass .comms-panel-head strong { color: var(--text); font: 500 25px/1.1 var(--font-title); letter-spacing: .05em; }
+html.rhw-focus-pass .comms-editor-toolbar { background: #1f1f1f; border-color: var(--rhw-border); }
+html.rhw-focus-pass .comms-field label, html.rhw-focus-pass .message-field>label { font: 12px/1.4 var(--font-main); }
+html.rhw-focus-pass .comms-field textarea { min-height: 160px; }
+html.rhw-focus-pass .comms-preview-live { line-height: 1.6; }
+
+html.rhw-focus-pass .rhw-focus-tools-sheet { border-radius: 3px; background: var(--rhw-surface); border-color: #6f6f6f; }
+html.rhw-focus-pass .rhw-focus-tool-card { min-height: 80px; background: linear-gradient(110deg,#2a2a2a,#1b1b1b); border-color: #5f5f5f; grid-template-columns: 1fr auto; }
+html.rhw-focus-pass .rhw-focus-tool-copy strong { font: 500 21px/1.2 var(--font-title); }
+html.rhw-focus-pass .rhw-focus-tool-copy small { font: 12px/1.4 var(--font-main); color: var(--muted); }
+html.rhw-focus-pass .rhw-focus-tool-index { display: none; }
+html.rhw-focus-pass .rhw-diagnostics-overlay { background: #000000b3; backdrop-filter: none; }
+
+@keyframes rhwCoreBreathe { 0%,100% { opacity: .45; } 50% { opacity: .85; } }
+@media (prefers-reduced-motion: no-preference) and (min-width: 1001px) {
+  html.rhw-focus-pass:not(.eco) .crest-frame::before { animation: rhwCoreBreathe 10s ease-in-out infinite !important; }
+}
+html.rhw-focus-pass.eco .header-watermark, html.rhw-focus-pass.eco .crest-frame::before { display: none !important; }
+@media (min-width: 1100px) {
+  html.rhw-focus-pass .operations-layout-simple { display: grid; grid-template-columns: minmax(310px,.7fr) minmax(0,1.6fr); gap: 16px; align-items: start; }
+  html.rhw-focus-pass .ops-setup-panel { grid-column: 1; grid-row: 1 / span 2; position: static; }
+  html.rhw-focus-pass .ops-mobile-decision { display: grid; grid-template-columns: 1fr; margin: 0 16px 16px; gap: 8px; }
+  html.rhw-focus-pass .ops-mobile-decision > div { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding: 10px 0; border: 0; border-top: 1px solid var(--line-soft); background: transparent; }
+  html.rhw-focus-pass .ops-mobile-decision strong { color: var(--text); font: 20px/1.3 var(--font-tech); }
+  html.rhw-focus-pass .ops-mobile-decision > div:first-child strong { color: var(--gold); }
+  html.rhw-focus-pass .ops-cost-panel { grid-column: 2; grid-row: 1; }
+  html.rhw-focus-pass .ops-quote-panel { grid-column: 2; grid-row: 2; }
+}
+@media (min-width: 1001px) {
+  html.rhw-focus-pass .market-card[data-market-kind="components"] .supplier-commodity-row:not(.market-empty-row) { grid-template-columns: minmax(0,1fr) 100px 105px 200px; }
+  html.rhw-focus-pass .market-card[data-market-kind="components"] .market-feedstock { grid-column: 4; grid-row: 1; display: flex; flex-direction: column; align-items: flex-end; gap: 4px; padding-left: 18px; border-left: 1px solid #515151; }
+}
+@media (max-width: 1200px) and (min-width: 761px) {
+  html.rhw-focus-pass #marketScanGrid { grid-template-columns: repeat(2,minmax(0,1fr)); }
+}
+@media (max-width: 1000px) and (min-width: 761px) {
+  html.rhw-focus-pass .command-header-inner { grid-template-columns: minmax(0,1fr) 225px; gap: 16px; }
+  html.rhw-focus-pass .command-brand { grid-template-columns: 88px minmax(0,1fr); gap: 14px; }
+  html.rhw-focus-pass .crest-frame { width: 88px; }
+  html.rhw-focus-pass .crest { width: 85px; height: 116px; }
+  html.rhw-focus-pass .command-header h1 { font-size: 46px; gap: 10px; }
+  html.rhw-focus-pass .brand-command { font-size: 25px; }
+  html.rhw-focus-pass .base-telemetry-stat { padding-inline: 7px; }
+  html.rhw-focus-pass .base-telemetry-stat strong { font-size: 14px; }
+  html.rhw-focus-pass .app-nav-inner { grid-template-columns: minmax(0,1fr); }
+  html.rhw-focus-pass .app-nav-brand { position: static; grid-column: 1; grid-row: 2; justify-content: flex-end; padding-top: 5px; min-height: 44px; }
+
+  html.rhw-focus-pass .market-material-card .remote-facility-head { grid-template-columns: 39px minmax(0,1fr); gap: 10px; }
+  html.rhw-focus-pass .market-material-card .remote-link-pill { grid-column: 2; justify-self: start; }
+  html.rhw-focus-pass .market-material-symbol { width: 39px; height: 43px; font-size: 29px; }
+}
+@media (max-width: 760px) {
+  html.rhw-focus-pass .command-header { padding: 12px; }
+  html.rhw-focus-pass .command-header-inner { grid-template-columns: 1fr; gap: 10px; }
+
+  html.rhw-focus-pass .brand-copy { display: contents; }
+  html.rhw-focus-pass .crest-frame { grid-column: 1; grid-row: 1 / span 3;  }
+
+  html.rhw-focus-pass .brand-kicker { grid-column: 2; margin: 0; align-self: end; font-size: 12px; letter-spacing: .03em; }
+  html.rhw-focus-pass .command-header h1 { grid-column: 2; font-size: 43px; gap: 8px; margin: 3px 0 0; letter-spacing: .025em; }
+  html.rhw-focus-pass .brand-command { font-size: 24px; letter-spacing: .08em; }
+  html.rhw-focus-pass .brand-subtitle { grid-column: 2; align-self: start; font-size: 12px; letter-spacing: .04em; margin-top: 4px; }
+  html.rhw-focus-pass .base-telemetry-bar { grid-column: 1 / -1;  padding-top: 8px; max-width: none; }
+  html.rhw-focus-pass .base-telemetry-stat { padding-inline: 7px; }
+  html.rhw-focus-pass .base-telemetry-stat small { min-height: 28px;  }
+  html.rhw-focus-pass .base-telemetry-stat strong {  overflow-wrap: anywhere; }
+  html.rhw-focus-pass .uplink-panel { display: grid; grid-template-columns: minmax(0,1fr) auto auto; gap: 8px; border: 0; border-top: 1px solid #5f5f5f; padding: 8px 0 0;  box-shadow: none; }
+  html.rhw-focus-pass .uplink-header { grid-column: auto; gap: 6px; }
+  html.rhw-focus-pass .uplink-label { display: none; }
+  html.rhw-focus-pass .uplink-value { font: 12px/1.4 var(--font-main); }
+  html.rhw-focus-pass .uplink-details>summary { font-size: 12px; max-width: 86px; }
+  html.rhw-focus-pass #headerRefreshBtn { font-size: 11px; padding-inline: 8px; }
+  html.rhw-focus-pass .uplink-details[open] { grid-column: 1 / -1; }
+  html.rhw-focus-pass .header-watermark { width: 240px; right: -35px; top: -100px; opacity: .05; }
+  html.rhw-focus-pass .app-nav-inner { display: block; padding-block: 4px; }
+  html.rhw-focus-pass .app-nav-brand { position: static; justify-content: flex-end; min-height: 44px; gap: 8px; }
+  html.rhw-focus-pass :is(#rhwFocusToolsBtn,#rhwPwaInstallBtn) { min-height: 44px; }
+  html.rhw-focus-pass .app-navigation-cluster { margin-top: 4px; }
+  html.rhw-focus-pass .app-tabs button[data-workspace] { min-height: 48px; padding: 8px 4px; }
+  html.rhw-focus-pass .app-tabs button[data-workspace] span { font-size: 20px;  }
+  html.rhw-focus-pass .app-context-nav-slot { margin-top: 0; padding: 4px; }
+  html.rhw-focus-pass #commandNodeNav .workspace-subnav-tabs { grid-template-columns: repeat(2,minmax(0,1fr)) !important; gap: 4px; }
+  html.rhw-focus-pass #commandNodeNav button { min-height: 44px; padding: 8px; }
+  html.rhw-focus-pass .command-module-index { font-size: 11px; }
+  html.rhw-focus-pass :is(.app-workspace,.uplink-panel) :is(input,select,textarea) { font-size: 16px !important; min-width: 0; }
+  html.rhw-focus-pass .app-workspace button, html.rhw-focus-pass .app-workspace summary { min-height: 44px; }
+  html.rhw-focus-pass #commandGlobalSearch { font-size: 16px !important; }
+  html.rhw-focus-pass .command-control-deck { grid-template-columns: minmax(0,1fr) auto; margin-inline: 0; gap: 8px; }
+  html.rhw-focus-pass .command-context-action { grid-column: 1 / -1; max-width: none; }
+  html.rhw-focus-pass .workspace-heading { margin-bottom: 12px; padding: 8px 0; }
+  html.rhw-focus-pass .workspace-heading p { display: none; }
+  html.rhw-focus-pass :is(.panel-title,.shipyard-control-title) { font-size: 27px; }
+  html.rhw-focus-pass .logistics-subhead { padding: 13px 10px; }
+  html.rhw-focus-pass .logistics-subhead-title { font-size: 29px; }
+  html.rhw-focus-pass .market-scan-grid { padding: 10px; gap: 13px; }
+  html.rhw-focus-pass #marketScanGrid { grid-template-columns: minmax(0,1fr); }
+  html.rhw-focus-pass .market-card .remote-facility-head { padding: 12px; gap: 9px; }
+  html.rhw-focus-pass .market-material-card .remote-facility-head { grid-template-columns: 38px minmax(0,1fr); }
+  html.rhw-focus-pass .market-material-card .remote-link-pill { grid-column: 2; justify-self: start; }
+  html.rhw-focus-pass .market-material-symbol { width: 38px; height: 42px; font-size: 29px; }
+  html.rhw-focus-pass .market-card .supplier-title { font-size: 27px; }
+  html.rhw-focus-pass .market-card .supplier-commodity-row { grid-template-columns: minmax(0,1fr) 64px 72px; gap: 7px; padding: 11px 12px; }
+  html.rhw-focus-pass .market-card .supplier-commodity-name strong { font-size: 22px; }
+  html.rhw-focus-pass .market-card[data-market-kind="ore"] .remote-facility-head { grid-template-columns: 31px minmax(0,1fr); }
+  html.rhw-focus-pass .market-card .market-feedstock { font-size: 12px; }
+  html.rhw-focus-pass .ops-form-grid { padding: 14px; gap: 14px; }
+  html.rhw-focus-pass .ops-material-table :is(th,td) { padding: 10px 8px; }
+  html.rhw-focus-pass .ops-mobile-decision { grid-template-columns: 1fr; margin: 0 14px 12px; }
+  html.rhw-focus-pass .ops-mobile-decision>div { min-height: 60px; }
+  html.rhw-focus-pass .ops-mobile-decision>div:not(:first-child) { display: none; }
+  html.rhw-focus-pass .ops-mobile-decision strong { font-size: 24px; }
+  html.rhw-focus-pass .ops-mobile-jumps { margin: 0 14px 14px; }
+  html.rhw-focus-pass .ops-price-memory { line-height: 1.5; }
+  html.rhw-focus-pass .pricecheck-status-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  html.rhw-focus-pass .rhw-focus-tools-grid { grid-template-columns: 1fr; }
+  html.rhw-focus-pass .rhw-focus-tool-card { min-height: 72px; }
+}
+@media (max-width: 390px) {
+  html.rhw-focus-pass .market-card .supplier-commodity-row:not(.market-empty-row) { grid-template-columns: minmax(0,1fr) minmax(0,1fr); }
+  html.rhw-focus-pass .market-card .supplier-commodity-name { grid-column: 1 / -1; }
+  html.rhw-focus-pass .market-card .supplier-commodity-metric { display: flex; align-items: baseline; gap: 8px; justify-content: flex-start; text-align: left; }
+}

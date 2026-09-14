@@ -21,25 +21,11 @@
     'comms/senders': 'senders'
   });
 
-  const base = {
-    installShell: app.installShell,
-    applyRoute: app.applyRoute,
-    navigate: app.navigate,
-    operationsInit: app.operations?.init,
-    operationsActivate: app.operations?.activate,
-    commsInit: app.comms?.init,
-    commsActivate: app.comms?.activate
-  };
+  const baseInstallShell = app.installShell;
 
   let toolOpenedBy = null;
-  let syncTimer = 0;
 
   function installStyles() {
-    if (document.getElementById('rhwFocusPassStyle')) return;
-    const style = document.createElement('style');
-    style.id = 'rhwFocusPassStyle';
-    style.dataset.stylesheet = '35-app-interface-cleanup.css';
-    document.head.appendChild(style);
     document.documentElement.classList.add('rhw-focus-pass');
   }
 
@@ -211,12 +197,7 @@
     syncHeadings(toolKey);
   }
 
-  function queueSync() {
-    clearTimeout(syncTimer);
-    syncTimer = window.setTimeout(sync, 0);
-    window.setTimeout(sync, 90);
-    window.setTimeout(sync, 260);
-  }
+  const queueSync = () => app.requestUiUpdate();
 
   function openTool(key) {
     const tool = TOOL_META[key];
@@ -273,52 +254,13 @@
   }
 
   app.installShell = function focusedInstallShell(...args) {
-    const result = base.installShell.apply(this, args);
+    const result = baseInstallShell.apply(this, args);
     sync();
     bindPrimaryDefaults();
     return result;
   };
 
-  app.applyRoute = function focusedApplyRoute(...args) {
-    const result = base.applyRoute.apply(this, args);
-    queueSync();
-    return result;
-  };
-
-  app.navigate = function focusedNavigate(workspace, node, options) {
-    const result = base.navigate.call(this, workspace, node, options);
-    queueSync();
-    return result;
-  };
-
-  if (typeof base.operationsInit === 'function') {
-    app.operations.init = async function focusedOperationsInit(...args) {
-      const result = await base.operationsInit.apply(this, args);
-      queueSync();
-      return result;
-    };
-  }
-  if (typeof base.operationsActivate === 'function') {
-    app.operations.activate = function focusedOperationsActivate(node, options) {
-      const result = base.operationsActivate.call(this, node, options);
-      queueSync();
-      return result;
-    };
-  }
-  if (typeof base.commsInit === 'function') {
-    app.comms.init = function focusedCommsInit(...args) {
-      const result = base.commsInit.apply(this, args);
-      queueSync();
-      return result;
-    };
-  }
-  if (typeof base.commsActivate === 'function') {
-    app.comms.activate = function focusedCommsActivate(node, options) {
-      const result = base.commsActivate.call(this, node, options);
-      queueSync();
-      return result;
-    };
-  }
+  app.onUiUpdate(sync);
 
   app.focusPass = { installStyles, relabelPrimaryTabs, mountTools, openTools, closeTools, openTool, sync, selfTest, tools: TOOL_META };
 })();

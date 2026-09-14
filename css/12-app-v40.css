@@ -4,10 +4,9 @@
    ========================================= */
 
 :root {
-  --app-surface: rgba(7, 9, 12, 0.92);
-  --app-surface-soft: rgba(12, 15, 20, 0.82);
+
   --app-line: rgba(212,175,55,0.16);
-  --app-blue-line: rgba(125,167,234,0.18);
+
 }
 
 .rhw-app-nav {
@@ -16,21 +15,16 @@
   width: 100%;
   border-top: 1px solid rgba(212,175,55,0.12);
   border-bottom: 1px solid rgba(212,175,55,0.24);
-  background:
-    linear-gradient(90deg, rgba(212,175,55,0.045), transparent 30%, rgba(125,167,234,0.025) 74%, transparent),
-    rgba(4,5,7,0.97);
+
   box-shadow: 0 10px 28px rgba(0,0,0,0.24), inset 0 -1px 0 rgba(255,255,255,0.018);
 }
 
 .app-nav-inner {
   width: min(100%, var(--content-max, 1560px));
-  min-height: 64px;
+
   margin: 0 auto;
   padding: 8px var(--layout-gutter, 28px);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 22px;
+
 }
 
 .app-nav-brand {
@@ -61,21 +55,18 @@
   height: 9px;
   flex: 0 0 auto;
   border-radius: 50%;
-  background: var(--gold);
-  box-shadow: 0 0 11px rgba(212,175,55,0.74);
+
   animation: corePulse 2.6s ease-in-out infinite;
 }
 
 .app-tabs {
-  display: inline-grid;
-  grid-template-columns: repeat(2, minmax(150px, 1fr));
+
   align-items: stretch;
-  border: 1px solid rgba(212,175,55,0.16);
-  background: rgba(0,0,0,0.34);
+
 }
 .app-tabs button {
   position: relative;
-  min-height: 45px;
+
   padding: 7px 17px 6px;
   border: 0;
   border-right: 1px solid rgba(255,255,255,0.05);
@@ -85,19 +76,18 @@
   align-items: flex-start;
   justify-content: center;
   background: transparent;
-  color: rgba(224,224,224,0.62);
+
   box-shadow: none;
   text-shadow: none;
 }
 .app-tabs button:last-child { border-right: 0; }
 .app-tabs button::before {
-  content: '';
+  content: "";
   position: absolute;
-  left: 14px;
-  right: 14px;
+
   bottom: -1px;
   height: 2px;
-  background: transparent;
+
   box-shadow: none;
 }
 .app-tabs button span {
@@ -117,19 +107,9 @@
 }
 .app-tabs button:hover,
 .app-tabs button:focus-visible {
-  background: rgba(212,175,55,0.055);
-  color: #efe5c7;
+
   box-shadow: none;
 }
-.app-tabs button.active {
-  background: linear-gradient(180deg, rgba(212,175,55,0.10), rgba(212,175,55,0.035));
-  color: var(--gold);
-}
-.app-tabs button.active::before {
-  background: var(--gold);
-  box-shadow: 0 0 9px rgba(212,175,55,0.45);
-}
-.app-tabs button.active small { color: rgba(212,175,55,0.62); }
 
 .rhw-workspace-root,
 .app-workspace { min-width: 0; }
@@ -265,12 +245,12 @@
   gap: 5px;
 }
 .comms-wide { grid-column: 1 / -1; }
-.comms-custom-sender { grid-column: 1 / -1; }
+
 .comms-field > span,
 .comms-custom-sender label > span {
   color: rgba(212,175,55,0.68);
   font-family: var(--font-tech);
-  font-size: 8px;
+
   font-weight: 700;
   letter-spacing: 0.13em;
 }
@@ -458,7 +438,7 @@
 .forum-preview-signature small { margin-top: 3px; color: #808890; font-family: var(--font-tech); font-size: 8px; letter-spacing: 0.08em; }
 .forum-preview-footer {
   display: grid;
-  gap: 5px;
+
   padding-top: 13px;
   border-top: 1px solid #33383e;
   color: #5c6269;
@@ -479,7 +459,7 @@
   background: rgba(0,0,0,0.58);
   color: #becce2;
   clip-path: none;
-  font-family: Consolas, 'Share Tech Mono', monospace;
+  font-family: Consolas, "Share Tech Mono", monospace;
   font-size: 11px;
   line-height: 1.5;
   white-space: pre;
@@ -548,7 +528,7 @@ body[data-workspace="comms"] footer {
 @media (max-width: 1100px) {
   .app-nav-inner { min-height: 58px; }
   .comms-grid { grid-template-columns: 1fr; }
-  .preview-panel { order: -1; }
+
   .forum-preview { min-height: 0; }
 }
 
@@ -556,24 +536,18 @@ body[data-workspace="comms"] footer {
   .app-nav-inner {
     align-items: stretch;
     flex-direction: column;
-    gap: 8px;
-    padding-top: 9px;
-    padding-bottom: 9px;
+
   }
   .app-nav-brand { padding-inline: 2px; }
-  .app-tabs { width: 100%; grid-template-columns: repeat(2, 1fr); }
-  .app-tabs button { align-items: center; min-height: 43px; }
-  .app-tabs button span { font-size: 17px; }
-  .app-tabs button small { font-size: 6.5px; }
 
   .comms-workspace { padding-top: 14px; }
-  .workspace-heading { align-items: flex-start; flex-direction: column; gap: 11px; }
+  .workspace-heading { align-items: flex-start; flex-direction: column;  }
   .workspace-status { white-space: normal; }
   .comms-field-grid { grid-template-columns: 1fr; }
   .comms-wide,
   .comms-custom-sender { grid-column: auto; }
   .comms-actions button { flex: 1 1 170px; }
-  .forum-preview { padding: 18px 14px; }
+
   .forum-preview-meta-row { grid-template-columns: 98px minmax(0, 1fr); gap: 8px; }
   .comms-draft-card { align-items: flex-start; flex-direction: column; }
   .comms-draft-actions { width: 100%; }
@@ -581,7 +555,7 @@ body[data-workspace="comms"] footer {
 }
 
 @media (max-width: 430px) {
-  .app-nav-brand strong { font-size: 10px; }
+
   .workspace-heading { padding: 13px 14px; }
   .workspace-heading h2 { font-size: 26px; }
   #commsForm { padding: 12px; }

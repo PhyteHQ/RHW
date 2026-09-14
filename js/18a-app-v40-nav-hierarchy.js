@@ -14,20 +14,12 @@
     pricecheck: null,
     comms: 'commsNodeNav'
   });
-  let observer = null;
+  let unsubscribeWorkspace = null;
   let sizeObserver = null;
   let resizeBound = false;
 
   function safeWorkspace(value) {
     return Object.prototype.hasOwnProperty.call(SUBNAV_IDS, value) ? value : 'command';
-  }
-
-  function installReleaseUxStyles() {
-    if (document.getElementById('rhwV40StickyUxStyle')) return;
-    const style = document.createElement('style');
-    style.id = 'rhwV40StickyUxStyle';
-    style.dataset.stylesheet = '35-app-interface-cleanup.css';
-    document.head.appendChild(style);
   }
 
   function ensureShell() {
@@ -61,7 +53,7 @@
     const slot = document.getElementById('appContextNavSlot');
     const brand = document.querySelector('.app-nav-brand');
     if (slot && slot.parentElement !== secondary) secondary.prepend(slot);
-    if (brand && brand.parentElement !== inner) inner.appendChild(brand);
+    if (brand && inner.lastElementChild !== brand) inner.appendChild(brand);
     return true;
   }
 
@@ -158,24 +150,19 @@
     if (slot?.dataset.activeWorkspace !== active) failures.push(`context-slot-state:${active}`);
     if (expectedId ? mounted?.id !== expectedId : Boolean(mounted)) failures.push(`mounted-subnav:${expectedId || 'none'}`);
     if (!document.querySelector(`.app-tabs [data-workspace="${active}"].active`)) failures.push(`active-workspace-tab:${active}`);
-    if (!document.getElementById('rhwV40StickyUxStyle')) failures.push('missing-sticky-ux-style');
     if (!document.getElementById('toggleBbcodePanelBtn')) failures.push('missing-bbcode-collapse');
     return failures;
   }
 
   function init() {
     if (!ensureShell()) return false;
-    installReleaseUxStyles();
+
     sync();
     installBbcodeCollapse();
     updateStickyOffset();
 
-    observer?.disconnect();
-    observer = new MutationObserver(mutations => {
-      if (!mutations.some(mutation => mutation.attributeName === 'data-workspace')) return;
-      requestAnimationFrame(() => sync());
-    });
-    observer.observe(document.body, { attributes: true, attributeFilter: ['data-workspace'] });
+    unsubscribeWorkspace?.();
+    unsubscribeWorkspace = app.onRender('workspace', () => sync());
 
     sizeObserver?.disconnect();
     const rootNav = document.getElementById('rhwAppNav');

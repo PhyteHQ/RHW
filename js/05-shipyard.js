@@ -189,6 +189,7 @@ function renderShipyardControl() {
       </section>
     </div>`;
 
+  window.RHWRuntime?.rendered('shipyard');
   mount.querySelectorAll('.scramble-shipyard').forEach(el => scrambleText(el, el.dataset.val));
   updateDataFreshnessIndicators();
 }

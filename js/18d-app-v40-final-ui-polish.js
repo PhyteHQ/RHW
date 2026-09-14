@@ -10,7 +10,6 @@
   const core = app?.operationsCore;
   if (!app || !core || app.finalUiPolish) return;
 
-  const STYLE_ID = 'rhwV40FinalUiPolishStyle';
   const KNOWN_FINAL_LABELS = Object.freeze({
     recipe_gold_basic: 'Gold refining · Basic',
     recipe_gold_advanced: 'Gold refining · Advanced',
@@ -25,7 +24,6 @@
 
   let labelMap = new Map();
   let labelCatalogRef = null;
-  let calculatorObserver = null;
   let polishQueued = false;
 
   const normalize = value => app.util.normalize(String(value || ''));
@@ -240,14 +238,6 @@
     classMap.forEach((className, label) => byLabel.get(label)?.classList.add(className));
   }
 
-  function installStyles() {
-    if (document.getElementById(STYLE_ID)) return;
-    const style = document.createElement('style');
-    style.id = STYLE_ID;
-    style.dataset.stylesheet = '35-app-interface-cleanup.css';
-    document.head.appendChild(style);
-  }
-
   function queuePolish() {
     if (polishQueued) return;
     polishQueued = true;
@@ -262,10 +252,8 @@
     const workspace = document.getElementById('workspaceOperations');
     if (!workspace || workspace.dataset.v40FinalUiPolish === 'true') return;
     workspace.dataset.v40FinalUiPolish = 'true';
-    calculatorObserver = new MutationObserver(queuePolish);
-    calculatorObserver.observe(workspace, { childList: true, subtree: true });
-    workspace.addEventListener('input', queuePolish, true);
-    workspace.addEventListener('change', queuePolish, true);
+    app.onRender('calculator', () => { polishRecipeOptions(); polishCostFlow(); });
+    app.onRender('pricing', polishCostFlow);
     queuePolish();
   }
 
@@ -313,7 +301,6 @@
     return failures;
   }
 
-  installStyles();
   fixHeaderClockLayout();
   installCalculatorObserver();
 

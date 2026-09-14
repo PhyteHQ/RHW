@@ -256,6 +256,7 @@ function renderCommodityScan({ grid, meta, targets, sort, enabled, feedstocks = 
       </div>`;
   }).join('');
 
+  window.RHWRuntime?.rendered(grid.id);
   grid.querySelectorAll('.scramble-market').forEach(el => scrambleText(el, el.dataset.val));
   return { totalOffers, uniqueBases: sellerKeys.size, pending: false };
 }

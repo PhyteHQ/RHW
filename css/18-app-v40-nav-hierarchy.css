@@ -60,7 +60,7 @@ body[data-workspace="comms"] {
   overflow: hidden;
 }
 .app-navigation-cluster::before {
-  content: '';
+  content: "";
   position: absolute;
   inset: 0 auto 0 0;
   width: 2px;
@@ -89,7 +89,7 @@ body[data-workspace="comms"] {
 .app-tabs button[data-workspace="operations"] { --tab-accent: #78ad8a; --tab-accent-rgb: 120,173,138; }
 .app-tabs button[data-workspace="comms"] { --tab-accent: #7da7ea; --tab-accent-rgb: 125,167,234; }
 .app-tabs button::after {
-  content: '';
+  content: "";
   position: absolute;
   left: 0;
   right: 0;
@@ -196,44 +196,30 @@ body[data-workspace="comms"] {
 @media (max-width: 760px) {
   .app-nav-inner {
     display: grid;
-    gap: 7px;
+
     padding-top: 8px;
     padding-bottom: 8px;
   }
   .app-nav-brand { min-height: 31px; }
-  .app-navigation-cluster { overflow: hidden; }
-  .app-tabs {
-    width: 100%;
-    max-width: none;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
+
   .app-tabs button {
-    min-width: 0;
-    min-height: 44px;
-    padding: 6px 7px;
+
     align-items: center;
     text-align: center;
   }
-  .app-tabs button span { font-size: 15px; letter-spacing: .045em; }
-  .app-tabs button small { font-size: 6px; letter-spacing: .075em; }
-  .app-context-nav-slot { min-height: 47px; }
+
+  .app-tabs button small {  letter-spacing: .075em; }
+
   .app-context-nav-slot::before { display: none; }
   .app-context-nav-slot .workspace-subnav-label { display: none; }
-  .app-context-nav-slot .workspace-subnav-tabs { min-width: max-content; }
-  .app-context-nav-slot .workspace-subnav button {
-    min-width: 124px;
-    min-height: 46px;
-    padding: 6px 10px;
-  }
+
 }
 
 @media (max-width: 430px) {
   .app-nav-brand strong { font-size: 10px; }
   .app-nav-brand small { font-size: 7px; }
   .app-tabs button { min-height: 42px; padding-inline: 5px; }
-  .app-tabs button span { font-size: 13px; }
-  .app-tabs button small { display: none; }
-  .app-context-nav-slot .workspace-subnav button { min-width: 112px; }
+
   .app-context-nav-slot .workspace-subnav button span { font-size: 9px; }
   .app-context-nav-slot .workspace-subnav button small { font-size: 6.3px; }
 }

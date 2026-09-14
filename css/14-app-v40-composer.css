@@ -139,31 +139,6 @@
 }
 .forum-preview-footer { gap: 4px; }
 
-.v40-newswire-explainer {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  gap: 12px;
-  align-items: start;
-  margin: 14px 18px 0;
-  padding: 11px 12px;
-  border: 1px solid rgba(125,167,234,0.16);
-  background: rgba(125,167,234,0.04);
-}
-.v40-newswire-explainer strong {
-  color: #a9c1e7;
-  font-family: var(--font-tech);
-  font-size: 8px;
-  letter-spacing: 0.11em;
-  white-space: nowrap;
-}
-.v40-newswire-explainer span {
-  color: rgba(174,183,195,0.72);
-  font-family: var(--font-tech);
-  font-size: 8px;
-  letter-spacing: 0.065em;
-  line-height: 1.45;
-}
-
 @media (max-width: 760px) {
   .comms-document-control { margin: 0 14px 13px; }
   .comms-document-control-head {
@@ -175,8 +150,5 @@
     text-align: left;
   }
   .comms-document-control-grid { grid-template-columns: 1fr; }
-  .v40-newswire-explainer {
-    grid-template-columns: 1fr;
-    margin-inline: 14px;
-  }
+
 }

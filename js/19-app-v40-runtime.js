@@ -117,7 +117,6 @@
       if (!app.fullAudit?.init?.()) throw new Error('RHW FULL APP AUDIT COULD NOT MOUNT');
       app.applyRoute({ replace: true });
       if (!app.navHierarchy?.init?.()) throw new Error('V4 NAVIGATION HIERARCHY COULD NOT MOUNT');
-      app.commsSafety?.polishOperations?.();
       document.querySelectorAll('#workspaceOperations .ops-price-input-wrap > span').forEach(node => {
         if (node.textContent.trim() === 'CR') node.textContent = '$';
       });

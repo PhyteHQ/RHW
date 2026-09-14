@@ -11,8 +11,6 @@
   const MAX_TAG = 40;
   const MAX_MESSAGE = 240;
   const LOG_TEMPLATE_KEY = 'communication-log';
-  let previewObserver = null;
-  let currencyObserver = null;
   let previewQueued = false;
 
   function installCommunicationLogTemplate() {
@@ -34,14 +32,6 @@
       ...app.config,
       templates: Object.freeze([...app.config.templates, logTemplate])
     });
-  }
-
-  function installPolishStyles() {
-    if (document.getElementById('rhwV40ReleasePolishStyle')) return;
-    const style = document.createElement('style');
-    style.id = 'rhwV40ReleasePolishStyle';
-    style.dataset.stylesheet = '35-app-interface-cleanup.css';
-    document.head.appendChild(style);
   }
 
   function normalizeTag(value) {
@@ -180,8 +170,7 @@
     const preview = document.getElementById('forumLivePreview');
     if (!preview || preview.dataset.v40BbcodePreview === 'true') return;
     preview.dataset.v40BbcodePreview = 'true';
-    previewObserver = new MutationObserver(queuePreviewEnhancement);
-    previewObserver.observe(preview, { childList: true, subtree: true, characterData: true });
+    app.onRender('forum-preview', enhancePreviewBody);
     queuePreviewEnhancement();
   }
 
@@ -205,59 +194,8 @@
     head.appendChild(actions);
   }
 
-  function replaceCreditText(root) {
-    if (!root) return;
-    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
-    const nodes = [];
-    while (walker.nextNode()) nodes.push(walker.currentNode);
-    nodes.forEach(node => {
-      const raw = node.nodeValue || '';
-      let next = raw;
-      if (raw.trim() === 'CR') next = raw.replace('CR', '$');
-      next = next.replace(/([0-9][0-9,]*(?:\.[0-9]+)?)\s+CR\b/g, (_match, amount) => `$${amount}`);
-      if (next !== raw) node.nodeValue = next;
-    });
-  }
-
-  function polishOperations() {
-    const workspace = document.getElementById('workspaceOperations');
-    if (!workspace) return;
-    replaceCreditText(workspace);
-    if (workspace.dataset.v40DollarObserver === 'true') return;
-    workspace.dataset.v40DollarObserver = 'true';
-    currencyObserver = new MutationObserver(() => replaceCreditText(workspace));
-    currencyObserver.observe(workspace, { childList: true, subtree: true, characterData: true });
-  }
-
-  function initTickerGuard() {
-    const workspace = document.getElementById('workspaceComms');
-    const tag = document.getElementById('v40TickerTag');
-    const message = document.getElementById('v40TickerMessage');
-    if (!workspace || !tag || !message || workspace.dataset.v40TickerGuard === 'true') return;
-    workspace.dataset.v40TickerGuard = 'true';
-    tag.maxLength = MAX_TAG;
-    message.maxLength = MAX_MESSAGE;
-
-    /* Input sanitation keeps parser-breaking characters/newlines out without
-       trimming the ordinary spaces the user is actively typing. */
-    const inputGuard = event => {
-      const target = event.target;
-      if (target?.id === 'v40TickerTag' || target?.id === 'v40TickerMessage') sanitizeField(target, false);
-    };
-    const changeGuard = event => {
-      const target = event.target;
-      if (target?.id === 'v40TickerTag' || target?.id === 'v40TickerMessage') sanitizeField(target, true);
-    };
-    workspace.addEventListener('input', inputGuard, true);
-    workspace.addEventListener('change', changeGuard, true);
-
-    const changed = sanitizeField(tag, true) || sanitizeField(message, true);
-    if (changed) message.dispatchEvent(new Event('input', { bubbles: true }));
-  }
-
   function selfTest() {
     const failures = [];
-    if (!document.getElementById('rhwV40ReleasePolishStyle')) failures.push('typography-style');
     if (!app.config.templates.some(template => template.key === LOG_TEMPLATE_KEY)) failures.push('communication-log-template');
     if (!document.getElementById('copyBbcodePreviewBtn')) failures.push('preview-copy');
     if (typingSafeMessage('RHW ') !== 'RHW ' || typingSafeTag('RHW ') !== 'RHW ') failures.push('ticker-space-typing');
@@ -272,20 +210,17 @@
   }
 
   function init() {
-    initTickerGuard();
     enhanceToolbar();
     installPreviewObserver();
     installPreviewCopy();
-    polishOperations();
   }
 
   installCommunicationLogTemplate();
-  installPolishStyles();
+
 
   app.commsSafety = {
     init,
     selfTest,
-    polishOperations,
     normalizeTag,
     normalizeMessage,
     limits: Object.freeze({ tag: MAX_TAG, message: MAX_MESSAGE }),

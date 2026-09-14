@@ -9,7 +9,7 @@
   if (!app || !core || app.qol) return;
 
   const PROFILE_KEY = app.config.storageKeys.calculatorPriceProfiles || 'rhw-webapp-v4:calculator-price-profiles';
-  let operationsObserver = null;
+  let unsubscribeCalculator = null;
   let profileStatus = ['SAVED PROFILES ARE OPTIONAL // NOTHING IS LOADED AUTOMATICALLY', 'muted'];
 
   const esc = value => app.util.escape(String(value ?? ''));
@@ -184,11 +184,10 @@
     const workspace = document.getElementById('workspaceOperations');
     if (!workspace) return;
     ensureProfilePanel();
-    if (operationsObserver) return;
+    if (unsubscribeCalculator) return;
     const mount = document.getElementById('operationsCalculatorMount');
     if (!mount) return;
-    operationsObserver = new MutationObserver(() => queueMicrotask(ensureProfilePanel));
-    operationsObserver.observe(mount, { childList: true });
+    unsubscribeCalculator = app.onRender('calculator', ensureProfilePanel);
   }
 
   function selfTest() {

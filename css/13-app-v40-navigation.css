@@ -8,8 +8,7 @@
 .app-active-node {
   display: block;
   margin-top: 3px;
-  color: rgba(212,175,55,0.72) !important;
-  font-size: 7px !important;
+
   letter-spacing: 0.12em !important;
   white-space: nowrap;
 }
@@ -64,7 +63,7 @@
 }
 .workspace-subnav button span {
   font-family: var(--font-tech);
-  font-size: 10px;
+
   font-weight: 700;
   letter-spacing: 0.11em;
 }
@@ -72,11 +71,11 @@
   margin-top: 2px;
   color: rgba(151,157,164,0.48);
   font-family: var(--font-tech);
-  font-size: 7px;
+
   letter-spacing: 0.08em;
 }
 .workspace-subnav button::after {
-  content: '';
+  content: "";
   position: absolute;
   left: 12px;
   right: 12px;
@@ -259,8 +258,7 @@
   margin: 11px auto 0;
   padding: 5px 9px;
   border: 1px solid color-mix(in srgb, var(--comms-accent, #d4af37) 38%, transparent);
-  color: var(--comms-accent, #d4af37);
-  background: color-mix(in srgb, var(--comms-accent, #d4af37) 7%, transparent);
+
   font-family: var(--font-tech);
   font-size: 8px;
   font-weight: 700;
@@ -268,7 +266,7 @@
   text-align: center;
 }
 .forum-preview-meta-row .encryption {
-  color: var(--comms-accent, #d4af37);
+
   overflow-wrap: anywhere;
 }
 .forum-preview-body p { margin: 0 0 14px; }
@@ -431,12 +429,7 @@
   .workspace-subnav button { min-width: 126px; min-height: 45px; padding-inline: 10px; }
   .workspace-subnav button span { font-size: 9px; }
   .app-active-node { white-space: normal; }
-  .command-overview-heading { padding: 16px; }
-  .command-overview-live { display: none; }
-  .command-overview-grid { grid-template-columns: 1fr; padding: 11px; gap: 9px; }
-  .command-overview-card,
-  .command-overview-card-wide { grid-column: auto; min-height: 105px; padding: 14px; }
-  .command-overview-card strong { margin-top: 10px; font-size: 23px; }
+
   .v40-tool-grid { grid-template-columns: 1fr; padding: 14px; }
   .v40-generated-block { padding-inline: 14px; }
   .sender-registry { grid-template-columns: 1fr; padding: 13px; }

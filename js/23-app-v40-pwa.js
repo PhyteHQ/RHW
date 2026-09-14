@@ -6,7 +6,7 @@
   'use strict';
   if (window.RHWPWA) return;
 
-  const state = { installPrompt: null, registration: null, updateWorker: null, reloading: false, restartRequested: false, shellObserver: null };
+  const state = { installPrompt: null, registration: null, updateWorker: null, reloading: false, restartRequested: false, shellObserver: null, updateTask: null };
   const isStandalone = () => window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
   const isAndroid = (userAgent = navigator.userAgent) => /Android/i.test(userAgent);
   const isIos = (userAgent = navigator.userAgent, platform = navigator.platform, maxTouchPoints = navigator.maxTouchPoints) =>
@@ -198,7 +198,12 @@
       document.documentElement.dataset.rhwPwa = registration.active ? 'ready' : 'installing';
       navigator.serviceWorker.ready.then(() => { document.documentElement.dataset.rhwPwa = 'ready'; });
       watchRegistration(registration);
-      window.setInterval(() => registration.update().catch(() => {}), 60 * 60 * 1000);
+      state.updateTask?.dispose();
+      state.updateTask = window.RHWRuntime.createRefreshTask({
+        interval: 60 * 60 * 1000,
+        dueAt: Date.now() + 60 * 60 * 1000,
+        run: () => registration.update().catch(() => {})
+      });
     } catch (error) {
       document.documentElement.dataset.rhwPwa = 'unavailable';
       console.warn('RHW PWA registration unavailable:', String(error?.message || error));
@@ -226,9 +231,6 @@
         message: 'YOU CAN FINISH WORK IN THIS TAB. SAVE PRICES AND EDITOR INPUTS BEFORE RESTARTING.',
         primaryLabel: 'RESTART', onPrimary: () => requestRestart() });
     }
-  });
-  document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') state.registration?.update().catch(() => {});
   });
 
   window.RHWPWA = { state, register, announceUpdate, requestRestart, hasSessionPrices, showInstallHelp, showManualInstructions, manualInstructions, syncConnectionState, isStandalone };

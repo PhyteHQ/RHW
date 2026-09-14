@@ -1,160 +1,6 @@
-/* ==========================================================================
-   RHW DASHBOARD LOGIC (V3.5)
-   ========================================================================== */
-
-const TICKER_DYNAMIC_SLOT_COUNT = 10;
-
-const NEWSWIRE_POOLS = {
-  market: [
-    { tag: 'BMM MARKET WATCH', text: 'NIOBIUM CONTRACTS STRENGTHEN AS OMEGA SUPPLY TIGHTENS', tone: 'lore' },
-    { tag: 'NEW LONDON EXCHANGE', text: 'INDUSTRIAL METALS OPEN FIRM ON CONTINUED MANUFACTURING DEMAND', tone: 'lore' },
-    { tag: 'BMM COMMODITIES', text: 'GOLD PREMIUMS HOLD ABOVE THE WEEKLY AVERAGE AHEAD OF THE NEXT FREIGHT WINDOW', tone: 'lore' },
-    { tag: 'BRETONIA TRADE', text: 'BULK FREIGHT BOOKINGS RISE ACROSS THE NEW LONDON INDUSTRIAL CORRIDOR', tone: 'lore' }
-  ],
-  regional: [
-    { tag: 'NEW LONDON DESK', text: 'FREIGHT VOLUME RISES ALONG THE INDUSTRIAL CORRIDOR', tone: 'lore' },
-    { tag: 'DUBLIN DESK', text: 'LISHEEN DEPOT PREPARES FOR INCREASED REFINED-METAL TRAFFIC', tone: 'remote' }
-  ],
-  security: [
-    { tag: 'BPA SECURITY BRIEF', text: 'RANDOMIZED CARGO INSPECTIONS CONTINUE AT LOCAL JUMP GATES', tone: 'warn' },
-    { tag: 'BAF PATROL REPORT', text: 'VANGUARD GROUP BEGINS A ROUTINE SYSTEM SWEEP', tone: 'lore' }
-  ],
-  operations: [
-    { tag: 'RHW DOCKS', text: 'PIER FOUR OPENS FOR THE NEXT BULK FREIGHT WINDOW', tone: 'lore' },
-    { tag: 'RHW ENGINEERING', text: 'REACTOR BAY TWO CLEARED FOR SCHEDULED COOLANT SERVICE', tone: 'good' }
-  ],
-  corporate: [
-    { tag: 'BMM CORPORATE', text: 'INDUSTRIAL OUTPUT FORECAST REVISED UPWARD FOR THE CURRENT QUARTER', tone: 'lore' },
-    { tag: 'CROWN LOYALTY', text: 'GLORY TO THE QUEEN', tone: 'lore' }
-  ]
-};
-
-const newswireHistory = new Map();
-let activeNewswirePools = NEWSWIRE_POOLS;
-
-function pickNewswireMessage(category, excludedTexts = []) {
-  const pool = activeNewswirePools[category] || [];
-  if (!pool.length) return { tag: 'BMM NEWSWIRE', text: 'EDITORIAL DESK AWAITING BULLETINS', tone: 'muted' };
-
-  const blocked = new Set(excludedTexts);
-  const previous = newswireHistory.get(category);
-  if (previous) blocked.add(previous);
-
-  const candidates = pool.filter(message => !blocked.has(message.text));
-  const source = candidates.length ? candidates : pool;
-  const selected = source[Math.floor(Math.random() * source.length)];
-  newswireHistory.set(category, selected.text);
-  return { ...selected };
-}
-
+/* Dashboard state, tooltip interactions and shared configuration. */
 const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 function escapeHTML(str) { return String(str).replace(/[&<>'"]/g, match => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[match])); }
-
-const tickerContainer = document.getElementById('tickerContainer');
-const tickerSingle = document.getElementById('tickerSingle');
-let tickerMessageQueue = [{ tag: 'BMM NEWSWIRE', text: 'AWAITING INITIAL TELEMETRY BURST', tone: 'muted' }];
-let ecoTickerIndex = 0;
-let ecoTickerTimer = null;
-
-function renderEcoTickerMessage(index = ecoTickerIndex) {
-  if (!tickerSingle) return;
-  const message = tickerMessageQueue.length
-    ? tickerMessageQueue[index % tickerMessageQueue.length]
-    : { tag: 'BMM NEWSWIRE', text: 'AWAITING INITIAL TELEMETRY BURST', tone: 'muted' };
-  const tone = ['good', 'warn', 'danger', 'remote', 'lore', 'muted'].includes(message.tone) ? message.tone : 'lore';
-  tickerSingle.innerHTML = `<span class="ticker-item ${tone}"><span class="ticker-tag">[${escapeHTML(message.tag)}]</span><span class="ticker-message">${escapeHTML(message.text)}</span></span>`;
-}
-
-function rotateEcoTicker() {
-  if (!tickerSingle || tickerMessageQueue.length < 2 || document.visibilityState === 'hidden') return;
-  tickerSingle.classList.add('swap');
-  window.setTimeout(() => {
-    ecoTickerIndex = (ecoTickerIndex + 1) % tickerMessageQueue.length;
-    renderEcoTickerMessage();
-    tickerSingle.classList.remove('swap');
-  }, 220);
-}
-
-function stopEcoTicker() {
-  if (ecoTickerTimer) window.clearInterval(ecoTickerTimer);
-  ecoTickerTimer = null;
-  tickerSingle?.classList.remove('swap');
-}
-
-function startEcoTicker() {
-  stopEcoTicker();
-  if (!tickerSingle) return;
-  ecoTickerIndex %= Math.max(1, tickerMessageQueue.length);
-  renderEcoTickerMessage();
-  if (tickerMessageQueue.length > 1 && document.visibilityState !== 'hidden') {
-    ecoTickerTimer = window.setInterval(rotateEcoTicker, 6000);
-  }
-}
-
-function tickerItemMarkup(message, slotIndex = null) {
-  const slotAttribute = slotIndex === null ? '' : ` data-ticker-slot="${slotIndex}"`;
-  const tone = ['good', 'warn', 'danger', 'remote', 'lore', 'muted'].includes(message.tone) ? message.tone : 'lore';
-  return `<span class="ticker-item ${tone}"${slotAttribute}><span class="ticker-tag">[${escapeHTML(message.tag)}]</span><span class="ticker-message">${escapeHTML(message.text)}</span></span><span class="ticker-separator" aria-hidden="true">///</span>`;
-}
-
-function buildTickerSequence(copyIndex) {
-  const placeholders = Array.from({ length: TICKER_DYNAMIC_SLOT_COUNT }, (_, index) => tickerItemMarkup({
-    tag: index === 0 ? 'BMM NEWSWIRE' : 'EDITORIAL DESK',
-    text: index === 0 ? 'AWAITING INITIAL TELEMETRY BURST' : 'ASSEMBLING MARKET AND REGIONAL BULLETINS',
-    tone: index === 0 ? 'warn' : 'muted'
-  }, index)).join('');
-  return `<div class="ticker-sequence" data-ticker-copy="${copyIndex}"${copyIndex ? ' aria-hidden="true"' : ''}>${placeholders}</div>`;
-}
-
-const TICKER_SPEED_PX_PER_SECOND = 58;
-const TICKER_MIN_DURATION_SECONDS = 95;
-const TICKER_MAX_DURATION_SECONDS = 150;
-
-function updateTickerSpeed() {
-  if (!tickerContainer || prefersReducedMotion.matches) return;
-  requestAnimationFrame(() => {
-    const primarySequence = tickerContainer.querySelector('.ticker-sequence[data-ticker-copy="0"]');
-    if (!primarySequence) return;
-    const distance = primarySequence.scrollWidth;
-    const duration = Math.max(TICKER_MIN_DURATION_SECONDS, Math.min(TICKER_MAX_DURATION_SECONDS, distance / TICKER_SPEED_PX_PER_SECOND));
-    tickerContainer.style.setProperty('--ticker-duration', `${duration.toFixed(1)}s`);
-  });
-}
-
-function initializeNetworkFeed() {
-  if (!tickerContainer) return;
-  tickerContainer.innerHTML = buildTickerSequence(0) + buildTickerSequence(1);
-  tickerContainer.style.setProperty('--ticker-duration', '110s');
-  updateTickerSpeed();
-}
-
-function updateTickerSlot(index, message) {
-  if (!tickerContainer || !message || index < 0 || index >= TICKER_DYNAMIC_SLOT_COUNT) return;
-  const tone = ['good', 'warn', 'danger', 'remote', 'lore', 'muted'].includes(message.tone) ? message.tone : 'lore';
-  tickerContainer.querySelectorAll(`[data-ticker-slot="${index}"]`).forEach(item => {
-    item.className = `ticker-item ${tone}`;
-    const tag = item.querySelector('.ticker-tag');
-    const body = item.querySelector('.ticker-message');
-    if (tag) tag.textContent = `[${message.tag}]`;
-    if (body) body.textContent = message.text;
-  });
-}
-
-function updateTickerSlots(messages) {
-  const safeMessages = Array.isArray(messages) ? messages.slice(0, TICKER_DYNAMIC_SLOT_COUNT) : [];
-  while (safeMessages.length < TICKER_DYNAMIC_SLOT_COUNT) {
-    safeMessages.push({ tag: 'BMM NEWSWIRE', text: 'EDITORIAL QUEUE CLEAR // AWAITING NEXT BULLETIN', tone: 'muted' });
-  }
-  tickerMessageQueue = safeMessages.map(message => ({ ...message }));
-  ecoTickerIndex %= Math.max(1, tickerMessageQueue.length);
-  safeMessages.forEach((message, index) => updateTickerSlot(index, message));
-  renderEcoTickerMessage();
-  if (ecoMode) startEcoTicker();
-  updateTickerSpeed();
-}
-
-initializeNetworkFeed();
-window.addEventListener('resize', debounce(updateTickerSpeed, 180));
 
 const holoTooltip = document.getElementById('holoTooltip');
 let pinnedTooltipTarget = null;
@@ -233,7 +79,6 @@ window.addEventListener('scroll', () => {
 const API_URL = DASHBOARD_CONFIG.apiUrl;
 const BASE_NAME = DASHBOARD_CONFIG.baseName;
 const AUTO_REFRESH_MS = DASHBOARD_CONFIG.autoRefreshMs;
-const NEWSWIRE_REFRESH_MS = DASHBOARD_CONFIG.newswireRefreshMs || 900000;
 const FETCH_TIMEOUT_MS = DASHBOARD_CONFIG.fetchTimeoutMs;
 const STORAGE_KEYS = DASHBOARD_CONFIG.storageKeys;
 const FEATURES = DASHBOARD_CONFIG.features;
@@ -281,8 +126,6 @@ let operationalItemsCache = [];
 let sortCol = 'name';
 let sortAsc = true;
 let refreshTimer = null;
-let newswireRefreshTimer = null;
-let newswireIsLoading = false;
 let isLoading = false;
 let nextSyncAt = null;
 let dataIsStale = false;
@@ -303,19 +146,19 @@ const els = {
   baseHealthCard: document.getElementById('baseHealthCard'),
   baseMoneyVal: document.getElementById('baseMoneyVal'),
   baseStorageVal: document.getElementById('baseStorageVal'),
-  
+
   maintenanceList: document.getElementById('maintenanceList'),
   byproductList: document.getElementById('byproductList'),
   exportList: document.getElementById('exportList'),
   feedstockList: document.getElementById('feedstockList'),
   confiscatedList: document.getElementById('confiscatedList'),
-  
+
   maintenanceCount: document.getElementById('maintenanceCount'),
   byproductCount: document.getElementById('byproductCount'),
   exportCount: document.getElementById('exportCount'),
   feedstockCount: document.getElementById('feedstockCount'),
   confiscatedCount: document.getElementById('confiscatedCount'),
-  
+
   itemsBody: document.getElementById('itemsBody'),
   errorBox: document.getElementById('errorBox'),
   search: document.getElementById('search'),
@@ -343,6 +186,5 @@ const els = {
   externalSystemsMeta: document.getElementById('externalSystemsMeta'),
   externalModeMeta: document.getElementById('externalModeMeta'),
   productionPanel: document.getElementById('productionPanel'),
-  newswirePanel: document.getElementById('newswirePanel'),
   ecoToggleBtn: document.getElementById('ecoToggleBtn')
 };

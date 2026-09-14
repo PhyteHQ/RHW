@@ -18,15 +18,7 @@
     operationsActivate: app.operations?.activate,
     discoveryInit: app.discoveryStatus?.init
   };
-  let discoveryObserver = null;
-
-  function installStyles() {
-    if (document.getElementById('rhwUiPolishFixStyle')) return;
-    const style = document.createElement('style');
-    style.id = 'rhwUiPolishFixStyle';
-    style.dataset.stylesheet = '35-app-interface-cleanup.css';
-    document.head.appendChild(style);
-  }
+  let unsubscribeDiscovery = null;
 
   function relabelCalculator() {
     const tab = document.querySelector('.app-tabs [data-workspace="operations"]');
@@ -79,9 +71,8 @@
     details.open = false;
     updateDiscoverySummary();
 
-    discoveryObserver?.disconnect();
-    discoveryObserver = new MutationObserver(updateDiscoverySummary);
-    discoveryObserver.observe(panel, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ['data-tone'] });
+    unsubscribeDiscovery?.();
+    unsubscribeDiscovery = app.onRender('discovery', updateDiscoverySummary);
     return true;
   }
 
@@ -124,7 +115,6 @@
     return failures;
   }
 
-  installStyles();
 
   app.setActiveNode = function polishedActiveNode(value) {
     const next = String(value || '').replace(/^OPERATIONS\b/, 'CALCULATOR').replace(/^FABRICATION\b/, 'CALCULATOR');

@@ -129,8 +129,6 @@ function setEcoMode(on) {
      "FX: FULL" choice must never re-enable motion behind reduced-motion. */
   ecoMode = Boolean(on || prefersReducedMotion.matches);
   document.documentElement.classList.toggle('eco', ecoMode);
-  if (ecoMode) startEcoTicker();
-  else stopEcoTicker();
   updateEcoToggleLabel();
 }
 
@@ -199,8 +197,6 @@ function initEcoMode() {
     if (ecoPreference === 'auto') scheduleEcoAutoDetect(850);
   });
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'hidden') stopEcoTicker();
-    else if (ecoMode) startEcoTicker();
     if (document.visibilityState === 'visible' && ecoPreference === 'auto') scheduleEcoAutoDetect(350);
   });
   prefersReducedMotion.addEventListener?.('change', () => {
@@ -217,7 +213,6 @@ function applyFeatureVisibility() {
   if (els.externalLogisticsPanel) els.externalLogisticsPanel.hidden = !showExternal;
   if (els.materialsScanSection) els.materialsScanSection.hidden = !FEATURES.materialsScan;
   if (els.marketScanSection) els.marketScanSection.hidden = !FEATURES.marketScan;
-  if (els.newswirePanel) els.newswirePanel.hidden = !FEATURES.newswire;
   if (els.ecoToggleBtn) els.ecoToggleBtn.hidden = !FEATURES.ecoMode;
 
   if (els.externalTargetsMeta) {

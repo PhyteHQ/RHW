@@ -59,11 +59,6 @@
   function fmt(value) { return app.util.number(Math.max(0, Number(value) || 0)); }
 
   function installStyles() {
-    if (document.getElementById('rhwUnifiedWorkspaceStyle')) return;
-    const style = document.createElement('style');
-    style.id = 'rhwUnifiedWorkspaceStyle';
-    style.dataset.stylesheet = '35-app-interface-cleanup.css';
-    document.head.appendChild(style);
     document.documentElement.classList.add('rhw-unified-ui');
   }
 
@@ -250,7 +245,6 @@
 
   function selfTest() {
     const failures = [];
-    if (!document.getElementById('rhwUnifiedWorkspaceStyle')) failures.push('style');
     if (document.querySelectorAll('.app-tabs .rhw-workspace-index').length !== 3) failures.push('workspace-tabs');
     if (!document.getElementById('commandControlDeck')) failures.push('command-control-deck');
     if (!document.getElementById('commandGlobalSearch')) failures.push('command-search');

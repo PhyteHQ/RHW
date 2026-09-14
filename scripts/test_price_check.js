@@ -13,16 +13,18 @@ const saved = new Map();
 const telemetry = { available: true, stale: false, fetchedAt: new Date(now).toISOString() };
 let payout = { sell_price: 500, price: 900 };
 const app = {
+  onUiUpdate() {},
   config: { storageKeys: { priceCheckOverrides: 'prices' } }, state: {},
   route: { parse() {}, write() {} }, util: { escape: v => String(v ?? '') },
   store: { get: (k, d) => saved.get(k) ?? d, set: (k, v) => { saved.set(k, v); return true; } }
 };
-const ctx = vm.createContext({ Date: Clock, console,
+const ctx = vm.createContext({ Date: Clock, console, addEventListener() {}, setTimeout() {}, clearTimeout() {}, navigator: { onLine: true },
   RHWV4: app, telemetrySnapshot: () => telemetry, findCommodity: () => payout, allBases: [],
-  document: { getElementById: () => null, createElement: () => ({ dataset: {} }),
+  document: { addEventListener() {}, getElementById: () => null, createElement: () => ({ dataset: {} }),
     head: { appendChild() {} }, documentElement: { classList: { add() {} } } }
 });
 ctx.window = ctx;
+vm.runInContext(fs.readFileSync(path.join(__dirname, '../js/00-runtime.js'), 'utf8'), ctx);
 vm.runInContext(fs.readFileSync(path.join(__dirname, '../js/37-app-price-check.js'), 'utf8'), ctx);
 const api = app.pricecheck;
 const route = api.routes.find(r => r.key === 'hull-panels');

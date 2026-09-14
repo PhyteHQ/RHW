@@ -96,8 +96,7 @@ function initMobileMarketDisclosure() {
   ['marketScanGrid', 'materialsScanGrid'].forEach(id => {
     const grid = document.getElementById(id);
     if (!grid) return;
-    const observer = new MutationObserver(() => enhanceMobileMarketCards(grid));
-    observer.observe(grid, { childList: true, subtree: true });
+    window.RHWRuntime.onRender(id, () => enhanceMobileMarketCards(grid));
     enhanceMobileMarketCards(grid);
   });
 }

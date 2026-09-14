@@ -132,13 +132,13 @@ function rebuildItemCaches() {
 
 function operationalItems() { return operationalItemsCache; }
 
-function roleLabel(role) { 
-  if (role === 'maintenance') return 'FACILITY'; 
-  if (role === 'export') return 'EXPORT'; 
+function roleLabel(role) {
+  if (role === 'maintenance') return 'FACILITY';
+  if (role === 'export') return 'EXPORT';
   if (role === 'shipyard') return 'SHIPYARD';
-  if (role === 'byproduct') return 'WASTE'; 
+  if (role === 'byproduct') return 'WASTE';
   if (role === 'confiscated') return 'SEIZED';
-  return 'PROCUREMENT'; 
+  return 'PROCUREMENT';
 }
 
 function statusLabel(state, role) {
@@ -214,7 +214,7 @@ function analyzeRecipe(recipe) {
   const ingredientData = recipe.ingredients.map(pair => {
     const originalName = pair[0];
     const required = pair[1];
-    
+
     let stock = 0;
     let displayNameStr = displayRecipeName(originalName);
     let extraHtml = '';
@@ -223,7 +223,7 @@ function analyzeRecipe(recipe) {
       const stdGold = stockFor('Gold');
       const wcGold = stockFor('Wildcat Gold');
       stock = stdGold + wcGold;
-      
+
       displayNameStr = 'Gold / Wildcat Gold';
       extraHtml = `<span style="display:block; font-size:9.5px; opacity:0.8; margin-top:3px; letter-spacing:0.05em; font-family:var(--font-tech);"><span style="color:var(--gold);">STD: ${number(stdGold)}</span> // <span style="color:#ce93d8;">WC: ${number(wcGold)}</span></span>`;
     } else {
@@ -399,4 +399,5 @@ function renderProductionModules() {
             </div>`;
   }).join('');
   applyProductionModuleFilters();
+  window.RHWRuntime?.rendered('production');
 }

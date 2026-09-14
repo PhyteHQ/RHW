@@ -1,6 +1,6 @@
 /* ==========================================================================
    RHW WEB APP · V4.0 COMMS
-   Forum composer, smart BBCode, ticker builder, drafts and sender registry.
+   Forum composer, smart BBCode, drafts and sender registry.
    ========================================================================== */
 (function initRhwV4Comms() {
   'use strict';
@@ -309,6 +309,7 @@
       <div class="forum-preview-body">${salutation ? `<p class="forum-preview-salutation">${app.util.escape(salutation)}</p>` : ''}${String(state.message || '').trim() ? bodyToPreview(state.message) : '<span class="preview-placeholder">AWAITING TRANSMISSION BODY</span>'}</div>
       <div class="forum-preview-signature"><em>${app.util.escape(state.closing || template.closing)}</em><strong>${app.util.escape(sender.name)}</strong><small>${app.util.escape(sender.title || '')}</small></div>
       <div class="forum-preview-footer"><span>${app.util.escape(state.footerMotto || f.footerMotto)}</span><span>TRANSMISSION CLASS // ${app.util.escape(classification)}</span><span>[RHW] SYSTEM TIME: ${app.util.escape(state.systemDate || 'UNSET')}</span></div>`;
+    app.rendered?.('forum-preview');
   }
 
   function renderBbcode() {

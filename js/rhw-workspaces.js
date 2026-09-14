@@ -206,6 +206,9 @@ const RHW_APP_CONFIG = Object.freeze({
   };
   window.__RHW_STORAGE_RECOVERIES__ = app.state.storageRecoveries;
 
+  app.onRender = window.RHWRuntime.onRender;
+  app.rendered = window.RHWRuntime.rendered;
+
   // One coalesced update per data/user change. No recurring DOM polling.
   const uiSubscribers = new Set();
   let uiFrame = 0;
@@ -448,6 +451,7 @@ const RHW_APP_CONFIG = Object.freeze({
   };
 
   app.workspaceStoredNode = function workspaceStoredNode(workspace) {
+    if (workspace === 'pricecheck') return 'routes';
     const meta = WORKSPACE_META[workspace] || WORKSPACE_META.command;
     const storageKey = app.config.storageKeys[meta.nodeKey];
     return app.store.get(storageKey, meta.fallback);
@@ -533,7 +537,9 @@ const RHW_APP_CONFIG = Object.freeze({
     const safe = WORKSPACES.includes(workspace) ? workspace : 'command';
     app.state.activeWorkspace = safe;
     app.store.set(app.config.storageKeys.activeWorkspace, safe);
+    app.focusPass?.closeTools?.();
     document.body.dataset.workspace = safe;
+    window.RHWRuntime.reconcile();
 
     document.querySelectorAll('.app-workspace').forEach(panel => {
       panel.hidden = panel.id !== `workspace${safe[0].toUpperCase()}${safe.slice(1)}`;
@@ -544,6 +550,7 @@ const RHW_APP_CONFIG = Object.freeze({
       button.setAttribute('aria-selected', active ? 'true' : 'false');
       button.tabIndex = active ? 0 : -1;
     });
+    app.rendered('workspace');
   };
 
   app.applyRoute = function applyRoute({ replace = false } = {}) {
@@ -1345,7 +1352,7 @@ const RHW_APP_CONFIG = Object.freeze({
 /* SOURCE: ./js/16-app-v40-composer.js */
 /* ==========================================================================
    RHW WEB APP · V4.0 COMMS
-   Forum composer, smart BBCode, ticker builder, drafts and sender registry.
+   Forum composer, smart BBCode, drafts and sender registry.
    ========================================================================== */
 (function initRhwV4Comms() {
   'use strict';
@@ -1654,6 +1661,7 @@ const RHW_APP_CONFIG = Object.freeze({
       <div class="forum-preview-body">${salutation ? `<p class="forum-preview-salutation">${app.util.escape(salutation)}</p>` : ''}${String(state.message || '').trim() ? bodyToPreview(state.message) : '<span class="preview-placeholder">AWAITING TRANSMISSION BODY</span>'}</div>
       <div class="forum-preview-signature"><em>${app.util.escape(state.closing || template.closing)}</em><strong>${app.util.escape(sender.name)}</strong><small>${app.util.escape(sender.title || '')}</small></div>
       <div class="forum-preview-footer"><span>${app.util.escape(state.footerMotto || f.footerMotto)}</span><span>TRANSMISSION CLASS // ${app.util.escape(classification)}</span><span>[RHW] SYSTEM TIME: ${app.util.escape(state.systemDate || 'UNSET')}</span></div>`;
+    app.rendered?.('forum-preview');
   }
 
   function renderBbcode() {
@@ -2147,8 +2155,6 @@ const RHW_APP_CONFIG = Object.freeze({
   const MAX_TAG = 40;
   const MAX_MESSAGE = 240;
   const LOG_TEMPLATE_KEY = 'communication-log';
-  let previewObserver = null;
-  let currencyObserver = null;
   let previewQueued = false;
 
   function installCommunicationLogTemplate() {
@@ -2170,14 +2176,6 @@ const RHW_APP_CONFIG = Object.freeze({
       ...app.config,
       templates: Object.freeze([...app.config.templates, logTemplate])
     });
-  }
-
-  function installPolishStyles() {
-    if (document.getElementById('rhwV40ReleasePolishStyle')) return;
-    const style = document.createElement('style');
-    style.id = 'rhwV40ReleasePolishStyle';
-    style.dataset.stylesheet = '35-app-interface-cleanup.css';
-    document.head.appendChild(style);
   }
 
   function normalizeTag(value) {
@@ -2316,8 +2314,7 @@ const RHW_APP_CONFIG = Object.freeze({
     const preview = document.getElementById('forumLivePreview');
     if (!preview || preview.dataset.v40BbcodePreview === 'true') return;
     preview.dataset.v40BbcodePreview = 'true';
-    previewObserver = new MutationObserver(queuePreviewEnhancement);
-    previewObserver.observe(preview, { childList: true, subtree: true, characterData: true });
+    app.onRender('forum-preview', enhancePreviewBody);
     queuePreviewEnhancement();
   }
 
@@ -2341,59 +2338,8 @@ const RHW_APP_CONFIG = Object.freeze({
     head.appendChild(actions);
   }
 
-  function replaceCreditText(root) {
-    if (!root) return;
-    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
-    const nodes = [];
-    while (walker.nextNode()) nodes.push(walker.currentNode);
-    nodes.forEach(node => {
-      const raw = node.nodeValue || '';
-      let next = raw;
-      if (raw.trim() === 'CR') next = raw.replace('CR', '$');
-      next = next.replace(/([0-9][0-9,]*(?:\.[0-9]+)?)\s+CR\b/g, (_match, amount) => `$${amount}`);
-      if (next !== raw) node.nodeValue = next;
-    });
-  }
-
-  function polishOperations() {
-    const workspace = document.getElementById('workspaceOperations');
-    if (!workspace) return;
-    replaceCreditText(workspace);
-    if (workspace.dataset.v40DollarObserver === 'true') return;
-    workspace.dataset.v40DollarObserver = 'true';
-    currencyObserver = new MutationObserver(() => replaceCreditText(workspace));
-    currencyObserver.observe(workspace, { childList: true, subtree: true, characterData: true });
-  }
-
-  function initTickerGuard() {
-    const workspace = document.getElementById('workspaceComms');
-    const tag = document.getElementById('v40TickerTag');
-    const message = document.getElementById('v40TickerMessage');
-    if (!workspace || !tag || !message || workspace.dataset.v40TickerGuard === 'true') return;
-    workspace.dataset.v40TickerGuard = 'true';
-    tag.maxLength = MAX_TAG;
-    message.maxLength = MAX_MESSAGE;
-
-    /* Input sanitation keeps parser-breaking characters/newlines out without
-       trimming the ordinary spaces the user is actively typing. */
-    const inputGuard = event => {
-      const target = event.target;
-      if (target?.id === 'v40TickerTag' || target?.id === 'v40TickerMessage') sanitizeField(target, false);
-    };
-    const changeGuard = event => {
-      const target = event.target;
-      if (target?.id === 'v40TickerTag' || target?.id === 'v40TickerMessage') sanitizeField(target, true);
-    };
-    workspace.addEventListener('input', inputGuard, true);
-    workspace.addEventListener('change', changeGuard, true);
-
-    const changed = sanitizeField(tag, true) || sanitizeField(message, true);
-    if (changed) message.dispatchEvent(new Event('input', { bubbles: true }));
-  }
-
   function selfTest() {
     const failures = [];
-    if (!document.getElementById('rhwV40ReleasePolishStyle')) failures.push('typography-style');
     if (!app.config.templates.some(template => template.key === LOG_TEMPLATE_KEY)) failures.push('communication-log-template');
     if (!document.getElementById('copyBbcodePreviewBtn')) failures.push('preview-copy');
     if (typingSafeMessage('RHW ') !== 'RHW ' || typingSafeTag('RHW ') !== 'RHW ') failures.push('ticker-space-typing');
@@ -2408,26 +2354,24 @@ const RHW_APP_CONFIG = Object.freeze({
   }
 
   function init() {
-    initTickerGuard();
     enhanceToolbar();
     installPreviewObserver();
     installPreviewCopy();
-    polishOperations();
   }
 
   installCommunicationLogTemplate();
-  installPolishStyles();
+
 
   app.commsSafety = {
     init,
     selfTest,
-    polishOperations,
     normalizeTag,
     normalizeMessage,
     limits: Object.freeze({ tag: MAX_TAG, message: MAX_MESSAGE }),
     forumFormatting: Object.freeze(['b', 'i', 'u', 's', 'quote', 'list', 'spoiler', 'sp2'])
   };
 })();
+
 ;
 
 /* SOURCE: ./assets/recipes/catalog-v1-part-01.js */
@@ -2992,7 +2936,7 @@ window.__RHW_RECIPE_CATALOG_GZIP_BASE64__ = (window.__RHW_RECIPE_CATALOG_GZIP_BA
     if (!rows.length) return '<div class="ops-empty good">THIS RECIPE HAS NO CONSUMED MATERIAL INPUTS</div>';
     return `<div class="ops-material-table-wrap"><table class="ops-material-table"><thead><tr><th>MATERIAL</th><th>REQUIRED</th><th>PRICE / UNIT</th><th>LINE COST</th></tr></thead><tbody>${rows.map(row => {
       const price = storedPrice(calc.materialPrices, row.id);
-      return `<tr class="ops-material-row" data-material-id="${esc(row.id)}" data-required="${row.required}"><td><strong>${esc(row.name)}</strong></td><td>${fmt(row.required)}</td><td><div class="ops-price-input-wrap"><input class="ops-price-input" aria-label="${esc(row.name)} price per unit" data-material-price="${esc(row.id)}" type="number" inputmode="decimal" min="0" step="1" value="${price === null ? '' : esc(String(price))}" placeholder="—"><span>$</span></div></td><td data-line-cost>${money(price === null ? null : row.required * price)}</td></tr>`;
+      return `<tr class="ops-material-row" data-material-id="${esc(row.id)}" data-required="${row.required}"><td><strong>${esc(row.name)}</strong></td><td>${fmt(row.required)}</td><td><div class="ops-price-input-wrap"><input class="ops-price-input" aria-label="${esc(row.name)} price per unit" data-material-price="${esc(row.id)}" type="number" inputmode="decimal" min="0" step="1" value="${price === null ? '' : esc(String(price))}" placeholder=""><span>$</span></div></td><td data-line-cost>${money(price === null ? null : row.required * price)}</td></tr>`;
     }).join('')}</tbody></table></div>`;
   }
 
@@ -3094,6 +3038,7 @@ window.__RHW_RECIPE_CATALOG_GZIP_BASE64__ = (window.__RHW_RECIPE_CATALOG_GZIP_BA
       ${comparisonMarkup(comparison, calc, rows)}
     </div>`;
     bindCalculator(plan, rows);
+    app.rendered?.('calculator');
     if (focusSearch) {
       const search = document.getElementById('opsRecipeSearch');
       if (search) { search.focus(); try { search.setSelectionRange(search.value.length, search.value.length); } catch {} }
@@ -3138,6 +3083,7 @@ window.__RHW_RECIPE_CATALOG_GZIP_BASE64__ = (window.__RHW_RECIPE_CATALOG_GZIP_BA
     }
     const comparison = document.getElementById('opsComparisonResults');
     if (comparison) comparison.innerHTML = comparisonResultsMarkup(core.compareRecipes(calc), calc);
+    app.rendered?.('pricing');
   }
 
   function bindCalculator(plan, rows) {
@@ -3213,7 +3159,7 @@ window.__RHW_RECIPE_CATALOG_GZIP_BASE64__ = (window.__RHW_RECIPE_CATALOG_GZIP_BA
       label.appendChild(button);
     });
     enhance();
-    new MutationObserver(enhance).observe(mount, { childList: true, subtree: true });
+    app.onRender('shipyard', enhance);
   }
 
   function openTarget(productId, quantity = 1) {
@@ -3304,20 +3250,12 @@ window.__RHW_RECIPE_CATALOG_GZIP_BASE64__ = (window.__RHW_RECIPE_CATALOG_GZIP_BA
     pricecheck: null,
     comms: 'commsNodeNav'
   });
-  let observer = null;
+  let unsubscribeWorkspace = null;
   let sizeObserver = null;
   let resizeBound = false;
 
   function safeWorkspace(value) {
     return Object.prototype.hasOwnProperty.call(SUBNAV_IDS, value) ? value : 'command';
-  }
-
-  function installReleaseUxStyles() {
-    if (document.getElementById('rhwV40StickyUxStyle')) return;
-    const style = document.createElement('style');
-    style.id = 'rhwV40StickyUxStyle';
-    style.dataset.stylesheet = '35-app-interface-cleanup.css';
-    document.head.appendChild(style);
   }
 
   function ensureShell() {
@@ -3351,7 +3289,7 @@ window.__RHW_RECIPE_CATALOG_GZIP_BASE64__ = (window.__RHW_RECIPE_CATALOG_GZIP_BA
     const slot = document.getElementById('appContextNavSlot');
     const brand = document.querySelector('.app-nav-brand');
     if (slot && slot.parentElement !== secondary) secondary.prepend(slot);
-    if (brand && brand.parentElement !== inner) inner.appendChild(brand);
+    if (brand && inner.lastElementChild !== brand) inner.appendChild(brand);
     return true;
   }
 
@@ -3448,24 +3386,19 @@ window.__RHW_RECIPE_CATALOG_GZIP_BASE64__ = (window.__RHW_RECIPE_CATALOG_GZIP_BA
     if (slot?.dataset.activeWorkspace !== active) failures.push(`context-slot-state:${active}`);
     if (expectedId ? mounted?.id !== expectedId : Boolean(mounted)) failures.push(`mounted-subnav:${expectedId || 'none'}`);
     if (!document.querySelector(`.app-tabs [data-workspace="${active}"].active`)) failures.push(`active-workspace-tab:${active}`);
-    if (!document.getElementById('rhwV40StickyUxStyle')) failures.push('missing-sticky-ux-style');
     if (!document.getElementById('toggleBbcodePanelBtn')) failures.push('missing-bbcode-collapse');
     return failures;
   }
 
   function init() {
     if (!ensureShell()) return false;
-    installReleaseUxStyles();
+
     sync();
     installBbcodeCollapse();
     updateStickyOffset();
 
-    observer?.disconnect();
-    observer = new MutationObserver(mutations => {
-      if (!mutations.some(mutation => mutation.attributeName === 'data-workspace')) return;
-      requestAnimationFrame(() => sync());
-    });
-    observer.observe(document.body, { attributes: true, attributeFilter: ['data-workspace'] });
+    unsubscribeWorkspace?.();
+    unsubscribeWorkspace = app.onRender('workspace', () => sync());
 
     sizeObserver?.disconnect();
     const rootNav = document.getElementById('rhwAppNav');
@@ -3498,22 +3431,11 @@ window.__RHW_RECIPE_CATALOG_GZIP_BASE64__ = (window.__RHW_RECIPE_CATALOG_GZIP_BA
   if (!app || !core || !app.operations) return;
   if (app.productionPricing) return;
 
-  const STYLE_ID = 'rhwV40ProductionPricingStyle';
   const CALC_KEY = app.config.storageKeys.calculatorState;
   const DEFAULT_IFF = app.config.operations.defaultAffiliation;
-  let productionObserver = null;
-  let operationsObserver = null;
   let installed = false;
 
   const normalize = value => app.util.normalize(String(value || ''));
-
-  function installStyles() {
-    if (document.getElementById(STYLE_ID)) return;
-    const style = document.createElement('style');
-    style.id = STYLE_ID;
-    style.dataset.stylesheet = '35-app-interface-cleanup.css';
-    document.head.appendChild(style);
-  }
 
   function clearSessionPrices() {
     if (!app.state.calculator || typeof app.state.calculator !== 'object') return;
@@ -3549,20 +3471,6 @@ window.__RHW_RECIPE_CATALOG_GZIP_BASE64__ = (window.__RHW_RECIPE_CATALOG_GZIP_BA
     app.store.__rhwV40SessionPriceGuard = true;
   }
 
-  function cleanCalculatorUi() {
-    const workspace = document.getElementById('workspaceOperations');
-    if (!workspace) return;
-    workspace.querySelectorAll('[data-material-price]').forEach(input => {
-      if (input.placeholder) input.placeholder = '';
-      input.removeAttribute('data-price-source');
-    });
-    workspace.querySelectorAll('.ops-price-source').forEach(node => node.remove());
-
-    const costHeadText = 'ENTER YOUR UNIT PRICES';
-    const costHead = workspace.querySelector('.ops-cost-panel .ops-panel-head small');
-    if (costHead && costHead.textContent !== costHeadText) costHead.textContent = costHeadText;
-  }
-
   function startFreshRecipeSession() {
     clearSessionPrices();
     resetAffiliationToDefault();
@@ -3571,14 +3479,8 @@ window.__RHW_RECIPE_CATALOG_GZIP_BASE64__ = (window.__RHW_RECIPE_CATALOG_GZIP_BA
   function installCalculatorLifecycle() {
     const workspace = document.getElementById('workspaceOperations');
     if (!workspace) return;
-    cleanCalculatorUi();
     if (workspace.dataset.v40SessionPriceMode === 'true') return;
     workspace.dataset.v40SessionPriceMode = 'true';
-
-    // Recipe transitions are handled by operations.saveState after resolution.
-    // Editing a search without changing the recipe preserves the current quote.
-    operationsObserver = new MutationObserver(cleanCalculatorUi);
-    operationsObserver.observe(workspace, { childList: true, subtree: true });
 
     // The legacy Shipyard planner uses a lexical openTarget() helper, so reset
     // RHW costing defaults in capture phase before that click handler runs.
@@ -3639,7 +3541,6 @@ window.__RHW_RECIPE_CATALOG_GZIP_BASE64__ = (window.__RHW_RECIPE_CATALOG_GZIP_BA
     }
     app.navigate('operations', 'calculator');
     app.operations.renderCalculator?.();
-    cleanCalculatorUi();
     return true;
   }
 
@@ -3675,8 +3576,7 @@ window.__RHW_RECIPE_CATALOG_GZIP_BASE64__ = (window.__RHW_RECIPE_CATALOG_GZIP_BA
     enhanceProduction();
     if (mount.dataset.v40ProductionCalculatorBridge === 'true') return;
     mount.dataset.v40ProductionCalculatorBridge = 'true';
-    productionObserver = new MutationObserver(enhanceProduction);
-    productionObserver.observe(mount, { childList: true, subtree: true });
+    app.onRender('production', enhanceProduction);
   }
 
   function selfTest() {
@@ -3706,7 +3606,7 @@ window.__RHW_RECIPE_CATALOG_GZIP_BASE64__ = (window.__RHW_RECIPE_CATALOG_GZIP_BA
   function install() {
     if (installed) return;
     installed = true;
-    installStyles();
+
     installProductionObserver();
     installCalculatorLifecycle();
   }
@@ -3919,7 +3819,6 @@ window.__RHW_RECIPE_CATALOG_GZIP_BASE64__ = (window.__RHW_RECIPE_CATALOG_GZIP_BA
   const core = app?.operationsCore;
   if (!app || !core || app.finalUiPolish) return;
 
-  const STYLE_ID = 'rhwV40FinalUiPolishStyle';
   const KNOWN_FINAL_LABELS = Object.freeze({
     recipe_gold_basic: 'Gold refining · Basic',
     recipe_gold_advanced: 'Gold refining · Advanced',
@@ -3934,7 +3833,6 @@ window.__RHW_RECIPE_CATALOG_GZIP_BASE64__ = (window.__RHW_RECIPE_CATALOG_GZIP_BA
 
   let labelMap = new Map();
   let labelCatalogRef = null;
-  let calculatorObserver = null;
   let polishQueued = false;
 
   const normalize = value => app.util.normalize(String(value || ''));
@@ -4149,14 +4047,6 @@ window.__RHW_RECIPE_CATALOG_GZIP_BASE64__ = (window.__RHW_RECIPE_CATALOG_GZIP_BA
     classMap.forEach((className, label) => byLabel.get(label)?.classList.add(className));
   }
 
-  function installStyles() {
-    if (document.getElementById(STYLE_ID)) return;
-    const style = document.createElement('style');
-    style.id = STYLE_ID;
-    style.dataset.stylesheet = '35-app-interface-cleanup.css';
-    document.head.appendChild(style);
-  }
-
   function queuePolish() {
     if (polishQueued) return;
     polishQueued = true;
@@ -4171,10 +4061,8 @@ window.__RHW_RECIPE_CATALOG_GZIP_BASE64__ = (window.__RHW_RECIPE_CATALOG_GZIP_BA
     const workspace = document.getElementById('workspaceOperations');
     if (!workspace || workspace.dataset.v40FinalUiPolish === 'true') return;
     workspace.dataset.v40FinalUiPolish = 'true';
-    calculatorObserver = new MutationObserver(queuePolish);
-    calculatorObserver.observe(workspace, { childList: true, subtree: true });
-    workspace.addEventListener('input', queuePolish, true);
-    workspace.addEventListener('change', queuePolish, true);
+    app.onRender('calculator', () => { polishRecipeOptions(); polishCostFlow(); });
+    app.onRender('pricing', polishCostFlow);
     queuePolish();
   }
 
@@ -4222,7 +4110,6 @@ window.__RHW_RECIPE_CATALOG_GZIP_BASE64__ = (window.__RHW_RECIPE_CATALOG_GZIP_BA
     return failures;
   }
 
-  installStyles();
   fixHeaderClockLayout();
   installCalculatorObserver();
 
@@ -4237,6 +4124,7 @@ window.__RHW_RECIPE_CATALOG_GZIP_BASE64__ = (window.__RHW_RECIPE_CATALOG_GZIP_BA
     selfTest
   };
 })();
+
 ;
 
 /* SOURCE: ./js/20-app-v402-fixes.js */
@@ -4248,9 +4136,6 @@ window.__RHW_RECIPE_CATALOG_GZIP_BASE64__ = (window.__RHW_RECIPE_CATALOG_GZIP_BA
   'use strict';
   const app = window.RHWV4;
   if (!app || app.v402Fixes) return;
-
-  let queued = false;
-  let observer = null;
 
   function syncTelemetryBadge() {
     const badge = document.querySelector('.command-overview-live');
@@ -4275,44 +4160,9 @@ window.__RHW_RECIPE_CATALOG_GZIP_BASE64__ = (window.__RHW_RECIPE_CATALOG_GZIP_BA
     if (text.textContent !== label) text.textContent = label;
   }
 
-  function labelGeneratedControls() {
-    document.querySelectorAll('#workspaceOperations [data-material-price]').forEach(input => {
-      if (input.getAttribute('aria-label')) return;
-      const name = input.closest('.ops-material-row')?.querySelector('td strong')?.textContent?.trim() || input.dataset.materialPrice || 'Material';
-      input.setAttribute('aria-label', `${name} price per unit`);
-    });
-
-    const tickerOutput = document.getElementById('v40TickerOutput');
-    if (tickerOutput && !tickerOutput.getAttribute('aria-label')) tickerOutput.setAttribute('aria-label', 'Generated Newswire source block');
-
-    const newswireOutput = document.getElementById('v40NewswireFileOutput');
-    if (newswireOutput && !newswireOutput.getAttribute('aria-label')) newswireOutput.setAttribute('aria-label', 'Updated RHW Newswire Markdown source');
-  }
-
-  function sync() {
-    syncTelemetryBadge();
-    labelGeneratedControls();
-  }
-
-  function queueSync() {
-    if (queued) return;
-    queued = true;
-    queueMicrotask(() => {
-      queued = false;
-      sync();
-    });
-  }
-
-  function init() {
-    if (observer) return;
-    observer = new MutationObserver(queueSync);
-    observer.observe(document.body, { childList: true, subtree: true });
-    app.onUiUpdate(syncTelemetryBadge);
-    sync();
-  }
-
-  app.v402Fixes = { init, sync, syncTelemetryBadge, labelGeneratedControls };
-  init();
+  app.onUiUpdate(syncTelemetryBadge);
+  app.v402Fixes = { init: syncTelemetryBadge, sync: syncTelemetryBadge, syncTelemetryBadge };
+  syncTelemetryBadge();
 })();
 
 ;
@@ -4329,7 +4179,7 @@ window.__RHW_RECIPE_CATALOG_GZIP_BASE64__ = (window.__RHW_RECIPE_CATALOG_GZIP_BA
   if (!app || !core || app.qol) return;
 
   const PROFILE_KEY = app.config.storageKeys.calculatorPriceProfiles || 'rhw-webapp-v4:calculator-price-profiles';
-  let operationsObserver = null;
+  let unsubscribeCalculator = null;
   let profileStatus = ['SAVED PROFILES ARE OPTIONAL // NOTHING IS LOADED AUTOMATICALLY', 'muted'];
 
   const esc = value => app.util.escape(String(value ?? ''));
@@ -4504,11 +4354,10 @@ window.__RHW_RECIPE_CATALOG_GZIP_BASE64__ = (window.__RHW_RECIPE_CATALOG_GZIP_BA
     const workspace = document.getElementById('workspaceOperations');
     if (!workspace) return;
     ensureProfilePanel();
-    if (operationsObserver) return;
+    if (unsubscribeCalculator) return;
     const mount = document.getElementById('operationsCalculatorMount');
     if (!mount) return;
-    operationsObserver = new MutationObserver(() => queueMicrotask(ensureProfilePanel));
-    operationsObserver.observe(mount, { childList: true });
+    unsubscribeCalculator = app.onRender('calculator', ensureProfilePanel);
   }
 
   function selfTest() {
@@ -4642,7 +4491,7 @@ window.__RHW_RECIPE_CATALOG_GZIP_BASE64__ = (window.__RHW_RECIPE_CATALOG_GZIP_BA
   'use strict';
   if (window.RHWPWA) return;
 
-  const state = { installPrompt: null, registration: null, updateWorker: null, reloading: false, restartRequested: false, shellObserver: null };
+  const state = { installPrompt: null, registration: null, updateWorker: null, reloading: false, restartRequested: false, shellObserver: null, updateTask: null };
   const isStandalone = () => window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
   const isAndroid = (userAgent = navigator.userAgent) => /Android/i.test(userAgent);
   const isIos = (userAgent = navigator.userAgent, platform = navigator.platform, maxTouchPoints = navigator.maxTouchPoints) =>
@@ -4834,7 +4683,12 @@ window.__RHW_RECIPE_CATALOG_GZIP_BASE64__ = (window.__RHW_RECIPE_CATALOG_GZIP_BA
       document.documentElement.dataset.rhwPwa = registration.active ? 'ready' : 'installing';
       navigator.serviceWorker.ready.then(() => { document.documentElement.dataset.rhwPwa = 'ready'; });
       watchRegistration(registration);
-      window.setInterval(() => registration.update().catch(() => {}), 60 * 60 * 1000);
+      state.updateTask?.dispose();
+      state.updateTask = window.RHWRuntime.createRefreshTask({
+        interval: 60 * 60 * 1000,
+        dueAt: Date.now() + 60 * 60 * 1000,
+        run: () => registration.update().catch(() => {})
+      });
     } catch (error) {
       document.documentElement.dataset.rhwPwa = 'unavailable';
       console.warn('RHW PWA registration unavailable:', String(error?.message || error));
@@ -4862,9 +4716,6 @@ window.__RHW_RECIPE_CATALOG_GZIP_BASE64__ = (window.__RHW_RECIPE_CATALOG_GZIP_BA
         message: 'YOU CAN FINISH WORK IN THIS TAB. SAVE PRICES AND EDITOR INPUTS BEFORE RESTARTING.',
         primaryLabel: 'RESTART', onPrimary: () => requestRestart() });
     }
-  });
-  document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') state.registration?.update().catch(() => {});
   });
 
   window.RHWPWA = { state, register, announceUpdate, requestRestart, hasSessionPrices, showInstallHelp, showManualInstructions, manualInstructions, syncConnectionState, isStandalone };
@@ -5011,6 +4862,7 @@ window.__RHW_RECIPE_CATALOG_GZIP_BASE64__ = (window.__RHW_RECIPE_CATALOG_GZIP_BA
     if (label) { label.textContent = run.label; label.dataset.tone = run.tone; }
     if (detail) detail.textContent = run.detail;
     app.diagnostics?.render?.();
+    app.rendered?.('discovery');
     if (button) { button.disabled = state.checking; button.textContent = state.checking ? 'CHECKING…' : 'CHECK LATEST RUN'; }
   }
 
@@ -5062,7 +4914,6 @@ window.__RHW_RECIPE_CATALOG_GZIP_BASE64__ = (window.__RHW_RECIPE_CATALOG_GZIP_BA
   async function init() {
     state.status = await loadStatus();
     mount(state.status);
-    checkLatestRun();
     return state.status;
   }
 
@@ -6012,14 +5863,6 @@ window.__RHW_RECIPE_CATALOG_GZIP_BASE64__ = (window.__RHW_RECIPE_CATALOG_GZIP_BA
   const baseStoredNode = app.workspaceStoredNode;
   let unsubscribeStatus = null;
 
-  function installStyles() {
-    if (document.getElementById('rhwCommandReworkStyle')) return;
-    const style = document.createElement('style');
-    style.id = 'rhwCommandReworkStyle';
-    style.dataset.stylesheet = '35-app-interface-cleanup.css';
-    document.head.appendChild(style);
-  }
-
   function navMarkup() {
     return `<div class="workspace-subnav-tabs command-module-grid">${MODULES.map(module => `
       <button type="button" data-command-node="${module.key}" data-state="waiting" aria-label="${module.label}: ${module.sub}">
@@ -6138,7 +5981,7 @@ window.__RHW_RECIPE_CATALOG_GZIP_BASE64__ = (window.__RHW_RECIPE_CATALOG_GZIP_BA
   }
 
   function install() {
-    installStyles();
+
     buildNavigation();
     movePriorityActions();
     clearInterval(app.commandOverviewTimer);
@@ -6246,11 +6089,6 @@ window.__RHW_RECIPE_CATALOG_GZIP_BASE64__ = (window.__RHW_RECIPE_CATALOG_GZIP_BA
   function fmt(value) { return app.util.number(Math.max(0, Number(value) || 0)); }
 
   function installStyles() {
-    if (document.getElementById('rhwUnifiedWorkspaceStyle')) return;
-    const style = document.createElement('style');
-    style.id = 'rhwUnifiedWorkspaceStyle';
-    style.dataset.stylesheet = '35-app-interface-cleanup.css';
-    document.head.appendChild(style);
     document.documentElement.classList.add('rhw-unified-ui');
   }
 
@@ -6437,7 +6275,6 @@ window.__RHW_RECIPE_CATALOG_GZIP_BASE64__ = (window.__RHW_RECIPE_CATALOG_GZIP_BA
 
   function selfTest() {
     const failures = [];
-    if (!document.getElementById('rhwUnifiedWorkspaceStyle')) failures.push('style');
     if (document.querySelectorAll('.app-tabs .rhw-workspace-index').length !== 3) failures.push('workspace-tabs');
     if (!document.getElementById('commandControlDeck')) failures.push('command-control-deck');
     if (!document.getElementById('commandGlobalSearch')) failures.push('command-search');
@@ -6484,15 +6321,7 @@ window.__RHW_RECIPE_CATALOG_GZIP_BASE64__ = (window.__RHW_RECIPE_CATALOG_GZIP_BA
     operationsActivate: app.operations?.activate,
     discoveryInit: app.discoveryStatus?.init
   };
-  let discoveryObserver = null;
-
-  function installStyles() {
-    if (document.getElementById('rhwUiPolishFixStyle')) return;
-    const style = document.createElement('style');
-    style.id = 'rhwUiPolishFixStyle';
-    style.dataset.stylesheet = '35-app-interface-cleanup.css';
-    document.head.appendChild(style);
-  }
+  let unsubscribeDiscovery = null;
 
   function relabelCalculator() {
     const tab = document.querySelector('.app-tabs [data-workspace="operations"]');
@@ -6545,9 +6374,8 @@ window.__RHW_RECIPE_CATALOG_GZIP_BASE64__ = (window.__RHW_RECIPE_CATALOG_GZIP_BA
     details.open = false;
     updateDiscoverySummary();
 
-    discoveryObserver?.disconnect();
-    discoveryObserver = new MutationObserver(updateDiscoverySummary);
-    discoveryObserver.observe(panel, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ['data-tone'] });
+    unsubscribeDiscovery?.();
+    unsubscribeDiscovery = app.onRender('discovery', updateDiscoverySummary);
     return true;
   }
 
@@ -6590,7 +6418,6 @@ window.__RHW_RECIPE_CATALOG_GZIP_BASE64__ = (window.__RHW_RECIPE_CATALOG_GZIP_BA
     return failures;
   }
 
-  installStyles();
 
   app.setActiveNode = function polishedActiveNode(value) {
     const next = String(value || '').replace(/^OPERATIONS\b/, 'CALCULATOR').replace(/^FABRICATION\b/, 'CALCULATOR');
@@ -6675,14 +6502,6 @@ window.__RHW_RECIPE_CATALOG_GZIP_BASE64__ = (window.__RHW_RECIPE_CATALOG_GZIP_BA
     commandInit: app.command.init,
     commandActivate: app.command.activate
   };
-
-  function installStyles() {
-    if (document.getElementById('rhwStabilityPolishStyle')) return;
-    const style = document.createElement('style');
-    style.id = 'rhwStabilityPolishStyle';
-    style.dataset.stylesheet = '35-app-interface-cleanup.css';
-    document.head.appendChild(style);
-  }
 
   function setLogisticsView(view = 'market') {
     const safe = view === 'materials' ? 'materials' : 'market';
@@ -6854,7 +6673,6 @@ window.__RHW_RECIPE_CATALOG_GZIP_BASE64__ = (window.__RHW_RECIPE_CATALOG_GZIP_BA
     const materials = document.getElementById('materialsScanSection');
     const legacy = document.getElementById('externalLogisticsPanel');
     const commandButtons = [...document.querySelectorAll('#commandNodeNav [data-command-node]')];
-    if (!document.getElementById('rhwStabilityPolishStyle')) failures.push('style');
     if (!panel || !nav || nav.parentElement !== panel || nav.nextElementSibling !== market) failures.push('logistics-nav-order');
     if (market?.nextElementSibling !== materials || materials?.nextElementSibling !== legacy) failures.push('logistics-surface-order');
     if (nav?.querySelectorAll('[data-logistics-view]').length !== 2) failures.push('logistics-tabs');
@@ -6864,7 +6682,6 @@ window.__RHW_RECIPE_CATALOG_GZIP_BASE64__ = (window.__RHW_RECIPE_CATALOG_GZIP_BA
     return failures;
   }
 
-  installStyles();
 
   if (typeof base.commandInit === 'function') {
     app.command.init = function stabilityCommandInit(...args) {
@@ -6921,15 +6738,7 @@ window.__RHW_RECIPE_CATALOG_GZIP_BASE64__ = (window.__RHW_RECIPE_CATALOG_GZIP_BA
   if (!app?.command || !app?.unifiedUi || app.commandCompactPolish) return;
 
   const base = { commandInit: app.command.init, commandActivate: app.command.activate };
-  let alertObserver = null;
-
-  function installStyles() {
-    if (document.getElementById('rhwCommandCompactPolishStyle')) return;
-    const style = document.createElement('style');
-    style.id = 'rhwCommandCompactPolishStyle';
-    style.dataset.stylesheet = '35-app-interface-cleanup.css';
-    document.head.appendChild(style);
-  }
+  let unsubscribeAlerts = null;
 
   function installInventoryInteraction(nav) {
     if (!nav || nav.dataset.rhwCompactInteraction === 'true') return;
@@ -7060,14 +6869,12 @@ window.__RHW_RECIPE_CATALOG_GZIP_BASE64__ = (window.__RHW_RECIPE_CATALOG_GZIP_BA
   }
 
   function watchAlerts() {
-    const list = document.getElementById('v40PriorityList');
-    if (!list || alertObserver) return;
-    alertObserver = new MutationObserver(() => requestAnimationFrame(syncAlerts));
-    alertObserver.observe(list, { childList: true, subtree: true, characterData: true });
+    if (unsubscribeAlerts) return;
+    unsubscribeAlerts = app.onUiUpdate(syncAlerts);
   }
 
   function sync() {
-    installStyles();
+
     mountInventoryNav();
     installAttentionToggle();
     syncAlerts();
@@ -7080,7 +6887,6 @@ window.__RHW_RECIPE_CATALOG_GZIP_BASE64__ = (window.__RHW_RECIPE_CATALOG_GZIP_BA
     const deck = document.getElementById('commandControlDeck');
     const all = document.querySelector('[data-command-focus-mode="all"]');
     const attention = document.querySelector('[data-command-focus-mode="attention"]');
-    if (!document.getElementById('rhwCommandCompactPolishStyle')) failures.push('style');
     if (!deck || inventoryNav?.parentElement !== deck) failures.push('inventory-toolbar');
     if (document.getElementById('commandGlobalAlerts')?.parentElement !== deck) failures.push('alerts-toolbar');
     if (!document.querySelector('#commandAlertDetails .command-focus-modes')) failures.push('unified-attention');
@@ -7091,7 +6897,6 @@ window.__RHW_RECIPE_CATALOG_GZIP_BASE64__ = (window.__RHW_RECIPE_CATALOG_GZIP_BA
     return failures;
   }
 
-  installStyles();
   if (typeof base.commandInit === 'function') {
     app.command.init = function compactCommandInit(...args) {
       const result = base.commandInit.apply(this, args);
@@ -7110,7 +6915,7 @@ window.__RHW_RECIPE_CATALOG_GZIP_BASE64__ = (window.__RHW_RECIPE_CATALOG_GZIP_BA
   }
 
   app.commandCompactPolish = {
-    installStyles,
+
     mountInventoryNav,
     installAttentionToggle,
     syncAlerts,
@@ -7146,25 +6951,11 @@ window.__RHW_RECIPE_CATALOG_GZIP_BASE64__ = (window.__RHW_RECIPE_CATALOG_GZIP_BA
     'comms/senders': 'senders'
   });
 
-  const base = {
-    installShell: app.installShell,
-    applyRoute: app.applyRoute,
-    navigate: app.navigate,
-    operationsInit: app.operations?.init,
-    operationsActivate: app.operations?.activate,
-    commsInit: app.comms?.init,
-    commsActivate: app.comms?.activate
-  };
+  const baseInstallShell = app.installShell;
 
   let toolOpenedBy = null;
-  let syncTimer = 0;
 
   function installStyles() {
-    if (document.getElementById('rhwFocusPassStyle')) return;
-    const style = document.createElement('style');
-    style.id = 'rhwFocusPassStyle';
-    style.dataset.stylesheet = '35-app-interface-cleanup.css';
-    document.head.appendChild(style);
     document.documentElement.classList.add('rhw-focus-pass');
   }
 
@@ -7336,12 +7127,7 @@ window.__RHW_RECIPE_CATALOG_GZIP_BASE64__ = (window.__RHW_RECIPE_CATALOG_GZIP_BA
     syncHeadings(toolKey);
   }
 
-  function queueSync() {
-    clearTimeout(syncTimer);
-    syncTimer = window.setTimeout(sync, 0);
-    window.setTimeout(sync, 90);
-    window.setTimeout(sync, 260);
-  }
+  const queueSync = () => app.requestUiUpdate();
 
   function openTool(key) {
     const tool = TOOL_META[key];
@@ -7398,52 +7184,13 @@ window.__RHW_RECIPE_CATALOG_GZIP_BASE64__ = (window.__RHW_RECIPE_CATALOG_GZIP_BA
   }
 
   app.installShell = function focusedInstallShell(...args) {
-    const result = base.installShell.apply(this, args);
+    const result = baseInstallShell.apply(this, args);
     sync();
     bindPrimaryDefaults();
     return result;
   };
 
-  app.applyRoute = function focusedApplyRoute(...args) {
-    const result = base.applyRoute.apply(this, args);
-    queueSync();
-    return result;
-  };
-
-  app.navigate = function focusedNavigate(workspace, node, options) {
-    const result = base.navigate.call(this, workspace, node, options);
-    queueSync();
-    return result;
-  };
-
-  if (typeof base.operationsInit === 'function') {
-    app.operations.init = async function focusedOperationsInit(...args) {
-      const result = await base.operationsInit.apply(this, args);
-      queueSync();
-      return result;
-    };
-  }
-  if (typeof base.operationsActivate === 'function') {
-    app.operations.activate = function focusedOperationsActivate(node, options) {
-      const result = base.operationsActivate.call(this, node, options);
-      queueSync();
-      return result;
-    };
-  }
-  if (typeof base.commsInit === 'function') {
-    app.comms.init = function focusedCommsInit(...args) {
-      const result = base.commsInit.apply(this, args);
-      queueSync();
-      return result;
-    };
-  }
-  if (typeof base.commsActivate === 'function') {
-    app.comms.activate = function focusedCommsActivate(node, options) {
-      const result = base.commsActivate.call(this, node, options);
-      queueSync();
-      return result;
-    };
-  }
+  app.onUiUpdate(sync);
 
   app.focusPass = { installStyles, relabelPrimaryTabs, mountTools, openTools, closeTools, openTool, sync, selfTest, tools: TOOL_META };
 })();
@@ -7492,7 +7239,6 @@ window.__RHW_RECIPE_CATALOG_GZIP_BASE64__ = (window.__RHW_RECIPE_CATALOG_GZIP_BA
   const state = {
     initialized: false,
     loading: false,
-    timer: 0,
     overrides: app.store.get(STORAGE.overrides, {}) || {},
     sourceCache: app.store.get(STORAGE.sources, {}) || {},
     marketCache: app.store.get(STORAGE.market, {}) || {},
@@ -7503,16 +7249,12 @@ window.__RHW_RECIPE_CATALOG_GZIP_BASE64__ = (window.__RHW_RECIPE_CATALOG_GZIP_BA
     receivedAt: 0
   };
 
-  const base = {
-    installShell: app.installShell,
-    activateWorkspace: app.activateWorkspace,
-    applyRoute: app.applyRoute,
-    navigate: app.navigate,
-    workspaceStoredNode: app.workspaceStoredNode,
-    workspaceModule: app.workspaceModule,
-    routeParse: app.route.parse,
-    routeWrite: app.route.write
-  };
+  const baseInstallShell = app.installShell;
+  const refreshTask = window.RHWRuntime.createRefreshTask({
+    interval: AUTO_REFRESH_MS,
+    enabled: () => state.initialized && app.state.activeWorkspace === 'pricecheck',
+    run: (options = { quiet: true }) => refreshMarket(options)
+  });
 
   const esc = value => app.util.escape(value);
   const normalize = value => String(value ?? '')
@@ -7546,11 +7288,6 @@ window.__RHW_RECIPE_CATALOG_GZIP_BASE64__ = (window.__RHW_RECIPE_CATALOG_GZIP_BA
   }
 
   function installStyles() {
-    if (document.getElementById('rhwPriceCheckStyle')) return;
-    const style = document.createElement('style');
-    style.id = 'rhwPriceCheckStyle';
-    style.dataset.stylesheet = '35-app-interface-cleanup.css';
-    document.head.appendChild(style);
     document.documentElement.classList.add('rhw-pricecheck-enabled');
   }
 
@@ -7617,7 +7354,7 @@ window.__RHW_RECIPE_CATALOG_GZIP_BASE64__ = (window.__RHW_RECIPE_CATALOG_GZIP_BA
     panel.dataset.priceCheckBound = 'true';
     panel.addEventListener('click', event => {
       if (event.target.closest('#priceCheckRefresh')) {
-        refreshMarket({ forceResolve: true });
+        refreshTask.refresh({ forceResolve: true });
         return;
       }
       const reset = event.target.closest('[data-pricecheck-reset]');
@@ -7640,12 +7377,7 @@ window.__RHW_RECIPE_CATALOG_GZIP_BASE64__ = (window.__RHW_RECIPE_CATALOG_GZIP_BA
       }
       app.store.set(STORAGE.overrides, state.overrides);
       render();
-      const restored = document.querySelector(`[data-pricecheck-override="${CSS.escape(key)}"]`);
-      restored?.focus({ preventScroll: true });
-      if (restored && raw) {
-        restored.value = raw;
-        try { restored.setSelectionRange(raw.length, raw.length); } catch {}
-      }
+
     });
   }
 
@@ -7863,7 +7595,6 @@ window.__RHW_RECIPE_CATALOG_GZIP_BASE64__ = (window.__RHW_RECIPE_CATALOG_GZIP_BA
     } finally {
       state.loading = false;
       render();
-      scheduleRefresh();
     }
   }
 
@@ -7939,6 +7670,7 @@ window.__RHW_RECIPE_CATALOG_GZIP_BASE64__ = (window.__RHW_RECIPE_CATALOG_GZIP_BA
   }
 
   function render() {
+    if (app.state.activeWorkspace !== 'pricecheck') return;
     const grid = document.getElementById('priceCheckStatusGrid');
     const rowsNode = document.getElementById('priceCheckRows');
     const note = document.getElementById('priceCheckNote');
@@ -7946,8 +7678,36 @@ window.__RHW_RECIPE_CATALOG_GZIP_BASE64__ = (window.__RHW_RECIPE_CATALOG_GZIP_BA
     if (!grid || !rowsNode || !note) return;
 
     const rows = ROUTES.map(effectiveRow);
-    grid.innerHTML = statusMarkup(rows);
-    rowsNode.innerHTML = rows.map(rowMarkup).join('');
+    const status = statusMarkup(rows);
+    if (grid.innerHTML !== status) grid.innerHTML = status;
+    rows.forEach(row => {
+      const key = row.route.key;
+      const existing = rowsNode.querySelector(`[data-route-key="${key}"]`);
+      if (!existing) { rowsNode.insertAdjacentHTML('beforeend', rowMarkup(row)); return; }
+      const fragment = document.createElement('tbody');
+      fragment.innerHTML = rowMarkup(row);
+      const next = fragment.firstElementChild;
+      [...next.children].forEach((cell, index) => {
+        const current = existing.children[index];
+        if (index !== 2) {
+          current.className = cell.className;
+          if (current.innerHTML !== cell.innerHTML) current.innerHTML = cell.innerHTML;
+          return;
+        }
+        // Keep the real input in place, including an incomplete number being typed.
+        const input = current.querySelector('input');
+        const nextInput = cell.querySelector('input');
+        input.placeholder = nextInput.placeholder;
+        if (document.activeElement !== input && input.value !== nextInput.value) input.value = nextInput.value;
+        const live = current.querySelector('.pricecheck-live');
+        const nextLive = cell.querySelector('.pricecheck-live');
+        live.className = nextLive.className;
+        if (live.textContent !== nextLive.textContent) live.textContent = nextLive.textContent;
+        const reset = current.querySelector('[data-pricecheck-reset]');
+        if (!row.hasOverride) reset?.remove();
+        else if (!reset) live.before(cell.querySelector('[data-pricecheck-reset]'));
+      });
+    });
 
     const rhw = rhwSnapshot();
     const parts = [state.marketLabel];
@@ -7959,11 +7719,6 @@ window.__RHW_RECIPE_CATALOG_GZIP_BASE64__ = (window.__RHW_RECIPE_CATALOG_GZIP_BA
       refresh.disabled = state.loading;
       refresh.textContent = state.loading ? 'REFRESHING…' : 'REFRESH MARKET';
     }
-  }
-
-  function scheduleRefresh() {
-    window.clearTimeout(state.timer);
-    state.timer = window.setTimeout(() => refreshMarket({ quiet: true }), AUTO_REFRESH_MS);
   }
 
   function normalizeOverrides(raw) {
@@ -7983,14 +7738,14 @@ window.__RHW_RECIPE_CATALOG_GZIP_BASE64__ = (window.__RHW_RECIPE_CATALOG_GZIP_BA
     state.initialized = true;
     render();
     const cachedAt = state.marketCache?.fetchedAt ? new Date(state.marketCache.fetchedAt).getTime() : 0;
-    if (!cachedAt || Date.now() - cachedAt >= AUTO_REFRESH_MS) refreshMarket({ quiet: Boolean(cachedAt) });
-    else {
+    if (cachedAt) {
       state.marketTone = 'warn';
       state.marketLabel = 'CACHED MARKET';
       state.marketDetail = `SNAPSHOT ${new Date(cachedAt).toLocaleString('de-DE')}`;
       render();
-      scheduleRefresh();
     }
+    refreshTask.setDueAt(Number.isFinite(cachedAt) && cachedAt > 0
+      ? Math.min(cachedAt, Date.now()) + AUTO_REFRESH_MS : Date.now());
     return true;
   }
 
@@ -8004,92 +7759,19 @@ window.__RHW_RECIPE_CATALOG_GZIP_BASE64__ = (window.__RHW_RECIPE_CATALOG_GZIP_BA
     return 'routes';
   }
 
-  function activatePriceWorkspace() {
-    app.state.activeWorkspace = 'pricecheck';
-    app.store.set(app.config.storageKeys.activeWorkspace, 'pricecheck');
-    document.body.dataset.workspace = 'pricecheck';
-    document.body.removeAttribute('data-rhw-focus-tool');
-    app.focusPass?.closeTools?.();
-    document.querySelectorAll('.app-workspace').forEach(panel => {
-      panel.hidden = panel.id !== 'workspacePricecheck';
-    });
-    document.querySelectorAll('.app-tabs [data-workspace]').forEach(button => {
-      const active = button.dataset.workspace === 'pricecheck';
-      button.classList.toggle('active', active);
-      button.setAttribute('aria-selected', active ? 'true' : 'false');
-      button.tabIndex = active ? 0 : -1;
-    });
-  }
-
-  function isPriceRoute() {
-    const parts = location.hash.replace(/^#/, '').toLowerCase().split('/').filter(Boolean);
-    return parts[0] === 'pricecheck';
-  }
-
-  function priceRoute() {
-    const parts = location.hash.replace(/^#/, '').toLowerCase().split('/').filter(Boolean);
-    return { workspace: 'pricecheck', node: parts[1] || 'routes' };
-  }
-
   app.installShell = function priceCheckInstallShell(...args) {
-    const result = base.installShell.apply(this, args);
+    const result = baseInstallShell.apply(this, args);
     if (result) ensureShell();
     return result;
   };
 
-  app.activateWorkspace = function priceCheckActivateWorkspace(workspace) {
-    if (workspace === 'pricecheck') {
-      activatePriceWorkspace();
-      return;
-    }
-    return base.activateWorkspace.call(this, workspace);
-  };
-
-  app.workspaceStoredNode = function priceCheckStoredNode(workspace) {
-    if (workspace === 'pricecheck') return 'routes';
-    return base.workspaceStoredNode.call(this, workspace);
-  };
-
-  app.workspaceModule = function priceCheckWorkspaceModule(workspace) {
-    if (workspace === 'pricecheck') return app.pricecheck;
-    return base.workspaceModule.call(this, workspace);
-  };
-
-  app.route.parse = function priceCheckParse() {
-    if (isPriceRoute()) return priceRoute();
-    return base.routeParse.call(this);
-  };
-
-  app.route.write = function priceCheckWrite(workspace, node, { replace = false } = {}) {
-    if (workspace !== 'pricecheck') return base.routeWrite.call(this, workspace, node, { replace });
-    const next = '#pricecheck/routes';
-    if (location.hash === next) return;
-    const method = replace ? 'replaceState' : 'pushState';
-    history[method]({ rhwWorkspace: 'pricecheck', rhwNode: 'routes' }, '', next);
-  };
-
-  app.applyRoute = function priceCheckApplyRoute(options = {}) {
-    const route = app.route.parse();
-    const stored = app.store.get(app.config.storageKeys.activeWorkspace, 'command');
-    if (route.workspace === 'pricecheck' || (!route.workspace && stored === 'pricecheck')) {
-      activatePriceWorkspace();
-      activate(route.node || 'routes', { updateRoute: false });
-      if (options.replace || location.hash !== '#pricecheck/routes') app.route.write('pricecheck', 'routes', { replace: true });
-      return;
-    }
-    return base.applyRoute.call(this, options);
-  };
-
-  app.navigate = function priceCheckNavigate(workspace, node, options = {}) {
-    if (workspace !== 'pricecheck') return base.navigate.call(this, workspace, node, options);
-    activatePriceWorkspace();
-    activate(node || 'routes', { updateRoute: false });
-    app.route.write('pricecheck', 'routes', { replace: Boolean(options.replace) });
-  };
+  // RHW payout changes arrive through the same telemetry notifications as COMMAND.
+  app.onUiUpdate(() => {
+    if (state.initialized && app.state.activeWorkspace === 'pricecheck') render();
+  });
 
   function selfTest() {
     const failures = [];
-    if (!document.getElementById('rhwPriceCheckStyle')) failures.push('style');
     if (!document.querySelector('.app-tabs [data-workspace="pricecheck"]')) failures.push('tab');
     if (!document.getElementById('workspacePricecheck')) failures.push('workspace');
     if (ROUTES.length !== 12) failures.push('route-count');
@@ -8106,7 +7788,7 @@ window.__RHW_RECIPE_CATALOG_GZIP_BASE64__ = (window.__RHW_RECIPE_CATALOG_GZIP_BA
     init,
     activate,
     render,
-    refresh: options => refreshMarket(options || {}),
+    refresh: options => refreshTask.refresh(options || {}),
     selfTest,
     resolveSource,
     marketGoodFor,
@@ -8245,7 +7927,6 @@ window.__RHW_RECIPE_CATALOG_GZIP_BASE64__ = (window.__RHW_RECIPE_CATALOG_GZIP_BA
       if (!app.fullAudit?.init?.()) throw new Error('RHW FULL APP AUDIT COULD NOT MOUNT');
       app.applyRoute({ replace: true });
       if (!app.navHierarchy?.init?.()) throw new Error('V4 NAVIGATION HIERARCHY COULD NOT MOUNT');
-      app.commsSafety?.polishOperations?.();
       document.querySelectorAll('#workspaceOperations .ops-price-input-wrap > span').forEach(node => {
         if (node.textContent.trim() === 'CR') node.textContent = '$';
       });

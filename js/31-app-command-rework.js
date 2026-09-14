@@ -21,14 +21,6 @@
   const baseStoredNode = app.workspaceStoredNode;
   let unsubscribeStatus = null;
 
-  function installStyles() {
-    if (document.getElementById('rhwCommandReworkStyle')) return;
-    const style = document.createElement('style');
-    style.id = 'rhwCommandReworkStyle';
-    style.dataset.stylesheet = '35-app-interface-cleanup.css';
-    document.head.appendChild(style);
-  }
-
   function navMarkup() {
     return `<div class="workspace-subnav-tabs command-module-grid">${MODULES.map(module => `
       <button type="button" data-command-node="${module.key}" data-state="waiting" aria-label="${module.label}: ${module.sub}">
@@ -147,7 +139,7 @@
   }
 
   function install() {
-    installStyles();
+
     buildNavigation();
     movePriorityActions();
     clearInterval(app.commandOverviewTimer);

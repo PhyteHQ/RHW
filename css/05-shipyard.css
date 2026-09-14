@@ -2,7 +2,7 @@
        V3.4 COMPACT DUAL-FACILITY UPLINK
        ========================================= */
     .remote-panel .remote-panel-head { padding: 13px 18px; }
-    .remote-panel .remote-panel-title { font-size: 22px; }
+
     .remote-panel .remote-route { gap: 5px 14px; margin-top: 3px; }
 
     .supplier-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: stretch; justify-content: initial; gap: 12px; padding: 14px; }

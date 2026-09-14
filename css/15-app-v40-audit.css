@@ -10,7 +10,7 @@ html[data-rhw-app="v4"] body[data-workspace="comms"] .rhw-workspace-root {
   background: radial-gradient(circle at 86% 0%, rgba(125,167,234,.045), transparent 30%);
 }
 
-.app-active-node { font-size: 8px !important; color: rgba(212,175,55,.78) !important; }
+.app-active-node { font-size: 8px !important;  }
 .workspace-subnav button span { font-size: 10.5px; }
 .workspace-subnav button small { font-size: 7.5px; }
 .workspace-subnav button.active {
@@ -64,22 +64,11 @@ html[data-rhw-app="v4"] body[data-workspace="comms"] .rhw-workspace-root {
 .command-priority-empty span { margin-top: 5px; color: rgba(151,157,164,.58); font-family: var(--font-tech); font-size: 8px; letter-spacing: .07em; }
 
 /* COMMAND / Inventory views */
-.inventory-view-nav {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0,1fr));
-  width: min(100%, 720px);
-  margin: 0 auto 14px;
-  border: 1px solid rgba(212,175,55,.14);
-  background: rgba(5,7,9,.82);
-}
+
 .inventory-view-nav button {
-  min-height: 48px;
-  padding: 8px 14px;
-  border: 0;
+
   border-right: 1px solid rgba(255,255,255,.05);
-  clip-path: none;
-  background: transparent;
-  text-align: left;
+
   box-shadow: none;
 }
 .inventory-view-nav button:last-child { border-right: 0; }
@@ -87,8 +76,7 @@ html[data-rhw-app="v4"] body[data-workspace="comms"] .rhw-workspace-root {
 .inventory-view-nav small { display: block; font-family: var(--font-tech); }
 .inventory-view-nav span { color: rgba(220,222,224,.72); font-size: 9px; font-weight: 700; letter-spacing: .1em; }
 .inventory-view-nav small { margin-top: 3px; color: rgba(139,145,152,.54); font-size: 7px; letter-spacing: .08em; }
-.inventory-view-nav button.active { background: rgba(212,175,55,.085); box-shadow: inset 0 -2px 0 var(--gold); }
-.inventory-view-nav button.active span { color: #f0d994; }
+
 .inventory-view-panel { display: flex; flex-direction: column; gap: var(--layout-gap, 18px); }
 
 /* COMMS authoring controls */
@@ -145,21 +133,6 @@ html[data-rhw-app="v4"] body[data-workspace="comms"] .rhw-workspace-root {
 .forum-preview[data-template="announcement"] { background-image: radial-gradient(circle at 50% 0%, rgba(120,173,138,.065), transparent 34%); }
 
 /* TICKER builder */
-#v40TickerMessage { min-height: 124px; }
-.ticker-builder-preview { display: grid; gap: 7px; padding: 0 18px 18px; }
-.ticker-builder-preview > small { color: rgba(125,167,234,.68); font-family: var(--font-tech); font-size: 8px; letter-spacing: .1em; }
-.ticker-builder-bar {
-  display: grid;
-  grid-template-columns: auto minmax(0,1fr);
-  min-height: 48px;
-  border: 1px solid rgba(255,255,255,.065);
-  background: rgba(2,3,4,.92);
-  overflow: hidden;
-}
-.ticker-builder-label { display: flex; align-items: center; padding: 9px 12px; color: #e4d39c; background: rgba(212,175,55,.08); border-right: 1px solid rgba(212,175,55,.16); font-family: var(--font-tech); font-size: 8px; font-weight: 700; letter-spacing: .08em; }
-.ticker-builder-copy { min-width: 0; display: flex; align-items: center; gap: 10px; padding: 9px 13px; font-family: var(--font-tech); font-size: 9px; }
-.ticker-builder-copy b { flex: 0 0 auto; color: var(--ticker-tone, #8b9198); letter-spacing: .08em; }
-.ticker-builder-copy span { min-width: 0; color: #d8dce1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* Sender editor */
 .sender-editor { margin: 0 18px 18px; border: 1px solid rgba(125,167,234,.17); background: rgba(7,10,14,.84); }
@@ -185,36 +158,28 @@ html[data-rhw-app="v4"] body[data-workspace="comms"] .rhw-workspace-root {
 }
 
 @media (max-width: 760px) {
-  .command-priority-panel { margin: 0 11px 11px; }
-  .command-priority-item { grid-template-columns: 68px minmax(0,1fr); }
-  .command-priority-item > b { display: none; }
-  .inventory-view-nav { width: calc(100% - 22px); }
+
   .inventory-view-nav small { display: none; }
   .comms-custom-sender { grid-template-columns: 1fr; }
   .comms-editor-toolbar { overflow-x: auto; flex-wrap: nowrap; scrollbar-width: none; }
   .comms-editor-toolbar::-webkit-scrollbar { display: none; }
   .comms-editor-toolbar button { flex: 0 0 auto; }
-  .ticker-builder-bar { grid-template-columns: 1fr; }
-  .ticker-builder-label { border-right: 0; border-bottom: 1px solid rgba(212,175,55,.13); }
+
   .sender-editor { margin-inline: 13px; }
 }
 
 @media (max-width: 430px) {
   .workspace-subnav button { min-width: 118px; }
   .workspace-subnav button span { font-size: 9.5px; }
-  .command-priority-head { align-items: flex-start; flex-direction: column; }
-  .command-priority-item { grid-template-columns: 1fr; gap: 5px; }
-  .command-priority-item .priority-state { font-size: 7px; }
+
   .inventory-view-nav { grid-template-columns: 1fr 1fr; }
   .inventory-view-nav button { padding-inline: 9px; text-align: center; }
-  .ticker-builder-copy { align-items: flex-start; flex-direction: column; gap: 4px; }
-  .ticker-builder-copy span { white-space: normal; }
+
 }
 
 .v40-smoke-mode *,
 .v40-smoke-mode *::before,
 .v40-smoke-mode *::after { animation-duration: .001ms !important; transition-duration: .001ms !important; scroll-behavior: auto !important; }
-
 
 /* Local persistence failure: visible, keyboard-accessible and mobile-safe. */
 .rhw-storage-warning {
