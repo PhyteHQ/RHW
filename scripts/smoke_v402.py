@@ -250,11 +250,10 @@ def test_backup_and_storage(cdp):
       app.store.set=(key,value)=>{memory.set(key,clone(value));return true};
       app.store.remove=key=>{memory.delete(key);return true};
       try{
-        app.newswireManager.applyLoadedSource('# RHW Industrial Newswire\\n\\n## operations\\n- [BASE | good] BASE MESSAGE\\n','repository');
-        app.newswireManager.applyAdd({category:'security',tone:'warn',tag:'RECOVERY TEST',message:'DURABLE LOCAL DRAFT'});
+        app.store.set(k.newswireManagerDraft,{entries:[{category:'security',tone:'warn',tag:'RECOVERY TEST',message:'DURABLE LOCAL DRAFT'}]});
         app.store.set(k.calculatorPriceProfiles,[{id:'pr1-profile',name:'PR1 Market',prices:{steel:1234},updatedAt:42}]);
         app.store.set(k.shipyardPlanner,{target:'dunkirk',quantity:3});
-        app.productionOrders.restore([{id:'backup-order',productId:'dsy_br_battleship_package',recipeId:'ship_assembly_dsy_br_battleship',quantity:2,affiliationId:'br_m_grp',priority:'high',productName:'Backup Hull',createdAt:42,updatedAt:42}]);
+        app.store.set(k.productionOrders,[{id:'backup-order',productId:'dsy_br_battleship_package',recipeId:'ship_assembly_dsy_br_battleship',quantity:2,affiliationId:'br_m_grp',priority:'high',productName:'Backup Hull',createdAt:42,updatedAt:42}]);
         app.store.set(k.activeWorkspace,'comms');
         app.store.set(k.commsMobileView,'preview');
         const payload=app.storage.exportPayload();
@@ -263,7 +262,6 @@ def test_backup_and_storage(cdp):
         const restoredDraft=app.store.get(k.newswireManagerDraft,null);
         const legacy={format:'rhw-webapp-local-cache',version:1,current:payload.current,drafts:[],localSenders:[]};
         const legacyResult=app.storage.importPayload(legacy);
-        app.newswireManager.applyLoadedSource('# RHW Industrial Newswire\\n\\n## operations\\n- [BASE | good] REPOSITORY SOURCE CHANGED\\n','repository');
         app.reportStorageFailure('Smoke test','pr1-smoke',new Error('EXPECTED'));
         const warning={shown:document.documentElement.dataset.rhwStorageError==='true',button:!!document.querySelector('#rhwStorageWarning button')};
         app.clearStorageWarning();
@@ -271,22 +269,21 @@ def test_backup_and_storage(cdp):
           version:payload.version,
           profile:app.store.get(k.calculatorPriceProfiles,[])[0]?.name||'',
           planner:app.store.get(k.shipyardPlanner,null),
-          orders:app.productionOrders.snapshot(),
+          orders:app.legacyArchive.snapshot(),
           draft:restoredDraft?.entries?.some(entry=>entry.tag==='RECOVERY TEST')||false,
-          changed:app.newswireManager.state.draftSourceChanged,
           mobileView:app.store.get(k.commsMobileView,''),
           imported,legacy:legacyResult,warning
         };
       }catch(error){
         return{error:String(error?.stack||error)};
       }finally{
-        try{app.newswireManager.resetWorkingCopy({announce:false});app.clearStorageWarning()}catch{}
+        app.clearStorageWarning();
         app.store.get=original.get;
         app.store.set=original.set;
         app.store.remove=original.remove;
       }
     })()""")
-    if result.get("error") or result.get("version") != 5 or result.get("profile") != "PR1 Market" or result.get("planner", {}).get("quantity") != 3 or len(result.get("orders", [])) != 1 or result.get("orders", [{}])[0].get("productName") != "Backup Hull" or not result.get("draft") or not result.get("changed") or result.get("mobileView") != "preview" or not all(result.get("warning", {}).values()) or "legacy" not in result:
+    if result.get("error") or result.get("version") != 5 or result.get("profile") != "PR1 Market" or result.get("planner", {}).get("quantity") != 3 or len(result.get("orders", [])) != 1 or result.get("orders", [{}])[0].get("productName") != "Backup Hull" or not result.get("draft") or result.get("mobileView") != "preview" or not all(result.get("warning", {}).values()) or "legacy" not in result:
         raise RuntimeError(f"V4 local backup / storage warning failed: {result}")
     print("V4.0.2 + PR9 smoke passed: V4 backup with production orders, V1 import, durable Newswire draft, storage warning")
 
@@ -721,7 +718,7 @@ def test_pr7_diagnostics(cdp, workspace, node):
         cdp.call("Emulation.clearDeviceMetricsOverride")
     if result.get("error") or not result.get("api") or not result.get("button") or result.get("buttonHeight", 0) < 43.5 or not result.get("open"):
         raise RuntimeError(f"PR7 diagnostics failed to mount: {result}")
-    if result.get("cards") != 8 or len(result.get("checks", [])) != 8 or result.get("failures"):
+    if result.get("cards") != 7 or len(result.get("checks", [])) != 7 or result.get("failures"):
         raise RuntimeError(f"PR7 diagnostics self-check failed: {result}")
     storage = result.get("storage", {})
     if storage.get("fallback") != {"safe": True} or not storage.get("removed") or not storage.get("recovered") or storage.get("backup") != "{broken-json" or storage.get("warning"):

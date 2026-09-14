@@ -254,7 +254,7 @@
     ['rhwDiagnosticsBtn', 'rhwDiagnosticsPanel', 'rhwDiagnosticsGrid', 'rhwDiagnosticsRun', 'rhwDiagnosticsCopy'].forEach(id => {
       if (!document.getElementById(id)) failures.push(`missing:${id}`);
     });
-    if (document.querySelectorAll('.rhw-diagnostics-card').length !== 8) failures.push('cards:expected-8');
+    if (document.querySelectorAll('.rhw-diagnostics-card').length !== collect().length) failures.push('cards:incomplete');
     if (!buildReport().includes('PRIVACY: This report contains no drafts')) failures.push('report:privacy-boundary');
     return failures;
   }

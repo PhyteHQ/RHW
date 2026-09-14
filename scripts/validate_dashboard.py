@@ -347,7 +347,7 @@ def main() -> int:
         '@media(max-width:390px)', '@media(prefers-reduced-motion:reduce)'
     ), 'PR11 full app audit presentation')
     require_tokens(errors, 'scripts/test_full_audit.js', (
-        'Route model must cover all 11 app destinations', 'Summary must separate pass, notice and fail states',
+        'Route model must cover all 10 app destinations', 'Summary must separate pass, notice and fail states',
         'Audit report must not introduce user content'
     ), 'PR11 full app audit model tests')
     require_tokens(errors, 'scripts/build_recipe_catalog.py', (

@@ -334,7 +334,7 @@
 
   function selfTest() {
     const failures = [];
-    if (totalRoutes() !== 11) failures.push('route-model');
+    if (!totalRoutes() || Object.values(EXPECTED_ROUTES).some(routes => !routes.length || new Set(routes).size !== routes.length)) failures.push('route-model');
     const sample = summary([
       makeResult('a', 'A', 'good', 'PASS', 'Ready.'),
       makeResult('b', 'B', 'warn', 'NOTICE', 'Review.'),

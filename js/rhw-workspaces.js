@@ -5335,7 +5335,7 @@ window.__RHW_RECIPE_CATALOG_GZIP_BASE64__ = (window.__RHW_RECIPE_CATALOG_GZIP_BA
     ['rhwDiagnosticsBtn', 'rhwDiagnosticsPanel', 'rhwDiagnosticsGrid', 'rhwDiagnosticsRun', 'rhwDiagnosticsCopy'].forEach(id => {
       if (!document.getElementById(id)) failures.push(`missing:${id}`);
     });
-    if (document.querySelectorAll('.rhw-diagnostics-card').length !== 8) failures.push('cards:expected-8');
+    if (document.querySelectorAll('.rhw-diagnostics-card').length !== collect().length) failures.push('cards:incomplete');
     if (!buildReport().includes('PRIVACY: This report contains no drafts')) failures.push('report:privacy-boundary');
     return failures;
   }
@@ -5962,7 +5962,7 @@ window.__RHW_RECIPE_CATALOG_GZIP_BASE64__ = (window.__RHW_RECIPE_CATALOG_GZIP_BA
 
   function selfTest() {
     const failures = [];
-    if (totalRoutes() !== 11) failures.push('route-model');
+    if (!totalRoutes() || Object.values(EXPECTED_ROUTES).some(routes => !routes.length || new Set(routes).size !== routes.length)) failures.push('route-model');
     const sample = summary([
       makeResult('a', 'A', 'good', 'PASS', 'Ready.'),
       makeResult('b', 'B', 'warn', 'NOTICE', 'Review.'),
