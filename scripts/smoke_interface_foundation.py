@@ -31,6 +31,18 @@ class QuietHandler(http.server.SimpleHTTPRequestHandler):
     def log_message(self, *_):
         pass
 
+    def do_POST(self):
+        if self.path != '/__rhw_test_pobs':
+            self.send_error(404)
+            return
+        payload = json.dumps(DATA).encode()
+        self.send_response(200)
+        self.send_header('Content-Type', 'application/json')
+        self.send_header('Content-Length', str(len(payload)))
+        self.send_header('Cache-Control', 'no-store')
+        self.end_headers()
+        self.wfile.write(payload)
+
 
 def wait_ready(cdp, previous_document=None):
     deadline = time.time() + 15
@@ -64,16 +76,17 @@ def main():
             cdp.call(method)
         # Only external game data is synthetic. HTML, bundles, fonts and SW are
         # served unchanged, so a broken loader/cache cannot pass an inline fixture.
-        fixture = f"""(() => {{
+        fixture = """(() => {
           const original = window.fetch;
-          window.fetch = (input, options) => {{
-            if (String(input?.url || input).includes('darkstat.dd84ai.com/api/pobs')) {{
-              if (!navigator.onLine) return Promise.reject(new Error('OFFLINE FIXTURE'));
-              return Promise.resolve(new Response(JSON.stringify({json.dumps(DATA)}), {{headers:{{'Content-Type':'application/json'}}}}));
-            }}
+          window.fetch = (input, options) => {
+            if (String(input?.url || input).includes('darkstat.dd84ai.com/api/pobs')) {
+              // Use real transport so the offline check cannot receive an
+              // in-memory fixture when a new document resets navigator.onLine.
+              return original('/__rhw_test_pobs', {...options, method:'POST'});
+            }
             return original(input, options);
-          }};
-        }})();"""
+          };
+        })();"""
         cdp.call('Page.addScriptToEvaluateOnNewDocument', {'source': fixture})
         cdp.call('Page.navigate', {'url': f'http://127.0.0.1:{server.server_port}/index.html#command/inventory'})
         wait_ready(cdp)
