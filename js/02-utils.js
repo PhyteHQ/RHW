@@ -18,22 +18,32 @@ function debounce(func, wait) {
   };
 }
 
+// Update clocks only while their surfaces can be seen. Keep text nodes stable.
+let systemClockTimer = null;
+let footerClockVisible = false;
 function updateSystemClocks() {
-  const now = new Date();
-  const hours = String(now.getHours()).padStart(2, '0');
-  const mins = String(now.getMinutes()).padStart(2, '0');
-  const secs = String(now.getSeconds()).padStart(2, '0');
-  const clockHtml = `[${hours}<span class="blink-colon">:</span>${mins}<span class="blink-colon">:</span>${secs}]`;
-
-  if (els.headerClock) els.headerClock.innerHTML = clockHtml;
-  if (els.rpFooterTime) els.rpFooterTime.innerHTML = `SYS-CLOCK: ${clockHtml}`;
+  const clock = `[${new Date().toLocaleTimeString('en-GB', { hour12: false })}]`;
+  if (document.getElementById('uplinkDetails')?.open && els.headerClock) els.headerClock.textContent = clock;
+  if (footerClockVisible && els.rpFooterTime) els.rpFooterTime.textContent = `SYS-CLOCK: ${clock}`;
 }
-
-updateSystemClocks();
-setInterval(() => {
+function scheduleSystemClocks() {
+  clearTimeout(systemClockTimer);
+  systemClockTimer = null;
+  const detailsOpen = document.getElementById('uplinkDetails')?.open;
+  if (document.hidden || (!detailsOpen && !footerClockVisible)) return;
   updateSystemClocks();
-  updateSyncCountdown();
-}, 1000);
+  if (detailsOpen) updateSyncCountdown();
+  systemClockTimer = setTimeout(scheduleSystemClocks, 1000);
+}
+document.getElementById('uplinkDetails')?.addEventListener('toggle', scheduleSystemClocks);
+document.addEventListener('visibilitychange', scheduleSystemClocks);
+if (typeof IntersectionObserver === 'function' && els.rpFooterTime) {
+  const clockVisibility = new IntersectionObserver(entries => {
+    footerClockVisible = entries.some(entry => entry.isIntersecting);
+    scheduleSystemClocks();
+  });
+  clockVisibility.observe(els.rpFooterTime);
+}
 
 function normalize(value) { return String(value || '').trim().toLowerCase(); }
 

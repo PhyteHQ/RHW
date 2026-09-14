@@ -15,38 +15,10 @@ from build_recipe_catalog import read_catalog
 ROOT = Path(__file__).resolve().parents[1]
 INDEX = ROOT / 'index.html'
 
-EXPECTED_CSS = [
-    './css/01-core.css', './css/02-ticker.css', './css/03-production.css', './css/04-responsive.css',
-    './css/05-shipyard.css', './css/06-shipyard-detail.css', './css/07-mobile.css', './css/08-headings.css',
-    './css/09-v35.css', './css/10-maintenance.css', './css/11-layout-v36.css',
-]
-EXPECTED_JS = [
-    './js/build-info.js', './js/config.js', './js/00-bootstrap.js', './js/01-wire.js', './js/02-utils.js', './js/03-telemetry.js',
-    './js/04-state-production.js', './js/05-shipyard.js', './js/06-logistics.js', './js/07-overview.js',
-    './js/08-data.js', './js/09-newswire.js', './js/10-maintenance.js', './js/11-layout-v36.js',
-]
-V4_RUNTIME_ASSETS = [
-    './css/12-app-v40.css', './css/13-app-v40-navigation.css', './css/14-app-v40-composer.css',
-    './css/15-app-v40-audit.css', './css/16-app-v40-operations.css', './css/17-app-v40-calculator-polish.css',
-    './css/18-app-v40-nav-hierarchy.css', './css/19-app-v402-fixes.css', './css/20-app-v402-qol.css',
-    './css/21-app-v402-mobile-ui.css', './css/22-app-pr3-command-mobile.css', './css/23-app-pr3-yard-production.css',
-    './css/24-app-pr3-operations-calculator.css', './css/25-app-pr3-comms-workflow.css',
-    './css/26-app-pr3-newswire-manager.css', './css/27-app-pr4-pwa.css', './css/28-app-pr5-newswire-2.css',
-    './css/29-app-pr6-discovery-sync.css', './css/30-app-pr7-diagnostics.css', './css/31-app-pr8-production-orders.css',
-    './css/32-app-pr9-transfer-center.css', './css/33-app-pr10-newswire-review.css', './css/34-app-pr11-full-audit.css', './css/35-app-interface-cleanup.css',
-    './js/12-app-config.js', './js/13-app-v40.js', './js/14-app-v40-cache.js', './js/15-app-v40-navigation.js',
-    './js/16-app-v40-composer.js', './js/16a-app-v40-comms-safety.js', './js/16b-app-v40-newswire-manager.js',
-    './js/16c-app-v40-newswire-ordering.js',
-    './assets/recipes/catalog-v1-part-01.js', './assets/recipes/catalog-v1-part-02.js', './assets/recipes/catalog-v1-part-03.js',
-    './assets/recipes/catalog-v1-part-04.js', './assets/recipes/catalog-v1-part-05.js', './assets/recipes/catalog-v1-part-06.js',
-    './js/17-app-v40-operations-core.js', './js/18-app-v40-operations-ui.js', './js/18a-app-v40-nav-hierarchy.js',
-    './js/18b-app-v40-production-pricing.js', './js/18c-app-v40-recipe-corrections.js',
-    './js/18d-app-v40-final-ui-polish.js', './js/20-app-v402-fixes.js', './js/21-app-v402-qol.js',
-    './js/22-app-v402-mobile-ui.js', './js/23-app-v40-pwa.js', './js/24-app-v40-newswire-2.js',
-    './js/25-app-v40-discovery-status.js', './js/26-app-v40-diagnostics.js', './js/27-app-v40-production-orders.js',
-    './js/28-app-v40-transfer-center.js', './js/29-app-v40-newswire-review.js', './js/30-app-v40-full-audit.js',
-    './js/19-app-v40-runtime.js',
-]
+RUNTIME_MANIFEST = json.loads((ROOT / 'scripts/runtime-assets.json').read_text())
+EXPECTED_CSS = ['./css/rhw-app.css']
+EXPECTED_JS = ['./js/build-info.js', './js/00-bootstrap.js', './js/rhw-dashboard.js']
+V4_RUNTIME_ASSETS = RUNTIME_MANIFEST['styles'] + RUNTIME_MANIFEST['workspaces']
 V4_SUPPORT_ASSETS = ['./scripts/build_recipe_catalog.py', './scripts/smoke_v40.py', './scripts/test_production_orders.js', './scripts/test_transfer_center.js', './scripts/test_newswire_review.js', './scripts/test_full_audit.js', './docs/full-app-audit.md']
 DISCOVERY_SYNC_ASSETS = [
     './assets/discovery-status.json', './docs/discovery-sync-report.md',
@@ -72,9 +44,9 @@ class DashboardParser(HTMLParser):
         if values.get('id'):
             self.ids.append(values['id'] or '')
         if tag == 'link' and values.get('rel') == 'stylesheet' and values.get('href', '').startswith('./css/'):
-            self.css.append(values['href'] or '')
+            self.css.append((values['href'] or '').split('?')[0])
         if tag == 'script' and values.get('src', '').startswith('./js/'):
-            self.js.append(values['src'] or '')
+            self.js.append((values['src'] or '').split('?')[0])
 
 
 def require_tokens(errors: list[str], path: str, tokens: tuple[str, ...], label: str) -> None:
@@ -136,8 +108,8 @@ def main() -> int:
 
     bootstrap = (ROOT / 'js/00-bootstrap.js').read_text(encoding='utf-8')
     for required in V4_RUNTIME_ASSETS:
-        if required not in bootstrap:
-            errors.append(f'V4 bootstrap does not reference required asset: {required}')
+        if not (ROOT / required).is_file():
+            errors.append(f'Runtime manifest references a missing asset: {required}')
 
     app_config = (ROOT / 'js/12-app-config.js').read_text(encoding='utf-8')
     version_match = re.search(r"RHW_APP_VERSION\s*=\s*'([^']+)'", app_config)
@@ -165,7 +137,7 @@ def main() -> int:
         'PRIORITY ACTIONS', 'inventory-view-nav', 'priorityActions', 'activateInventoryView',
         "typeof CAPITAL_SHIPYARD === 'undefined'", "typeof RECIPES === 'undefined'"
     ), 'V4 COMMAND module')
-    require_tokens(errors, 'js/16-app-v40-composer.js', ('SALUTATION / OPENING', 'comms-editor-toolbar', 'ticker-builder-preview', 'data-edit-sender', 'buildBbcode'), 'V4 COMMS module')
+    require_tokens(errors, 'js/16-app-v40-composer.js', ('SALUTATION / OPENING', 'comms-editor-toolbar', 'data-edit-sender', 'buildBbcode'), 'V4 COMMS module')
     require_tokens(errors, 'js/16a-app-v40-comms-safety.js', (
         'MAX_TAG = 40', 'MAX_MESSAGE = 240', 'normalizeTag', 'normalizeMessage', 'app.commsSafety'
     ), 'V4 COMMS safety module')
@@ -174,18 +146,8 @@ def main() -> int:
         'v40NewswireWorkflow', 'v40NewswireRecoveryStatus', 'jumpToWorkflow', 'renderCounters'
     ), 'V4 Newswire recovery')
     require_tokens(errors, 'js/00-bootstrap.js', (
-        'rhwBootFailure', 'rhwBootError', 'LOAD TIMEOUT', '__RHW_BOOTSTRAP_TEST__',
-        './css/21-app-v402-mobile-ui.css', './css/23-app-pr3-yard-production.css',
-        './css/24-app-pr3-operations-calculator.css', './css/25-app-pr3-comms-workflow.css',
-        './css/26-app-pr3-newswire-manager.css', './css/27-app-pr4-pwa.css',
-        './css/28-app-pr5-newswire-2.css', './css/29-app-pr6-discovery-sync.css',
-        './css/30-app-pr7-diagnostics.css', './css/31-app-pr8-production-orders.css',
-        './css/32-app-pr9-transfer-center.css', './css/33-app-pr10-newswire-review.css', './css/34-app-pr11-full-audit.css', './css/35-app-interface-cleanup.css',
-        './js/22-app-v402-mobile-ui.js', './js/23-app-v40-pwa.js',
-        './js/24-app-v40-newswire-2.js', './js/25-app-v40-discovery-status.js',
-        './js/26-app-v40-diagnostics.js', './js/27-app-v40-production-orders.js',
-        './js/28-app-v40-transfer-center.js', './js/29-app-v40-newswire-review.js', './js/30-app-v40-full-audit.js'
-    ), 'V4 bootstrap failure UI')
+        'rhwBootFailure', 'rhwBootError', 'LOAD TIMEOUT', '__RHW_BOOTSTRAP_TEST__', './js/rhw-workspaces.js'
+    ), 'App bootstrap failure UI')
     require_tokens(errors, 'js/22-app-v402-mobile-ui.js', (
         'commsMobileView', 'setForumView', 'commsMobileViewSwitch', "['write', 'preview', 'bbcode']"
     ), 'V4 mobile UI')
@@ -237,14 +199,12 @@ def main() -> int:
         'if (!response.ok) throw new Error(`NETWORK RESPONSE ${response.status}`)'
     ), 'PR4 service worker')
     service_worker = (ROOT / 'sw.js').read_text(encoding='utf-8')
-    css_names_match = re.search(r'const CSS_NAMES\s*=\s*\[(.*?)\];', service_worker, flags=re.S)
-    cached_css_names = re.findall(r"'([^']+)'", css_names_match.group(1)) if css_names_match else []
-    expected_cached_css_names = [Path(ref).stem.split('-', 1)[1] for ref in [*parser.css, *(item for item in V4_RUNTIME_ASSETS if item.endswith('.css'))]]
-    if cached_css_names != expected_cached_css_names:
-        errors.append('Service-worker CSS cache order differs from the deployed stylesheet order.')
-    for ref in [*parser.js, *(item for item in V4_RUNTIME_ASSETS if item.endswith('.js') and '/recipes/' not in item)]:
-        if ref not in service_worker:
-            errors.append(f'Service worker does not cache deployed JavaScript asset: {ref}')
+    cached_shell = (ROOT / 'js/app-shell.js').read_text()
+    for ref in [*parser.css, *parser.js, './js/rhw-workspaces.js']:
+        if ref not in cached_shell:
+            errors.append(f'Offline shell does not cache deployed asset: {ref}')
+    if 'RHW_APP_SHELL' not in service_worker:
+        errors.append('Service worker must use the generated offline shell.')
     require_tokens(errors, 'js/24-app-v40-newswire-2.js', (
         'v40NewswireControlCenter', 'v40NewswireSearch', 'data-newswire-status',
         'auditEntries', 'DUPLICATE BULLETIN', 'pinToTop', 'buildForumBbcode',
@@ -379,7 +339,7 @@ def main() -> int:
     ), 'PR10 Newswire review model tests')
     require_tokens(errors, 'js/30-app-v40-full-audit.js', (
         'FULL APP AUDIT', 'EXPECTED_ROUTES', 'ROUTE TOPOLOGY', 'DOM IDENTITY + LINKS',
-        'TOUCH TARGETS', 'FORUM BB CODE', 'NEWSWIRE CHANNELS', 'PRICE CHECK',
+        'TOUCH TARGETS', 'FORUM BB CODE', 'PRICE CHECK',
         'PRIVACY: This audit uses synthetic markers', 'app.fullAudit'
     ), 'PR11 full app audit runtime')
     require_tokens(errors, 'css/34-app-pr11-full-audit.css', (

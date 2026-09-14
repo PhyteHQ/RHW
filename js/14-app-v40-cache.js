@@ -251,8 +251,8 @@
 
     // Check the merged queue before applying ANY selected backup section.
     if (version >= 3 && includes('productionOrders') && Array.isArray(raw.productionOrders)) {
-      if (!app.productionOrders?.prepareImport) throw new Error('ORDER BOARD NOT READY // RETRY IMPORT AFTER STARTUP');
-      app.productionOrders.prepareImport(raw.productionOrders);
+      if (!(app.legacyArchive || app.productionOrders)?.prepareImport) throw new Error('ORDER BOARD NOT READY // RETRY IMPORT AFTER STARTUP');
+      (app.legacyArchive || app.productionOrders).prepareImport(raw.productionOrders);
     }
 
     if (includes('senders')) {
@@ -295,7 +295,7 @@
       }
     }
     if (version >= 3 && includes('productionOrders') && Array.isArray(raw.productionOrders)) {
-      if (app.productionOrders?.importOrders) app.productionOrders.importOrders(raw.productionOrders);
+      if ((app.legacyArchive || app.productionOrders)?.importOrders) (app.legacyArchive || app.productionOrders).importOrders(raw.productionOrders);
       else requireStored(keys.productionOrders, raw.productionOrders);
     }
     if (incomingOverrides) app.pricecheck.importOverrides(incomingOverrides);
@@ -324,7 +324,7 @@
       priceCheckOverrides: portableCopy(app.store.get(keys.priceCheckOverrides, {}) || {}),
       priceProfiles: portableCopy(app.store.get(keys.calculatorPriceProfiles, []) || []),
       shipyardPlanner: portableCopy(app.store.get(keys.shipyardPlanner, null)),
-      productionOrders: portableCopy(app.productionOrders?.snapshot?.() || app.store.get(keys.productionOrders, []) || []),
+      productionOrders: portableCopy((app.legacyArchive || app.productionOrders)?.snapshot?.() || app.store.get(keys.productionOrders, []) || []),
       newswireDraft: portableCopy(app.newswireManager?.draftPayload?.() || app.store.get(keys.newswireManagerDraft, null)),
       preferences: portableCopy(portablePreferences())
     };

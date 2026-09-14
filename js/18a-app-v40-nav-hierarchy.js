@@ -50,7 +50,7 @@
       slot.setAttribute('aria-label', 'Active workspace navigation');
       cluster.appendChild(slot);
     }
-    // Context and utilities scroll away; only the four main tabs stay sticky.
+    // Keep Tools beside the main tabs. Only COMMAND needs a context row.
     let secondary = document.getElementById('appSecondaryNav');
     if (!secondary) {
       secondary = document.createElement('div');
@@ -61,7 +61,7 @@
     const slot = document.getElementById('appContextNavSlot');
     const brand = document.querySelector('.app-nav-brand');
     if (slot && slot.parentElement !== secondary) secondary.prepend(slot);
-    if (brand && brand.parentElement !== secondary) secondary.appendChild(brand);
+    if (brand && brand.parentElement !== inner) inner.appendChild(brand);
     return true;
   }
 
@@ -132,6 +132,7 @@
 
     /* data-workspace is reserved for the actual workspace tabs. */
     slot.dataset.activeWorkspace = active;
+    document.getElementById('appSecondaryNav').hidden = active !== 'command';
     if (!target) {
       requestAnimationFrame(updateStickyOffset);
       return SUBNAV_IDS[active] === null;

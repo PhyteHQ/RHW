@@ -14,20 +14,7 @@
   <link rel="icon" type="image/png" href="./assets/favicon.png" />
   <link rel="apple-touch-icon" href="./assets/apple-touch-icon.png" />
   
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Teko:wght@500;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./css/01-core.css">
-  <link rel="stylesheet" href="./css/02-ticker.css">
-  <link rel="stylesheet" href="./css/03-production.css">
-  <link rel="stylesheet" href="./css/04-responsive.css">
-  <link rel="stylesheet" href="./css/05-shipyard.css">
-  <link rel="stylesheet" href="./css/06-shipyard-detail.css">
-  <link rel="stylesheet" href="./css/07-mobile.css">
-  <link rel="stylesheet" href="./css/08-headings.css">
-  <link rel="stylesheet" href="./css/09-v35.css">
-  <link rel="stylesheet" href="./css/10-maintenance.css">
-  <link rel="stylesheet" href="./css/11-layout-v36.css">
+  <link rel="stylesheet" href="./css/rhw-app.css?v=2026-09-14-interface-foundation-1">
 </head>
 <body>
 
@@ -97,6 +84,7 @@
   </div>
 
   <main>
+    <aside id="telemetryNotice" class="telemetry-notice" role="status" hidden><div><strong id="telemetryNoticeTitle">Connecting to inventory</strong><p id="telemetryNoticeCopy">Stock remains unknown until a verified response arrives.</p></div><button type="button" id="telemetryRetry">RETRY CONNECTION</button></aside>
     <section class="summary-grid anim-boot delay-4">
       <div class="alert-card"><div class="alert-title"><span>Facility Maintenance</span><span class="section-title-meta"><span class="section-freshness" data-freshness-badge hidden></span><span class="count-badge scramble" id="maintenanceCount">0</span></span></div><ul class="alert-list" id="maintenanceList"></ul></div>
       <div class="alert-card"><div class="alert-title"><span>Export Inventory</span><span class="section-title-meta"><span class="section-freshness" data-freshness-badge hidden></span><span class="count-badge scramble" id="exportCount">0</span></span></div><ul class="alert-list" id="exportList"></ul></div>
@@ -150,19 +138,8 @@
 
   <footer><hr class="hrc-dark">CONNECTION <span id="footerConnection">SYNCING</span> /// GLORY TO THE QUEEN<br><div class="footer-clock" id="rpFooterTime"></div></footer>
 
-<script src="./js/build-info.js"></script>
-<script src="./js/config.js"></script>
-<script src="./js/00-bootstrap.js"></script>
-<script src="./js/01-wire.js"></script>
-<script src="./js/02-utils.js"></script>
-<script src="./js/03-telemetry.js"></script>
-<script src="./js/04-state-production.js"></script>
-<script src="./js/05-shipyard.js"></script>
-<script src="./js/06-logistics.js"></script>
-<script src="./js/07-overview.js"></script>
-<script src="./js/08-data.js"></script>
-<script src="./js/09-newswire.js"></script>
-<script src="./js/10-maintenance.js"></script>
-<script src="./js/11-layout-v36.js"></script>
+<script src="./js/build-info.js?v=2026-09-14-interface-foundation-1"></script>
+<script src="./js/00-bootstrap.js?v=2026-09-14-interface-foundation-1"></script>
+<script src="./js/rhw-dashboard.js?v=2026-09-14-interface-foundation-1"></script>
 </body>
 </html>

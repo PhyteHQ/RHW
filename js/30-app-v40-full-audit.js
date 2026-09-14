@@ -48,8 +48,7 @@
       app.command?.activate, app.operations?.activate, app.comms?.activate,
       app.storage?.exportPayload, app.storage?.importPayload,
       app.pricecheck?.refresh, app.transferCenter?.previewFile,
-      app.newswireManager?.parseSource, app.newswireManager?.serializeSource,
-      app.newswire2?.buildForumBbcode, app.newswireReview?.buildReviewPackage,
+      app.legacyArchive?.prepareImport,
       app.discoveryStatus?.init, app.diagnostics?.init,
       window.RHWPWA?.isStandalone
     ];
@@ -175,21 +174,6 @@
     }
   }
 
-  function newswireParity() {
-    try {
-      const sample = [{ id: 'audit-1', category: 'operations', tone: 'good', tag: 'AUDIT TAG', message: 'AUDIT MESSAGE' }];
-      const source = app.newswireManager.serializeSource(sample);
-      const roundTrip = app.newswireManager.parseSource(source);
-      const forum = app.newswire2.buildForumBbcode(sample[0]);
-      const ready = roundTrip.length === 1 && roundTrip[0].tag === sample[0].tag && roundTrip[0].message === sample[0].message &&
-        forum.includes(sample[0].tag) && forum.includes(sample[0].message);
-      return ready
-        ? makeResult('newswire-parity', 'NEWSWIRE CHANNELS', 'good', 'SYNCHRONIZED', 'Markdown round-trip and forum channel output preserve a synthetic bulletin.')
-        : makeResult('newswire-parity', 'NEWSWIRE CHANNELS', 'danger', 'PARITY FAILED', 'Newswire source and forum output do not agree.');
-    } catch {
-      return makeResult('newswire-parity', 'NEWSWIRE CHANNELS', 'danger', 'BUILDER ERROR', 'The Newswire output contract could not complete.');
-    }
-  }
 
   function priceCheckContract() {
     const failures = app.pricecheck?.selfTest?.() || ['module'];
@@ -240,7 +224,7 @@
   function collect() {
     return [
       routeTopology(), moduleContracts(), activeRouteConsistency(), domIdentity(), accessibleControls(),
-      dialogSafety(), viewportHealth(), touchTargets(), motionContract(), forumParity(), newswireParity(),
+      dialogSafety(), viewportHealth(), touchTargets(), motionContract(), forumParity(),
       priceCheckContract(), catalogTruth(), localSaveProbe(), pwaContract()
     ];
   }

@@ -63,6 +63,7 @@
     const reset = changedRecipe && !keepComparison;
     app.state.calculator = { ...current, ...(reset ? { materialPrices: {}, affiliationId: app.config.operations.defaultAffiliation, comparisonOpen: false } : {}), ...patch, ...(reset ? { materialPrices: {}, comparisonOpen: false } : {}) };
     app.store.set(app.config.storageKeys.calculatorState, app.state.calculator);
+    app.requestUiUpdate?.();
   }
 
   function workspaceMarkup() {
@@ -129,6 +130,13 @@
   function materialFactorLabel(value) {
     const percentage = Math.round(Math.abs(1 - Number(value)) * 100);
     return percentage ? `${value < 1 ? '−' : '+'}${percentage}% MATERIALS` : 'NO BONUS';
+  }
+
+  function craftLabel(recipe) {
+    return String(recipe?.craftType || recipe?.sourceType || 'General')
+      .replace(/([a-z])([A-Z])/g, '$1 $2')
+      .replace(/([A-Za-z])(\d+)/g, '$1 $2')
+      .replace(/[_-]+/g, ' ');
   }
 
   function iffEntries(recipe, selectedId) {
@@ -284,7 +292,7 @@
     if (!rows.length) return '<div class="ops-empty good">THIS RECIPE HAS NO CONSUMED MATERIAL INPUTS</div>';
     return `<div class="ops-material-table-wrap"><table class="ops-material-table"><thead><tr><th>MATERIAL</th><th>REQUIRED</th><th>PRICE / UNIT</th><th>LINE COST</th></tr></thead><tbody>${rows.map(row => {
       const price = storedPrice(calc.materialPrices, row.id);
-      return `<tr class="ops-material-row" data-material-id="${esc(row.id)}" data-required="${row.required}"><td><strong>${esc(row.name)}</strong><details class="ops-material-id"><summary>ITEM ID</summary><small>${esc(row.id)}</small></details></td><td>${fmt(row.required)}</td><td><div class="ops-price-input-wrap"><input class="ops-price-input" aria-label="${esc(row.name)} price per unit" data-material-price="${esc(row.id)}" type="number" inputmode="decimal" min="0" step="1" value="${price === null ? '' : esc(String(price))}" placeholder="0"><span>$</span></div></td><td data-line-cost>${money(price === null ? null : row.required * price)}</td></tr>`;
+      return `<tr class="ops-material-row" data-material-id="${esc(row.id)}" data-required="${row.required}"><td><strong>${esc(row.name)}</strong></td><td>${fmt(row.required)}</td><td><div class="ops-price-input-wrap"><input class="ops-price-input" aria-label="${esc(row.name)} price per unit" data-material-price="${esc(row.id)}" type="number" inputmode="decimal" min="0" step="1" value="${price === null ? '' : esc(String(price))}" placeholder="—"><span>$</span></div></td><td data-line-cost>${money(price === null ? null : row.required * price)}</td></tr>`;
     }).join('')}</tbody></table></div>`;
   }
 
@@ -371,7 +379,7 @@
         <div class="ops-panel-head"><div><span>01</span><strong>RECIPE</strong></div></div>
         <div class="ops-form-grid">
           <label class="comms-field ops-wide"><span>SEARCH RECIPE</span><input id="opsRecipeSearch" type="search" value="${esc(calc.search)}" placeholder="Bustard, Superstructure, Reactor, Gold…" autocomplete="off"><small>TYPE A NAME OR RECIPE ID // FIRST MATCH IS SELECTED AUTOMATICALLY</small></label>
-          <label class="comms-field ops-wide"><span>SELECTED RECIPE</span><select id="opsRecipe">${recipeOptions(matches, calc.recipeId)}</select><small>${matches.length} MATCH${matches.length === 1 ? '' : 'ES'} // ${esc(recipe.craftType || recipe.sourceType || 'GENERAL')}${recipe.restricted ? ' // RESTRICTED IFF' : ''}</small></label>
+          <label class="comms-field ops-wide"><span>SELECTED RECIPE</span><select id="opsRecipe">${recipeOptions(matches, calc.recipeId)}</select><small>${matches.length} match${matches.length === 1 ? '' : 'es'} · ${esc(craftLabel(recipe))}${recipe.restricted ? ' · Authorized IFF required' : ''}</small></label>
           <label class="comms-field"><span>OUTPUT QUANTITY</span><div class="ops-quantity-control"><button type="button" data-ops-quantity="-1" aria-label="Decrease output quantity">−</button><input id="opsQuantity" aria-label="Output quantity" type="number" inputmode="numeric" min="1" step="1" value="${calc.quantity}"><button type="button" data-ops-quantity="1" aria-label="Increase output quantity">+</button></div></label>
           <label class="comms-field"><span>AFFILIATION / IFF</span><select id="opsAffiliation">${iff.map(entry => `<option value="${esc(entry.id)}"${entry.id === calc.affiliationId ? ' selected' : ''}>${esc(entry.name)}</option>`).join('')}</select><small>${esc(iffHint)}</small></label>
         </div>

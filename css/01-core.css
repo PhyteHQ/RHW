@@ -1,8 +1,8 @@
 :root {
       --bg: #0C0C0B;
       --panel: #181817;
-      --line: #4f4f4f;
-      --line-soft: #373737;
+      --line: #484841;
+      --line-soft: #33332f;
       --text: #F0EEE7;
       --muted: #BCBCB7;
       --gold: #D7B675;
@@ -14,6 +14,16 @@
       --remote: #c2c2c2;
       --waste: #a89f91;
       --waste-soft: rgba(168, 159, 145, 0.15);
+      --surface-input: #10100f;
+      --surface-raised: #242421;
+      --surface-hover: #2c2b26;
+      --rhw-border: var(--line);
+      --rhw-head-fill: linear-gradient(112deg,#282825,#20201e 72%);
+      --rhw-label-size: 12px;
+      --rhw-body-size: 15px;
+      --rhw-space-sm: 8px;
+      --rhw-space-md: 16px;
+      --rhw-space-lg: 24px;
       
       --font-main: 'Barlow', 'Segoe UI', Arial, sans-serif;
       --font-title: 'Teko', 'Arial Narrow', sans-serif;
@@ -49,6 +59,10 @@
     }
 
     body { cursor: default; }
+    input, table, .overview-row-qty, .base-telemetry-stat strong,
+    .ops-recipe-meta strong, .ops-pricing-summary strong, .market-seller-qty {
+      font-variant-numeric: tabular-nums;
+    }
     button, select, th, a { cursor: pointer; }
     input { cursor: text; }
 

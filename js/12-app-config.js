@@ -11,7 +11,7 @@ const RHW_APP_CONFIG = Object.freeze({
     command: Object.freeze(['overview', 'inventory', 'shipyard', 'production', 'logistics']),
     operations: Object.freeze(['calculator']),
     pricecheck: Object.freeze(['routes']),
-    comms: Object.freeze(['forum', 'ticker', 'drafts', 'senders'])
+    comms: Object.freeze(['forum', 'drafts', 'senders'])
   }),
   storageKeys: Object.freeze({
     activeWorkspace: 'rhw-webapp-v4:workspace',

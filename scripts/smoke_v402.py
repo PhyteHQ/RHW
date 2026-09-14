@@ -6,30 +6,9 @@ import json, shutil, subprocess, time
 
 import smoke_v40_base as base
 
-base.V4_CSS = [
-    "css/12-app-v40.css", "css/13-app-v40-navigation.css", "css/14-app-v40-composer.css",
-    "css/15-app-v40-audit.css", "css/16-app-v40-operations.css", "css/17-app-v40-calculator-polish.css",
-    "css/18-app-v40-nav-hierarchy.css", "css/19-app-v402-fixes.css", "css/20-app-v402-qol.css",
-    "css/21-app-v402-mobile-ui.css", "css/22-app-pr3-command-mobile.css",
-    "css/23-app-pr3-yard-production.css", "css/24-app-pr3-operations-calculator.css",
-    "css/25-app-pr3-comms-workflow.css", "css/26-app-pr3-newswire-manager.css",
-    "css/27-app-pr4-pwa.css", "css/28-app-pr5-newswire-2.css", "css/29-app-pr6-discovery-sync.css",
-    "css/30-app-pr7-diagnostics.css", "css/31-app-pr8-production-orders.css", "css/32-app-pr9-transfer-center.css",
-    "css/33-app-pr10-newswire-review.css", "css/34-app-pr11-full-audit.css", "css/35-app-interface-cleanup.css",
-]
-base.V4_JS = [
-    "js/12-app-config.js", "js/13-app-v40.js", "js/14-app-v40-cache.js", "js/15-app-v40-navigation.js",
-    "js/16-app-v40-composer.js", "js/16a-app-v40-comms-safety.js", "js/16b-app-v40-newswire-manager.js",
-    "js/16c-app-v40-newswire-ordering.js",
-    *[f"assets/recipes/catalog-v1-part-{i:02d}.js" for i in range(1, 7)],
-    "js/17-app-v40-operations-core.js", "js/18-app-v40-operations-ui.js", "js/18a-app-v40-nav-hierarchy.js",
-    "js/18b-app-v40-production-pricing.js", "js/18c-app-v40-recipe-corrections.js",
-    "js/18d-app-v40-final-ui-polish.js", "js/20-app-v402-fixes.js", "js/21-app-v402-qol.js",
-    "js/22-app-v402-mobile-ui.js", "js/23-app-v40-pwa.js", "js/24-app-v40-newswire-2.js",
-    "js/25-app-v40-discovery-status.js", "js/26-app-v40-diagnostics.js", "js/27-app-v40-production-orders.js",
-    "js/28-app-v40-transfer-center.js", "js/29-app-v40-newswire-review.js", "js/30-app-v40-full-audit.js",
-    "js/19-app-v40-runtime.js",
-]
+# One manifest owns the production order; no private override list.
+base.V4_CSS = []
+base.V4_JS[:] = [p.removeprefix('./') for p in base._ASSETS['workspaces']]
 MOBILE_WIDTHS = (360, 390, 412, 430)
 
 
@@ -37,7 +16,7 @@ def test_boot_failure(cdp, frame_id):
     bootstrap = base.safe((base.ROOT / "js/00-bootstrap.js").read_text(encoding="utf-8"))
     build_info = base.safe((base.ROOT / "js/build-info.js").read_text(encoding="utf-8"))
     markup = f"""<!doctype html><html><head><meta charset="utf-8"></head><body>
-    <script>window.__RHW_BOOTSTRAP_TEST__={{failAsset:'./js/12-app-config.js'}};</script>
+    <script>window.__RHW_BOOTSTRAP_TEST__={{failAsset:'./js/rhw-workspaces.js'}};</script>
     <script>{build_info}</script><script>{bootstrap}</script></body></html>"""
     cdp.call("Page.navigate", {"url": "about:blank"})
     cdp.call("Page.setDocumentContent", {"frameId": frame_id, "html": markup})
@@ -48,7 +27,7 @@ def test_boot_failure(cdp, frame_id):
         if result.get("error") == "true":
             break
         time.sleep(.05)
-    if result.get("error") != "true" or result.get("asset") != "./js/12-app-config.js" or "COULD NOT START" not in result.get("text", "") or not result.get("retry"):
+    if result.get("error") != "true" or result.get("asset") != "./js/rhw-workspaces.js" or "COULD NOT START" not in result.get("text", "") or not result.get("retry"):
         raise RuntimeError(f"Visible bootstrap failure UI missing: {result}")
     print("V4.0.2 + PR2 smoke passed: visible bootstrap failure + retry")
 
@@ -764,7 +743,7 @@ def test_pr8_production_orders(cdp, workspace, node):
         orderPanel:!!document.querySelector('[data-operations-panel="orders"]'),
         addButton:!!document.getElementById('opsAddProductionOrder'),
         tools:!!document.querySelector('[data-rhw-tool="build-queue"]'),
-        legacyImport:typeof RHWV4.productionOrders.prepareImport==='function'};
+        legacyImport:typeof RHWV4.legacyArchive.prepareImport==='function'};
     })()""")
     if result.get("route") != "#operations/calculator" or result.get("node") != "calculator" or result.get("orderPanel") or result.get("addButton") or result.get("tools") or not result.get("legacyImport"):
         raise RuntimeError(f"Retired order UI or legacy compatibility failed: {result}")
@@ -978,7 +957,7 @@ def test_pr11_full_audit(cdp, workspace, node):
         cdp.call("Emulation.clearDeviceMetricsOverride")
     if result.get("error") or result.get("failures") or result.get("totals", {}).get("fail") != 0:
         raise RuntimeError(f"PR11 Full App Audit blocking result: {result}")
-    if result.get("routeStatus") != "11 READY" or result.get("routeTone") != "good" or not result.get("privacy"):
+    if result.get("routeStatus") != "10 READY" or result.get("routeTone") != "good" or not result.get("privacy"):
         raise RuntimeError(f"PR11 route/privacy audit failed: {result}")
     if result.get("metrics") != result.get("totals") or result.get("expandedOpen") != "true" or result.get("expandedClosed") != "false":
         raise RuntimeError(f"PR11 audit UI/state failed: {result}")
@@ -1032,12 +1011,10 @@ def main():
                 test_pr3_calculator_ui(cdp, workspace, node)
                 test_pr3_comms_workflow(cdp, workspace, node)
                 test_pr4_pwa(cdp, workspace, node)
-                test_pr5_newswire2(cdp, workspace, node)
                 test_pr6_discovery_status(cdp, workspace, node)
                 test_pr7_diagnostics(cdp, workspace, node)
                 test_pr8_production_orders(cdp, workspace, node)
                 test_pr9_transfer_center(cdp, workspace, node)
-                test_pr10_newswire_review(cdp, workspace, node)
                 test_pr11_full_audit(cdp, workspace, node)
                 if (workspace, node) == ("comms", "forum"):
                     test_mobile_forum_controls(cdp)

@@ -78,15 +78,6 @@
     return result('discovery', 'DISCOVERY SYNC', run.tone === 'muted' ? 'warn' : run.tone, run.label, `${run.detail} // REVIEW REQUIRED; AUTO-MERGE DISABLED`);
   }
 
-  function newswireHealth() {
-    const manager = app.newswireManager;
-    if (!manager) return result('newswire', 'NEWSWIRE', 'danger', 'MISSING', 'The editorial working-copy manager did not load.');
-    const entries = Number(manager.state?.entries?.length) || 0;
-    const dirty = Boolean(manager.state?.dirty);
-    if (manager.state?.sourceMode !== 'repository') return result('newswire', 'NEWSWIRE', 'warn', 'SOURCE NOT CURRENT', 'Cached or fallback source; review handoff needs a fresh online copy.');
-    return result('newswire', 'NEWSWIRE', dirty ? 'warn' : 'good', dirty ? 'LOCAL EDITS' : 'READY', `${app.util.number(entries)} bulletins in the current working copy.`);
-  }
-
   function collect() {
     return [
       runtimeHealth(),
@@ -95,8 +86,7 @@
       telemetryHealth(),
       pwaHealth(),
       catalogHealth(),
-      discoveryHealth(),
-      newswireHealth()
+      discoveryHealth()
     ];
   }
 

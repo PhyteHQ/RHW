@@ -11,16 +11,15 @@
   const WORKSPACES = Object.freeze({
     command: Object.freeze({ index: '01', label: 'COMMAND', sub: 'INVENTORY + YARD + PRODUCTION + LOGISTICS' }),
     operations: Object.freeze({
-      index: '02', label: 'OPERATIONS', sub: 'COSTING + ORDER CONTROL', navId: 'operationsNodeNav',
+      index: '02', label: 'OPERATIONS', sub: 'RECIPE COSTING', navId: 'operationsNodeNav',
       modules: Object.freeze([
         Object.freeze({ key: 'calculator', index: '01', label: 'ITEM CALCULATOR', sub: 'RECIPE + COSTING' })
       ])
     }),
     comms: Object.freeze({
-      index: '03', label: 'COMMS', sub: 'FORUM + NEWSWIRE + ARCHIVE + IDENTITY', navId: 'commsNodeNav',
+      index: '03', label: 'COMMS', sub: 'FORUM + ARCHIVE + IDENTITY', navId: 'commsNodeNav',
       modules: Object.freeze([
         Object.freeze({ key: 'forum', index: '01', label: 'FORUM', sub: 'TRANSMISSION COMPOSER' }),
-        Object.freeze({ key: 'ticker', index: '02', label: 'NEWSWIRE', sub: 'BULLETIN CONTROL' }),
         Object.freeze({ key: 'drafts', index: '03', label: 'DRAFTS', sub: 'LOCAL + DEVICE ARCHIVE' }),
         Object.freeze({ key: 'senders', index: '04', label: 'SENDERS', sub: 'IDENTITY REGISTRY' })
       ])
@@ -49,7 +48,7 @@
     commsInit: app.comms.init,
     commsActivate: app.comms.activate
   };
-  let syncTimer = null;
+  let unsubscribeSync = null;
   let searchTimer = null;
   let lastHighlight = null;
   let topRaf = 0;
@@ -132,20 +131,17 @@
 
   function operationStates() {
     const recipeCount = Number(app.operationsCore?.state?.catalog?.meta?.recipeCount) || 0;
-    const orders = app.productionOrders?.snapshot?.() || []; const urgent = orders.filter(order => order.priority === 'urgent').length; const high = orders.filter(order => order.priority === 'high').length;
     return {
       calculator: { text: recipeCount ? `${fmt(recipeCount)} RECIPES READY` : 'LOADING RECIPES', state: recipeCount ? 'ok' : 'waiting' },
-      orders: { text: urgent ? `${orders.length} ORDERS · ${urgent} URGENT` : high ? `${orders.length} ORDERS · ${high} HIGH` : orders.length ? `${orders.length} ORDERS` : 'QUEUE EMPTY', state: urgent || high ? 'low' : orders.length ? 'ok' : 'waiting' }
     };
   }
 
   function commsStates() {
     const current = app.state.comms || {}; const drafts = Array.isArray(app.state.drafts) ? app.state.drafts : [];
-    const senders = (app.config.senders?.length || 0) + (app.state.localSenders?.length || 0); const manager = app.newswireManager?.state;
-    const entries = Array.isArray(manager?.entries) ? manager.entries.length : 0; const hasCurrent = Boolean(String(current.subject || '').trim() || String(current.message || '').trim()); const dirty = Boolean(manager?.dirty);
+    const senders = (app.config.senders?.length || 0) + (app.state.localSenders?.length || 0);
+    const hasCurrent = Boolean(String(current.subject || '').trim() || String(current.message || '').trim());
     return {
       forum: { text: hasCurrent ? 'DRAFT AUTOSAVED' : 'COMPOSER READY', state: 'ok' },
-      ticker: { text: dirty ? `${entries} BULLETINS · LOCAL EDITS` : entries ? `${entries} BULLETINS` : 'NEWSWIRE READY', state: dirty ? 'low' : entries ? 'ok' : 'waiting' },
       drafts: { text: drafts.length ? `${drafts.length} SAVED` : 'ARCHIVE EMPTY', state: drafts.length ? 'ok' : 'waiting' },
       senders: { text: senders ? `${senders} IDENTITIES` : 'IDENTITY READY', state: senders ? 'ok' : 'waiting' }
     };
@@ -272,7 +268,7 @@
   app.command.activate = function unifiedCommandActivate(node,options) { const result = base.commandActivate.call(this,node,options); requestAnimationFrame(() => { syncCommandAttention(); syncContextAction(); scheduleTopVisibility(); }); return result; };
   app.comms.init = function unifiedCommsInit(...args) { const result = base.commsInit.apply(this,args); rebuildWorkspaceNav('comms'); syncWorkspaceStatuses(); return result; };
   app.comms.activate = function unifiedCommsActivate(node,options) { const result = base.commsActivate.call(this,node,options); requestAnimationFrame(syncWorkspaceStatuses); return result; };
-  app.operations.init = async function unifiedOperationsInit(...args) { const result = await base.operationsInit.apply(this,args); rebuildWorkspaceNav('operations'); syncWorkspaceStatuses(); clearInterval(syncTimer); syncTimer = window.setInterval(syncAll,1800); const failures = selfTest(); if (failures.length) throw new Error(`UNIFIED RHW UI SELF TEST FAILED: ${failures.join(', ')}`); return result; };
+  app.operations.init = async function unifiedOperationsInit(...args) { const result = await base.operationsInit.apply(this,args); rebuildWorkspaceNav('operations'); syncWorkspaceStatuses(); unsubscribeSync?.(); unsubscribeSync = app.onUiUpdate(syncAll); const failures = selfTest(); if (failures.length) throw new Error(`UNIFIED RHW UI SELF TEST FAILED: ${failures.join(', ')}`); return result; };
   app.operations.activate = function unifiedOperationsActivate(node,options) { const result = base.operationsActivate.call(this,node,options); requestAnimationFrame(syncWorkspaceStatuses); return result; };
 
   app.unifiedUi = { workspaces:WORKSPACES, installStyles, installWorkspaceTabs, rebuildWorkspaceNav, installCommandControls, syncWorkspaceStatuses, searchCommand, openCommandTarget, applyCommandFocus, syncCommandAttention, syncContextAction, selfTest };

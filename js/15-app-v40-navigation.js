@@ -265,6 +265,8 @@
     host.id = 'commandNodeHost';
     host.className = 'command-node-host';
     main.prepend(host);
+    const telemetryNotice = document.getElementById('telemetryNotice');
+    if (telemetryNotice) host.insertAdjacentElement('beforebegin', telemetryNotice);
     const panels = {};
     NODES.forEach(([key]) => {
       const panel = document.createElement('section');
@@ -312,9 +314,9 @@
     activateInventoryView(app.store.get(app.config.storageKeys.inventoryView, 'status'));
     updateOverview();
     clearInterval(app.commandOverviewTimer);
-    app.commandOverviewTimer = setInterval(() => {
+    app.onUiUpdate(() => {
       if (app.state.activeWorkspace === 'command' && app.state.commandNode === 'overview') updateOverview();
-    }, 2000);
+    });
   }
 
   function contextTarget(node) {

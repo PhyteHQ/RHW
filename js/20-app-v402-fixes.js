@@ -9,7 +9,6 @@
 
   let queued = false;
   let observer = null;
-  let badgeTimer = null;
 
   function syncTelemetryBadge() {
     const badge = document.querySelector('.command-overview-live');
@@ -66,7 +65,7 @@
     if (observer) return;
     observer = new MutationObserver(queueSync);
     observer.observe(document.body, { childList: true, subtree: true });
-    badgeTimer = setInterval(syncTelemetryBadge, 2000);
+    app.onUiUpdate(syncTelemetryBadge);
     sync();
   }
 

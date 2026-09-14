@@ -111,9 +111,20 @@ async function loadData() {
 
     nextSyncAt = Date.now() + AUTO_REFRESH_MS;
     updateSyncCountdown();
-    refreshTimer = setTimeout(loadData, AUTO_REFRESH_MS);
+    scheduleTelemetryRefresh();
+    updateTelemetryNotice();
+    window.dispatchEvent(new Event('rhw:telemetry'));
   }
 }
+
+function scheduleTelemetryRefresh() {
+  clearTimeout(refreshTimer);
+  refreshTimer = null;
+  if (document.hidden || isLoading) return;
+  refreshTimer = setTimeout(loadData, Math.max(0, nextSyncAt - Date.now()));
+}
+
+document.addEventListener('visibilitychange', scheduleTelemetryRefresh);
 
 els.search?.addEventListener('input', debounce(() => { saveViewPreferences(); renderManifest(); }, 250));
 els.roleFilter?.addEventListener('change', () => { saveViewPreferences(); updateRoleSegments(); renderManifest(); });
@@ -125,13 +136,12 @@ els.roleSegmentButtons.forEach(button => button.addEventListener('click', () => 
   renderManifest();
 }));
 async function refreshAll() {
-  clearTimeout(newswireRefreshTimer);
-  await Promise.allSettled([loadNewswire({ schedule: false }), loadData()]);
-  scheduleNewswireRefresh();
+  await loadData();
 }
 
 els.refreshBtn?.addEventListener('click', refreshAll);
 els.headerRefreshBtn?.addEventListener('click', refreshAll);
+document.getElementById('telemetryRetry')?.addEventListener('click', refreshAll);
 els.marketSortButtons?.forEach(button => button.addEventListener('click', () => {
   if (!setMarketSort(button.dataset.marketGroup, button.dataset.marketSort)) return;
   saveViewPreferences();
