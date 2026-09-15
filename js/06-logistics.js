@@ -91,6 +91,9 @@ function marketMaterialIdentity(name) {
 function renderCommodityScan({ grid, meta, targets, sort, enabled, feedstocks = {} }) {
   if (!grid || !enabled) return { totalOffers: 0, uniqueBases: 0, pending: false };
 
+  const focusedToggle = document.activeElement?.matches('.market-mobile-toggle') && grid.contains(document.activeElement)
+    ? document.activeElement.closest('.market-card')?.dataset.marketCommodity : null;
+
   updateMarketSortButtons();
 
   if (!targets.length) {
@@ -257,6 +260,17 @@ function renderCommodityScan({ grid, meta, targets, sort, enabled, feedstocks = 
   }).join('');
 
   window.RHWRuntime?.rendered(grid.id);
+  if (focusedToggle) {
+    const card = [...grid.querySelectorAll('.market-card')].find(entry => entry.dataset.marketCommodity === focusedToggle);
+    const toggle = card?.querySelector('.market-mobile-toggle');
+    // A refresh can remove the disclosure when fewer offers remain. Preserve
+    // the reader's position on that channel without focusing a hidden control.
+    if (toggle && toggle.getClientRects().length) toggle.focus({ preventScroll: true });
+    else if (card && card.getClientRects().length) {
+      card.tabIndex = -1;
+      card.focus({ preventScroll: true });
+    }
+  }
   grid.querySelectorAll('.scramble-market').forEach(el => scrambleText(el, el.dataset.val));
   return { totalOffers, uniqueBases: sellerKeys.size, pending: false };
 }

@@ -13,8 +13,8 @@ html.rhw-focus-pass .app-secondary-nav .app-context-nav-slot { grid-column: 1; g
 html.rhw-focus-pass .app-secondary-nav .workspace-subnav { margin: 0; border: 0; background: transparent; box-shadow: none; }
 html.rhw-focus-pass #workspaceCommand main { padding-top: 6px; gap: 0; }
 html.rhw-focus-pass #commandControlDeck { display: grid; grid-template-columns: minmax(200px,1fr) auto minmax(260px,1fr); gap: 10px; align-items: start; margin: 0 0 12px; padding: 0; }
-html.rhw-focus-pass body[data-command-node="inventory"] #commandControlDeck { grid-template-columns: minmax(280px,.85fr) minmax(230px,1fr) minmax(280px,1.1fr); }
-html.rhw-focus-pass body[data-command-node="inventory"] #commandControlDeck:has(#commandGlobalAlerts[hidden]) { grid-template-columns: minmax(280px,.85fr) minmax(230px,2.1fr); }
+html.rhw-focus-pass body[data-command-node="inventory"] #commandControlDeck { grid-template-columns: minmax(280px,320px) minmax(0,1fr) minmax(220px,260px); }
+html.rhw-focus-pass body[data-command-node="inventory"] #commandControlDeck:has(#commandGlobalAlerts[hidden]) { grid-template-columns: minmax(280px,320px) minmax(0,1fr); }
 html.rhw-focus-pass #commandControlDeck .inventory-view-nav { position: relative; top: auto; display: grid; grid-template-columns: 1fr 1fr; gap: 0; padding: 0; border: 1px solid var(--rhw-border); border-radius: 2px; background: #191919; }
 html.rhw-focus-pass body:not([data-command-node="inventory"]) #commandControlDeck .inventory-view-nav { display: none; }
 html.rhw-focus-pass #commandControlDeck .inventory-view-nav button { display: flex; align-items: center; justify-content: center; min-width: 0; height: 44px; padding: 8px !important; text-align: center; }
