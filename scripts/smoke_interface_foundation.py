@@ -72,6 +72,13 @@ def capture(cdp, name):
     (OUT / f'{name}.png').write_bytes(base64.b64decode(result['data']))
 
 
+def capture_card(cdp, selector, name):
+    base.ev(cdp, f"document.querySelector({json.dumps(selector)}).scrollIntoView({{block:'start',behavior:'instant'}})")
+    time.sleep(.15)
+    capture(cdp, name)
+    base.ev(cdp, "scrollTo({top:0,behavior:'instant'})")
+
+
 def main():
     OUT.mkdir(parents=True, exist_ok=True)
     server = http.server.ThreadingHTTPServer(('127.0.0.1', 0), functools.partial(QuietHandler, directory=str(base.ROOT)))
@@ -133,6 +140,8 @@ def main():
                         base.ev(cdp, "document.querySelector('[data-logistics-view=\"materials\"]').click()")
                         time.sleep(.35)
                         capture(cdp, f'{width}-logistics-materials')
+                        capture_card(cdp, '#materialsScanGrid [data-market-commodity="gold"]', f'{width}-materials-gold-card')
+                        capture_card(cdp, '#materialsScanGrid [data-market-commodity="prototype components"]', f'{width}-materials-pc-card')
                         base.ev(cdp, "document.querySelector('[data-logistics-view=\"market\"]').click()")
                 assert result['overflow'] <= 2 and not result['tabClipping'], (width, route, result)
                 assert result['toolsInNav'] and result['toolsHeight'] >= 44 and result['panels'] == 1, (width, route, result)
@@ -180,6 +189,8 @@ def main():
                 market_layouts.append({'width': width, 'view': view, **geometry})
                 if width in (430, 1366):
                     capture(cdp, f'{width}-logistics-{view}-large-values')
+                    grid = '#marketScanGrid' if view == 'market' else '#materialsScanGrid'
+                    capture_card(cdp, f'{grid} .market-card', f'{width}-{view}-large-values-card')
 
         # A refresh or sort must not collapse the channel a phone user is reading.
         cdp.call('Emulation.setDeviceMetricsOverride', {'width': 430, 'height': 844, 'deviceScaleFactor': 1, 'mobile': True})
