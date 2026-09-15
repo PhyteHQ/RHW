@@ -129,6 +129,11 @@ def main():
                 })()""")
                 if width in (390, 1366) and route in ('command/inventory', 'command/logistics', 'operations/calculator', 'pricecheck/routes', 'comms/forum'):
                     capture(cdp, f'{width}-{workspace}-{node}')
+                    if route == 'command/logistics':
+                        base.ev(cdp, "document.querySelector('[data-logistics-view=\"materials\"]').click()")
+                        time.sleep(.35)
+                        capture(cdp, f'{width}-logistics-materials')
+                        base.ev(cdp, "document.querySelector('[data-logistics-view=\"market\"]').click()")
                 assert result['overflow'] <= 2 and not result['tabClipping'], (width, route, result)
                 assert result['toolsInNav'] and result['toolsHeight'] >= 44 and result['panels'] == 1, (width, route, result)
                 assert result['contextVisible'] == (workspace == 'command'), (width, route, result)
@@ -138,6 +143,66 @@ def main():
                 if width <= 760 and workspace == 'operations':
                     assert result['priceLabelSizes'] and min(result['priceLabelSizes']) >= 11, result
                 report.append({'width': width, 'route': route, **result})
+
+        # Deliberately long names and seven-digit amounts exercise the actual
+        # card boundaries, not just document overflow (cards can clip internally).
+        base.ev(cdp, """(()=>{
+          const names=[...MARKET_SCAN,...MATERIALS_SCAN,'Military Salvage'];
+          allBases=Array.from({length:7},(_,i)=>({
+            name:i===0?'Northumberland Advanced Manufacturing and Distribution Complex':`Supplier ${i} Logistics Depot`,
+            system_name:i===0?'New London Industrial District':'Dublin',
+            shop_items:names.map(name=>({name,quantity:1234567+i*100,min_stock:0,price_to_buy_from_base:9876543+i}))
+          }));
+          marketSort='price';materialsSort='price';renderSupplier();
+          RHWV4.navigate('command','logistics');return true;
+        })()""")
+        market_layouts = []
+        for width in (360, 430, 820, 1366, 1920):
+            cdp.call('Emulation.setDeviceMetricsOverride', {'width': width, 'height': 940 if width > 760 else 844, 'deviceScaleFactor': 1, 'mobile': width <= 760})
+            for view in ('market', 'materials'):
+                base.ev(cdp, f"document.querySelector('[data-logistics-view=\"{view}\"]').click()")
+                time.sleep(.35)
+                geometry = base.ev(cdp, """(()=>{
+                  const section=document.querySelector(document.body.dataset.logisticsView==='market'?'#marketScanSection':'#materialsScanSection');
+                  const visible=e=>e.getBoundingClientRect().height>0;
+                  const rows=[...section.querySelectorAll('.supplier-commodity-row')].filter(visible);
+                  const fits=rows.every(row=>{
+                    const box=row.getBoundingClientRect();
+                    return [...row.querySelectorAll('.supplier-commodity-name,.supplier-commodity-metric,.market-feedstock')].every(e=>{
+                      const r=e.getBoundingClientRect();
+                      return r.left>=box.left&&r.right<=box.right+1&&e.scrollWidth<=e.clientWidth+1;
+                    });
+                  });
+                  const materials=[...section.querySelectorAll('.market-material-card')].map(e=>({name:e.dataset.marketCommodity,width:e.getBoundingClientRect().width}));
+                  return {fits,rows:rows.length,overflow:document.documentElement.scrollWidth-innerWidth,materials};
+                })()""")
+                assert geometry['rows'] > 0 and geometry['fits'] and geometry['overflow'] <= 2, (width, view, geometry)
+                market_layouts.append({'width': width, 'view': view, **geometry})
+                if width in (430, 1366):
+                    capture(cdp, f'{width}-logistics-{view}-large-values')
+
+        # A refresh or sort must not collapse the channel a phone user is reading.
+        cdp.call('Emulation.setDeviceMetricsOverride', {'width': 430, 'height': 844, 'deviceScaleFactor': 1, 'mobile': True})
+        disclosure = base.ev(cdp, """(()=>{
+          document.querySelector('[data-logistics-view="materials"]').click();
+          const channel=()=>document.querySelector('#materialsScanGrid [data-market-commodity="gold"]');
+          const toggle=()=>channel().querySelector('.market-mobile-toggle');
+          toggle().click();toggle().focus();const before=scrollY;
+          renderMaterialsScan();
+          const refresh=toggle().getAttribute('aria-expanded')==='true'&&document.activeElement===toggle()&&Math.abs(scrollY-before)<2;
+          setMarketSort('materials','stock');
+          const sorted=toggle().getAttribute('aria-expanded')==='true'&&document.activeElement===toggle();
+          const associated=toggle().getAttribute('aria-controls')===channel().querySelector('.supplier-commodity-list').id&&toggle().getAttribute('aria-label').includes('GOLD');
+          const source=allBases;allBases=allBases.slice(0,2);renderMaterialsScan();
+          const fewer=!toggle()&&document.activeElement===channel();
+          allBases=source;renderMaterialsScan();
+          const restored=toggle().getAttribute('aria-expanded')==='true';
+          const independent=!document.querySelector('#materialsScanGrid [data-market-commodity="niobium"]').classList.contains('mobile-market-expanded');
+          const search=document.getElementById('commandGlobalSearch');search.value='Gold';search.focus();renderSupplier();
+          const searchFocus=document.activeElement===search&&search.value==='Gold';
+          search.value='';return {refresh,sorted,associated,fewer,restored,independent,searchFocus};
+        })()""")
+        assert all(disclosure.values()), disclosure
         # The old URL must resolve to a current view; no retired editor is mounted.
         retired = base.ev(cdp, """(()=>{RHWV4.navigate('comms','ticker');return {route:location.hash,
           editor:!!document.getElementById('v40NewswireManager'),orders:!!RHWV4.productionOrders,
@@ -179,7 +244,7 @@ def main():
           font:document.fonts.check('16px Barlow'),body:document.body.textContent.includes('Stock unknown')};})()""")
         assert offline['unknown'] and offline['notice'] and offline['font'] and offline['body'], offline
         capture(cdp, '390-inventory-offline')
-        (OUT / 'checks.json').write_text(json.dumps({'layouts': report, 'retired': retired, 'keyboard': focused, 'priceFocus': price_focus, 'offline': offline}, indent=2))
+        (OUT / 'checks.json').write_text(json.dumps({'layouts': report, 'marketLayouts': market_layouts, 'disclosure': disclosure, 'retired': retired, 'keyboard': focused, 'priceFocus': price_focus, 'offline': offline}, indent=2))
         print(f'Bundled interface passed: {len(report)} layouts, retired routes, keyboard focus, local fonts and offline reload.')
         return 0
     except Exception:

@@ -1597,6 +1597,9 @@ function marketMaterialIdentity(name) {
 function renderCommodityScan({ grid, meta, targets, sort, enabled, feedstocks = {} }) {
   if (!grid || !enabled) return { totalOffers: 0, uniqueBases: 0, pending: false };
 
+  const focusedToggle = document.activeElement?.matches('.market-mobile-toggle') && grid.contains(document.activeElement)
+    ? document.activeElement.closest('.market-card')?.dataset.marketCommodity : null;
+
   updateMarketSortButtons();
 
   if (!targets.length) {
@@ -1763,6 +1766,17 @@ function renderCommodityScan({ grid, meta, targets, sort, enabled, feedstocks = 
   }).join('');
 
   window.RHWRuntime?.rendered(grid.id);
+  if (focusedToggle) {
+    const card = [...grid.querySelectorAll('.market-card')].find(entry => entry.dataset.marketCommodity === focusedToggle);
+    const toggle = card?.querySelector('.market-mobile-toggle');
+    // A refresh can remove the disclosure when fewer offers remain. Preserve
+    // the reader's position on that channel without focusing a hidden control.
+    if (toggle && toggle.getClientRects().length) toggle.focus({ preventScroll: true });
+    else if (card && card.getClientRects().length) {
+      card.tabIndex = -1;
+      card.focus({ preventScroll: true });
+    }
+  }
   grid.querySelectorAll('.scramble-market').forEach(el => scrambleText(el, el.dataset.val));
   return { totalOffers, uniqueBases: sellerKeys.size, pending: false };
 }
@@ -2443,10 +2457,12 @@ function initProductionDetailsToggle() {
   applyState();
 }
 
+const expandedMarketChannels = new Set();
+
 function enhanceMobileMarketCards(grid) {
   if (!grid) return;
 
-  grid.querySelectorAll('.market-card').forEach((card, cardIndex) => {
+  grid.querySelectorAll('.market-card').forEach(card => {
     const list = card.querySelector('.supplier-commodity-list');
     if (!list || card.querySelector('.market-mobile-toggle')) return;
 
@@ -2454,19 +2470,30 @@ function enhanceMobileMarketCards(grid) {
     if (rows.length <= 3) return;
 
     const hiddenCount = rows.length - 3;
+    const commodity = card.dataset.marketCommodity;
+    const channelKey = `${grid.id}:${commodity}`;
+    const channelName = card.querySelector('.supplier-title')?.textContent.trim() || commodity;
+    list.id = `${grid.id}-${commodity.replace(/[^a-z0-9]+/g, '-')}-offers`;
     const button = document.createElement('button');
     button.type = 'button';
     button.className = 'market-mobile-toggle';
-    button.setAttribute('aria-expanded', 'false');
-    button.setAttribute('aria-label', `Show ${hiddenCount} more market offers in channel ${cardIndex + 1}`);
-    button.textContent = `SHOW ${hiddenCount} MORE OFFERS`;
+    button.setAttribute('aria-controls', list.id);
+
+    function applyExpandedState() {
+      const expanded = expandedMarketChannels.has(channelKey);
+      card.classList.toggle('mobile-market-expanded', expanded);
+      button.setAttribute('aria-expanded', String(expanded));
+      button.setAttribute('aria-label', expanded ? `Show fewer offers for ${channelName}` : `Show ${hiddenCount} more offers for ${channelName}`);
+      button.textContent = expanded ? 'SHOW FEWER OFFERS' : `SHOW ${hiddenCount} MORE OFFERS`;
+    }
 
     button.addEventListener('click', () => {
-      const expanded = card.classList.toggle('mobile-market-expanded');
-      button.setAttribute('aria-expanded', expanded ? 'true' : 'false');
-      button.textContent = expanded ? 'SHOW FEWER OFFERS' : `SHOW ${hiddenCount} MORE OFFERS`;
+      if (expandedMarketChannels.has(channelKey)) expandedMarketChannels.delete(channelKey);
+      else expandedMarketChannels.add(channelKey);
+      applyExpandedState();
     });
 
+    applyExpandedState();
     card.appendChild(button);
   });
 }
