@@ -26,7 +26,9 @@ async function models() {
   });
   ctx.window = ctx;
   run(ctx, 'js/build-info.js');
+  run(ctx, 'js/core/lifecycle.js');
   ctx.RHWV4 = { ready: true, version: 'V4.0.2', state: {},
+    lifecycle: ctx.createRhwLifecycle(),
     config: { repository: ctx.RHW_BUILD.repository, build: ctx.RHW_BUILD,
       storageKeys: { productionOrders: 'orders', calculatorState: 'calc' },
       operations: { defaultAffiliation: 'br_m_grp', defaultProduct: 'commodity_ship_part_reactor' } },
@@ -34,9 +36,9 @@ async function models() {
       number: v => Number(v).toLocaleString('de-DE'), uid: p => `${p}-${++uid}` },
     store: { get: (k, d) => memory.get(k) ?? d, set: (k, v) => { memory.set(k, v); return true; } }, notify() {}
   };
-  run(ctx, 'js/04-state-production.js');
-  run(ctx, 'js/17-app-v40-operations-core.js');
-  run(ctx, 'js/18c-app-v40-recipe-corrections.js');
+  run(ctx, 'js/command/production.js');
+  run(ctx, 'js/calculator/model.js');
+  run(ctx, 'js/calculator/catalog.js');
   for (let i = 1; i <= 6; i++) run(ctx, `assets/recipes/catalog-v1-part-${String(i).padStart(2, '0')}.js`);
   ctx.__RHW_RECIPE_CATALOG__ = JSON.parse(zlib.gunzipSync(Buffer.from(ctx.__RHW_RECIPE_CATALOG_GZIP_BASE64__, 'base64')));
   const app = ctx.RHWV4, core = app.operationsCore;
@@ -62,7 +64,7 @@ async function models() {
   assert.equal(core.priceQuote([], { materialPrices: {}, marginPercent: 95 }, {actualOutput: 10, recipeFeeTotal: 100}).sellPerUnit, 200);
 
   // Render the actual calculator and exercise its input event handler.
-  run(ctx, 'js/18-app-v40-operations-ui.js');
+  run(ctx, 'js/calculator/ui.js');
   app.state.calculator = calc;
   const mount = node(); nodes.set('operationsCalculatorMount', mount);
   app.operations.renderCalculator();
@@ -173,8 +175,8 @@ async function models() {
   assert.equal(ctx.telemetrySnapshot().label, 'TELEMETRY UNAVAILABLE');
   ctx.els = { baseMoneyVal: node(), baseStorageVal: node(), baseHealthVal: node() };
   ctx.els.baseMoneyVal.closest = () => null;
-  run(ctx, 'js/03-telemetry.js');
-  run(ctx, 'js/07-overview.js');
+  run(ctx, 'js/data/telemetry.js');
+  run(ctx, 'js/command/inventory.js');
   ctx.FEATURES = {};
   for (const name of ['renderOverview', 'renderProductionModules', 'renderManifest', 'updateDataFreshnessIndicators']) ctx[name] = () => {};
   // Exercise the real render entry point after a failed first fetch.
@@ -183,19 +185,19 @@ async function models() {
   assert.equal(typeof ctx.buildIndustrialNewswireMessages, 'undefined', 'Retired Newswire is absent from the shipped dashboard');
 
   nodes.clear();
-  run(ctx, 'js/config.js');
+  run(ctx, 'js/command/config.js');
   vm.runInContext('globalThis.CAPITAL_SHIPYARD = DASHBOARD_CONFIG.capitalShipyard;', ctx);
   const yard = node();
   yard.insertAdjacentHTML = () => assert.fail('Retired planner must not be injected');
   nodes.set('shipyardControl', yard);
   ctx.MutationObserver = class { observe(target) { assert.notEqual(target, yard, 'Retired planner must not watch the Shipyard'); } };
-  run(ctx, 'js/21-app-v402-qol.js');
+  run(ctx, 'js/calculator/price-profiles.js');
   assert.equal(nodes.has('shipyardBuildPlanner'), false, 'Shipyard starts without the retired planner');
-  assert.equal(typeof app.qol.ensureProfilePanel, 'function', 'Calculator price profiles remain available');
+  assert.equal(typeof app.priceProfiles.ensureProfilePanel, 'function', 'Calculator price profiles remain available');
   nodes.clear();
-  run(ctx, 'js/25-app-v40-discovery-status.js');
+  run(ctx, 'js/tools/discovery.js');
   app.discoveryStatus.state.status = { catalog: { effective: { recipes: 285 } }, workflow: { reviewRequired: true, autoMerge: false } };
-  run(ctx, 'js/26-app-v40-diagnostics.js');
+  run(ctx, 'js/tools/diagnostics.js');
   const syncHealth = () => app.diagnostics.collect().find(r => r.key === 'discovery');
   assert.equal(syncHealth().tone, 'warn', 'Review policy alone is not a successful sync');
   for (const conclusion of ['failure', 'cancelled', 'timed_out', 'action_required']) {
@@ -267,7 +269,7 @@ async function updates() {
     addEventListener() {}, confirm: () => confirm, location: { reload: () => { reloads++; } }
   });
   ctx.window = ctx;
-  run(ctx, 'js/23-app-v40-pwa.js');
+  run(ctx, 'js/core/pwa.js');
   swHandlers.controllerchange();
   assert.equal(reloads, 0, 'Initial install must not reload the active tab');
   const worker = { postMessage: () => { messages++; } };
@@ -298,9 +300,9 @@ function overviewReferences() {
     statusPill: () => '<span class="pill">STABLE</span>',
     readinessText: () => 'READY'
   });
-  run(ctx, 'js/config.js');
+  run(ctx, 'js/command/config.js');
   vm.runInContext('const CUSTOM_ALERTS=DASHBOARD_CONFIG.alerts, FEEDSTOCK=DASHBOARD_CONFIG.roles.feedstock, RECIPES=DASHBOARD_CONFIG.recipes;', ctx);
-  run(ctx, 'js/07-overview.js');
+  run(ctx, 'js/command/inventory.js');
   const evaluate = code => vm.runInContext(code, ctx);
   const ref = (item, role) => JSON.parse(evaluate(`JSON.stringify(overviewStockReference(${JSON.stringify(item)},${JSON.stringify(role)}))`));
   // Neither configured warning thresholds nor API reserves become target stock.

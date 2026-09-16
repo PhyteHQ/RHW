@@ -8,17 +8,8 @@ import shutil
 import time
 
 import smoke_v40 as base
-import smoke_v402  # noqa: F401  # use the deployed desktop and mobile asset order
+import smoke_workflows  # noqa: F401  # use the deployed desktop and mobile asset order
 
-base._ensure_app_layer_assets()
-
-CORRECTION = "js/18c-app-v40-recipe-corrections.js"
-POLISH = "js/18d-app-v40-final-ui-polish.js"
-
-if CORRECTION not in base.V4_JS:
-    base.V4_JS.insert(base.V4_JS.index("js/18b-app-v40-production-pricing.js") + 1, CORRECTION)
-if POLISH not in base.V4_JS:
-    base.V4_JS.insert(base.V4_JS.index(CORRECTION) + 1, POLISH)
 
 
 def number_from_money(value: str) -> int:
@@ -54,11 +45,11 @@ def main() -> int:
 
             labels = base.ev(cdp, """(()=>{
               const recipes=RHWV4.operationsCore.state.catalog?.recipes||[];
-              const gold=recipes.filter(r=>r.id.startsWith('recipe_gold_')).map(r=>[r.id,RHWV4.finalUiPolish.recipeLabel(r)]);
-              const diamonds=recipes.filter(r=>r.id.startsWith('recipe_diamonds_')).map(r=>[r.id,RHWV4.finalUiPolish.recipeLabel(r)]);
+              const gold=recipes.filter(r=>r.id.startsWith('recipe_gold_')).map(r=>[r.id,RHWV4.calculatorPresentation.recipeLabel(r)]);
+              const diamonds=recipes.filter(r=>r.id.startsWith('recipe_diamonds_')).map(r=>[r.id,RHWV4.calculatorPresentation.recipeLabel(r)]);
               return{
-                duplicates:RHWV4.finalUiPolish?.duplicateFinalLabels?.()||[['missing-polish',['missing']]],
-                self:RHWV4.finalUiPolish?.selfTest?.()||['missing-polish'],
+                duplicates:RHWV4.calculatorPresentation?.duplicateFinalLabels?.()||[['missing-polish',['missing']]],
+                self:RHWV4.calculatorPresentation?.selfTest?.()||['missing-polish'],
                 gold,diamonds,
                 header:[...document.querySelector('.uplink-grid').children].filter(x=>x.classList.contains('uplink-stat')).map(x=>x.querySelector('small')?.textContent?.trim()||'')
               };

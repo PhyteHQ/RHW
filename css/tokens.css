@@ -1,0 +1,18 @@
+/* Shared literal palette. Component tokens may reference these constants. */
+:root {
+  --palette-gold: #d4af37;
+  --palette-canvas: #0c0c0b;
+  --palette-canvas-deep: #0b0b0a;
+  --palette-text: #f1eee4;
+  --palette-text-soft: #e0e0e0;
+  --palette-muted: #808080;
+  --palette-line: #333333;
+  --palette-line-bright: #555555;
+  --palette-positive: #78ad8a;
+  --palette-info: #7da7ea;
+  --palette-warning: #c98b2c;
+  --palette-danger: #c75e5e;
+  --palette-gold-muted: #c6a75a;
+  --palette-white: #ffffff;
+  --palette-black: #000000;
+}

@@ -57,6 +57,7 @@ jobs:
       - name: Validate generated dashboard
         run: |
           python3 scripts/test_discovery_sync.py
+          python3 scripts/build_app_assets.py
           python3 scripts/validate_dashboard.py
 
       - name: Detect reviewed data delta
@@ -81,6 +82,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add assets/recipes assets/discovery-status.json docs/discovery-sync-report.md
+          git add js/rhw-workspaces.js js/build-info.js assets/build-assets.json index.html sw.js
           git commit -m "data: sync Discovery recipe catalog"
           git push --force-with-lease origin "${SYNC_BRANCH}"
 

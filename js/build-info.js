@@ -1,6 +1,6 @@
-/* Shared by the page, asset loader and service worker. Bump for each release. */
+/* GENERATED content revision; do not edit. */
 globalThis.RHW_BUILD = Object.freeze({
-  revision: '2026-09-15-command-finish-1',
+  revision: 'sha256-11b10323788d1dc84292',
   repository: 'PhyteHQ/RHW',
   branch: 'main'
 });

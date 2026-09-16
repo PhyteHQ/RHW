@@ -9,7 +9,7 @@ const app = {config: {storageKeys: {productionOrders: 'archive'}, operations: {d
   util: {uid: () => 'generated'},
   store: {get: (key, fallback) => values.get(key) || fallback,
     set: (key, value) => { if (rejectWrite) return false; values.set(key, value); return true; }}};
-vm.runInNewContext(fs.readFileSync(path.join(__dirname, '../js/14a-legacy-archive.js'), 'utf8'), {window: {RHWV4: app}});
+vm.runInNewContext(fs.readFileSync(path.join(__dirname, '../js/data/legacy-archive.js'), 'utf8'), {window: {RHWV4: app}});
 const api = app.legacyArchive;
 const row = (id, updatedAt) => ({id, productId: 'gold', recipeId: 'gold-basic', quantity: 100, createdAt: 1, updatedAt});
 values.set('archive', [row('existing', 20)]);

@@ -3,11 +3,10 @@
   "name": "Resolution Heavy Works Command",
   "short_name": "RHW Command",
   "description": "Resolution Heavy Works logistics, production, communications and shipyard command app.",
-  "start_url": "./#command/overview",
+  "start_url": "./#command/inventory",
   "scope": "./",
   "display": "standalone",
   "display_override": [
-    "window-controls-overlay",
     "standalone",
     "minimal-ui"
   ],
@@ -51,9 +50,9 @@
       "url": "./#operations/calculator"
     },
     {
-      "name": "Newswire Manager",
-      "short_name": "Newswire",
-      "url": "./#comms/ticker"
+      "name": "Forum Composer",
+      "short_name": "Forum",
+      "url": "./#comms/forum"
     }
   ]
 }

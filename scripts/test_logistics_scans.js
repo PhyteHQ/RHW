@@ -24,14 +24,14 @@ const ctx = vm.createContext({ console, setInterval() {}, clearInterval() {},
 ctx.window = ctx;
 ctx.setSupplierLinkState = (state, label) => { ctx.link = { state, label }; };
 const run = file => vm.runInContext(fs.readFileSync(path.join(__dirname, '..', file), 'utf8'), ctx, { filename: file });
-run('js/config.js');
+run('js/command/config.js');
 vm.runInContext(`Object.assign(globalThis, { MARKET_SCAN: DASHBOARD_CONFIG.marketScan,
   MATERIALS_SCAN: DASHBOARD_CONFIG.materialsScan, FEATURES: DASHBOARD_CONFIG.features,
   MATERIAL_FEEDSTOCKS: DASHBOARD_CONFIG.materialFeedstocks,
   BASE_NAME: DASHBOARD_CONFIG.baseName, STORAGE_KEYS: DASHBOARD_CONFIG.storageKeys });`, ctx);
-run('js/02-utils.js');
-run('js/04-state-production.js');
-run('js/06-logistics.js');
+run('js/shared/utils.js');
+run('js/command/production.js');
+run('js/command/logistics.js');
 assert.deepEqual([...ctx.MARKET_SCAN], ['Avionics Systems', 'Interior Systems', 'Propulsion Systems', 'Superstructure Systems', 'Reactor Systems', 'Exotic Systems']);
 assert.deepEqual([...ctx.MATERIALS_SCAN], ['Gold', 'Gold Ore', 'Niobium', 'Niobium Ore', 'Prototype Components']);
 for (const name of ['Gold Ore', 'Niobium Ore', 'Unknown commodity']) {

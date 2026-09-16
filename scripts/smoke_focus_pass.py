@@ -8,9 +8,8 @@ import time
 
 import smoke_v40 as harness
 import smoke_v40_base as base
-import smoke_v402  # noqa: F401  # installs the production CSS/JS matrix
+import smoke_workflows  # noqa: F401  # installs the production CSS/JS matrix
 
-harness._ensure_app_layer_assets()
 
 VISIBLE_HELPER = """const visible=element=>{if(!element)return false;const style=getComputedStyle(element),rect=element.getBoundingClientRect();return style.display!=='none'&&style.visibility!=='hidden'&&style.opacity!=='0'&&rect.width>0&&rect.height>0};"""
 
@@ -145,7 +144,7 @@ def main() -> int:
 
             # TOOLS is now genuinely secondary and no longer exposes the obsolete
             # Production Orders / Build Queue or Newswire entries.
-            base.ev(cdp, "(()=>{RHWV4.focusPass.openTools();return true;})()")
+            base.ev(cdp, "(()=>{RHWV4.toolsNavigation.openTools();return true;})()")
             settle(.06)
             tools = base.ev(cdp, f"""(()=>{{
               {VISIBLE_HELPER}
@@ -161,7 +160,7 @@ def main() -> int:
             }})()""")
             if not tools.get("open") or tools.get("keys") != ["backup", "senders", "system"] or not tools.get("trap"):
                 raise RuntimeError(f"TOOLS cleanup/focus failed: {tools}")
-            base.ev(cdp, "(()=>{RHWV4.focusPass.closeTools();return true;})()")
+            base.ev(cdp, "(()=>{RHWV4.toolsNavigation.closeTools();return true;})()")
 
             # The other three daily destinations must remain clean and reachable.
             for workspace, expected, panel_selector in [
