@@ -161,6 +161,8 @@
         const key = reset.dataset.pricecheckReset;
         delete state.overrides[key];
         app.store.set(STORAGE.overrides, state.overrides);
+        const input = reset.parentElement?.querySelector('[data-pricecheck-override]');
+        if (input) input.value = '';
         render();
       }
     });
@@ -454,16 +456,17 @@
     const sourceName = market.sourceName || route.source;
     const system = market.system || route.system;
     const sourceMeta = market.sourceType === 'pob'
-      ? `${system} // POB ${market.sourceNickname || route.sourceNickname || route.source}`
-      : (market.sourceNickname ? `${system} // ${market.sourceNickname}` : `${system} // SOURCE MATCH PENDING`);
+      ? `POB ${market.sourceNickname || route.sourceNickname || route.source}`
+      : (market.sourceNickname || 'SOURCE MATCH PENDING');
+    const sourceMetaClass = market.sourceType === 'pob' || market.sourceNickname ? 'pricecheck-source-id' : 'pricecheck-source-warning';
     const stamp = Number.isFinite(Date.parse(priceAt || '')) ? new Date(priceAt).toLocaleString('de-DE', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : 'TIME UNKNOWN';
     const liveCopy = live === null ? 'SOURCE PRICE UNAVAILABLE' : `${fresh ? 'LIVE' : 'CACHED'} ${money(live)} · ${stamp}`;
     const payoutCopy = payout === null ? 'RHW PRICE UNAVAILABLE' : money(payout);
     return `<tr class="pricecheck-row" data-route-key="${esc(route.key)}">
-      <td><span class="pricecheck-mobile-label">COMMODITY</span><span class="pricecheck-commodity"><strong>${esc(route.commodity)}</strong><small>${route.sourceType === 'pob' ? 'FIXED POB ROUTE' : 'FIXED NPC ROUTE'}</small></span></td>
-      <td><span class="pricecheck-mobile-label">SOURCE</span><span class="pricecheck-source"><strong>${esc(sourceName)}</strong><small>${esc(sourceMeta)}</small></span></td>
-      <td><span class="pricecheck-mobile-label">SOURCE PRICE / OVERRIDE</span><div class="pricecheck-price-editor"><input class="pricecheck-price-input" data-pricecheck-override="${esc(route.key)}" type="number" inputmode="decimal" min="0" step="1" value="${esc(overrideValue)}" placeholder="${live === null ? '' : esc(String(Math.round(live)))}" aria-label="${esc(route.commodity)} manual source price">${hasOverride ? `<button type="button" class="pricecheck-reset" data-pricecheck-reset="${esc(route.key)}">RESET</button>` : ''}<small class="pricecheck-live ${hasOverride ? 'manual' : ''}">${hasOverride ? `MANUAL ACTIVE // ${liveCopy}` : liveCopy}</small></div></td>
-      <td><span class="pricecheck-mobile-label">RHW PAYS</span><span class="pricecheck-payout"><strong>${payoutCopy}</strong><small>${!rhw.available ? 'RHW DATA UNAVAILABLE' : rhw.stale ? 'RHW CACHED' : 'CURRENT RHW BUY'}</small></span></td>
+      <td class="pricecheck-item-cell"><span class="pricecheck-mobile-label">COMMODITY</span><span class="pricecheck-commodity"><strong>${esc(route.commodity)}</strong><small>${route.sourceType === 'pob' ? 'FIXED POB ROUTE' : 'FIXED NPC ROUTE'}</small></span></td>
+      <td class="pricecheck-source-cell"><span class="pricecheck-mobile-label">SOURCE</span><span class="pricecheck-source"><strong>${esc(sourceName)}</strong><small>${esc(system)}<span class="${sourceMetaClass}"> // ${esc(sourceMeta)}</span></small></span></td>
+      <td class="pricecheck-price-cell"><span class="pricecheck-mobile-label">SOURCE PRICE</span><div class="pricecheck-price-editor"><input class="pricecheck-price-input" data-pricecheck-override="${esc(route.key)}" type="number" inputmode="decimal" min="0" step="1" value="${esc(overrideValue)}" placeholder="${live === null ? '' : esc(String(Math.round(live)))}" aria-label="${esc(route.commodity)} manual source price">${hasOverride ? `<button type="button" class="pricecheck-reset" data-pricecheck-reset="${esc(route.key)}">RESET</button>` : ''}<small class="pricecheck-live ${hasOverride ? 'manual' : ''}">${hasOverride ? `MANUAL ACTIVE // ${liveCopy}` : liveCopy}</small></div></td>
+      <td class="pricecheck-payout-cell"><span class="pricecheck-mobile-label">RHW PAYS</span><span class="pricecheck-payout"><strong>${payoutCopy}</strong><small class="${rhw.available && !rhw.stale ? 'pricecheck-current' : ''}">${!rhw.available ? 'RHW DATA UNAVAILABLE' : rhw.stale ? 'RHW CACHED' : 'CURRENT RHW BUY'}</small></span></td>
       <td class="pricecheck-difference ${tone}"><span class="pricecheck-mobile-label">DIFFERENCE</span><strong>${signedMoney(difference)}</strong>${difference !== null && ((!fresh && !hasOverride) || rhw.stale) ? '<small class="pricecheck-estimate">FROM CACHED PRICES</small>' : ''}</td>
     </tr>`;
   }

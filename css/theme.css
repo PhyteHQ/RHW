@@ -520,7 +520,9 @@ html.rhw-focus-pass .pricecheck-reset { min-height: 44px;font-size: 12px; }
 
 html.rhw-focus-pass .pricecheck-estimate { display: block;margin-top: 4px;font: 12px/1.4 var(--font-main);color: var(--muted); }
 
+@media (min-width:761px) {
 html.rhw-focus-pass .pricecheck-row td { padding-block: 14px; }
+}
 
 html.rhw-focus-pass .pricecheck-table th { background: var(--surface-raised);color: var(--muted); }
 
