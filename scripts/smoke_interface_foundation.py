@@ -133,6 +133,14 @@ def main():
                     noticeVisible:visible(document.getElementById('telemetryNotice')),
                     font:document.fonts.check('16px Barlow'),
                     priceLabelSizes:[...document.querySelectorAll('#opsMaterialPanel td:nth-child(3)')].filter(visible).map(e=>parseFloat(getComputedStyle(e,'::before').fontSize)),
+                    priceCards:[...document.querySelectorAll('.pricecheck-row')].filter(visible).map(e=>{
+                      const box=e.getBoundingClientRect(),diff=e.querySelector('.pricecheck-difference').getBoundingClientRect();
+                      const input=e.querySelector('input'),source=e.querySelector('.pricecheck-price-cell').getBoundingClientRect();
+                      const payout=e.querySelector('.pricecheck-payout-cell').getBoundingClientRect();
+                      return {key:e.dataset.routeKey,height:box.height,differenceTop:diff.top-box.top,
+                        pricesAligned:Math.abs(source.top-payout.top)<=1,inputHeight:input.getBoundingClientRect().height,
+                        clipped:e.scrollWidth>e.clientWidth+1};
+                    }),
                     inventoryStyled:[...document.querySelectorAll('#inventoryStatusPanel .alert-list')].every(e=>getComputedStyle(e).listStyleType==='none')&&[...document.querySelectorAll('#inventoryStatusPanel .alert-title')].every(e=>getComputedStyle(e).display==='flex'),
                     inputs:[...document.querySelectorAll('#opsMaterialPanel [data-material-price]')].filter(visible).map(e=>e.getBoundingClientRect().width)};
                 })()""")
@@ -153,6 +161,15 @@ def main():
                     assert result['inputs'] and all(0 < n <= 145 for n in result['inputs']), result
                 if width <= 760 and workspace == 'operations':
                     assert result['priceLabelSizes'] and min(result['priceLabelSizes']) >= 11, result
+                if width <= 760 and workspace == 'pricecheck':
+                    # A phone must show the result at the start of each compact
+                    # card, including unknown prices and the longest route names.
+                    assert len(result['priceCards']) == 12, result
+                    for card in result['priceCards']:
+                        assert card['height'] <= 300 and card['differenceTop'] <= 20, (width, card)
+                        assert card['pricesAligned'] and card['inputHeight'] >= 44 and not card['clipped'], (width, card)
+                    if width == 390:
+                        capture_card(cdp, '[data-route-key="industrial-materials"]', '390-pricecheck-compact-cards')
                 report.append({'width': width, 'route': route, **result})
 
         # Deliberately long names and seven-digit amounts exercise the actual
@@ -234,6 +251,25 @@ def main():
             emptyStyleMarkers:document.querySelectorAll('style[data-stylesheet]').length};})()""")
         assert price_focus['same'] and price_focus['focused'] and price_focus['value'] == '0' and price_focus['stored'] == 0, price_focus
         assert price_focus['live'] == 'NPC MARKET LIVE' and price_focus['emptyStyleMarkers'] == 0, price_focus
+        # The prominent result must change immediately while typing, including
+        # zero, losses and large amounts, and return to the live price on reset.
+        price_edit = base.ev(cdp, """(()=>{
+          const row=document.querySelector('[data-route-key="food-rations"]'),input=row.querySelector('input');
+          const states=[0,100,125,9999999].map(value=>{
+            input.focus();input.value=String(value);input.dispatchEvent(new Event('input',{bubbles:true}));
+            const diff=row.querySelector('.pricecheck-difference'),reset=row.querySelector('[data-pricecheck-reset]');
+            return {text:diff.querySelector('strong').textContent,tone:diff.className,
+              focused:document.activeElement===input,clipped:row.scrollWidth>row.clientWidth+1,
+              resetHeight:reset.getBoundingClientRect().height};
+          });
+          row.querySelector('[data-pricecheck-reset]').click();
+          return {states,reset:!row.querySelector('[data-pricecheck-reset]')&&input.value==='',
+            liveResult:row.querySelector('.pricecheck-difference strong').textContent};
+        })()""")
+        for state, (value, tone) in zip(price_edit['states'], (('+$100', 'positive'), ('$0', 'neutral'), ('-$25', 'negative'), ('-$9,999,899', 'negative'))):
+            assert state['text'] == value and tone in state['tone'], state
+            assert state['focused'] and not state['clipped'] and state['resetHeight'] >= 44, state
+        assert price_edit['reset'] and price_edit['liveResult'] == '+$20', price_edit
         base.ev(cdp, "(()=>{location.hash='#pricecheck/obsolete';return true;})()")
         time.sleep(.15)
         assert base.ev(cdp, 'location.hash') == '#pricecheck/routes', 'Price Check uses the shared canonical route model'
@@ -267,7 +303,7 @@ def main():
             portable:/\\[img\\]https:\\/\\//.test(RHWV4.comms.buildBbcode())};
         })()""")
         assert all(forum_offline.values()), forum_offline
-        (OUT / 'checks.json').write_text(json.dumps({'layouts': report, 'marketLayouts': market_layouts, 'disclosure': disclosure, 'retired': retired, 'keyboard': focused, 'priceFocus': price_focus, 'offline': offline}, indent=2))
+        (OUT / 'checks.json').write_text(json.dumps({'layouts': report, 'marketLayouts': market_layouts, 'disclosure': disclosure, 'retired': retired, 'keyboard': focused, 'priceFocus': price_focus, 'priceEdit': price_edit, 'offline': offline}, indent=2))
         print(f'Bundled interface passed: {len(report)} layouts, retired routes, keyboard focus, local fonts and offline reload.')
         return 0
     except Exception:
