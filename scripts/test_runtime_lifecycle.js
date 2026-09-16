@@ -18,7 +18,7 @@ async function main() {
     clearTimeout: id => timers.delete(id)
   });
   ctx.window = ctx;
-  vm.runInContext(fs.readFileSync(path.join(__dirname, '../js/00-runtime.js'), 'utf8'), ctx);
+  vm.runInContext(fs.readFileSync(path.join(__dirname, '../js/core/refresh.js'), 'utf8'), ctx);
   const runtime = ctx.RHWRuntime;
   const flush = async () => { for (let i = 0; i < 8; i++) await Promise.resolve(); };
   async function advance(ms) {

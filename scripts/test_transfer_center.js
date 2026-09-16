@@ -45,14 +45,14 @@ function mergeOrders(incoming) {
   memory.set(keys.productionOrders, [...merged.values()]);
 }
 
-app.productionOrders = {
+app.legacyArchive = {
   snapshot: () => clone(memory.get(keys.productionOrders) || []),
   prepareImport: () => {},
   importOrders: incoming => mergeOrders(incoming)
 };
 
 global.window = { RHWV4: app };
-require(path.join(__dirname, '..', 'js', '14-app-v40-cache.js'));
+require(path.join(__dirname, '..', 'js', 'data', 'storage.js'));
 
 app.storage.init();
 assert.ok(app.storage.inspectPayload, 'Transfer payload inspector must register');
@@ -126,6 +126,6 @@ console.log('Transfer Center tests passed: V4 inspection, selective import, safe
 
 // An order-capacity rejection must happen before other selected sections mutate.
 const beforeRejectedImport = JSON.stringify({ state: app.state, memory: [...memory] });
-app.productionOrders.prepareImport = () => { throw new Error('LIMIT 100'); };
+app.legacyArchive.prepareImport = () => { throw new Error('LIMIT 100'); };
 assert.throws(() => app.storage.importPayload(incoming, { sections: ['drafts', 'senders', 'productionOrders'] }), /LIMIT 100/);
 assert.equal(JSON.stringify({ state: app.state, memory: [...memory] }), beforeRejectedImport);

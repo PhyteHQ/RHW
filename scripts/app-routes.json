@@ -1,0 +1,14 @@
+{
+  "routes": {
+    "command": ["inventory", "shipyard", "production", "logistics"],
+    "operations": ["calculator"],
+    "pricecheck": ["routes"],
+    "comms": ["forum", "drafts", "senders"]
+  },
+  "legacyRedirects": {
+    "command/overview": "command/inventory",
+    "operations/orders": "operations/calculator",
+    "comms/ticker": "comms/forum",
+    "comms/newswire": "comms/forum"
+  }
+}

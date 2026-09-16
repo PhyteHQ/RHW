@@ -15,10 +15,8 @@ from build_recipe_catalog import read_catalog
 from sync_discovery_catalog import effective_counts
 _COUNTS = effective_counts(read_catalog(ROOT / 'assets' / 'recipes'))
 CATALOG_COUNTS = {'recipeCount': _COUNTS['recipes'], 'productCount': _COUNTS['products']}
-ROUTES = [
-    ("command","overview"),("command","inventory"),("command","shipyard"),("command","production"),("command","logistics"),
-    ("operations","calculator"),("pricecheck","routes"),("comms","forum"),("comms","drafts"),("comms","senders"),
-]
+ROUTE_MODEL = json.loads((ROOT / 'scripts/app-routes.json').read_text())
+ROUTES = [(workspace, node) for workspace, nodes in ROUTE_MODEL['routes'].items() for node in nodes]
 _ASSETS = json.loads((ROOT / 'scripts/runtime-assets.json').read_text())
 V4_CSS = []  # the HTML stylesheet contains the exact complete production cascade
 V4_JS = [p.removeprefix('./') for p in _ASSETS['workspaces']]
@@ -108,12 +106,12 @@ def snapshot(cdp):
 def ui_number(value):
     digits=re.sub(r"[^0-9-]","",value or ""); return int(digits) if digits and digits!="-" else 0
 
-def test_overview(cdp):
+def test_status_sensor(cdp):
     result=ev(cdp,"(()=>{window.hasVerifiedTelemetry=()=>true;window.operationalItems=()=>[];window.stockFor=()=>100;window.analyzeRecipe=r=>({recipe:r,possibleCycles:r.product==='Reactor Systems'?2:3,cardState:'low',bottleneck:{name:'test'},nextCycleGap:5});RHWV4.command.updateOverview();return{ship:v40OverviewShipyard.textContent,prod:v40OverviewProduction.textContent}})()")
     if "HULL" not in result["ship"] or not result["prod"].startswith("MIN "): raise RuntimeError(f"Overview telemetry analysis failed: {result}")
     stale=ev(cdp,"(()=>{window.hasVerifiedTelemetry=()=>false;RHWV4.command.updateOverview();return{ship:v40OverviewShipyard.textContent,meta:v40OverviewShipyardMeta.textContent,prod:v40OverviewProductionMeta.textContent,log:v40OverviewLogisticsMeta.textContent}})()")
     if stale["ship"] not in {"CONNECTING", "DATA UNAVAILABLE"} or "NO VERIFIED" not in stale["meta"] or "AWAITING VERIFIED" not in stale["prod"] or "AWAITING VERIFIED" not in stale["log"]: raise RuntimeError(f"Overview stale reset failed: {stale}")
-    print("V4 interaction smoke passed: COMMAND overview")
+    print("V4 interaction smoke passed: COMMAND status sensor")
 
 def test_production_bridge(cdp):
     result=ev(cdp,"(()=>{window.hasVerifiedTelemetry=()=>true;window.stockFor=()=>50000;if(typeof renderProductionModules!=='function'||!RHWV4.productionPricing)return{ok:false,reason:'bridge missing'};renderProductionModules();RHWV4.productionPricing.enhanceProduction();const cards=[...document.querySelectorAll('.production-card')];const card=cards.find(x=>x.querySelector('.production-title')?.textContent.trim()==='Reactor Systems');const button=card?.querySelector('.production-calc-button');if(!button)return{ok:false,reason:'button missing',cards:cards.map(x=>x.querySelector('.production-title')?.textContent.trim())};button.click();return{ok:true,hash:location.hash,ws:document.body.dataset.workspace,search:document.querySelector('#opsRecipeSearch')?.value||'',recipe:document.querySelector('#opsRecipe')?.selectedOptions?.[0]?.textContent||''}})()")
@@ -160,13 +158,6 @@ def test_comms(cdp):
     if route!={"hash":"#comms/forum","ws":"comms","node":"forum"}: raise RuntimeError(f"Retired COMMS route fallback failed: {route}")
     print("V4 interaction smoke passed: COMMS formatting + drafts")
 
-def test_ticker(cdp):
-    result=ev(cdp,"(()=>{v40TickerTag.value='BAD | TAG] [WITH EXTRA TEXT THAT IS DEFINITELY TOO LONG';v40TickerMessage.value='LINE ONE\\nLINE TWO '+'X'.repeat(300);v40TickerTag.dispatchEvent(new Event('input',{bubbles:true}));v40TickerMessage.dispatchEvent(new Event('input',{bubbles:true}));return{tag:v40TickerTag.value,msg:v40TickerMessage.value,tm:v40TickerTag.maxLength,mm:v40TickerMessage.maxLength,out:v40TickerOutput.value}})()")
-    if result["tm"]!=40 or result["mm"]!=240 or any(c in result["tag"] for c in "[]|") or len(result["tag"])>40 or "\n" in result["msg"] or len(result["msg"])>240 or result["out"].count("\n")!=1: raise RuntimeError(f"Ticker parser safety failed: {result}")
-    manager=ev(cdp,"(()=>{const m=RHWV4.newswireManager;if(!m)return{ok:false,reason:'manager missing'};m.applyLoadedSource('# RHW Industrial Newswire\\n\\n## market\\n- [MARKET TEST | lore] MARKET MESSAGE\\n\\n## operations\\n- [OPS TEST | good] OPS MESSAGE\\n','fallback');const before=m.state.entries.length;v40TickerCategory.value='security';v40TickerTone.value='warn';v40TickerTag.value='RHW TEST';v40TickerMessage.value='NEW BULLETIN';[v40TickerCategory,v40TickerTone].forEach(x=>x.dispatchEvent(new Event('change',{bubbles:true})));[v40TickerTag,v40TickerMessage].forEach(x=>x.dispatchEvent(new Event('input',{bubbles:true})));v40NewswireSaveBtn.click();const added=m.state.entries.find(x=>x.tag==='RHW TEST');const afterAdd=m.state.entries.length;if(!added)return{ok:false,reason:'add failed',before,afterAdd};document.querySelector(`[data-newswire-edit=\"${added.id}\"]`)?.click();v40TickerMessage.value='EDITED BULLETIN';v40TickerMessage.dispatchEvent(new Event('input',{bubbles:true}));v40NewswireSaveBtn.click();const edited=m.state.entries.find(x=>x.id===added.id)?.message||'';window.confirm=()=>true;document.querySelector(`[data-newswire-delete=\"${added.id}\"]`)?.click();return{ok:true,before,afterAdd,edited,afterDelete:m.state.entries.length,dirty:m.state.dirty,list:document.querySelectorAll('.v40-newswire-entry').length,source:v40NewswireFileOutput.value,copy:!!v40NewswireCopyFileBtn,export:!!v40NewswireExportBtn,title:document.querySelector('[data-comms-panel=\"ticker\"] .comms-panel-head strong')?.textContent||''}})()")
-    if not manager.get("ok") or manager.get("before")!=2 or manager.get("afterAdd")!=3 or manager.get("edited")!="EDITED BULLETIN" or manager.get("afterDelete")!=2 or manager.get("list")!=2 or "# RHW Industrial Newswire" not in manager.get("source","") or "## market" not in manager.get("source","") or not manager.get("copy") or not manager.get("export") or "MANAGER" not in manager.get("title",""):
-        raise RuntimeError(f"Newswire manager add/edit/delete failed: {manager}")
-    print("V4 interaction smoke passed: Ticker safety + Newswire manager CRUD")
 
 def launch():
     browsers=[p for n in ("google-chrome-stable","google-chrome","chromium","chromium-browser") if (p:=shutil.which(n))]
@@ -208,11 +199,10 @@ def main():
                 if snap.get("ready")!="true" or snap.get("error")=="true" or snap.get("workspace")!=workspace or snap.get(key)!=node or snap.get("mountedNav")!=expected_nav or snap.get("errors"): raise RuntimeError(f"V4 route failed {workspace}/{node}: {snap}")
                 if workspace=="operations" and snap.get("recipes")!=CATALOG_COUNTS["recipeCount"]: raise RuntimeError(f"Recipe catalog missing: {snap}")
                 print(f"V4 runtime smoke passed: {workspace}/{node} (recipes={snap.get('recipes',0)} products={snap.get('products',0)} nav={snap.get('mountedNav','')})")
-                if (workspace,node)==("command","overview"): test_overview(cdp)
+                if (workspace,node)==("command","inventory"): test_status_sensor(cdp)
                 elif (workspace,node)==("command","production"): test_production_bridge(cdp)
                 elif workspace=="operations": test_calculator(cdp)
                 elif (workspace,node)==("comms","forum"): test_comms(cdp)
-                elif (workspace,node)==("comms","ticker"): test_ticker(cdp)
         finally: cdp.close()
     finally:
         chrome.terminate()

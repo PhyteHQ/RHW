@@ -8,9 +8,8 @@ import time
 
 import smoke_v40 as harness
 import smoke_v40_base as base
-import smoke_v402  # noqa: F401
+import smoke_workflows  # noqa: F401
 
-harness._ensure_app_layer_assets()
 
 
 def main() -> int:
@@ -55,7 +54,7 @@ def main() -> int:
               lastLoaded=new Date();lastSyncError='';dataIsStale=false;isLoading=false;
               items=['Basic Alloy','Consumer Goods','Food Rations','Gold Ore','Niobium Ore'].map(name=>({name,quantity:0}));
               rhwBase={name:'Resolution Heavy Works',shop_items:items};
-              rebuildItemCaches();renderAll();RHWV4.command.updateOverview();RHWV4.commandCompactPolish.syncAlerts();
+              rebuildItemCaches();renderAll();RHWV4.command.updateOverview();RHWV4.inventoryToolbar.syncAlerts();
               return true;
             })()""")
             result = base.ev(cdp, """(()=>{
@@ -81,7 +80,7 @@ def main() -> int:
               const status=document.getElementById('inventoryStatusPanel');
               const manifest=document.getElementById('inventoryManifestPanel');
               const initial={
-                selfFailures:RHWV4.commandCompactPolish?.selfTest?.()||[],
+                selfFailures:RHWV4.inventoryToolbar?.selfTest?.()||[],
                 commandCount:commandButtons.length,
                 commandHeights:commandButtons.map(x=>rect(x).height),
                 modeCount:modeButtons.length,
@@ -107,7 +106,7 @@ def main() -> int:
               const action=alertList?.querySelector('button');
               action?.focus();
               RHWV4.command.updateOverview();
-              RHWV4.commandCompactPolish.syncAlerts();
+              RHWV4.inventoryToolbar.syncAlerts();
               const stableDisclosure=visible(document.getElementById('commandAlertDetails'))&&document.activeElement===action;
               attention?.click();
               const attentionOn=document.body.dataset.commandFocus||'';

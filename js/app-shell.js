@@ -10,6 +10,7 @@ self.RHW_APP_SHELL = [
   "./js/rhw-workspaces.js",
   "./assets/discovery-status.json",
   "./assets/rhw-crest.png",
+  "./assets/rhw-forum-logo.png",
   "./assets/favicon.png",
   "./assets/apple-touch-icon.png",
   "./assets/pwa-icon-192.png",

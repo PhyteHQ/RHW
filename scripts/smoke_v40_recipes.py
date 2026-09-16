@@ -9,11 +9,6 @@ import time
 
 import smoke_v40 as base
 
-CORRECTION = "js/18c-app-v40-recipe-corrections.js"
-if CORRECTION not in base.V4_JS:
-    index = base.V4_JS.index("js/18b-app-v40-production-pricing.js") + 1
-    base.V4_JS.insert(index, CORRECTION)
-
 
 def main() -> int:
     try:

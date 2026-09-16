@@ -4,6 +4,7 @@ import base64
 import functools
 import http.server
 import json
+import os
 import threading
 import time
 from pathlib import Path
@@ -81,7 +82,8 @@ def capture_card(cdp, selector, name):
 
 def main():
     OUT.mkdir(parents=True, exist_ok=True)
-    server = http.server.ThreadingHTTPServer(('127.0.0.1', 0), functools.partial(QuietHandler, directory=str(base.ROOT)))
+    site_root = Path(os.environ.get('RHW_SMOKE_SITE', base.ROOT)).resolve()
+    server = http.server.ThreadingHTTPServer(('127.0.0.1', 0), functools.partial(QuietHandler, directory=str(site_root)))
     threading.Thread(target=server.serve_forever, daemon=True).start()
     chrome, _, port, folder, _ = base.launch()
     cdp = None
@@ -255,6 +257,16 @@ def main():
           font:document.fonts.check('16px Barlow'),body:document.body.textContent.includes('Stock unknown')};})()""")
         assert offline['unknown'] and offline['notice'] and offline['font'] and offline['body'], offline
         capture(cdp, '390-inventory-offline')
+        # The Forum preview is local/offline; exported BBCode stays portable.
+        cdp.call('Emulation.setDeviceMetricsOverride', {'width': 1366, 'height': 940, 'deviceScaleFactor': 1, 'mobile': False})
+        forum_offline = base.ev(cdp, """(async()=>{
+          RHWV4.navigate('comms','forum');
+          const img=document.querySelector('#forumLivePreview img');img.loading='eager';
+          await img.decode();
+          return {loaded:img.naturalWidth>0,local:new URL(img.src).origin===location.origin,
+            portable:/\\[img\\]https:\\/\\//.test(RHWV4.comms.buildBbcode())};
+        })()""")
+        assert all(forum_offline.values()), forum_offline
         (OUT / 'checks.json').write_text(json.dumps({'layouts': report, 'marketLayouts': market_layouts, 'disclosure': disclosure, 'retired': retired, 'keyboard': focused, 'priceFocus': price_focus, 'offline': offline}, indent=2))
         print(f'Bundled interface passed: {len(report)} layouts, retired routes, keyboard focus, local fonts and offline reload.')
         return 0

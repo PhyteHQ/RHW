@@ -7,11 +7,7 @@ import time
 
 import smoke_v40 as harness
 import smoke_v40_base as base
-import smoke_v402  # noqa: F401  # installs the production CSS/JS asset matrix
-
-# smoke_v402 replaces the base asset list during import; put the final app layers
-# back in the exact production order before creating the test document.
-harness._ensure_app_layer_assets()
+import smoke_workflows  # noqa: F401  # installs the production CSS/JS asset matrix
 
 
 def main() -> int:
@@ -94,7 +90,7 @@ def main() -> int:
                 revealDelta:document.documentElement.dataset.rhwLogisticsRevealDelta||'',
                 revealScroll:document.documentElement.dataset.rhwLogisticsRevealScroll||'',
                 overflow:Math.max(document.documentElement.scrollWidth,document.body.scrollWidth)-window.innerWidth,
-                failures:RHWV4.stabilityPolish?.selfTest?.()||[]
+                failures:RHWV4.logisticsNavigation?.selfTest?.()||[]
               };
               materialsTab?.click();
               const materialsState={view:document.body.dataset.logisticsView||'',marketVisible:visible(market),materialsVisible:visible(materials),selected:materialsTab?.getAttribute('aria-selected')||''};

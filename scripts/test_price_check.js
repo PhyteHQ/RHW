@@ -24,8 +24,10 @@ const ctx = vm.createContext({ Date: Clock, console, addEventListener() {}, setT
     head: { appendChild() {} }, documentElement: { classList: { add() {} } } }
 });
 ctx.window = ctx;
-vm.runInContext(fs.readFileSync(path.join(__dirname, '../js/00-runtime.js'), 'utf8'), ctx);
-vm.runInContext(fs.readFileSync(path.join(__dirname, '../js/37-app-price-check.js'), 'utf8'), ctx);
+vm.runInContext(fs.readFileSync(path.join(__dirname, '../js/core/lifecycle.js'), 'utf8'), ctx);
+app.lifecycle = ctx.createRhwLifecycle();
+vm.runInContext(fs.readFileSync(path.join(__dirname, '../js/core/refresh.js'), 'utf8'), ctx);
+vm.runInContext(fs.readFileSync(path.join(__dirname, '../js/price-check/workspace.js'), 'utf8'), ctx);
 const api = app.pricecheck;
 const route = api.routes.find(r => r.key === 'hull-panels');
 const source = { name: 'Portsmouth Shipyard', nickname: 'portsmouth', system_name: 'Cambridge',
@@ -108,7 +110,7 @@ Object.assign(app.config.storageKeys, { localSenders: 'senders', commsDrafts: 'd
 app.config.senders = [{ key: 'rhw', name: 'RHW' }];
 app.config.templates = [{ key: 'official', classification: 'RHW OFFICIAL', salutation: 'Hello', closing: 'Regards' }];
 app.config.forum = { footerMotto: 'RHW' };
-vm.runInContext(fs.readFileSync(path.join(__dirname, '../js/14-app-v40-cache.js'), 'utf8'), ctx);
+vm.runInContext(fs.readFileSync(path.join(__dirname, '../js/data/storage.js'), 'utf8'), ctx);
 app.storage.init();
 const backup = app.storage.exportPayload();
 assert.equal(backup.version, 5);
