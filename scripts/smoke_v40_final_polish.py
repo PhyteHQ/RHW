@@ -195,6 +195,11 @@ def main() -> int:
             for material, view in [('Reactor Systems','market'),('Prototype Components','materials')]:
                 base.ev(cdp, f"""(()=>{{
                   hasVerifiedTelemetry=()=>true;stockFor=()=>0;findCommodity=()=>null;
+                  // Shipyard shortages require reported quantities. Missing
+                  // inventory is deliberately unknown, not an empty warehouse.
+                  items=RHWV4.shipyard.requirements().materials.map(row=>({{
+                    nickname:row.id,name:row.name,quantity:0
+                  }}));rebuildItemCaches();
                   renderShipyardControl();renderProductionModules();
                   RHWV4.navigate('command',{json.dumps('shipyard' if view=='market' else 'production')});return true;
                 }})()""")
