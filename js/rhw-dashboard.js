@@ -140,6 +140,18 @@ const DASHBOARD_CONFIG = Object.freeze({
     defaultHull: 'archon',
     hulls: Object.freeze([
       Object.freeze({
+        key: 'archon',
+        label: 'Archon',
+        plural: 'Archons',
+        name: 'Archon Modular Miner',
+        subtitle: 'Modular Miner',
+        recipeId: 'ship_assembly_medium_miner',
+        productId: 'medium_miner_package',
+        apiCode: 'medium_miner',
+        matches: ['medium_miner', 'medium_miner_package', 'modular miner', 'medium miner', 'archon modular miner', 'archon'],
+        sellPrice: null
+      }),
+      Object.freeze({
         key: 'dunkirk',
         label: 'Dunkirk',
         plural: 'Dunkirks',
@@ -162,18 +174,6 @@ const DASHBOARD_CONFIG = Object.freeze({
         apiCode: 'dsy_br_carrier',
         matches: ['dsy_br_carrier', 'bretonia invincible class dreadnought', 'invincible class dreadnought', 'invincible dreadnought', 'invincible'],
         sellPrice: 8500000
-      }),
-      Object.freeze({
-        key: 'archon',
-        label: 'Archon',
-        plural: 'Archons',
-        name: 'Archon Modular Miner',
-        subtitle: 'Modular Miner',
-        recipeId: 'ship_assembly_medium_miner',
-        productId: 'medium_miner_package',
-        apiCode: 'medium_miner',
-        matches: ['medium_miner', 'medium_miner_package', 'modular miner', 'medium miner', 'archon modular miner', 'archon'],
-        sellPrice: null
       })
     ])
   }),
@@ -1367,6 +1367,7 @@ function renderShipyardControl() {
       aria-pressed="${selected?.key === hull.key}" aria-controls="shipyardRequirements" aria-label="${escapeHTML(hull.name)} build requirements">
       <span class="shipyard-hull-name">${escapeHTML(hull.label)}</span>
       <span class="shipyard-hull-type">${escapeHTML(hull.subtitle)}</span>
+      <span class="shipyard-hull-indicator" aria-hidden="true"></span>
       <span class="shipyard-hull-stock-label">${record.stock === null ? 'STOCK UNKNOWN' : boundary?.valid ? 'STOCK / MAX' : 'IN STOCK'}</span>
       <strong class="shipyard-hull-stock">${stockText}</strong>
       <span class="shipyard-hull-price-label">${livePrice !== null ? 'SELL PRICE' : price !== null ? 'REFERENCE PRICE' : 'PRICE UNKNOWN'}</span>
@@ -1380,24 +1381,24 @@ function renderShipyardControl() {
     const state = buildable === null ? 'unknown' : shipyardTrafficState(buildable);
     const unknown = materials.filter(row => row.stock === null);
     const rows = materials.map(row => `<tr class="shipyard-material-row ${row.state}${row.id === bottleneck?.id ? ' bottleneck' : ''}" data-shipyard-material="${escapeHTML(row.id)}">
-      <th scope="row"><span>${escapeHTML(row.name)}</span>${row.gap > 0 && typeof purchaseSourceButton === 'function' ? purchaseSourceButton(row.name, row.gap) : ''}</th>
+      <th scope="row"><div class="shipyard-material-name"><span>${escapeHTML(row.name)}</span>${row.gap > 0 && typeof purchaseSourceButton === 'function' ? purchaseSourceButton(row.name, row.gap) : ''}</div></th>
       <td data-label="PER SHIP">${number(row.required)}</td><td data-label="STOCK">${row.stock === null ? '—' : number(row.stock)}</td>
-      <td data-label="MISSING" class="shipyard-material-gap">${row.gap === null ? '—' : row.gap > 0 ? `+${number(row.gap)}` : '—'}</td>
+      <td data-label="MISSING" class="shipyard-material-gap">${row.gap > 0 ? `<span class="shipyard-shortage">+${number(row.gap)}</span>` : '—'}</td>
     </tr>`).join('');
     const prerequisiteRows = prerequisites.map(row => `<li class="shipyard-prerequisite ${row.state}">
       <span><strong>${escapeHTML(row.name)}</strong><small>${number(row.qty)} required · not consumed</small></span>
       <span class="shipyard-prerequisite-status">${row.state === 'unknown' ? 'NOT REPORTED' : row.state === 'ok' ? 'AVAILABLE' : `MISSING ${number(row.qty - row.stock)}`}</span>
     </li>`).join('');
     details = `<div class="shipyard-decision-strip" aria-label="${escapeHTML(hull.label)} material coverage">
-        <div class="shipyard-decision-metric state-${state}"><small>MATERIAL FOR</small><strong>${buildable === null ? 'UNKNOWN' : `${number(buildable)} ${escapeHTML(buildable === 1 ? hull.label : hull.plural).toUpperCase()}`}</strong></div>
-        <div class="shipyard-decision-metric state-${state}"><small>BOTTLENECK</small><strong>${bottleneck ? escapeHTML(bottleneck.name) : 'STOCK UNKNOWN'}</strong></div>
-        <div class="shipyard-decision-metric state-${state}"><small>${nextHull === null ? 'NEXT SHIP' : `NEXT SHIP #${number(nextHull)}`}</small><strong>${bottleneck ? `+${number(bottleneck.gap)} ${escapeHTML(bottleneck.name)}` : 'AWAITING STOCK'}</strong></div>
+        <div class="shipyard-decision-metric shipyard-coverage state-${state}"><small>MATERIAL FOR</small><strong>${buildable === null ? 'UNKNOWN' : `${number(buildable)} <span>${escapeHTML(buildable === 1 ? hull.label : hull.plural).toUpperCase()}</span>`}</strong></div>
+        <div class="shipyard-decision-metric"><small>BOTTLENECK</small><strong>${bottleneck ? escapeHTML(bottleneck.name) : 'STOCK UNKNOWN'}</strong></div>
+        <div class="shipyard-decision-metric shipyard-next-ship"><small>${nextHull === null ? 'NEXT SHIP' : `NEXT SHIP #${number(nextHull)}`}</small><strong>${bottleneck ? `+${number(bottleneck.gap)} <span>${escapeHTML(bottleneck.name)}</span>` : 'AWAITING STOCK'}</strong></div>
       </div>
       ${unknown.length ? `<p class="shipyard-data-note">Stock not reported: ${unknown.map(row => escapeHTML(row.name)).join(', ')}. Coverage remains unknown.</p>` : ''}
       <div class="shipyard-requirement-body">
         <div class="shipyard-materials">
           <p class="shipyard-material-note">Requirements per ship${nextHull === null ? '' : ` · Missing quantities are for ship #${number(nextHull)}`}${snapshot.stale ? ' · Based on cached stock' : ''}.</p>
-          <table class="shipyard-material-table"><thead><tr><th>COMPONENT</th><th>PER SHIP</th><th>STOCK</th><th>MISSING</th></tr></thead><tbody>${rows}</tbody></table>
+          <table class="shipyard-material-table"><thead><tr><th scope="col">COMPONENT</th><th scope="col">PER SHIP</th><th scope="col">STOCK</th><th scope="col">MISSING</th></tr></thead><tbody>${rows}</tbody></table>
         </div>
         <aside class="shipyard-prerequisites"><h3>BUILD PREREQUISITES</h3><p>Required separately from the material coverage above.</p>
           <ul>${prerequisiteRows}</ul>
@@ -1415,7 +1416,7 @@ function renderShipyardControl() {
         <div class="shipyard-hull-grid" role="group" aria-label="Ship inventory and selection">${cards}</div>
       </section>
       <section class="shipyard-control-section shipyard-requirements-panel" id="shipyardRequirements" aria-labelledby="shipyardRequirementsTitle">
-        <div class="shipyard-requirements-heading"><h3 id="shipyardRequirementsTitle">Build Requirements <span>— ${escapeHTML(selected.label)}</span></h3>
+        <div class="shipyard-requirements-heading"><div><p class="shipyard-eyebrow">BUILD REQUIREMENTS</p><h3 id="shipyardRequirementsTitle">${escapeHTML(selected.label)} <span>${escapeHTML(selected.subtitle)}</span></h3></div>
           <button type="button" class="shipyard-plan-button" data-shipyard-calculate ${analysis?.recipeReady ? '' : 'disabled'}>PRICE 1 SHIP</button>
         </div>${details}
       </section>

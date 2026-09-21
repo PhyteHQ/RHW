@@ -113,7 +113,7 @@ body { cursor: default; }
 
 input, table, .overview-row-qty, .base-telemetry-stat strong, .ops-recipe-meta strong, .ops-pricing-summary strong, .market-seller-qty { font-variant-numeric: tabular-nums; }
 
-button, select, th, a { cursor: pointer; }
+button, select, th[data-sort], a { cursor: pointer; }
 
 input { cursor: text; }
 
@@ -630,9 +630,9 @@ table { width: 100%;border-collapse: collapse;font-family: var(--font-tech);font
 
 th, td { text-align: left;padding: 12px 18px;border-bottom: 1px solid rgba(255,255,255,0.03);white-space: nowrap; }
 
-th { color: var(--gold);user-select: none;background: rgba(5,6,8,0.95);position: sticky;top: 0;z-index: 10;box-shadow: 0 1px 0 rgba(212,175,55,0.2);backdrop-filter: blur(4px);border-bottom: none; }
+thead th { color: var(--gold);user-select: none;background: rgba(5,6,8,0.95);position: sticky;top: 0;z-index: 10;box-shadow: 0 1px 0 rgba(212,175,55,0.2);backdrop-filter: blur(4px);border-bottom: none; }
 
-th:hover { background: #111;color: var(--palette-white); }
+th[data-sort]:hover { background: #111;color: var(--palette-white); }
 
 th[data-sort] { padding-right: 22px; }
 
@@ -1022,13 +1022,13 @@ th[data-sort]:focus-visible { outline: 1px solid rgba(212,175,55,0.72);outline-o
 
 .eco body::before, .eco .header-watermark, .eco .supplier-scanline { display: none !important; }
 
-.eco .command-header, .eco .alert-card, .eco .panel, .eco .capital-shipyard-control, .eco th { backdrop-filter: none !important; }
+.eco .command-header, .eco .alert-card, .eco .panel, .eco .capital-shipyard-control, .eco thead th { backdrop-filter: none !important; }
 
 .eco .alert-card, .eco .panel, .eco .capital-shipyard-control { background-color: rgba(10,12,15,0.96) !important; }
 
 .eco .command-header { background: linear-gradient(135deg, rgba(5,6,8,0.99), rgba(10,12,15,1)) !important;box-shadow: none !important; }
 
-.eco th { background: #050608 !important; }
+.eco thead th { background: #050608 !important; }
 
 .eco * { box-shadow: none !important;text-shadow: none !important;filter: none !important; }
 
