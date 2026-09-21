@@ -484,25 +484,6 @@
 
   }
 
-  function installShipyardBridge() {
-    const mount = document.getElementById('shipyardControl');
-    if (!mount || mount.dataset.v40PlannerBridge === 'true') return;
-    mount.dataset.v40PlannerBridge = 'true';
-    const enhance = () => mount.querySelectorAll('.hull-registry-row').forEach(row => {
-      if (row.querySelector('.shipyard-plan-button')) return;
-      const label = row.querySelector('.hull-registry-name'); if (!label) return;
-      const text = app.util.normalize(label.textContent);
-      const target = text.includes('dunkirk') ? app.config.operations.shipyardTargets.dunkirk : text.includes('invincible') ? app.config.operations.shipyardTargets.invincible : null;
-      if (!target) return;
-      const button = document.createElement('button');
-      button.type = 'button'; button.className = 'shipyard-plan-button'; button.textContent = 'PRICE 1 HULL';
-      button.addEventListener('click', event => { event.stopPropagation(); openTarget(target, 1); });
-      label.appendChild(button);
-    });
-    enhance();
-    app.onRender('shipyard', enhance);
-  }
-
   function openTarget(productId, quantity = 1) {
     const recipe = core.recipesFor(productId)[0]; const product = core.product(productId);
     if (!recipe) return;
@@ -566,7 +547,6 @@
       if (status) { status.textContent = 'RECIPE DATABASE ERROR'; status.dataset.tone = 'danger'; }
       throw error;
     }
-    installShipyardBridge();
     app.lifecycle.emit('calculator:ready');
   }
 

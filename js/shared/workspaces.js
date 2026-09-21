@@ -30,7 +30,7 @@
   const SEARCH_LIMIT = 10;
   const SEARCH_SELECTORS = Object.freeze([
     'tr', 'li', 'article', 'h2', 'h3', 'h4', '.alert-card', '.overview-row',
-    '.hull-registry-row', '.shipyard-component-row', '.shipyard-decision-metric',
+    '.shipyard-hull-card', '.shipyard-material-row', '.shipyard-decision-metric', '.shipyard-prerequisite',
     '.production-card', '.production-module-card', '.recipe-row', '.remote-route',
     '.market-row', '.supplier-grid > *', '.market-scan-grid > *'
   ]);
@@ -182,7 +182,7 @@
   function candidateElements(node) {
     const panel = document.querySelector(`[data-command-panel="${node}"]`); if (!panel) return [];
     const seen = new Set(); const results = []; const selector = SEARCH_SELECTORS.join(',');
-    [...panel.querySelectorAll(selector)].forEach(element => { if (element.closest('.command-overview-sensor')) return; const text = compact(element.textContent); if (text.length < 3 || text.length > 650) return; const key = normalize(text).slice(0,260); if (!key || seen.has(key)) return; seen.add(key); const strong = element.querySelector?.('strong,.production-title,.hull-registry-name,h3,h4'); const rawLabel = compact(strong?.textContent || element.getAttribute?.('data-label') || text); const label = rawLabel.length > 110 ? `${rawLabel.slice(0,107)}…` : rawLabel; const view = element.closest?.('[data-inventory-panel]')?.dataset.inventoryPanel || ''; results.push({ node, element, text, label, view, normalized: normalize(text) }); });
+    [...panel.querySelectorAll(selector)].forEach(element => { if (element.closest('.command-overview-sensor')) return; const text = compact(element.textContent); if (text.length < 3 || text.length > 650) return; const key = normalize(text).slice(0,260); if (!key || seen.has(key)) return; seen.add(key); const strong = element.querySelector?.('strong,.production-title,.shipyard-hull-name,h3,h4'); const rawLabel = compact(strong?.textContent || element.getAttribute?.('data-label') || text); const label = rawLabel.length > 110 ? `${rawLabel.slice(0,107)}…` : rawLabel; const view = element.closest?.('[data-inventory-panel]')?.dataset.inventoryPanel || ''; results.push({ node, element, text, label, view, normalized: normalize(text) }); });
     return results;
   }
 

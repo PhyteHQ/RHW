@@ -20,12 +20,18 @@ STOCK = {'Basic Alloy': 19129, 'Consumer Goods': 24793, 'Food Rations': 22451,
          'Gold': 3000, 'Niobium': 5800, 'Prototype Components': 825,
          'Multi-Mode Focusing Chamber': 2000, 'Reactor Systems': 500,
          'Superstructure Systems': 110, 'Avionics Systems': 420, 'Interior Systems': 300,
-         'Propulsion Systems': 350, 'Exotic Systems': 250}
+         'Propulsion Systems': 350, 'Exotic Systems': 250,
+         'Crew': 1200, 'Archon Design Schematics': 1}
 DATA = [{'name': 'Resolution Heavy Works', 'system_name': 'New London', 'money': 46385683,
          'cargospace': 63777, 'health': 24000000,
          'shop_items': [{'name': k, 'quantity': v, 'sell_price': 100, 'buy_price': 80} for k, v in STOCK.items()]},
         {'name': 'Lissheen Logistics Depot', 'system_name': 'Dublin', 'shop_items': [
             {'name': k, 'quantity': v, 'sell_price': 105, 'buy_price': 80} for k, v in STOCK.items()]}]
+DATA[0]['shop_items'] += [
+    {'name': 'Dunkirk-Class Battleship', 'nickname': 'dsy_br_battleship_package', 'quantity': 3, 'max_stock': 5, 'min_stock': 0, 'price': 8500000},
+    {'name': 'Invincible-Class Dreadnought', 'nickname': 'dsy_br_carrier', 'quantity': 1, 'max_stock': 5, 'min_stock': 0, 'price': 8500000},
+    {'name': 'Modular Miner', 'nickname': 'medium_miner_package', 'quantity': 2, 'max_stock': 5, 'min_stock': 0, 'price': 18000000},
+]
 
 NPC_DATA = [{'name': name, 'nickname': f'test-source-{i}', 'system_name': system,
              'market_goods': [{'name': commodity, 'base_sells': True, 'price_base_sells_for': 80}
@@ -144,8 +150,10 @@ def main():
                     inventoryStyled:[...document.querySelectorAll('#inventoryStatusPanel .alert-list')].every(e=>getComputedStyle(e).listStyleType==='none')&&[...document.querySelectorAll('#inventoryStatusPanel .alert-title')].every(e=>getComputedStyle(e).display==='flex'),
                     inputs:[...document.querySelectorAll('#opsMaterialPanel [data-material-price]')].filter(visible).map(e=>e.getBoundingClientRect().width)};
                 })()""")
-                if width in (390, 1366) and route in ('command/inventory', 'command/logistics', 'operations/calculator', 'pricecheck/routes', 'comms/forum'):
+                if width in (390, 1366) and route in ('command/inventory', 'command/shipyard', 'command/logistics', 'operations/calculator', 'pricecheck/routes', 'comms/forum'):
                     capture(cdp, f'{width}-{workspace}-{node}')
+                    if route == 'command/shipyard':
+                        capture_card(cdp, '#shipyardControl', f'{width}-shipyard-detail')
                     if route == 'command/logistics':
                         base.ev(cdp, "document.querySelector('[data-logistics-view=\"materials\"]').click()")
                         time.sleep(.35)
@@ -161,6 +169,19 @@ def main():
                     assert result['inputs'] and all(0 < n <= 145 for n in result['inputs']), result
                 if width <= 760 and workspace == 'operations':
                     assert result['priceLabelSizes'] and min(result['priceLabelSizes']) >= 11, result
+                if route == 'command/shipyard':
+                    yard = base.ev(cdp, """(()=>{
+                      const cards=[...document.querySelectorAll('[data-shipyard-select]')];
+                      const rows=[...document.querySelectorAll('.shipyard-material-row')];
+                      return {cards:cards.length,selected:cards.find(c=>c.getAttribute('aria-pressed')==='true')?.dataset.shipyardSelect,
+                        rows:rows.length,buildable:RHWV4.shipyard.analyze().buildable,
+                        compact:rows.every(r=>r.getBoundingClientRect().height<115),rowHeights:rows.map(r=>r.getBoundingClientRect().height),
+                        fits:[...cards,...rows].every(r=>r.scrollWidth<=r.clientWidth+1),
+                        touch:cards.every(c=>c.getBoundingClientRect().height>=44),
+                        stockFirst:cards[0].getBoundingClientRect().top<shipyardRequirements.getBoundingClientRect().top};
+                    })()""")
+                    assert yard['cards'] == 3 and yard['rows'] == 5 and yard['selected'] == 'archon' and yard['buildable'] == 0, (width, yard)
+                    assert yard['compact'] and yard['fits'] and yard['touch'] and yard['stockFirst'], (width, yard)
                 if width <= 760 and workspace == 'pricecheck':
                     # A phone must show the result at the start of each compact
                     # card, including unknown prices and the longest route names.
@@ -171,6 +192,30 @@ def main():
                     if width == 390:
                         capture_card(cdp, '[data-route-key="industrial-materials"]', '390-pricecheck-compact-cards')
                 report.append({'width': width, 'route': route, **result})
+
+        # Ship selection updates requirements, retains keyboard focus through
+        # telemetry refreshes and opens the exact civilian Archon recipe.
+        cdp.call('Emulation.setDeviceMetricsOverride', {'width': 390, 'height': 844, 'deviceScaleFactor': 1, 'mobile': True})
+        shipyard = base.ev(cdp, """(()=>{
+          RHWV4.navigate('command','shipyard');
+          const states=['dunkirk','invincible','archon'].map(key=>{
+            const button=document.querySelector(`[data-shipyard-select="${key}"]`);button.focus();button.click();
+            renderAll();
+            const a=RHWV4.shipyard.analyze();
+            return {key,rows:document.querySelectorAll('.shipyard-material-row').length,buildable:a.buildable,
+              focus:document.activeElement?.dataset.shipyardSelect===key,
+              stock:RHWV4.shipyard.stockRecord(a.hull).stock,prerequisites:a.prerequisites.every(p=>p.state==='ok')};
+          });
+          const stored=RHWV4.store.get(RHWV4.config.storageKeys.shipyardSelection);
+          document.querySelector('[data-shipyard-calculate]').click();
+          const calc=RHWV4.state.calculator;
+          return {states,stored,route:location.hash,recipe:calc.recipeId,iff:calc.affiliationId,quantity:calc.quantity};
+        })()""")
+        for state, (count, ready, stock) in zip(shipyard['states'], ((6, 1, 3), (6, 1, 1), (5, 0, 2))):
+            assert state['rows'] == count and state['buildable'] == ready and state['stock'] == stock, state
+            assert state['focus'] and state['prerequisites'], state
+        assert shipyard['stored'] == 'archon' and shipyard['route'] == '#operations/calculator', shipyard
+        assert shipyard['recipe'] == 'ship_assembly_medium_miner' and shipyard['iff'] == 'br_m_grp' and shipyard['quantity'] == 1, shipyard
 
         # Deliberately long names and seven-digit amounts exercise the actual
         # card boundaries, not just document overflow (cards can clip internally).
@@ -303,7 +348,7 @@ def main():
             portable:/\\[img\\]https:\\/\\//.test(RHWV4.comms.buildBbcode())};
         })()""")
         assert all(forum_offline.values()), forum_offline
-        (OUT / 'checks.json').write_text(json.dumps({'layouts': report, 'marketLayouts': market_layouts, 'disclosure': disclosure, 'retired': retired, 'keyboard': focused, 'priceFocus': price_focus, 'priceEdit': price_edit, 'offline': offline}, indent=2))
+        (OUT / 'checks.json').write_text(json.dumps({'layouts': report, 'shipyard': shipyard, 'marketLayouts': market_layouts, 'disclosure': disclosure, 'retired': retired, 'keyboard': focused, 'priceFocus': price_focus, 'priceEdit': price_edit, 'offline': offline}, indent=2))
         print(f'Bundled interface passed: {len(report)} layouts, retired routes, keyboard focus, local fonts and offline reload.')
         return 0
     except Exception:

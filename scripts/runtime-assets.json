@@ -42,6 +42,7 @@
     "./assets/recipes/catalog-v1-part-05.js",
     "./assets/recipes/catalog-v1-part-06.js",
     "./js/calculator/model.js",
+    "./js/command/shipyard-model.js",
     "./js/calculator/ui.js",
     "./js/core/navigation.js",
     "./js/calculator/production-bridge.js",

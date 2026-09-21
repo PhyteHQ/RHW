@@ -47,8 +47,7 @@
     if (workspace.dataset.v40SessionPriceMode === 'true') return;
     workspace.dataset.v40SessionPriceMode = 'true';
 
-    // The legacy Shipyard planner uses a lexical openTarget() helper, so reset
-    // RHW costing defaults in capture phase before that click handler runs.
+    // Reset the costing session before the Shipyard opens its selected recipe.
     document.addEventListener('click', event => {
       if (event.target?.closest?.('.shipyard-plan-button')) startFreshRecipeSession();
     }, true);

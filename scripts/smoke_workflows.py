@@ -275,7 +275,7 @@ def test_qol_profiles(cdp):
 
 def test_qol_shipyard(cdp):
     base.ev(cdp, "(()=>{window.hasVerifiedTelemetry=()=>true;window.stockFor=()=>50000;renderShipyardControl();return true;})()")
-    time.sleep(.12)  # Let the existing per-hull Calculator bridge attach.
+    time.sleep(.12)
     result = base.ev(cdp, """(()=>{
       const retired=!!document.getElementById('shipyardBuildPlanner');
       const grid=document.querySelector('#shipyardControl .shipyard-control-grid');
@@ -285,7 +285,7 @@ def test_qol_shipyard(cdp):
       button.click();
       return{ok:true,retired,label,hash:location.hash,qty:document.getElementById('opsQuantity')?.value||'',ws:document.body.dataset.workspace};
     })()""")
-    if not result.get("ok") or result.get("retired") or result.get("label") != "PRICE 1 HULL" or result.get("hash") != "#operations/calculator" or result.get("qty") != "1" or result.get("ws") != "operations":
+    if not result.get("ok") or result.get("retired") or result.get("label") != "PRICE 1 SHIP" or result.get("hash") != "#operations/calculator" or result.get("qty") != "1" or result.get("ws") != "operations":
         raise RuntimeError(f"Shipyard planner retirement / Calculator shortcut failed: {result}")
     print("V4 interaction smoke passed: Shipyard has no multi-hull planner; per-hull Calculator shortcut works")
 
@@ -302,11 +302,12 @@ def test_pr3_decision_ui(cdp, workspace, node):
           return{
             metrics:strip?.querySelectorAll('.shipyard-decision-metric').length||0,
             labels:[...(strip?.querySelectorAll('small')||[])].map(x=>x.textContent.trim()),
-            mobileLabels:[...document.querySelectorAll('.shipyard-component-required,.shipyard-component-stock,.shipyard-component-coverage')].every(x=>Boolean(x.dataset.label)),
+            mobileLabels:[...document.querySelectorAll('.shipyard-material-row td')].every(x=>Boolean(x.dataset.label)),
+            ships:document.querySelectorAll('[data-shipyard-select]').length,
             plannerAbsent:!planner,stockSections:grid?.querySelectorAll('.shipyard-control-section').length||0
           };
         })()""")
-        if result.get("metrics") != 3 or result.get("labels") != ["BUILDABLE NOW", "BOTTLENECK", "MISSING FOR NEXT HULL"] or not result.get("mobileLabels") or not result.get("plannerAbsent") or result.get("stockSections") != 2:
+        if result.get("metrics") != 3 or result.get("labels", [])[:2] != ["MATERIAL FOR", "BOTTLENECK"] or result.get("ships") != 3 or not result.get("mobileLabels") or not result.get("plannerAbsent") or result.get("stockSections") != 2:
             raise RuntimeError(f"PR3 Shipyard decision UI failed: {result}")
         print("PR3 smoke passed: Shipyard readiness strip + stock and hull registry without planner")
     elif (workspace, node) == ("command", "production"):
