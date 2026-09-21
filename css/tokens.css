@@ -1,18 +1,18 @@
 /* Shared literal palette. Component tokens may reference these constants. */
 :root {
-  --palette-gold: #d4af37;
-  --palette-canvas: #0c0c0b;
-  --palette-canvas-deep: #0b0b0a;
-  --palette-text: #f1eee4;
-  --palette-text-soft: #e0e0e0;
-  --palette-muted: #808080;
-  --palette-line: #333333;
-  --palette-line-bright: #555555;
-  --palette-positive: #78ad8a;
+  --palette-gold: #f0c56b;
+  --palette-canvas: #090b0b;
+  --palette-canvas-deep: #070909;
+  --palette-text: #f1f3ec;
+  --palette-text-soft: #dce1dc;
+  --palette-muted: #afb9b3;
+  --palette-line: #303935;
+  --palette-line-bright: #526058;
+  --palette-positive: #83d5ab;
   --palette-info: #7da7ea;
-  --palette-warning: #c98b2c;
-  --palette-danger: #c75e5e;
-  --palette-gold-muted: #c6a75a;
+  --palette-warning: #edb255;
+  --palette-danger: #f08482;
+  --palette-gold-muted: #bd9753;
   --palette-white: #ffffff;
   --palette-black: #000000;
 }
