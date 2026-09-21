@@ -31,17 +31,17 @@ html.rhw-focus-pass body[data-command-node="inventory"] #commandControlDeck { gr
 
 html.rhw-focus-pass body[data-command-node="inventory"] #commandControlDeck:has(#commandGlobalAlerts[hidden]) { grid-template-columns: minmax(280px,320px) minmax(0,1fr); }
 
-html.rhw-focus-pass #commandControlDeck .inventory-view-nav { position: relative;top: auto;display: grid;grid-template-columns: 1fr 1fr;gap: 0;padding: 0;border: 1px solid var(--rhw-border);border-radius: 2px;background: #191919; }
+html.rhw-focus-pass #commandControlDeck .inventory-view-nav { position: relative;top: auto;display: grid;grid-template-columns: 1fr 1fr;gap: 0;padding: 0;border: 1px solid var(--rhw-border);border-radius: 2px;background: var(--surface-input); }
 
 html.rhw-focus-pass body:not([data-command-node="inventory"]) #commandControlDeck .inventory-view-nav { display: none; }
 
 html.rhw-focus-pass #commandControlDeck .inventory-view-nav button { display: flex;align-items: center;justify-content: center;min-width: 0;height: 44px;padding: 8px !important;text-align: center; }
 
-html.rhw-focus-pass #commandControlDeck .inventory-view-nav button.active { background: #302a20;box-shadow: none; }
+html.rhw-focus-pass #commandControlDeck .inventory-view-nav button.active { color: var(--gold);background: linear-gradient(110deg,#342b18,#171d15);box-shadow: inset 0 1px #f0c56b22; }
 
 html.rhw-focus-pass .command-context-action { height: 46px;max-width: 240px;grid-column: auto; }
 
-html.rhw-focus-pass #commandGlobalAlerts { position: relative;min-width: 0;margin: 0;border-radius: 2px;overflow: visible;background: #1b1917;box-shadow: none; }
+html.rhw-focus-pass #commandGlobalAlerts { position: relative;min-width: 0;margin: 0;border-radius: 2px;overflow: visible;background: linear-gradient(100deg,#301b1899,#100f0d);box-shadow: inset 2px 0 var(--alert-state); }
 
 html.rhw-focus-pass #commandGlobalAlerts .command-alert-toggle { min-height: 44px;height: 44px;padding: 4px 10px; }
 
@@ -87,15 +87,19 @@ html.rhw-focus-pass #inventoryStatusPanel :is(.waste-panel,.confiscated-panel) {
 
 html.rhw-focus-pass #inventoryStatusPanel .alert-title { margin: 0;gap: 8px; }
 
-html.rhw-focus-pass #inventoryStatusPanel .alert-title .section-index { border: 0;padding: 0; }
+html.rhw-focus-pass #inventoryStatusPanel .alert-title .section-index { border: 1px solid #f0c56b55;padding: 2px 4px;background: #090e0b;font-size: 10px;letter-spacing: .02em; }
 
 html.rhw-focus-pass #inventoryStatusPanel .section-title-meta { flex-wrap: wrap; }
 
-html.rhw-focus-pass #inventoryStatusPanel .alert-list { gap: 0;padding: 0 14px;flex: initial; }
+html.rhw-focus-pass #inventoryStatusPanel .alert-list { gap: 7px;padding: 14px;flex: initial; }
 
-html.rhw-focus-pass #inventoryStatusPanel .alert-list li { position: relative;min-width: 0;padding: 13px 0;gap: 12px;border-left: 0;border-bottom: 1px solid #3b3b37;background: transparent; }
+html.rhw-focus-pass #inventoryStatusPanel .alert-list li { position: relative;min-width: 0;padding: 12px;gap: 12px;border: 1px solid #253029;border-left: 2px solid var(--line);background: linear-gradient(100deg,#0b110d,#090d0c);box-shadow: inset 0 1px #ffffff03; }
 
-html.rhw-focus-pass #inventoryStatusPanel .alert-list li:last-child { border-bottom: 0; }
+html.rhw-focus-pass #inventoryStatusPanel .alert-list li.alert-critical { border-left-color: var(--danger); }
+
+html.rhw-focus-pass #inventoryStatusPanel .alert-list li.alert-low { border-left-color: var(--warn); }
+
+html.rhw-focus-pass #inventoryStatusPanel .alert-list li.alert-ok { border-left-color: var(--good); }
 
 html.rhw-focus-pass #inventoryStatusPanel .alert-list li > span > strong { font: 600 15px/1.4 var(--font-main); }
 
@@ -116,7 +120,7 @@ html.rhw-focus-pass #rhwToolsInstallSlot #rhwPwaInstallBtn { width: 100%;min-hei
 html.rhw-focus-pass #rhwToolsInstallSlot #rhwPwaInstallBtn small { display: block !important;margin-top: 4px;font: 12px var(--font-main);color: var(--muted); }
 
 @media (min-width: 1001px) {
-html.rhw-focus-pass .command-header { padding-block: 12px; }
+html.rhw-focus-pass .command-header { padding-block: 22px; }
 }
 
 @media (min-width: 761px) and (max-width: 1100px) {
@@ -153,41 +157,41 @@ html.rhw-focus-pass { scroll-behavior: auto; }
 html.rhw-focus-pass *, html.rhw-focus-pass *::before, html.rhw-focus-pass *::after { animation: none !important;transition: none !important; }
 }
 
-html.rhw-focus-pass { --rhw-head-fill: linear-gradient(112deg,#282825,#20201e 72%);--rhw-border: var(--line); }
+html.rhw-focus-pass { --rhw-border: var(--line); }
 
-html.rhw-focus-pass .command-header { background: radial-gradient(ellipse at 9% 45%,#d7b67512,transparent 35%),linear-gradient(115deg,#1c1b18,#111110 65%,#1b1a17);border-top-color: #ac8c52;box-shadow: inset 0 1px #f4dfb520,inset 0 -14px 24px #0003; }
+html.rhw-focus-pass .command-header { background: radial-gradient(ellipse at 12% 50%,#f0c56b1c,transparent 48%),repeating-linear-gradient(0deg,transparent 0 3px,#ffffff02 3px 4px),linear-gradient(115deg,#141912,#090e0c 65%,#101912);border-top-color: var(--gold);box-shadow: inset 0 1px #f4dfb520,inset 0 -18px 28px #0005; }
 
-html.rhw-focus-pass .command-brand { grid-template-columns: 128px minmax(0,1fr);gap: 20px; }
+html.rhw-focus-pass .command-brand { grid-template-columns: 146px minmax(0,1fr);gap: 24px; }
 
-html.rhw-focus-pass .crest-frame { width: 128px;min-height: 156px;background: radial-gradient(ellipse at center,#b9954b14,transparent 70%),linear-gradient(90deg,transparent,#ffffff03,transparent);border-inline: 1px solid #c7ad7521; }
+html.rhw-focus-pass .crest-frame { width: 146px;min-height: 176px;background: radial-gradient(ellipse at center,#f0c56b20,transparent 70%);border-inline: 1px solid #f0c56b2b; }
 
-html.rhw-focus-pass .crest-frame::before { width: 130px;height: 130px;background: radial-gradient(circle,#eac7773b,transparent 65%); }
+html.rhw-focus-pass .crest-frame::before { width: 146px;height: 146px;background: radial-gradient(circle,#f0c56b50,transparent 65%); }
 
-html.rhw-focus-pass .crest { width: 111px;height: 150px;filter: drop-shadow(0 4px 10px #000a) drop-shadow(0 0 12px #d7b6752c); }
+html.rhw-focus-pass .crest { width: 128px;height: 172px;filter: drop-shadow(0 5px 12px #000a) drop-shadow(0 0 16px #f0c56b38); }
 
-html.rhw-focus-pass .brand-kicker { color: #d5ba85; }
+html.rhw-focus-pass .brand-kicker { color: var(--gold); }
 
-html.rhw-focus-pass .brand-command { color: #d1d0c9; }
+html.rhw-focus-pass .brand-command { color: var(--gold); }
 
-html.rhw-focus-pass .base-telemetry-bar { max-width: 740px;margin-top: 12px;padding: 10px 0;grid-template-columns: minmax(0,1fr) minmax(0,1.2fr) minmax(0,1fr);background: linear-gradient(180deg,#ffffff04,#08080845);border: 1px solid #5f584444;border-top-color: #bda16b69;border-radius: 2px;box-shadow: inset 0 1px #ffffff05,0 3px 9px #0002; }
+html.rhw-focus-pass .base-telemetry-bar { max-width: 740px;margin-top: 16px;padding: 11px 0;grid-template-columns: minmax(0,1fr) minmax(0,1.2fr) minmax(0,1fr);background: linear-gradient(100deg,#1c1d13,#080d0b 65%);border: 1px solid #f0c56b26;border-left: 2px solid var(--gold);border-radius: 0;box-shadow: inset 0 1px #ffffff05,0 5px 14px #0004; }
 
 html.rhw-focus-pass .base-telemetry-stat, html.rhw-focus-pass .base-telemetry-stat:first-child { padding: 0 13px; }
 
-html.rhw-focus-pass .base-telemetry-stat + .telemetry-divider + .base-telemetry-stat { border-left: 1px solid #58564c66; }
+html.rhw-focus-pass .base-telemetry-stat + .telemetry-divider + .base-telemetry-stat { border-left: 1px solid #f0c56b26; }
 
-html.rhw-focus-pass .base-telemetry-stat small { letter-spacing: .015em; }
+html.rhw-focus-pass .base-telemetry-stat small { letter-spacing: .055em; }
 
 html.rhw-focus-pass .base-telemetry-stat strong { overflow-wrap: anywhere; }
 
-html.rhw-focus-pass .uplink-panel { background: linear-gradient(135deg,#23221fcc,#141413e8);border-color: #55534a;border-top-color: var(--warn); }
+html.rhw-focus-pass .uplink-panel { background: linear-gradient(135deg,#1a281e,#080f0b);border-color: var(--line);border-top-color: var(--warn); }
 
-html.rhw-focus-pass .uplink-panel.online:not(:has(.uplink-details[open])) { grid-template-columns: minmax(0,1fr) auto;gap: 8px;padding: 8px 0 8px 12px;border: 0;border-left: 1px solid #a0c6ae55;background: transparent;box-shadow: none; }
+html.rhw-focus-pass .uplink-panel.online:not(:has(.uplink-details[open])) { grid-template-columns: minmax(0,1fr);gap: 14px;padding: 18px;border: 1px solid #83d5ab33;border-top: 2px solid var(--good);background: linear-gradient(135deg,#19271d,#080f0b);box-shadow: inset 0 1px #ffffff05,0 5px 18px #0004; }
 
 html.rhw-focus-pass .uplink-panel.online:not(:has(.uplink-details[open])) .uplink-header { grid-column: 1;align-self: center; }
 
-html.rhw-focus-pass .uplink-panel.online:not(:has(.uplink-details[open])) .uplink-details { grid-column: 2; }
+html.rhw-focus-pass .uplink-panel.online:not(:has(.uplink-details[open])) .uplink-details { grid-column: 1;border-top: 1px dashed #83d5ab33;padding-top: 9px; }
 
-html.rhw-focus-pass .uplink-panel.online:not(:has(.uplink-details[open])) .uplink-details > summary { max-width: 82px; }
+html.rhw-focus-pass .uplink-panel.online:not(:has(.uplink-details[open])) .uplink-details > summary { max-width: none;color: var(--muted);font-family: var(--font-tech);letter-spacing: .04em; }
 
 html.rhw-focus-pass .uplink-panel.online:not(:has(.uplink-details[open])) #headerRefreshBtn { display: none; }
 
@@ -195,13 +199,13 @@ html.rhw-focus-pass .uplink-panel.offline { border-top-color: var(--danger);box-
 
 html.rhw-focus-pass #commandTelemetryStatus { font-size: 12px;line-height: 1.5;overflow-wrap: anywhere; }
 
-html.rhw-focus-pass .rhw-app-nav { border-top: 0;background: #171716; }
+html.rhw-focus-pass .rhw-app-nav { border-top: 0;background: #090e0c; }
 
-html.rhw-focus-pass .app-navigation-cluster { background: #171716; }
+html.rhw-focus-pass .app-navigation-cluster { background: #090e0c; }
 
-html.rhw-focus-pass .app-tabs button[data-workspace] { border-right-color: #3c3c37; }
+html.rhw-focus-pass .app-tabs button[data-workspace] { border-right-color: var(--line-soft); }
 
-html.rhw-focus-pass .app-tabs button[data-workspace].active { background: linear-gradient(110deg,#3b3323,#292823);box-shadow: inset 0 1px #ebd3a426; }
+html.rhw-focus-pass .app-tabs button[data-workspace].active { background: linear-gradient(110deg,#3d311a,#182017);box-shadow: inset 0 1px #f0c56b33,0 2px 12px #f0c56b0d; }
 
 html.rhw-focus-pass .app-secondary-nav { padding-block: 5px; }
 
@@ -209,39 +213,41 @@ html.rhw-focus-pass #commandNodeNav .workspace-subnav-tabs { gap: 8px; }
 
 html.rhw-focus-pass #commandNodeNav button, html.rhw-focus-pass body[data-workspace="command"] #commandNodeNav.command-module-nav button[data-command-node] { border: 0;border-bottom: 2px solid transparent;border-radius: 0;background: transparent; }
 
-html.rhw-focus-pass #commandNodeNav button.active, html.rhw-focus-pass body[data-workspace="command"] #commandNodeNav.command-module-nav button[data-command-node].active { color: #f0dfbb;border-color: transparent;border-bottom-color: #bca374;background: linear-gradient(0deg,#d7b6750c,transparent 85%);box-shadow: none; }
+html.rhw-focus-pass #commandNodeNav button.active, html.rhw-focus-pass body[data-workspace="command"] #commandNodeNav.command-module-nav button[data-command-node].active { color: var(--gold);border-color: transparent;border-bottom-color: var(--gold);background: linear-gradient(0deg,#f0c56b10,transparent 85%);box-shadow: none; }
 
 html.rhw-focus-pass #commandNodeNav button:hover { color: var(--text);background-color: #ffffff04; }
 
-html.rhw-focus-pass .command-module-index { color: #a9a79e; }
+html.rhw-focus-pass .command-module-index { color: var(--muted); }
+
+html.rhw-focus-pass #commandNodeNav button.active .command-module-index { color: var(--gold);border-color: #f0c56b66; }
 
 html.rhw-focus-pass #rhwFocusToolsBtn { background: #1a1a18;border-color: #45453f;box-shadow: none; }
 
 html.rhw-focus-pass #commandGlobalSearch::placeholder { color: #a7a69d;opacity: 1; }
 
-html.rhw-focus-pass :is(.alert-card,.panel,.ops-panel,.comms-panel,.remote-card,.production-card,.production-module-card,.v40-tool-panel,.capital-shipyard-control) { background: linear-gradient(155deg,#20201d70,transparent 40%),#181817;box-shadow: inset 0 1px #eee5cf0c,0 5px 14px #0005; }
+html.rhw-focus-pass :is(.alert-card,.panel,.ops-panel,.comms-panel,.remote-card,.production-card,.production-module-card,.v40-tool-panel,.capital-shipyard-control) { background: linear-gradient(145deg,#1e272055,transparent 45%),var(--panel);box-shadow: inset 0 1px #eee5cf0c,0 8px 22px #0006; }
 
-html.rhw-focus-pass #inventoryStatusPanel .alert-card { border-top: 2px solid #999385; }
+html.rhw-focus-pass #inventoryStatusPanel .alert-card { border-top: 2px solid #8c825a; }
 
-html.rhw-focus-pass #inventoryStatusPanel .alert-card:first-child { border-top-color: #d7b675; }
+html.rhw-focus-pass #inventoryStatusPanel .alert-card:first-child { border-top-color: var(--gold); }
 
-html.rhw-focus-pass #inventoryStatusPanel .feedstock-panel { border-top-color: #bda16b; }
+html.rhw-focus-pass #inventoryStatusPanel .feedstock-panel { border-top-color: var(--gold); }
 
-html.rhw-focus-pass #inventoryStatusPanel .alert-title { min-height: 52px;padding: 12px 16px;border-bottom-color: #45453f;background: var(--rhw-head-fill);box-shadow: inset 0 1px #ffffff06; }
+html.rhw-focus-pass #inventoryStatusPanel .alert-title { min-height: 54px;padding: 12px 16px;border-bottom-color: #f0c56b33;background: var(--rhw-head-fill);box-shadow: inset 0 1px #ffffff06; }
 
 html.rhw-focus-pass #inventoryStatusPanel .alert-card:first-child .alert-title { background: var(--rhw-head-fill); }
 
-html.rhw-focus-pass #inventoryStatusPanel .alert-title > span:first-child { color: var(--text); }
+html.rhw-focus-pass #inventoryStatusPanel .alert-title > span:first-child { color: var(--gold); }
 
-html.rhw-focus-pass #inventoryStatusPanel :is(.waste-panel,.confiscated-panel) { border-top: 1px solid #55534b;background: #141413;box-shadow: inset 0 1px #ffffff04; }
+html.rhw-focus-pass #inventoryStatusPanel :is(.waste-panel,.confiscated-panel) { border-top: 1px solid #526058;background: #0e1310;box-shadow: inset 0 1px #ffffff04; }
 
-html.rhw-focus-pass #inventoryStatusPanel :is(.waste-panel,.confiscated-panel) .alert-title { min-height: 46px;padding-block: 10px;background: #1c1c1a;font-size: 23px; }
+html.rhw-focus-pass #inventoryStatusPanel :is(.waste-panel,.confiscated-panel) .alert-title { min-height: 46px;padding-block: 10px;background: #171e19;font-size: 23px; }
 
 html.rhw-focus-pass #inventoryStatusPanel :is(.waste-panel,.confiscated-panel) .alert-title > span:first-child { color: #c6c3b9; }
 
 html.rhw-focus-pass #inventoryStatusPanel .alert-list { padding-inline: 16px; }
 
-html.rhw-focus-pass #inventoryStatusPanel .alert-list li.overview-stock-row { grid-template-columns: minmax(0,1fr) auto;align-items: center;padding: 14px 0;gap: 7px 10px; }
+html.rhw-focus-pass #inventoryStatusPanel .alert-list li.overview-stock-row { grid-template-columns: minmax(0,1fr) auto;align-items: center;padding: 11px 12px;gap: 7px 10px; }
 
 html.rhw-focus-pass #inventoryStatusPanel .overview-item-copy { min-width: 0;overflow-wrap: anywhere; }
 
@@ -267,16 +273,17 @@ html.rhw-focus-pass #inventoryStatusPanel .overview-stock-row > .progress-wrap {
 
 html.rhw-focus-pass #inventoryStatusPanel .overview-stock-row > .pill { font: 600 11px/1.3 var(--font-main);letter-spacing: .025em;padding: 3px 6px;white-space: nowrap; }
 
-html.rhw-focus-pass #inventoryStatusPanel .overview-stock-row > .pill.ok { background: transparent;border-color: transparent;color: var(--good); }
+html.rhw-focus-pass #inventoryStatusPanel .overview-stock-row > .pill.ok { background: #83d5ab0c;border-color: #83d5ab66;color: var(--good); }
 
 html.rhw-focus-pass #inventoryStatusPanel .section-freshness { font: 11px/1.35 var(--font-main);letter-spacing: 0; }
 
 @media (hover: hover) {
-html.rhw-focus-pass #inventoryStatusPanel .alert-list li.overview-stock-row:hover { background: #ffffff03; }
+html.rhw-focus-pass #inventoryStatusPanel .alert-list li.overview-stock-row:hover { background: #152119;border-top-color: #526058; }
 }
 
 @media (max-width: 1000px) {
-html.rhw-focus-pass .uplink-panel.online:not(:has(.uplink-details[open])) { padding: 0;border: 0; }
+html.rhw-focus-pass .uplink-panel.online:not(:has(.uplink-details[open])) { grid-template-columns: minmax(0,1fr) auto;gap: 8px;padding: 0;border: 0;background: transparent;box-shadow: none; }
+html.rhw-focus-pass .uplink-panel.online:not(:has(.uplink-details[open])) .uplink-details { grid-column: 2;border: 0;padding: 0; }
 html.rhw-focus-pass .uplink-panel.online:not(:has(.uplink-details[open])) .uplink-details > summary { max-width: none; }
 }
 
@@ -294,37 +301,41 @@ html.rhw-focus-pass #inventoryStatusPanel .alert-title { padding-inline: 14px; }
 html.rhw-focus-pass #inventoryStatusPanel .alert-list { padding-inline: 14px; }
 }
 /* Shipyard: one visual hierarchy for selection, coverage and material rows. */
-#shipyardControl .shipyard-control-head { align-items:center;flex-direction:row;padding:18px 22px;background:linear-gradient(110deg,#282720,#1b1b19 65%);border-bottom:1px solid var(--line-soft);box-shadow:inset 3px 0 var(--gold); }
+#shipyardControl .shipyard-control-head { align-items:center;flex-direction:row;padding:18px 22px;background:linear-gradient(110deg,#302a17,#111a13 65%);border-bottom:1px solid #f0c56b40;box-shadow:inset 3px 0 var(--gold); }
 #shipyardControl .shipyard-control-title { margin:0; }
-#shipyardControl .shipyard-control-subline { margin:5px 0 0;font:12px/1.4 var(--font-main);letter-spacing:.055em; }
+#shipyardControl .shipyard-control-subline { margin:5px 0 0;color:var(--muted);font:12px/1.4 var(--font-tech);letter-spacing:.08em; }
 #shipyardControl .shipyard-control-grid { display:grid;grid-template-columns:minmax(0,1fr);gap:24px;padding:20px; }
 #shipyardControl .shipyard-control-section { order:initial;min-width:0;padding:0;border:0;background:transparent;box-shadow:none; }
 .shipyard-hull-grid { display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px; }
-#shipyardControl .shipyard-hull-card { position:relative;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:4px 12px;min-width:0;min-height:142px;padding:18px 20px;clip-path:none;border:1px solid var(--line);border-radius:5px;background:linear-gradient(135deg,#2b2b27,#20201e);box-shadow:inset 0 1px #ffffff08;color:var(--text);text-align:left;font-family:var(--font-main);text-transform:none;letter-spacing:normal;transition:border-color .16s,background .16s; }
-#shipyardControl .shipyard-hull-card[aria-pressed="true"] { border-color:var(--gold);background:linear-gradient(120deg,#393326,#25241f);box-shadow:inset 0 3px var(--gold),inset 0 0 0 1px #d7b67512; }
+#shipyardControl .shipyard-hull-card { position:relative;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:4px 12px;min-width:0;min-height:142px;padding:18px 20px;clip-path:none;border:1px solid #425047;border-radius:2px;background:linear-gradient(135deg,#1d2921,#0a100d 80%);box-shadow:inset 0 1px #ffffff08,0 4px 12px #0004;color:var(--text);text-align:left;font-family:var(--font-main);text-transform:none;letter-spacing:normal;transition:border-color .16s,background .16s; }
+#shipyardControl .shipyard-hull-card[aria-pressed="true"] { border-color:var(--gold);background:radial-gradient(ellipse at 0 0,#f0c56b19,transparent 72%),linear-gradient(120deg,#272515,#0b130d);box-shadow:inset 0 3px var(--gold),0 0 24px #f0c56b09; }
+
+#shipyardControl .shipyard-hull-card::after { content:"";position:absolute;right:-1px;bottom:-1px;width:14px;height:14px;border-right:2px solid #7e8d82;border-bottom:2px solid #7e8d82;pointer-events:none; }
+
+#shipyardControl .shipyard-hull-card[aria-pressed="true"]::after { border-color:var(--gold); }
 #shipyardControl .shipyard-hull-card:focus-visible { outline:2px solid var(--gold);outline-offset:3px; }
-.shipyard-hull-name { grid-column:1/-1;padding-right:20px;color:var(--text);font:500 28px/1.05 var(--font-title);letter-spacing:.025em; }
-.shipyard-hull-card[aria-pressed="true"] .shipyard-hull-name { color:#f1d6a2; }
+.shipyard-hull-name { grid-column:1/-1;padding-right:20px;color:var(--text);font:500 32px/1.05 var(--font-title);letter-spacing:.035em; }
+.shipyard-hull-card[aria-pressed="true"] .shipyard-hull-name { color:var(--gold);text-shadow:0 0 18px #f0c56b22; }
 .shipyard-hull-type { grid-column:1/-1;color:var(--muted);font-size:12px;margin-bottom:14px; }
 .shipyard-hull-indicator { position:absolute;top:20px;right:20px;width:13px;height:13px;border:1px solid #777568;border-radius:50%; }
-.shipyard-hull-card[aria-pressed="true"] .shipyard-hull-indicator { border-color:var(--gold);background:var(--gold);box-shadow:inset 0 0 0 3px #332e23; }
+.shipyard-hull-card[aria-pressed="true"] .shipyard-hull-indicator { border-color:var(--gold);background:var(--gold);box-shadow:inset 0 0 0 3px #332e23,0 0 12px #f0c56b55; }
 .shipyard-hull-stock-label, .shipyard-hull-price-label { color:var(--muted);font-size:11px;line-height:1.3; }
 .shipyard-hull-stock-label { grid-column:1;grid-row:3; }
 .shipyard-hull-price-label { grid-column:2;grid-row:3;text-align:right; }
-.shipyard-hull-stock { grid-column:1;grid-row:4;font-size:25px;line-height:1.2;font-weight:500;font-variant-numeric:tabular-nums; }
-.shipyard-hull-price { grid-column:2;grid-row:4;align-self:end;text-align:right;font-size:17px;line-height:1.5;font-variant-numeric:tabular-nums; }
+.shipyard-hull-stock { grid-column:1;grid-row:4;font:27px/1.2 var(--font-tech);font-variant-numeric:tabular-nums; }
+.shipyard-hull-price { grid-column:2;grid-row:4;align-self:end;text-align:right;color:var(--gold);font:17px/1.5 var(--font-tech);font-variant-numeric:tabular-nums; }
 .shipyard-requirements-heading { display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:14px; }
-.shipyard-eyebrow { margin:0 0 5px;color:var(--muted);font:11px/1.4 var(--font-main);letter-spacing:.08em; }
+.shipyard-eyebrow { margin:0 0 5px;color:var(--muted);font:11px/1.4 var(--font-tech);letter-spacing:.12em; }
 .shipyard-requirements-heading h3 { display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin:0;color:var(--text);font:500 32px/1 var(--font-title); }
 .shipyard-requirements-heading h3 span { color:var(--muted);font:400 13px/1.4 var(--font-main); }
-#shipyardControl .shipyard-plan-button { flex-shrink:0;margin:0;min-height:44px;padding:10px 16px;border:1px solid #8c774d;background:#302b20;color:#eed39e;box-shadow:inset 0 1px #ffffff08;font:500 12px/1.3 var(--font-main);letter-spacing:.025em; }
-#shipyardControl .shipyard-decision-strip { grid-template-columns:repeat(3,minmax(0,1fr));gap:0;border:1px solid var(--line);border-radius:5px;background:#20201d;overflow:hidden; }
+#shipyardControl .shipyard-plan-button { flex-shrink:0;margin:0;min-height:44px;padding:10px 16px;border:1px solid #ba9449;background:linear-gradient(120deg,#493718,#211e11);color:#ffe5ac;box-shadow:inset 0 1px #f0c56b33;font:500 12px/1.3 var(--font-tech);letter-spacing:.035em; }
+#shipyardControl .shipyard-decision-strip { grid-template-columns:repeat(3,minmax(0,1fr));gap:0;border:1px solid #425047;border-radius:2px;background:#080f0b;overflow:hidden;box-shadow:inset 0 1px #ffffff05; }
 #shipyardControl .shipyard-decision-metric { display:flex;flex-direction:column;justify-content:center;grid-column:auto;min-height:100px;padding:15px 20px;border:0;box-shadow:none; }
 #shipyardControl .shipyard-decision-metric + .shipyard-decision-metric { border-left:1px solid var(--line); }
-#shipyardControl .shipyard-decision-metric small { margin-bottom:7px;font:400 11px/1.4 var(--font-main);letter-spacing:.045em;color:var(--muted); }
+#shipyardControl .shipyard-decision-metric small { margin-bottom:7px;font:400 11px/1.4 var(--font-tech);letter-spacing:.08em;color:var(--muted); }
 #shipyardControl .shipyard-decision-metric strong { font:500 20px/1.3 var(--font-main);color:var(--text);letter-spacing:normal;white-space:normal;overflow-wrap:anywhere;text-overflow:clip; }
-#shipyardControl .shipyard-coverage { background:linear-gradient(110deg,#d7b6750b,transparent); }
-#shipyardControl .shipyard-coverage strong { display:flex;align-items:baseline;flex-wrap:wrap;gap:8px;font-size:34px;line-height:1.1; }
+#shipyardControl .shipyard-coverage { background:linear-gradient(110deg,#f0c56b09,transparent); }
+#shipyardControl .shipyard-coverage strong { display:flex;align-items:baseline;flex-wrap:wrap;gap:8px;font:42px/1.1 var(--font-tech); }
 #shipyardControl .shipyard-coverage strong span { font-size:14px;letter-spacing:.04em; }
 #shipyardControl .shipyard-coverage.state-ok strong { color:var(--good); }
 #shipyardControl .shipyard-coverage.state-low strong { color:var(--gold); }
@@ -335,7 +346,7 @@ html.rhw-focus-pass #inventoryStatusPanel .alert-list { padding-inline: 14px; }
 .shipyard-requirement-body { display:grid;grid-template-columns:minmax(0,2.2fr) minmax(250px,1fr);gap:20px;margin-top:20px;align-items:start; }
 .shipyard-materials { min-width:0; }
 .shipyard-material-note, .shipyard-prerequisites p { margin:0 0 12px;color:var(--muted);font:400 12px/1.5 var(--font-main); }
-.shipyard-material-table { width:100%;border-collapse:collapse;table-layout:fixed;background:#1d1d1b; }
+.shipyard-material-table { width:100%;border-collapse:collapse;table-layout:fixed;background:#0a100d; }
 .shipyard-material-table :is(th,td) { padding:12px;text-align:right;white-space:normal;overflow-wrap:anywhere;font:400 14px/1.4 var(--font-main);font-variant-numeric:tabular-nums;border-bottom:1px solid var(--line-soft); }
 .shipyard-material-table th:first-child { width:46%;text-align:left; }
 .shipyard-material-table thead th { position:static;background:var(--surface-raised);color:var(--muted);font-size:11px;letter-spacing:.03em;box-shadow:none;backdrop-filter:none; }
@@ -343,15 +354,15 @@ html.rhw-focus-pass #inventoryStatusPanel .alert-list { padding-inline: 14px; }
 .shipyard-material-table tbody th { color:var(--text);font-weight:500; }
 .shipyard-material-name { display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px 12px;min-height:32px; }
 .shipyard-material-name>span { min-width:0; }
-.shipyard-material-row.bottleneck { background:#d7b6750c; }
+.shipyard-material-row.bottleneck { background:#f0c56b0c; }
 .shipyard-material-row.bottleneck th { box-shadow:inset 3px 0 var(--gold); }
 .shipyard-material-row td[data-label="PER SHIP"], .shipyard-material-gap { color:var(--muted); }
 .shipyard-material-row td[data-label="STOCK"] { color:var(--text);font-weight:500; }
 .shipyard-material-row.unknown td { color:var(--muted); }
-.shipyard-shortage { display:inline-block;padding:3px 7px;border:1px solid #d7b67540;border-radius:3px;background:#d7b6750b;color:var(--gold);font-weight:500; }
+.shipyard-shortage { display:inline-block;padding:3px 7px;border:1px solid #f0c56b60;border-radius:2px;background:#f0c56b10;color:var(--gold);font-weight:500; }
 #shipyardControl .rhw-source-button { flex-shrink:0;margin:0;padding:8px 10px;min-height:44px;background:transparent;border-color:#756343;box-shadow:none;font-size:11px;letter-spacing:.015em; }
-.shipyard-prerequisites { padding:16px 18px 4px;border:1px solid var(--line);border-radius:5px;background:linear-gradient(140deg,#262520,#20201e);box-shadow:inset 0 1px #ffffff06; }
-.shipyard-prerequisites h3 { margin:0 0 8px;color:var(--text);font:500 13px/1.4 var(--font-main);letter-spacing:.035em; }
+.shipyard-prerequisites { padding:16px 18px 4px;border:1px solid var(--line);border-top:2px solid #7e8d82;border-radius:2px;background:linear-gradient(140deg,#19231c,#0a100d);box-shadow:inset 0 1px #ffffff06; }
+.shipyard-prerequisites h3 { margin:0 0 8px;color:var(--gold);font:500 22px/1.1 var(--font-title);letter-spacing:.06em; }
 .shipyard-prerequisites ul { list-style:none;padding:0;margin:0 0 14px; }
 .shipyard-prerequisite { display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px 12px;padding:14px 0;border-bottom:1px solid var(--line); }
 .shipyard-prerequisite>span:first-child { min-width:0; }
@@ -363,7 +374,7 @@ html.rhw-focus-pass #inventoryStatusPanel .alert-list { padding-inline: 14px; }
 .shipyard-data-note { margin:12px 0;padding:12px;border:1px solid var(--line);color:var(--muted);font:400 13px/1.5 var(--font-main); }
 .shipyard-data-note small { display:block; }
 @media (hover:hover) {
-  #shipyardControl .shipyard-hull-card:not([aria-pressed="true"]):hover { border-color:#a9946e;background:#2c2b26; }
+  #shipyardControl .shipyard-hull-card:not([aria-pressed="true"]):hover { border-color:var(--gold);background:#1c2a20; }
   #shipyardControl .shipyard-plan-button:not(:disabled):hover, #shipyardControl .rhw-source-button:hover { border-color:var(--gold);background:#393123; }
   .shipyard-material-row:hover { background:#ffffff06; }
 }
