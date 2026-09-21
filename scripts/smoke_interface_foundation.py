@@ -174,6 +174,7 @@ def main():
                       const cards=[...document.querySelectorAll('[data-shipyard-select]')];
                       const rows=[...document.querySelectorAll('.shipyard-material-row')];
                       return {cards:cards.length,selected:cards.find(c=>c.getAttribute('aria-pressed')==='true')?.dataset.shipyardSelect,
+                        order:cards.map(c=>c.dataset.shipyardSelect),
                         rows:rows.length,buildable:RHWV4.shipyard.analyze().buildable,
                         compact:rows.every(r=>r.getBoundingClientRect().height<115),rowHeights:rows.map(r=>r.getBoundingClientRect().height),
                         fits:[...cards,...rows].every(r=>r.scrollWidth<=r.clientWidth+1),
@@ -181,6 +182,7 @@ def main():
                         stockFirst:cards[0].getBoundingClientRect().top<shipyardRequirements.getBoundingClientRect().top};
                     })()""")
                     assert yard['cards'] == 3 and yard['rows'] == 5 and yard['selected'] == 'archon' and yard['buildable'] == 0, (width, yard)
+                    assert yard['order'] == ['archon', 'dunkirk', 'invincible'], (width, yard)
                     assert yard['compact'] and yard['fits'] and yard['touch'] and yard['stockFirst'], (width, yard)
                 if width <= 760 and workspace == 'pricecheck':
                     # A phone must show the result at the start of each compact
@@ -192,6 +194,34 @@ def main():
                     if width == 390:
                         capture_card(cdp, '[data-route-key="industrial-materials"]', '390-pricecheck-compact-cards')
                 report.append({'width': width, 'route': route, **result})
+
+        # Row labels must stay attached to their quantities while scrolling.
+        # Old global TH styling painted a black slab and made body labels sticky,
+        # including on hover and in Eco mode.
+        original_eco = base.ev(cdp, "document.documentElement.classList.contains('eco')")
+        row_header_checks = []
+        for width in (390, 1366):
+            cdp.call('Emulation.setDeviceMetricsOverride', {'width': width, 'height': 844, 'deviceScaleFactor': 1, 'mobile': width <= 760})
+            for eco in (False, True):
+                hover = base.ev(cdp, """(()=>{
+                  RHWV4.navigate('command','shipyard');
+                  document.documentElement.classList.toggle('eco',%s);
+                  const rows=[...document.querySelectorAll('.shipyard-material-row')];
+                  scrollTo({top:rows[0].getBoundingClientRect().top+scrollY+20,behavior:'instant'});
+                  const row=rows.find(r=>r.getBoundingClientRect().top>80)||rows.at(-1);
+                  const box=row.querySelector('th').getBoundingClientRect();
+                  return {x:box.x+8,y:box.y+8};
+                })()""" % json.dumps(eco))
+                cdp.call('Input.dispatchMouseEvent', {'type': 'mouseMoved', **hover})
+                checked = base.ev(cdp, """(()=>{
+                  const rows=[...document.querySelectorAll('.shipyard-material-row')];
+                  return {aligned:rows.every(r=>Math.abs(r.querySelector('th').getBoundingClientRect().top-r.querySelector('td').getBoundingClientRect().top)<1),
+                    uniform:rows.every(r=>getComputedStyle(r.querySelector('th')).backgroundColor===getComputedStyle(r.querySelector('td')).backgroundColor)};
+                })()""")
+                assert all(checked.values()), (width, eco, checked)
+                row_header_checks.append({'width': width, 'eco': eco, **checked})
+                capture_card(cdp, '.shipyard-material-table', f'{width}-shipyard-materials-{"eco" if eco else "standard"}')
+        base.ev(cdp, "document.documentElement.classList.toggle('eco',%s)" % json.dumps(original_eco))
 
         # Ship selection updates requirements, retains keyboard focus through
         # telemetry refreshes and opens the exact civilian Archon recipe.
@@ -348,7 +378,7 @@ def main():
             portable:/\\[img\\]https:\\/\\//.test(RHWV4.comms.buildBbcode())};
         })()""")
         assert all(forum_offline.values()), forum_offline
-        (OUT / 'checks.json').write_text(json.dumps({'layouts': report, 'shipyard': shipyard, 'marketLayouts': market_layouts, 'disclosure': disclosure, 'retired': retired, 'keyboard': focused, 'priceFocus': price_focus, 'priceEdit': price_edit, 'offline': offline}, indent=2))
+        (OUT / 'checks.json').write_text(json.dumps({'layouts': report, 'shipyard': shipyard, 'shipyardRowHeaders': row_header_checks, 'marketLayouts': market_layouts, 'disclosure': disclosure, 'retired': retired, 'keyboard': focused, 'priceFocus': price_focus, 'priceEdit': price_edit, 'offline': offline}, indent=2))
         print(f'Bundled interface passed: {len(report)} layouts, retired routes, keyboard focus, local fonts and offline reload.')
         return 0
     except Exception:

@@ -293,88 +293,120 @@ html.rhw-focus-pass .uplink-panel { background: transparent; }
 html.rhw-focus-pass #inventoryStatusPanel .alert-title { padding-inline: 14px; }
 html.rhw-focus-pass #inventoryStatusPanel .alert-list { padding-inline: 14px; }
 }
-/* Shipyard: selectable stock cards above one recipe-backed requirements view. */
-#shipyardControl .shipyard-control-head { align-items:center;flex-direction:row;padding:18px 20px; }
+/* Shipyard: one visual hierarchy for selection, coverage and material rows. */
+#shipyardControl .shipyard-control-head { align-items:center;flex-direction:row;padding:18px 22px;background:linear-gradient(110deg,#282720,#1b1b19 65%);border-bottom:1px solid var(--line-soft);box-shadow:inset 3px 0 var(--gold); }
 #shipyardControl .shipyard-control-title { margin:0; }
-#shipyardControl .shipyard-control-subline { margin:5px 0 0;font-size:12px;letter-spacing:.035em; }
-#shipyardControl .shipyard-control-grid { display:grid;grid-template-columns:minmax(0,1fr);gap:18px;padding:18px; }
+#shipyardControl .shipyard-control-subline { margin:5px 0 0;font:12px/1.4 var(--font-main);letter-spacing:.055em; }
+#shipyardControl .shipyard-control-grid { display:grid;grid-template-columns:minmax(0,1fr);gap:24px;padding:20px; }
 #shipyardControl .shipyard-control-section { order:initial;min-width:0;padding:0;border:0;background:transparent;box-shadow:none; }
 .shipyard-hull-grid { display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px; }
-.shipyard-hull-card { display:grid;grid-template-columns:1fr 1fr;gap:3px 12px;min-width:0;min-height:126px;padding:15px 18px;clip-path:none;border:1px solid var(--rhw-border);border-radius:6px;background:var(--surface-raised);box-shadow:none;color:var(--text);text-align:left;font-family:var(--font-main);text-transform:none;letter-spacing:normal; }
-.shipyard-hull-card:hover { border-color:var(--gold);background:var(--surface-raised);box-shadow:none; }
-.shipyard-hull-card[aria-pressed="true"] { border-color:var(--gold);background:linear-gradient(120deg,rgba(var(--rhw-gold-rgb),.1),transparent),var(--surface-raised);box-shadow:inset 0 3px var(--gold); }
-.shipyard-hull-card:focus-visible { outline:2px solid var(--gold);outline-offset:3px; }
-.shipyard-hull-name { grid-column:1/-1;color:var(--text);font:500 24px/1.15 var(--font-title);letter-spacing:.025em; }
-.shipyard-hull-type { grid-column:1/-1;color:var(--muted);font-size:12px;margin-bottom:10px; }
+#shipyardControl .shipyard-hull-card { position:relative;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:4px 12px;min-width:0;min-height:142px;padding:18px 20px;clip-path:none;border:1px solid var(--line);border-radius:5px;background:linear-gradient(135deg,#2b2b27,#20201e);box-shadow:inset 0 1px #ffffff08;color:var(--text);text-align:left;font-family:var(--font-main);text-transform:none;letter-spacing:normal;transition:border-color .16s,background .16s; }
+#shipyardControl .shipyard-hull-card[aria-pressed="true"] { border-color:var(--gold);background:linear-gradient(120deg,#393326,#25241f);box-shadow:inset 0 3px var(--gold),inset 0 0 0 1px #d7b67512; }
+#shipyardControl .shipyard-hull-card:focus-visible { outline:2px solid var(--gold);outline-offset:3px; }
+.shipyard-hull-name { grid-column:1/-1;padding-right:20px;color:var(--text);font:500 28px/1.05 var(--font-title);letter-spacing:.025em; }
+.shipyard-hull-card[aria-pressed="true"] .shipyard-hull-name { color:#f1d6a2; }
+.shipyard-hull-type { grid-column:1/-1;color:var(--muted);font-size:12px;margin-bottom:14px; }
+.shipyard-hull-indicator { position:absolute;top:20px;right:20px;width:13px;height:13px;border:1px solid #777568;border-radius:50%; }
+.shipyard-hull-card[aria-pressed="true"] .shipyard-hull-indicator { border-color:var(--gold);background:var(--gold);box-shadow:inset 0 0 0 3px #332e23; }
 .shipyard-hull-stock-label, .shipyard-hull-price-label { color:var(--muted);font-size:11px;line-height:1.3; }
 .shipyard-hull-stock-label { grid-column:1;grid-row:3; }
 .shipyard-hull-price-label { grid-column:2;grid-row:3;text-align:right; }
-.shipyard-hull-stock { grid-column:1;grid-row:4;font-size:21px;line-height:1.2;font-weight:500;font-variant-numeric:tabular-nums; }
-.shipyard-hull-price { grid-column:2;grid-row:4;align-self:end;text-align:right;font-size:16px;line-height:1.5;font-variant-numeric:tabular-nums; }
-.shipyard-requirements-heading { display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:12px; }
-.shipyard-requirements-heading h3 { margin:0;color:var(--text);font:500 22px/1.3 var(--font-title); }
-.shipyard-requirements-heading h3 span { color:var(--gold); }
-#shipyardControl .shipyard-plan-button { flex-shrink:0;margin:0;min-height:44px;padding:8px 12px;font:500 12px/1.3 var(--font-main);letter-spacing:.02em; }
-#shipyardControl .shipyard-decision-strip { grid-template-columns:repeat(3,minmax(0,1fr));gap:0;border:1px solid var(--rhw-border);border-radius:5px;background:var(--surface-raised);overflow:hidden; }
-#shipyardControl .shipyard-decision-metric { grid-column:auto;min-height:70px;padding:12px 14px;border-top:0;box-shadow:none; }
-#shipyardControl .shipyard-decision-metric + .shipyard-decision-metric { border-left:1px solid var(--rhw-border); }
-#shipyardControl .shipyard-decision-metric small { font:400 11px/1.4 var(--font-main);letter-spacing:.025em;color:var(--muted); }
-#shipyardControl .shipyard-decision-metric strong { font:500 16px/1.3 var(--font-main);white-space:normal;overflow-wrap:anywhere;text-overflow:clip; }
-#shipyardControl .shipyard-decision-metric.state-ok strong { color:var(--good); }
-#shipyardControl .shipyard-decision-metric.state-low strong { color:var(--gold); }
-#shipyardControl .shipyard-decision-metric.state-critical strong { color:var(--danger); }
-#shipyardControl .shipyard-decision-metric.state-unknown strong { color:var(--muted); }
-.shipyard-requirement-body { display:grid;grid-template-columns:minmax(0,2fr) minmax(230px,1fr);gap:24px;margin-top:14px; }
+.shipyard-hull-stock { grid-column:1;grid-row:4;font-size:25px;line-height:1.2;font-weight:500;font-variant-numeric:tabular-nums; }
+.shipyard-hull-price { grid-column:2;grid-row:4;align-self:end;text-align:right;font-size:17px;line-height:1.5;font-variant-numeric:tabular-nums; }
+.shipyard-requirements-heading { display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:14px; }
+.shipyard-eyebrow { margin:0 0 5px;color:var(--muted);font:11px/1.4 var(--font-main);letter-spacing:.08em; }
+.shipyard-requirements-heading h3 { display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin:0;color:var(--text);font:500 32px/1 var(--font-title); }
+.shipyard-requirements-heading h3 span { color:var(--muted);font:400 13px/1.4 var(--font-main); }
+#shipyardControl .shipyard-plan-button { flex-shrink:0;margin:0;min-height:44px;padding:10px 16px;border:1px solid #8c774d;background:#302b20;color:#eed39e;box-shadow:inset 0 1px #ffffff08;font:500 12px/1.3 var(--font-main);letter-spacing:.025em; }
+#shipyardControl .shipyard-decision-strip { grid-template-columns:repeat(3,minmax(0,1fr));gap:0;border:1px solid var(--line);border-radius:5px;background:#20201d;overflow:hidden; }
+#shipyardControl .shipyard-decision-metric { display:flex;flex-direction:column;justify-content:center;grid-column:auto;min-height:100px;padding:15px 20px;border:0;box-shadow:none; }
+#shipyardControl .shipyard-decision-metric + .shipyard-decision-metric { border-left:1px solid var(--line); }
+#shipyardControl .shipyard-decision-metric small { margin-bottom:7px;font:400 11px/1.4 var(--font-main);letter-spacing:.045em;color:var(--muted); }
+#shipyardControl .shipyard-decision-metric strong { font:500 20px/1.3 var(--font-main);color:var(--text);letter-spacing:normal;white-space:normal;overflow-wrap:anywhere;text-overflow:clip; }
+#shipyardControl .shipyard-coverage { background:linear-gradient(110deg,#d7b6750b,transparent); }
+#shipyardControl .shipyard-coverage strong { display:flex;align-items:baseline;flex-wrap:wrap;gap:8px;font-size:34px;line-height:1.1; }
+#shipyardControl .shipyard-coverage strong span { font-size:14px;letter-spacing:.04em; }
+#shipyardControl .shipyard-coverage.state-ok strong { color:var(--good); }
+#shipyardControl .shipyard-coverage.state-low strong { color:var(--gold); }
+#shipyardControl .shipyard-coverage.state-critical strong { color:var(--danger); }
+#shipyardControl .shipyard-coverage.state-unknown strong { color:var(--muted);font-size:20px; }
+#shipyardControl .shipyard-next-ship strong { display:flex;align-items:baseline;flex-wrap:wrap;gap:4px 10px;color:var(--gold);font-size:28px; }
+#shipyardControl .shipyard-next-ship strong span { color:var(--muted);font-size:14px; }
+.shipyard-requirement-body { display:grid;grid-template-columns:minmax(0,2.2fr) minmax(250px,1fr);gap:20px;margin-top:20px;align-items:start; }
 .shipyard-materials { min-width:0; }
-.shipyard-material-note, .shipyard-prerequisites p { margin:0 0 10px;color:var(--muted);font:400 12px/1.5 var(--font-main); }
-.shipyard-material-table { width:100%;border-collapse:collapse;table-layout:fixed; }
-.shipyard-material-table :is(th,td) { padding:10px 8px;text-align:right;white-space:normal;overflow-wrap:anywhere;font:400 14px/1.4 var(--font-main);font-variant-numeric:tabular-nums; }
-.shipyard-material-table th:first-child { width:43%;text-align:left; }
-.shipyard-material-table thead th { background:var(--surface-raised);color:var(--muted);font-size:11px;letter-spacing:.015em; }
+.shipyard-material-note, .shipyard-prerequisites p { margin:0 0 12px;color:var(--muted);font:400 12px/1.5 var(--font-main); }
+.shipyard-material-table { width:100%;border-collapse:collapse;table-layout:fixed;background:#1d1d1b; }
+.shipyard-material-table :is(th,td) { padding:12px;text-align:right;white-space:normal;overflow-wrap:anywhere;font:400 14px/1.4 var(--font-main);font-variant-numeric:tabular-nums;border-bottom:1px solid var(--line-soft); }
+.shipyard-material-table th:first-child { width:46%;text-align:left; }
+.shipyard-material-table thead th { position:static;background:var(--surface-raised);color:var(--muted);font-size:11px;letter-spacing:.03em;box-shadow:none;backdrop-filter:none; }
+.shipyard-material-table tbody :is(th,td) { background:transparent;text-shadow:none; }
 .shipyard-material-table tbody th { color:var(--text);font-weight:500; }
-.shipyard-material-table tbody th>span { vertical-align:middle; }
-.shipyard-material-row.bottleneck { background:rgba(var(--rhw-gold-rgb),.045); }
-.shipyard-material-row .shipyard-material-gap { color:var(--gold); }
+.shipyard-material-name { display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px 12px;min-height:32px; }
+.shipyard-material-name>span { min-width:0; }
+.shipyard-material-row.bottleneck { background:#d7b6750c; }
+.shipyard-material-row.bottleneck th { box-shadow:inset 3px 0 var(--gold); }
+.shipyard-material-row td[data-label="PER SHIP"], .shipyard-material-gap { color:var(--muted); }
+.shipyard-material-row td[data-label="STOCK"] { color:var(--text);font-weight:500; }
 .shipyard-material-row.unknown td { color:var(--muted); }
-#shipyardControl .rhw-source-button { margin:4px 0 0; }
-.shipyard-prerequisites { padding-left:20px;border-left:1px solid var(--rhw-border); }
-.shipyard-prerequisites h3 { margin:0 0 7px;color:var(--text);font:500 12px/1.4 var(--font-main);letter-spacing:.03em; }
-.shipyard-prerequisites ul { list-style:none;padding:0;margin:0 0 12px; }
-.shipyard-prerequisite { display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--rhw-border); }
+.shipyard-shortage { display:inline-block;padding:3px 7px;border:1px solid #d7b67540;border-radius:3px;background:#d7b6750b;color:var(--gold);font-weight:500; }
+#shipyardControl .rhw-source-button { flex-shrink:0;margin:0;padding:8px 10px;min-height:44px;background:transparent;border-color:#756343;box-shadow:none;font-size:11px;letter-spacing:.015em; }
+.shipyard-prerequisites { padding:16px 18px 4px;border:1px solid var(--line);border-radius:5px;background:linear-gradient(140deg,#262520,#20201e);box-shadow:inset 0 1px #ffffff06; }
+.shipyard-prerequisites h3 { margin:0 0 8px;color:var(--text);font:500 13px/1.4 var(--font-main);letter-spacing:.035em; }
+.shipyard-prerequisites ul { list-style:none;padding:0;margin:0 0 14px; }
+.shipyard-prerequisite { display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px 12px;padding:14px 0;border-bottom:1px solid var(--line); }
 .shipyard-prerequisite>span:first-child { min-width:0; }
-.shipyard-prerequisite strong { display:block;color:var(--text);font:500 14px/1.4 var(--font-main); }
-.shipyard-prerequisite small { display:block;color:var(--muted);font:400 12px/1.4 var(--font-main); }
-.shipyard-prerequisite-status { flex-shrink:0;color:var(--muted);font:500 11px/1.4 var(--font-main);text-align:right; }
-.shipyard-prerequisite.ok .shipyard-prerequisite-status { color:var(--good); }
-.shipyard-prerequisite.critical .shipyard-prerequisite-status { color:var(--danger); }
-.shipyard-data-note { margin:12px 0;padding:12px;border:1px solid var(--rhw-border);color:var(--muted);font:400 13px/1.5 var(--font-main); }
+.shipyard-prerequisite strong { display:block;color:var(--text);font:500 15px/1.4 var(--font-main); }
+.shipyard-prerequisite small { display:block;margin-top:3px;color:var(--muted);font:400 12px/1.4 var(--font-main); }
+.shipyard-prerequisite-status { flex-shrink:0;padding:3px 6px;border:1px solid var(--line);border-radius:3px;background:#ffffff04;color:var(--muted);font:500 10px/1.4 var(--font-main);letter-spacing:.025em; }
+.shipyard-prerequisite.ok .shipyard-prerequisite-status { color:var(--good);border-color:#a0c6ae40;background:#a0c6ae08; }
+.shipyard-prerequisite.critical .shipyard-prerequisite-status { color:var(--danger);border-color:#e28a8a40; }
+.shipyard-data-note { margin:12px 0;padding:12px;border:1px solid var(--line);color:var(--muted);font:400 13px/1.5 var(--font-main); }
 .shipyard-data-note small { display:block; }
-@media (max-width:900px) {
+@media (hover:hover) {
+  #shipyardControl .shipyard-hull-card:not([aria-pressed="true"]):hover { border-color:#a9946e;background:#2c2b26; }
+  #shipyardControl .shipyard-plan-button:not(:disabled):hover, #shipyardControl .rhw-source-button:hover { border-color:var(--gold);background:#393123; }
+  .shipyard-material-row:hover { background:#ffffff06; }
+}
+@media (max-width:1000px) {
   .shipyard-requirement-body { grid-template-columns:minmax(0,1fr);gap:18px; }
-  .shipyard-prerequisites { padding:16px 0 0;border-left:0;border-top:1px solid var(--rhw-border); }
+  .shipyard-prerequisites ul { display:grid;grid-template-columns:1fr 1fr;gap:20px; }
 }
 @media (max-width:760px) {
   #shipyardControl .shipyard-control-head { padding:13px 12px;gap:8px; }
   #shipyardControl .shipyard-control-subline { font-size:11px; }
-  #shipyardControl .shipyard-control-grid { padding:12px 10px;gap:18px; }
+  #shipyardControl .shipyard-control-grid { padding:12px 10px;gap:22px; }
   .shipyard-hull-grid { gap:6px; }
-  .shipyard-hull-card { display:flex;flex-direction:column;align-items:flex-start;gap:2px;min-height:150px;padding:10px 8px; }
-  .shipyard-hull-name { font-size:20px; }
-  .shipyard-hull-type { font-size:11px;margin:0 0 6px; }
+  #shipyardControl .shipyard-hull-card { display:flex;flex-direction:column;align-items:flex-start;gap:2px;min-height:154px;padding:12px 8px; }
+  .shipyard-hull-name { padding:0;font-size:21px; }
+  .shipyard-hull-type { font-size:11px;margin:0 0 8px; }
+  .shipyard-hull-indicator { display:none; }
   .shipyard-hull-stock-label, .shipyard-hull-price-label { font-size:10px; }
-  .shipyard-hull-stock { font-size:20px;margin-bottom:6px; }
+  .shipyard-hull-stock { font-size:22px;margin-bottom:6px; }
   .shipyard-hull-price-label { margin-top:auto;text-align:left; }
   .shipyard-hull-price { align-self:flex-start;text-align:left;font-size:13px; }
-  .shipyard-requirements-heading { gap:8px; }
-  .shipyard-requirements-heading h3 { font-size:20px; }
-  .shipyard-requirements-heading h3 span { display:block; }
-  #shipyardControl .shipyard-plan-button { padding:8px;font-size:11px; }
+  .shipyard-requirements-heading { gap:8px;margin-bottom:12px; }
+  .shipyard-eyebrow { font-size:10px; }
+  .shipyard-requirements-heading h3 { display:block;font-size:28px; }
+  .shipyard-requirements-heading h3 span { display:block;margin-top:4px;font-size:12px; }
+  #shipyardControl .shipyard-plan-button { padding:8px 10px;font-size:11px; }
   #shipyardControl .shipyard-decision-strip { grid-template-columns:1fr 1fr; }
-  #shipyardControl .shipyard-decision-metric { padding:10px;min-height:67px; }
-  #shipyardControl .shipyard-decision-metric:last-child { grid-column:1/-1;border-left:0;border-top:1px solid var(--rhw-border);min-height:0;display:flex;align-items:baseline;gap:10px; }
-  #shipyardControl .shipyard-decision-metric:last-child small { flex-shrink:0; }
-  #shipyardControl .shipyard-decision-metric strong { font-size:15px; }
-  .shipyard-material-table :is(th,td) { padding:10px 4px;font-size:13px; }
+  #shipyardControl .shipyard-decision-metric { padding:12px;min-height:87px; }
+  #shipyardControl .shipyard-decision-metric small { margin-bottom:5px; }
+  #shipyardControl .shipyard-decision-metric strong { font-size:16px; }
+  #shipyardControl .shipyard-coverage strong { font-size:30px; }
+  #shipyardControl .shipyard-coverage strong span { font-size:12px; }
+  #shipyardControl .shipyard-coverage.state-unknown strong { font-size:16px; }
+  #shipyardControl .shipyard-next-ship { grid-column:1/-1;border-left:0;border-top:1px solid var(--line);min-height:0;display:flex;flex-direction:row;align-items:baseline;justify-content:flex-start;gap:10px; }
+  #shipyardControl .shipyard-next-ship small { flex-shrink:0;margin:0; }
+  #shipyardControl .shipyard-next-ship strong { gap:4px 8px;font-size:20px; }
+  #shipyardControl .shipyard-next-ship strong span { font-size:12px; }
+  .shipyard-requirement-body { margin-top:16px; }
+  .shipyard-material-table :is(th,td) { padding:10px 6px;font-size:13px; }
   .shipyard-material-table thead th { font-size:10px; }
   .shipyard-material-table th:first-child { width:43%; }
+  .shipyard-material-name { gap:6px;min-height:24px; }
+  .shipyard-shortage { padding:2px 4px; }
+  #shipyardControl .rhw-source-button { padding:7px 8px;font-size:10px; }
+  .shipyard-prerequisites { padding:14px 12px 2px; }
+  .shipyard-prerequisites ul { display:block; }
 }

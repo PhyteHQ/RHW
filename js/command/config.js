@@ -69,6 +69,18 @@ const DASHBOARD_CONFIG = Object.freeze({
     defaultHull: 'archon',
     hulls: Object.freeze([
       Object.freeze({
+        key: 'archon',
+        label: 'Archon',
+        plural: 'Archons',
+        name: 'Archon Modular Miner',
+        subtitle: 'Modular Miner',
+        recipeId: 'ship_assembly_medium_miner',
+        productId: 'medium_miner_package',
+        apiCode: 'medium_miner',
+        matches: ['medium_miner', 'medium_miner_package', 'modular miner', 'medium miner', 'archon modular miner', 'archon'],
+        sellPrice: null
+      }),
+      Object.freeze({
         key: 'dunkirk',
         label: 'Dunkirk',
         plural: 'Dunkirks',
@@ -91,18 +103,6 @@ const DASHBOARD_CONFIG = Object.freeze({
         apiCode: 'dsy_br_carrier',
         matches: ['dsy_br_carrier', 'bretonia invincible class dreadnought', 'invincible class dreadnought', 'invincible dreadnought', 'invincible'],
         sellPrice: 8500000
-      }),
-      Object.freeze({
-        key: 'archon',
-        label: 'Archon',
-        plural: 'Archons',
-        name: 'Archon Modular Miner',
-        subtitle: 'Modular Miner',
-        recipeId: 'ship_assembly_medium_miner',
-        productId: 'medium_miner_package',
-        apiCode: 'medium_miner',
-        matches: ['medium_miner', 'medium_miner_package', 'modular miner', 'medium miner', 'archon modular miner', 'archon'],
-        sellPrice: null
       })
     ])
   }),
