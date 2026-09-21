@@ -6,7 +6,7 @@ const path = require('node:path');
 
 const keys = {
   activeWorkspace: 'workspace', commandNode: 'command-node', inventoryView: 'inventory-view',
-  operationsNode: 'operations-node', commsNode: 'comms-node', tickerComposer: 'ticker',
+  operationsNode: 'operations-node', commsNode: 'comms-node', tickerComposer: 'ticker', shipyardSelection: 'shipyard-selection',
   commsMobileView: 'comms-mobile-view', calculatorPriceProfiles: 'price-profiles',
   productionOrders: 'production-orders', shipyardPlanner: 'shipyard-planner',
   commsCurrent: 'comms-current', commsDrafts: 'comms-drafts', localSenders: 'local-senders',
@@ -68,9 +68,11 @@ memory.set(keys.shipyardPlanner, { target: 'local-plan' });
 memory.set(keys.newswireManagerDraft, { source: 'LOCAL NEWSWIRE' });
 memory.set(keys.productionOrders, [{ id: 'order-a', quantity: 1, updatedAt: 20 }]);
 memory.set(keys.activeWorkspace, 'command');
+memory.set(keys.shipyardSelection, 'archon');
 
 const exported = app.storage.exportPayload();
 assert.equal(exported.version, 5, 'New private backups must use format V5');
+assert.equal(exported.preferences.shipyardSelection, 'archon');
 exported.current.subject = 'DETACHED EXPORT MUTATION';
 assert.equal(app.state.comms.subject, 'KEEP LOCAL CURRENT', 'Exported backup must be detached from live app state');
 const inspection = app.storage.inspectPayload(exported);
@@ -96,7 +98,7 @@ incoming.productionOrders = [
 ];
 incoming.shipyardPlanner = { target: 'remote-plan' };
 incoming.newswireDraft = { source: 'REMOTE NEWSWIRE' };
-incoming.preferences = { activeWorkspace: 'comms' };
+incoming.preferences = { activeWorkspace: 'comms', shipyardSelection: 'invincible' };
 
 const mergeResult = app.storage.importPayload(incoming, {
   sections: ['drafts', 'senders', 'priceProfiles', 'productionOrders']
@@ -113,12 +115,14 @@ assert.equal(app.state.comms.subject, 'KEEP LOCAL CURRENT', 'Unselected current 
 assert.deepEqual(memory.get(keys.shipyardPlanner), { target: 'local-plan' }, 'Unselected planner must remain untouched');
 assert.deepEqual(memory.get(keys.newswireManagerDraft), { source: 'LOCAL NEWSWIRE' }, 'Unselected Newswire work must remain untouched');
 assert.equal(memory.get(keys.activeWorkspace), 'command', 'Unselected preferences must remain untouched');
+assert.equal(memory.get(keys.shipyardSelection), 'archon');
 
 app.storage.importPayload(incoming, { sections: ['current', 'shipyardPlanner', 'newswireDraft', 'preferences'] });
 assert.equal(app.state.comms.subject, 'REMOTE CURRENT', 'Selected current message may be replaced');
 assert.deepEqual(memory.get(keys.shipyardPlanner), { target: 'remote-plan' });
 assert.deepEqual(memory.get(keys.newswireManagerDraft), { source: 'REMOTE NEWSWIRE' });
 assert.equal(memory.get(keys.activeWorkspace), 'comms');
+assert.equal(memory.get(keys.shipyardSelection), 'invincible', 'Ship selection travels with selected app settings');
 
 assert.throws(() => app.storage.inspectPayload({ format: 'rhw-webapp-local-cache', version: 99 }), /UNSUPPORTED CACHE FILE/);
 

@@ -137,28 +137,43 @@ const DASHBOARD_CONFIG = Object.freeze({
     })
   ]),
   capitalShipyard: Object.freeze({
-    components: Object.freeze([
-      Object.freeze({ name: 'Avionics Systems', required: 43 }),
-      Object.freeze({ name: 'Interior Systems', required: 65 }),
-      Object.freeze({ name: 'Propulsion Systems', required: 43 }),
-      Object.freeze({ name: 'Superstructure Systems', required: 65 }),
-      Object.freeze({ name: 'Reactor Systems', required: 44 }),
-      Object.freeze({ name: 'Exotic Systems', required: 47 })
-    ]),
+    defaultHull: 'archon',
     hulls: Object.freeze([
       Object.freeze({
         key: 'dunkirk',
+        label: 'Dunkirk',
+        plural: 'Dunkirks',
         name: 'Dunkirk-Class Battleship',
-        subtitle: 'Bretonian Capital Hull',
+        subtitle: 'Battleship',
+        recipeId: 'ship_assembly_dsy_br_battleship',
+        productId: 'dsy_br_battleship_package',
+        apiCode: 'dsy_br_battleship',
         matches: ['dsy_br_battleship', 'bretonia dunkirk class battleship', 'dunkirk class battleship', 'dunkirk battleship', 'dunkirk'],
         sellPrice: 8500000
       }),
       Object.freeze({
         key: 'invincible',
+        label: 'Invincible',
+        plural: 'Invincibles',
         name: 'Invincible-Class Dreadnought',
-        subtitle: 'Bretonian Capital Hull',
+        subtitle: 'Dreadnought',
+        recipeId: 'ship_assembly_dsy_br_carrier',
+        productId: 'dsy_br_carrier_package',
+        apiCode: 'dsy_br_carrier',
         matches: ['dsy_br_carrier', 'bretonia invincible class dreadnought', 'invincible class dreadnought', 'invincible dreadnought', 'invincible'],
         sellPrice: 8500000
+      }),
+      Object.freeze({
+        key: 'archon',
+        label: 'Archon',
+        plural: 'Archons',
+        name: 'Archon Modular Miner',
+        subtitle: 'Modular Miner',
+        recipeId: 'ship_assembly_medium_miner',
+        productId: 'medium_miner_package',
+        apiCode: 'medium_miner',
+        matches: ['medium_miner', 'medium_miner_package', 'modular miner', 'medium miner', 'archon modular miner', 'archon'],
+        sellPrice: null
       })
     ])
   }),
@@ -934,7 +949,7 @@ function strictestState(states = []) {
 
 function shipyardComponentAnalysis(item) {
   const key = commodityKey(item);
-  const component = CAPITAL_SHIPYARD?.components?.find(entry => keyFromName(entry.name) === key);
+  const component = window.RHWV4?.shipyard?.requirements()?.materials.find(entry => keyFromName(entry.name) === key);
   if (!component) return null;
   const required = Math.max(1, Number(component.required) || 1);
   const stock = item && !item.missing ? quantity(item) : 0;
@@ -1302,91 +1317,27 @@ function renderProductionModules() {
 ;
 
 /* SOURCE: js/command/shipyard.js */
-/* Shipyard hull API detection. */
-function hullApiCode(hull) {
-  return hull?.apiCode || (hull?.matches || []).find(value => normalize(value).startsWith('dsy_')) || '';
-}
-
-function detectHullApiItem(hull) {
-  const code = hullApiCode(hull);
-  const normalizedCode = normalizedAssetMatch(code);
-  if (normalizedCode) {
-    const exact = items.find(item => itemIdentityCandidates(item).includes(normalizedCode));
-    if (exact) return { item: exact, mode: 'EXACT API CODE', code };
-  }
-  const fallback = findCommodityByAliases(hull?.matches || []);
-  return fallback ? { item: fallback, mode: 'ALIAS MATCH', code } : { item: null, mode: 'NOT DETECTED', code };
-}
-
-function renderHullDetection() {
-  if (!hasVerifiedTelemetry() || !els.shipyardControl || !CAPITAL_SHIPYARD?.hulls?.length) return;
-
-  const rows = [...els.shipyardControl.querySelectorAll('.hull-registry-row')];
-  let detectedCount = 0;
-  CAPITAL_SHIPYARD.hulls.forEach((hull, index) => {
-    const row = rows[index];
-    if (!row) return;
-    const detection = detectHullApiItem(hull);
-    const detected = Boolean(detection.item);
-    if (detected) detectedCount += 1;
-
-    const name = row.querySelector('.hull-registry-name');
-    if (name) {
-      const status = document.createElement('small');
-      status.className = `hull-detection ${detected ? 'detected' : 'missing'}`;
-      status.textContent = detected
-        ? `${detection.mode} · ${detection.code || itemName(detection.item)}`
-        : `NOT DETECTED · EXPECTED ${detection.code || hull.matches?.[0] || 'API ITEM'}`;
-      name.appendChild(status);
-    }
-
-    if (!detected) {
-      row.classList.add('hull-not-detected');
-      const label = row.querySelector('.hull-registry-metric.stock small');
-      const value = row.querySelector('.hull-registry-metric.stock strong');
-      if (label) label.textContent = 'API Status';
-      if (value) {
-        if (value.dataset.scrambleInterval) window.clearInterval(Number(value.dataset.scrambleInterval));
-        value.dataset.finalText = 'NOT DETECTED';
-        value.textContent = 'NOT DETECTED';
-      }
-      row.querySelector('.hull-registry-progress .progress-wrap')?.setAttribute('aria-label', 'HULL API ITEM NOT DETECTED');
-    }
-  });
-
-  const states = els.shipyardControl.querySelector('.shipyard-control-states');
-  if (states) {
-    const badge = document.createElement('div');
-    const allDetected = detectedCount === CAPITAL_SHIPYARD.hulls.length;
-    badge.className = `shipyard-summary-badge state-${allDetected ? 'ok' : 'critical'}`;
-    badge.textContent = `API ${detectedCount}/${CAPITAL_SHIPYARD.hulls.length} DETECTED`;
-    states.appendChild(badge);
-  }
-}
-
-
+/* Shipyard view. Recipe quantities are owned by RHWV4.shipyard. */
 function normalizedAssetMatch(value) {
-  return normalize(value)
-    .replace(/[\"'`´‘’“”–—-]+/g, ' ')
-    .replace(/[^a-z0-9]+/g, ' ')
-    .trim()
-    .replace(/\s+/g, ' ');
+  return normalize(value).replace(/[\"'`´‘’“”–—_-]+/g, ' ')
+    .replace(/[^a-z0-9]+/g, ' ').trim().replace(/\s+/g, ' ');
 }
 
 function itemIdentityCandidates(item) {
-  return [
-    item?.name, item?.item_name, item?.nickname, item?.id,
-    item?.item_code, item?.itemCode, item?.code,
-    item?.archetype, item?.archetype_id, item?.arch_id
-  ].map(normalizedAssetMatch).filter(Boolean);
+  return [item?.name, item?.item_name, item?.nickname, item?.id, item?.item_code,
+    item?.itemCode, item?.code, item?.archetype, item?.archetype_id, item?.arch_id]
+    .map(normalizedAssetMatch).filter(Boolean);
 }
 
-function findCommodityByAliases(matches = []) {
-  const normalizedMatches = matches.map(normalizedAssetMatch).filter(Boolean);
-  if (!normalizedMatches.length) return null;
-  return items.find(item => itemIdentityCandidates(item).some(candidate =>
-    normalizedMatches.some(match => candidate === match || candidate.includes(match))
-  )) || null;
+function findShipyardItem(entry) {
+  const inventory = items.filter(item => !item.missing && !item.synthetic);
+  const codes = [entry.id, entry.productId, entry.apiCode].map(normalizedAssetMatch).filter(Boolean);
+  const exact = inventory.find(item => itemIdentityCandidates(item).some(value => codes.includes(value)));
+  if (exact) return exact;
+  const names = [entry.name, ...(entry.matches || [])].map(normalizedAssetMatch).filter(Boolean);
+  // Exact aliases prevent Archon Design Schematics, or similarly named modules,
+  // from being counted as finished ships.
+  return inventory.find(item => itemIdentityCandidates(item).some(value => names.includes(value))) || null;
 }
 
 function shipyardTrafficState(value) {
@@ -1397,169 +1348,89 @@ function shipyardTrafficState(value) {
 function renderShipyardControl() {
   const mount = els.shipyardControl;
   if (!mount) return;
-  if (!FEATURES.capitalShipyard) { mount.hidden = true; return; }
-  mount.hidden = false;
-  if (!CAPITAL_SHIPYARD) {
-    mount.innerHTML = '<div class="feature-empty shipyard-empty">CAPITAL SHIPYARD STANDBY<small>NO SHIPYARD CONFIGURATION LOADED</small></div>';
-    return;
-  }
-  if (!hasVerifiedTelemetry()) {
-    const failed = Boolean(lastSyncError);
-    mount.classList.remove('stale');
-    mount.innerHTML = `
-      <div class="shipyard-control-head">
-        <div class="shipyard-heading-copy">
-          <div class="section-kicker"><span>04</span> CAPITAL PRODUCTION</div>
-          <div class="shipyard-control-title">CAPITAL SHIPYARD CONTROL</div>
-          <div class="shipyard-control-subline">${failed ? 'NO VERIFIED RHW INVENTORY AVAILABLE' : 'AWAITING FIRST VERIFIED INVENTORY BURST'}</div>
-          <div class="section-freshness" data-freshness-badge hidden></div>
-        </div>
-        <div class="shipyard-control-states"><div class="shipyard-summary-badge state-${failed ? 'critical' : 'low'}">${failed ? 'UPLINK FAILED' : 'AWAITING UPLINK'}</div></div>
-      </div>
-      <div class="feature-empty shipyard-empty">SHIPYARD ANALYSIS UNAVAILABLE<small>${failed ? 'RETRY THE UPLINK TO ACQUIRE A VERIFIED INVENTORY' : 'COMPONENT AND HULL COUNTS WILL APPEAR AFTER THE FIRST SUCCESSFUL SYNC'}</small></div>`;
-    updateDataFreshnessIndicators();
-    return;
-  }
+  mount.hidden = !FEATURES.capitalShipyard;
+  if (mount.hidden) return;
+  const yard = window.RHWV4?.shipyard;
+  const analysis = yard?.analyze();
+  const snapshot = analysis?.snapshot || telemetrySnapshot();
+  const selected = yard?.selectedHull() || CAPITAL_SHIPYARD.hulls.find(hull => hull.key === CAPITAL_SHIPYARD.defaultHull);
+  mount.classList.toggle('stale', snapshot.stale);
 
-  mount.classList.toggle('stale', dataIsStale);
-
-  const componentData = CAPITAL_SHIPYARD.components.map(component => {
-    const item = findCommodity(component.name);
-    const stock = item ? quantity(item) : 0;
-    const required = Math.max(1, Number(component.required) || 1);
-    const coverage = Math.floor(stock / required);
-    const state = shipyardTrafficState(coverage);
-    return { ...component, stock, required, coverage, state };
-  });
-
-  const buildableHulls = componentData.length
-    ? Math.min(...componentData.map(component => component.coverage))
-    : 0;
-  const assemblyState = shipyardTrafficState(buildableHulls);
-  const assemblyStateText = buildableHulls <= 0
-    ? 'NO HULL READY'
-    : (buildableHulls === 1 ? '1 HULL READY' : `${number(buildableHulls)} HULLS READY`);
-
-  const nextHullTarget = buildableHulls + 1;
-  componentData.forEach(component => {
-    component.nextHullGap = Math.max(0, (nextHullTarget * component.required) - component.stock);
-    component.gapRatio = component.required > 0 ? component.nextHullGap / component.required : 0;
-  });
-
-  const bottleneck = componentData.reduce((current, component) => {
-    if (!current) return component;
-    if (component.coverage < current.coverage) return component;
-    if (component.coverage > current.coverage) return current;
-    if (component.gapRatio > current.gapRatio) return component;
-    if (component.gapRatio < current.gapRatio) return current;
-    return component.nextHullGap > current.nextHullGap ? component : current;
-  }, null);
-
-  const bottleneckName = bottleneck ? bottleneck.name : 'N/A';
-  const nextHullGap = bottleneck ? bottleneck.nextHullGap : 0;
-  const analysisLine = `BOTTLENECK ${bottleneckName.toUpperCase()} // NEXT HULL +${number(nextHullGap)}`;
-
-  const componentRows = componentData.map(component => {
-    const isBottleneck = bottleneck && keyFromName(component.name) === keyFromName(bottleneck.name);
-    return `
-      <div class="shipyard-component-row component-${component.state}${isBottleneck ? ' bottleneck' : ''}">
-        <div class="shipyard-component-name">${escapeHTML(component.name)}${typeof purchaseSourceButton === 'function' ? purchaseSourceButton(component.name, component.nextHullGap) : ''}</div>
-        <div class="shipyard-component-required" data-label="REQ / HULL">${number(component.required)}</div>
-        <div class="shipyard-component-stock scramble-shipyard" data-label="STOCK" data-val="${number(component.stock)}"></div>
-        <div class="shipyard-component-coverage scramble-shipyard" data-label="HULLS" data-val="${number(component.coverage)}x"></div>
-      </div>`;
+  const cards = CAPITAL_SHIPYARD.hulls.map(hull => {
+    const record = yard?.stockRecord(hull, snapshot) || { item: null, stock: null };
+    const boundary = record.item ? apiStockBoundary(record.item) : null;
+    const livePrice = record.item ? priceBuy(record.item) : null;
+    const price = livePrice ?? hull.sellPrice;
+    const stock = record.stock === null ? '—' : number(record.stock);
+    const stockText = record.stock !== null && boundary?.valid ? `${stock} / ${number(boundary.max)}` : stock;
+    return `<button type="button" class="shipyard-hull-card" data-shipyard-select="${hull.key}"
+      aria-pressed="${selected?.key === hull.key}" aria-controls="shipyardRequirements" aria-label="${escapeHTML(hull.name)} build requirements">
+      <span class="shipyard-hull-name">${escapeHTML(hull.label)}</span>
+      <span class="shipyard-hull-type">${escapeHTML(hull.subtitle)}</span>
+      <span class="shipyard-hull-stock-label">${record.stock === null ? 'STOCK UNKNOWN' : boundary?.valid ? 'STOCK / MAX' : 'IN STOCK'}</span>
+      <strong class="shipyard-hull-stock">${stockText}</strong>
+      <span class="shipyard-hull-price-label">${livePrice !== null ? 'SELL PRICE' : price !== null ? 'REFERENCE PRICE' : 'PRICE UNKNOWN'}</span>
+      <span class="shipyard-hull-price">${price === null ? '—' : formatCurrency(price)}</span>
+    </button>`;
   }).join('');
 
-  const hullData = CAPITAL_SHIPYARD.hulls.map(hull => {
-    const item = findCommodityByAliases(hull.matches);
-    const stock = item ? quantity(item) : 0;
-    const boundary = item ? apiStockBoundary(item) : { min: null, max: null, valid: false };
-    const livePrice = item ? priceBuy(item) : null;
-    const rawSellPrice = livePrice !== null && livePrice > 0 ? livePrice : hull.sellPrice;
-    const sellPrice = Math.round(rawSellPrice / 100000) * 100000;
-    const state = shipyardTrafficState(stock);
-    return { ...hull, item, stock, apiMin: boundary.min, apiMax: boundary.max, hasApiBoundary: boundary.valid, sellPrice, state };
-  });
-
-  const hullReserve = hullData.length ? Math.min(...hullData.map(hull => hull.stock)) : 0;
-  const registryState = shipyardTrafficState(hullReserve);
-  const registryStateText = hullReserve <= 0
-    ? 'RESERVE INCOMPLETE'
-    : (hullReserve === 1 ? '1 EACH IN RESERVE' : `${number(hullReserve)} EACH IN RESERVE`);
-
-  const hullRows = hullData.map(hull => {
-    const stockDisplay = hull.hasApiBoundary ? `${number(hull.stock)} / ${number(hull.apiMax)}` : number(hull.stock);
-    const stockLabel = hull.hasApiBoundary ? 'Stock / Max' : 'Stock';
-    const progress = hull.item
-      ? renderProgress(hull.item, { showApiReserve: true, stateOverride: hull.state })
-      : '<div class="progress-wrap hull-progress-unavailable" aria-label="HULL CAPACITY DATA UNAVAILABLE"><div class="progress-fill critical" style="width:0%"></div></div>';
-    return `
-      <div class="hull-registry-row hull-${hull.state}">
-        <div class="hull-registry-name">
-          ${escapeHTML(hull.name)}
-          <small>${escapeHTML(hull.subtitle || 'Capital Hull')}</small>
+  let details = `<div class="shipyard-data-note">${snapshot.available ? 'RECIPE DATA UNAVAILABLE' : 'AWAITING VERIFIED INVENTORY'}<small>Stock and material coverage will appear when the data is available.</small></div>`;
+  if (analysis?.recipeReady) {
+    const { hull, buildable, nextHull, bottleneck, materials, prerequisites } = analysis;
+    const state = buildable === null ? 'unknown' : shipyardTrafficState(buildable);
+    const unknown = materials.filter(row => row.stock === null);
+    const rows = materials.map(row => `<tr class="shipyard-material-row ${row.state}${row.id === bottleneck?.id ? ' bottleneck' : ''}" data-shipyard-material="${escapeHTML(row.id)}">
+      <th scope="row"><span>${escapeHTML(row.name)}</span>${row.gap > 0 && typeof purchaseSourceButton === 'function' ? purchaseSourceButton(row.name, row.gap) : ''}</th>
+      <td data-label="PER SHIP">${number(row.required)}</td><td data-label="STOCK">${row.stock === null ? '—' : number(row.stock)}</td>
+      <td data-label="MISSING" class="shipyard-material-gap">${row.gap === null ? '—' : row.gap > 0 ? `+${number(row.gap)}` : '—'}</td>
+    </tr>`).join('');
+    const prerequisiteRows = prerequisites.map(row => `<li class="shipyard-prerequisite ${row.state}">
+      <span><strong>${escapeHTML(row.name)}</strong><small>${number(row.qty)} required · not consumed</small></span>
+      <span class="shipyard-prerequisite-status">${row.state === 'unknown' ? 'NOT REPORTED' : row.state === 'ok' ? 'AVAILABLE' : `MISSING ${number(row.qty - row.stock)}`}</span>
+    </li>`).join('');
+    details = `<div class="shipyard-decision-strip" aria-label="${escapeHTML(hull.label)} material coverage">
+        <div class="shipyard-decision-metric state-${state}"><small>MATERIAL FOR</small><strong>${buildable === null ? 'UNKNOWN' : `${number(buildable)} ${escapeHTML(buildable === 1 ? hull.label : hull.plural).toUpperCase()}`}</strong></div>
+        <div class="shipyard-decision-metric state-${state}"><small>BOTTLENECK</small><strong>${bottleneck ? escapeHTML(bottleneck.name) : 'STOCK UNKNOWN'}</strong></div>
+        <div class="shipyard-decision-metric state-${state}"><small>${nextHull === null ? 'NEXT SHIP' : `NEXT SHIP #${number(nextHull)}`}</small><strong>${bottleneck ? `+${number(bottleneck.gap)} ${escapeHTML(bottleneck.name)}` : 'AWAITING STOCK'}</strong></div>
+      </div>
+      ${unknown.length ? `<p class="shipyard-data-note">Stock not reported: ${unknown.map(row => escapeHTML(row.name)).join(', ')}. Coverage remains unknown.</p>` : ''}
+      <div class="shipyard-requirement-body">
+        <div class="shipyard-materials">
+          <p class="shipyard-material-note">Requirements per ship${nextHull === null ? '' : ` · Missing quantities are for ship #${number(nextHull)}`}${snapshot.stale ? ' · Based on cached stock' : ''}.</p>
+          <table class="shipyard-material-table"><thead><tr><th>COMPONENT</th><th>PER SHIP</th><th>STOCK</th><th>MISSING</th></tr></thead><tbody>${rows}</tbody></table>
         </div>
-        <div class="hull-registry-metric stock">
-          <small>${stockLabel}</small>
-          <strong class="scramble-shipyard" data-val="${stockDisplay}"></strong>
-        </div>
-        <div class="hull-registry-metric price">
-          <small>Sell Price</small>
-          <strong class="scramble-shipyard" data-val="${formatCurrency(hull.sellPrice)}"></strong>
-        </div>
-        <div class="hull-registry-progress">${progress}</div>
+        <aside class="shipyard-prerequisites"><h3>BUILD PREREQUISITES</h3><p>Required separately from the material coverage above.</p>
+          <ul>${prerequisiteRows}</ul>
+          <p>Shipyard level ${number(analysis.recipe.reqLevel)} required. ${escapeHTML(analysis.recipe.restricted ? 'RHW BMM recipe.' : 'Civilian assembly recipe.')}</p>
+        </aside>
       </div>`;
-  }).join('');
+  }
 
-  mount.innerHTML = `
-    <div class="shipyard-control-head">
-      <div class="shipyard-heading-copy">
-        <div class="section-kicker"><span>04</span> CAPITAL PRODUCTION</div>
-        <div class="shipyard-control-title">CAPITAL SHIPYARD CONTROL</div>
-        <div class="shipyard-control-subline">${escapeHTML(analysisLine)}</div>
-        <div class="section-freshness" data-freshness-badge hidden></div>
-      </div>
-      <div class="shipyard-control-states">
-        <div class="shipyard-summary-badge state-${assemblyState}">ASSEMBLY ${escapeHTML(assemblyStateText)}</div>
-        <div class="shipyard-summary-badge state-${registryState}">HULL ${escapeHTML(registryStateText)}</div>
-      </div>
-    </div>
-    <div class="shipyard-decision-strip" aria-label="Shipyard readiness summary">
-      <div class="shipyard-decision-metric state-${assemblyState}">
-        <small>BUILDABLE NOW</small>
-        <strong>${number(buildableHulls)} HULL${buildableHulls === 1 ? '' : 'S'}</strong>
-      </div>
-      <div class="shipyard-decision-metric state-${assemblyState}">
-        <small>BOTTLENECK</small>
-        <strong>${escapeHTML(bottleneckName.toUpperCase())}</strong>
-      </div>
-      <div class="shipyard-decision-metric state-${nextHullGap > 0 ? 'critical' : 'ok'}">
-        <small>MISSING FOR NEXT HULL</small>
-        <strong>${nextHullGap > 0 ? `+${number(nextHullGap)} ${escapeHTML(bottleneckName.toUpperCase())}` : 'READY'}</strong>
-      </div>
+  const markup = `<div class="shipyard-control-head">
+      <div class="shipyard-heading-copy"><h2 class="shipyard-control-title">SHIPYARD</h2><p class="shipyard-control-subline">STOCK &amp; BUILD REQUIREMENTS</p></div>
+      <div class="section-freshness" data-freshness-badge hidden></div>
     </div>
     <div class="shipyard-control-grid">
-      <section class="shipyard-control-section shipyard-reserve-panel state-${assemblyState}">
-        <div class="shipyard-section-head">
-          <div class="shipyard-section-title">Capital Component Reserve</div>
-          <div class="shipyard-panel-state state-${assemblyState}">${escapeHTML(assemblyStateText)}</div>
-        </div>
-        <div class="shipyard-component-head"><span>Component</span><span>Req / Hull</span><span>Stock</span><span>Hulls</span></div>
-        <div class="shipyard-component-list">${componentRows}</div>
+      <section class="shipyard-control-section shipyard-registry-panel" aria-label="Select a ship">
+        <div class="shipyard-hull-grid" role="group" aria-label="Ship inventory and selection">${cards}</div>
       </section>
-      <section class="shipyard-control-section shipyard-registry-panel state-${registryState}">
-        <div class="shipyard-section-head">
-          <div class="shipyard-section-title">Hull Registry</div>
-          <div class="shipyard-panel-state state-${registryState}">${escapeHTML(registryStateText)}</div>
-        </div>
-        <div class="hull-registry-list">${hullRows}</div>
+      <section class="shipyard-control-section shipyard-requirements-panel" id="shipyardRequirements" aria-labelledby="shipyardRequirementsTitle">
+        <div class="shipyard-requirements-heading"><h3 id="shipyardRequirementsTitle">Build Requirements <span>— ${escapeHTML(selected.label)}</span></h3>
+          <button type="button" class="shipyard-plan-button" data-shipyard-calculate ${analysis?.recipeReady ? '' : 'disabled'}>PRICE 1 SHIP</button>
+        </div>${details}
       </section>
     </div>`;
-
-  window.RHWRuntime?.rendered('shipyard');
-  mount.querySelectorAll('.scramble-shipyard').forEach(el => scrambleText(el, el.dataset.val));
+  if (mount._shipyardMarkup !== markup) {
+    const active = document.activeElement;
+    const focusSelector = mount.contains(active) ? active?.dataset?.shipyardSelect
+      ? `[data-shipyard-select="${active.dataset.shipyardSelect}"]`
+      : active?.hasAttribute('data-shipyard-calculate') ? '[data-shipyard-calculate]' : null : null;
+    mount.innerHTML = markup;
+    mount._shipyardMarkup = markup;
+    if (focusSelector) mount.querySelector(focusSelector)?.focus({ preventScroll: true });
+  }
   updateDataFreshnessIndicators();
-  renderHullDetection();
+  window.RHWRuntime?.rendered('shipyard');
 }
 
 ;

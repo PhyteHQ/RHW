@@ -58,9 +58,9 @@ numeric order is explicit, and thrown failures reach the boot failure surface.
 | Owner phase | Extension order |
 | --- | --- |
 | `shell:ready` | Workspace labels → primary navigation → Price Check |
-| `command:ready` | Status navigation → shared controls → surfaces → Logistics views → Inventory toolbar |
+| `command:ready` | Status navigation → shared controls → surfaces → Logistics views → Inventory toolbar → Shipyard selection |
 | `command:before-activate` / `command:activated` | Scroll preparation, then status/control updates with previous and current node |
-| `catalog:loaded` | Discovery semantics → recipe labels |
+| `catalog:loaded` | Discovery semantics → recipe labels → Shipyard requirements |
 | `calculator:before-init` / `calculator:ready` | Session reset, then Production bridge → costing display → profiles → navigation → labels |
 | `forum:ready` / `forum:activated` | Mobile views → workspace navigation |
 | `discovery:ready` | Data-status tool placement |
@@ -70,6 +70,15 @@ Modules must not replace another module's `init`, `activate`, `installShell`,
 selects affiliation outputs without temporarily mutating shared catalog data.
 Session-only material prices are enforced at the single storage write boundary;
 named price profiles remain persistent.
+
+The Shipyard's hull registry in `js/command/config.js` contains identities and
+recipe IDs, not a separate set of component quantities. `shipyard-model.js`
+uses the Calculator's direct material plan with RHW's BMM affiliation for each
+selected ship. The Archon uses the civilian recipe, including its blueprint.
+Reusable catalysts are displayed separately from consumed materials. Material
+coverage is an alternative use of the shared inventory, never a reservation or
+a sum of concurrently buildable ships. Unknown stock remains unknown; cached
+stock is labelled. Selection is a local preference and is included in backups.
 
 ## Rendering and background work
 

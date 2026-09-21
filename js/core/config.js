@@ -13,6 +13,7 @@ const RHW_APP_CONFIG = Object.freeze({
     activeWorkspace: 'rhw-webapp-v4:workspace',
     commandNode: 'rhw-webapp-v4:command-node',
     inventoryView: 'rhw-webapp-v4:inventory-view',
+    shipyardSelection: 'rhw-webapp-v4:shipyard-selection',
     operationsNode: 'rhw-webapp-v4:operations-node',
     calculatorState: 'rhw-webapp-v4:calculator-state',
     priceCheckOverrides: 'rhw-webapp-v4:price-check-overrides',
@@ -30,11 +31,7 @@ const RHW_APP_CONFIG = Object.freeze({
   operations: Object.freeze({
     defaultProduct: 'dsy_br_battleship_package',
     defaultAffiliation: 'br_m_grp',
-    maxTreeDepth: 18,
-    shipyardTargets: Object.freeze({
-      dunkirk: 'dsy_br_battleship_package',
-      invincible: 'dsy_br_carrier_package'
-    })
+    maxTreeDepth: 18
   }),
   forum: Object.freeze({
     // Exported BBCode needs an absolute public URL; the local preview works offline.

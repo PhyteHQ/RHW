@@ -9,7 +9,7 @@
 
   const NODES = Object.freeze([
     ['inventory', 'INVENTORY', 'STOCK + MANIFEST'],
-    ['shipyard', 'SHIPYARD', 'CAPITAL HULLS'],
+    ['shipyard', 'SHIPYARD', 'SHIPS + MATERIALS'],
     ['production', 'PRODUCTION', 'RECIPE CONTROL'],
     ['logistics', 'LOGISTICS', 'REMOTE SUPPLY']
   ]);
@@ -26,7 +26,7 @@
       </div>
       <div class="command-overview-grid">
         <button type="button" class="command-overview-card" data-command-jump="inventory" data-state="waiting"><small>INVENTORY HEALTH</small><strong id="v40OverviewInventory">SCANNING</strong><span id="v40OverviewInventoryMeta">AWAITING STATUS</span></button>
-        <button type="button" class="command-overview-card" data-command-jump="shipyard" data-state="waiting"><small>CAPITAL SHIPYARD</small><strong id="v40OverviewShipyard">SCANNING</strong><span id="v40OverviewShipyardMeta">AWAITING YARD CONTROL</span></button>
+        <button type="button" class="command-overview-card" data-command-jump="shipyard" data-state="waiting"><small>SHIPYARD</small><strong id="v40OverviewShipyard">SCANNING</strong><span id="v40OverviewShipyardMeta">AWAITING YARD CONTROL</span></button>
         <button type="button" class="command-overview-card" data-command-jump="production" data-state="waiting"><small>PRODUCTION FLOOR</small><strong id="v40OverviewProduction">SCANNING</strong><span id="v40OverviewProductionMeta">AWAITING MODULE DATA</span></button>
         <button type="button" class="command-overview-card" data-command-jump="logistics" data-state="waiting"><small>REMOTE LOGISTICS</small><strong id="v40OverviewLogistics">SCANNING</strong><span id="v40OverviewLogisticsMeta">AWAITING SAT-LINK</span></button>
       </div>
@@ -64,29 +64,7 @@
   }
 
   function shipyardAnalysis() {
-    try {
-      /* CAPITAL_SHIPYARD is a top-level const in the stable dashboard. Classic-script
-         lexical globals are visible by identifier to later scripts, but not as window properties. */
-      if (typeof CAPITAL_SHIPYARD === 'undefined' || !CAPITAL_SHIPYARD?.components?.length || typeof window.stockFor !== 'function') return null;
-      const data = CAPITAL_SHIPYARD.components.map(component => {
-        const required = Math.max(1, Number(component.required) || 1);
-        const stock = Number(stockFor(component.name)) || 0;
-        return { ...component, required, stock, coverage: Math.floor(stock / required) };
-      });
-      const buildable = Math.min(...data.map(component => component.coverage));
-      const next = buildable + 1;
-      data.forEach(component => {
-        component.gap = Math.max(0, next * component.required - component.stock);
-        component.ratio = component.required ? component.gap / component.required : 0;
-      });
-      const bottleneck = data.reduce((best, current) => {
-        if (!best) return current;
-        if (current.coverage !== best.coverage) return current.coverage < best.coverage ? current : best;
-        if (current.ratio !== best.ratio) return current.ratio > best.ratio ? current : best;
-        return current.gap > best.gap ? current : best;
-      }, null);
-      return { buildable, bottleneck };
-    } catch { return null; }
+    return app.shipyard?.analyze() || null;
   }
 
   function productionAnalysis() {
@@ -128,12 +106,12 @@
     });
 
     const yard = shipyardAnalysis();
-    if (yard && yard.buildable <= 1 && yard.bottleneck) actions.push({
+    if (yard?.buildable !== null && yard?.buildable <= 1 && yard.bottleneck) actions.push({
       state: yard.buildable <= 0 ? 'critical' : 'low',
       node: 'shipyard',
       target: yard.bottleneck.name,
-      title: `SHIPYARD // ${yard.buildable <= 0 ? 'NO HULL READY' : 'RESERVE THIN'}`,
-      meta: `NEXT HULL NEEDS +${app.util.number(yard.bottleneck.gap)} ${String(yard.bottleneck.name).toUpperCase()}`
+      title: `SHIPYARD // MATERIAL FOR ${yard.buildable} ${yard.hull.label.toUpperCase()}`,
+      meta: `SHIP #${yard.nextHull} NEEDS +${app.util.number(yard.bottleneck.gap)} ${String(yard.bottleneck.name).toUpperCase()}`
     });
 
     const order = { critical: 0, low: 1, ok: 2 };
@@ -198,9 +176,10 @@
     setOverviewState('v40OverviewInventory', critical ? 'critical' : (low ? 'low' : 'ok'));
 
     const yard = shipyardAnalysis();
-    write('v40OverviewShipyard', yard ? `${app.util.number(yard.buildable)} HULL${yard.buildable === 1 ? '' : 'S'} READY` : 'YARD ONLINE');
-    write('v40OverviewShipyardMeta', yard?.bottleneck ? `NEXT HULL // ${String(yard.bottleneck.name).toUpperCase()} +${app.util.number(yard.bottleneck.gap)}` : 'CAPITAL CONTROL AVAILABLE');
-    setOverviewState('v40OverviewShipyard', yard ? (yard.buildable <= 0 ? 'critical' : (yard.buildable === 1 ? 'low' : 'ok')) : 'ok');
+    const yardKnown = yard?.buildable !== null && yard?.buildable !== undefined;
+    write('v40OverviewShipyard', yardKnown ? `MATERIAL FOR ${app.util.number(yard.buildable)} ${String(yard.buildable === 1 ? yard.hull.label : yard.hull.plural).toUpperCase()}` : 'YARD DATA UNKNOWN');
+    write('v40OverviewShipyardMeta', yard?.bottleneck ? `NEXT ${yard.hull.label.toUpperCase()} // ${String(yard.bottleneck.name).toUpperCase()} +${app.util.number(yard.bottleneck.gap)}` : 'AWAITING RECIPE AND STOCK DATA');
+    setOverviewState('v40OverviewShipyard', yardKnown ? (yard.buildable <= 0 ? 'critical' : (yard.buildable === 1 ? 'low' : 'ok')) : 'waiting');
 
     const production = productionAnalysis();
     const weakest = production[0];

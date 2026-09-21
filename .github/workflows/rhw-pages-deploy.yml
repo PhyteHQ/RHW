@@ -60,6 +60,9 @@ jobs:
       - name: Validate Price Check provenance and backup
         run: node scripts/test_price_check.js
 
+      - name: Validate shipyard recipes and inventory
+        run: node scripts/test_shipyard.js
+
       - name: Validate Logistics market scans
         run: node scripts/test_logistics_scans.js
 

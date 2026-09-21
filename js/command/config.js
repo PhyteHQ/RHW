@@ -66,28 +66,43 @@ const DASHBOARD_CONFIG = Object.freeze({
     })
   ]),
   capitalShipyard: Object.freeze({
-    components: Object.freeze([
-      Object.freeze({ name: 'Avionics Systems', required: 43 }),
-      Object.freeze({ name: 'Interior Systems', required: 65 }),
-      Object.freeze({ name: 'Propulsion Systems', required: 43 }),
-      Object.freeze({ name: 'Superstructure Systems', required: 65 }),
-      Object.freeze({ name: 'Reactor Systems', required: 44 }),
-      Object.freeze({ name: 'Exotic Systems', required: 47 })
-    ]),
+    defaultHull: 'archon',
     hulls: Object.freeze([
       Object.freeze({
         key: 'dunkirk',
+        label: 'Dunkirk',
+        plural: 'Dunkirks',
         name: 'Dunkirk-Class Battleship',
-        subtitle: 'Bretonian Capital Hull',
+        subtitle: 'Battleship',
+        recipeId: 'ship_assembly_dsy_br_battleship',
+        productId: 'dsy_br_battleship_package',
+        apiCode: 'dsy_br_battleship',
         matches: ['dsy_br_battleship', 'bretonia dunkirk class battleship', 'dunkirk class battleship', 'dunkirk battleship', 'dunkirk'],
         sellPrice: 8500000
       }),
       Object.freeze({
         key: 'invincible',
+        label: 'Invincible',
+        plural: 'Invincibles',
         name: 'Invincible-Class Dreadnought',
-        subtitle: 'Bretonian Capital Hull',
+        subtitle: 'Dreadnought',
+        recipeId: 'ship_assembly_dsy_br_carrier',
+        productId: 'dsy_br_carrier_package',
+        apiCode: 'dsy_br_carrier',
         matches: ['dsy_br_carrier', 'bretonia invincible class dreadnought', 'invincible class dreadnought', 'invincible dreadnought', 'invincible'],
         sellPrice: 8500000
+      }),
+      Object.freeze({
+        key: 'archon',
+        label: 'Archon',
+        plural: 'Archons',
+        name: 'Archon Modular Miner',
+        subtitle: 'Modular Miner',
+        recipeId: 'ship_assembly_medium_miner',
+        productId: 'medium_miner_package',
+        apiCode: 'medium_miner',
+        matches: ['medium_miner', 'medium_miner_package', 'modular miner', 'medium miner', 'archon modular miner', 'archon'],
+        sellPrice: null
       })
     ])
   }),

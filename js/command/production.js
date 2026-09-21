@@ -37,7 +37,7 @@ function strictestState(states = []) {
 
 function shipyardComponentAnalysis(item) {
   const key = commodityKey(item);
-  const component = CAPITAL_SHIPYARD?.components?.find(entry => keyFromName(entry.name) === key);
+  const component = window.RHWV4?.shipyard?.requirements()?.materials.find(entry => keyFromName(entry.name) === key);
   if (!component) return null;
   const required = Math.max(1, Number(component.required) || 1);
   const stock = item && !item.missing ? quantity(item) : 0;

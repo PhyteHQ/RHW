@@ -85,6 +85,7 @@ const RHW_APP_CONFIG = Object.freeze({
     activeWorkspace: 'rhw-webapp-v4:workspace',
     commandNode: 'rhw-webapp-v4:command-node',
     inventoryView: 'rhw-webapp-v4:inventory-view',
+    shipyardSelection: 'rhw-webapp-v4:shipyard-selection',
     operationsNode: 'rhw-webapp-v4:operations-node',
     calculatorState: 'rhw-webapp-v4:calculator-state',
     priceCheckOverrides: 'rhw-webapp-v4:price-check-overrides',
@@ -102,11 +103,7 @@ const RHW_APP_CONFIG = Object.freeze({
   operations: Object.freeze({
     defaultProduct: 'dsy_br_battleship_package',
     defaultAffiliation: 'br_m_grp',
-    maxTreeDepth: 18,
-    shipyardTargets: Object.freeze({
-      dunkirk: 'dsy_br_battleship_package',
-      invincible: 'dsy_br_carrier_package'
-    })
+    maxTreeDepth: 18
   }),
   forum: Object.freeze({
     // Exported BBCode needs an absolute public URL; the local preview works offline.
@@ -921,7 +918,7 @@ const RHW_APP_CONFIG = Object.freeze({
 
   const preferenceKeys = Object.freeze([
     'activeWorkspace', 'commandNode', 'inventoryView', 'operationsNode', 'commsNode', 'tickerComposer',
-    'commsMobileView'
+    'commsMobileView', 'shipyardSelection'
   ]);
   const transferSectionKeys = Object.freeze([
     'drafts', 'senders', 'current', 'priceProfiles', 'priceCheckOverrides', 'shipyardPlanner', 'newswireDraft', 'productionOrders', 'preferences'
@@ -1098,7 +1095,7 @@ const RHW_APP_CONFIG = Object.freeze({
 
   const NODES = Object.freeze([
     ['inventory', 'INVENTORY', 'STOCK + MANIFEST'],
-    ['shipyard', 'SHIPYARD', 'CAPITAL HULLS'],
+    ['shipyard', 'SHIPYARD', 'SHIPS + MATERIALS'],
     ['production', 'PRODUCTION', 'RECIPE CONTROL'],
     ['logistics', 'LOGISTICS', 'REMOTE SUPPLY']
   ]);
@@ -1115,7 +1112,7 @@ const RHW_APP_CONFIG = Object.freeze({
       </div>
       <div class="command-overview-grid">
         <button type="button" class="command-overview-card" data-command-jump="inventory" data-state="waiting"><small>INVENTORY HEALTH</small><strong id="v40OverviewInventory">SCANNING</strong><span id="v40OverviewInventoryMeta">AWAITING STATUS</span></button>
-        <button type="button" class="command-overview-card" data-command-jump="shipyard" data-state="waiting"><small>CAPITAL SHIPYARD</small><strong id="v40OverviewShipyard">SCANNING</strong><span id="v40OverviewShipyardMeta">AWAITING YARD CONTROL</span></button>
+        <button type="button" class="command-overview-card" data-command-jump="shipyard" data-state="waiting"><small>SHIPYARD</small><strong id="v40OverviewShipyard">SCANNING</strong><span id="v40OverviewShipyardMeta">AWAITING YARD CONTROL</span></button>
         <button type="button" class="command-overview-card" data-command-jump="production" data-state="waiting"><small>PRODUCTION FLOOR</small><strong id="v40OverviewProduction">SCANNING</strong><span id="v40OverviewProductionMeta">AWAITING MODULE DATA</span></button>
         <button type="button" class="command-overview-card" data-command-jump="logistics" data-state="waiting"><small>REMOTE LOGISTICS</small><strong id="v40OverviewLogistics">SCANNING</strong><span id="v40OverviewLogisticsMeta">AWAITING SAT-LINK</span></button>
       </div>
@@ -1153,29 +1150,7 @@ const RHW_APP_CONFIG = Object.freeze({
   }
 
   function shipyardAnalysis() {
-    try {
-      /* CAPITAL_SHIPYARD is a top-level const in the stable dashboard. Classic-script
-         lexical globals are visible by identifier to later scripts, but not as window properties. */
-      if (typeof CAPITAL_SHIPYARD === 'undefined' || !CAPITAL_SHIPYARD?.components?.length || typeof window.stockFor !== 'function') return null;
-      const data = CAPITAL_SHIPYARD.components.map(component => {
-        const required = Math.max(1, Number(component.required) || 1);
-        const stock = Number(stockFor(component.name)) || 0;
-        return { ...component, required, stock, coverage: Math.floor(stock / required) };
-      });
-      const buildable = Math.min(...data.map(component => component.coverage));
-      const next = buildable + 1;
-      data.forEach(component => {
-        component.gap = Math.max(0, next * component.required - component.stock);
-        component.ratio = component.required ? component.gap / component.required : 0;
-      });
-      const bottleneck = data.reduce((best, current) => {
-        if (!best) return current;
-        if (current.coverage !== best.coverage) return current.coverage < best.coverage ? current : best;
-        if (current.ratio !== best.ratio) return current.ratio > best.ratio ? current : best;
-        return current.gap > best.gap ? current : best;
-      }, null);
-      return { buildable, bottleneck };
-    } catch { return null; }
+    return app.shipyard?.analyze() || null;
   }
 
   function productionAnalysis() {
@@ -1217,12 +1192,12 @@ const RHW_APP_CONFIG = Object.freeze({
     });
 
     const yard = shipyardAnalysis();
-    if (yard && yard.buildable <= 1 && yard.bottleneck) actions.push({
+    if (yard?.buildable !== null && yard?.buildable <= 1 && yard.bottleneck) actions.push({
       state: yard.buildable <= 0 ? 'critical' : 'low',
       node: 'shipyard',
       target: yard.bottleneck.name,
-      title: `SHIPYARD // ${yard.buildable <= 0 ? 'NO HULL READY' : 'RESERVE THIN'}`,
-      meta: `NEXT HULL NEEDS +${app.util.number(yard.bottleneck.gap)} ${String(yard.bottleneck.name).toUpperCase()}`
+      title: `SHIPYARD // MATERIAL FOR ${yard.buildable} ${yard.hull.label.toUpperCase()}`,
+      meta: `SHIP #${yard.nextHull} NEEDS +${app.util.number(yard.bottleneck.gap)} ${String(yard.bottleneck.name).toUpperCase()}`
     });
 
     const order = { critical: 0, low: 1, ok: 2 };
@@ -1287,9 +1262,10 @@ const RHW_APP_CONFIG = Object.freeze({
     setOverviewState('v40OverviewInventory', critical ? 'critical' : (low ? 'low' : 'ok'));
 
     const yard = shipyardAnalysis();
-    write('v40OverviewShipyard', yard ? `${app.util.number(yard.buildable)} HULL${yard.buildable === 1 ? '' : 'S'} READY` : 'YARD ONLINE');
-    write('v40OverviewShipyardMeta', yard?.bottleneck ? `NEXT HULL // ${String(yard.bottleneck.name).toUpperCase()} +${app.util.number(yard.bottleneck.gap)}` : 'CAPITAL CONTROL AVAILABLE');
-    setOverviewState('v40OverviewShipyard', yard ? (yard.buildable <= 0 ? 'critical' : (yard.buildable === 1 ? 'low' : 'ok')) : 'ok');
+    const yardKnown = yard?.buildable !== null && yard?.buildable !== undefined;
+    write('v40OverviewShipyard', yardKnown ? `MATERIAL FOR ${app.util.number(yard.buildable)} ${String(yard.buildable === 1 ? yard.hull.label : yard.hull.plural).toUpperCase()}` : 'YARD DATA UNKNOWN');
+    write('v40OverviewShipyardMeta', yard?.bottleneck ? `NEXT ${yard.hull.label.toUpperCase()} // ${String(yard.bottleneck.name).toUpperCase()} +${app.util.number(yard.bottleneck.gap)}` : 'AWAITING RECIPE AND STOCK DATA');
+    setOverviewState('v40OverviewShipyard', yardKnown ? (yard.buildable <= 0 ? 'critical' : (yard.buildable === 1 ? 'low' : 'ok')) : 'waiting');
 
     const production = productionAnalysis();
     const weakest = production[0];
@@ -2672,6 +2648,115 @@ window.__RHW_RECIPE_CATALOG_GZIP_BASE64__ = (window.__RHW_RECIPE_CATALOG_GZIP_BA
 
 ;
 
+/* SOURCE: js/command/shipyard-model.js */
+/* Ship-specific stock and requirements, using the Calculator's recipe planner. */
+(function initRhwShipyard() {
+  'use strict';
+  const app = window.RHWV4;
+  const core = app?.operationsCore;
+  if (!core || typeof CAPITAL_SHIPYARD === 'undefined') return;
+  const config = CAPITAL_SHIPYARD;
+  const key = app.config.storageKeys.shipyardSelection;
+  const plans = new Map();
+  app.state.shipyardHull = app.store.get(key, config.defaultHull);
+
+  function selectedHull() {
+    return config.hulls.find(hull => hull.key === app.state.shipyardHull)
+      || config.hulls.find(hull => hull.key === config.defaultHull) || config.hulls[0];
+  }
+
+  function requirements(hull = selectedHull()) {
+    if (!core.state.catalog || !hull) return null;
+    if (plans.has(hull.key)) return plans.get(hull.key);
+    try {
+      const recipe = core.recipe(hull.recipeId);
+      if (!recipe || !recipe.outputs.some(output => output.id === hull.productId)) return null;
+      const plan = core.buildPlan({ productId: hull.productId, recipeId: hull.recipeId,
+        quantity: 1, affiliationId: app.config.operations.defaultAffiliation,
+        recursive: false, useInventory: false });
+      const materials = core.materialRows(plan);
+      if (plan.actualOutput !== 1 || !materials.length || materials.some(row => !(row.required > 0))) return null;
+      const result = { recipe, materials, prerequisites: plan.catalysts, affiliationId: plan.affiliationId };
+      plans.set(hull.key, result);
+      return result;
+    } catch {
+      // An unavailable or newly restricted recipe must never fall back to the
+      // requirements of a different ship or claim that zero materials suffice.
+      return null;
+    }
+  }
+
+  function stockRecord(entry, snapshot = telemetrySnapshot()) {
+    if (!snapshot.available) return { item: null, stock: null };
+    const item = findShipyardItem(entry);
+    const stock = item ? firstFiniteApiStockValue(item, ['quantity', 'amount', 'stock']) : null;
+    return { item, stock };
+  }
+
+  function analyze(hull = selectedHull()) {
+    const snapshot = telemetrySnapshot();
+    const needs = requirements(hull);
+    if (!needs) return { hull, snapshot, recipeReady: false, materials: [], prerequisites: [], buildable: null, bottleneck: null };
+    const materials = needs.materials.map(entry => {
+      const { stock } = stockRecord(entry, snapshot);
+      return { ...entry, stock, coverage: stock === null ? null : Math.floor(stock / entry.required) };
+    });
+    const known = materials.every(entry => entry.stock !== null);
+    const buildable = known ? Math.min(...materials.map(entry => entry.coverage)) : null;
+    const nextHull = buildable === null ? null : buildable + 1;
+    materials.forEach(entry => {
+      entry.gap = nextHull === null ? null : Math.max(0, nextHull * entry.required - entry.stock);
+      entry.state = entry.coverage === null ? 'unknown' : shipyardTrafficState(entry.coverage);
+    });
+    const bottleneck = known ? [...materials].sort((a, b) => a.coverage - b.coverage
+      || b.gap / b.required - a.gap / a.required || b.gap - a.gap)[0] : null;
+    const prerequisites = needs.prerequisites.map(entry => {
+      const { stock } = stockRecord(entry, snapshot);
+      return { ...entry, stock, state: stock === null ? 'unknown' : stock >= entry.qty ? 'ok' : 'critical' };
+    });
+    return { hull, snapshot, recipeReady: true, recipe: needs.recipe, materials, prerequisites, buildable, nextHull, bottleneck };
+  }
+
+  function selectHull(hullKey) {
+    const hull = config.hulls.find(entry => entry.key === hullKey);
+    if (!hull) return false;
+    app.state.shipyardHull = hull.key;
+    app.store.set(key, hull.key);
+    window.renderAll?.();
+    app.requestUiUpdate?.();
+    return true;
+  }
+
+  function openCalculator() {
+    const hull = selectedHull();
+    const needs = requirements(hull);
+    if (!needs) return;
+    app.operations?.openSelection({ productId: hull.productId, recipeId: hull.recipeId,
+      quantity: 1, affiliationId: needs.affiliationId, productName: hull.name });
+  }
+
+  function bind() {
+    const mount = document.getElementById('shipyardControl');
+    if (!mount || mount.dataset.shipyardBound === 'true') return;
+    mount.dataset.shipyardBound = 'true';
+    mount.addEventListener('click', event => {
+      const selection = event.target.closest('[data-shipyard-select]');
+      if (selection) selectHull(selection.dataset.shipyardSelect);
+      else if (event.target.closest('[data-shipyard-calculate]')) openCalculator();
+    });
+  }
+
+  app.shipyard = { selectedHull, requirements, stockRecord, analyze, selectHull, openCalculator };
+  app.lifecycle.on('command:ready', 'shipyard-selection', 60, bind);
+  app.lifecycle.on('catalog:loaded', 'shipyard-requirements', 40, () => {
+    plans.clear();
+    window.renderAll?.();
+    app.requestUiUpdate?.();
+  });
+})();
+
+;
+
 /* SOURCE: js/calculator/ui.js */
 /* ==========================================================================
    RHW WEB APP · V4.0 OPERATIONS UI
@@ -3159,25 +3244,6 @@ window.__RHW_RECIPE_CATALOG_GZIP_BASE64__ = (window.__RHW_RECIPE_CATALOG_GZIP_BA
 
   }
 
-  function installShipyardBridge() {
-    const mount = document.getElementById('shipyardControl');
-    if (!mount || mount.dataset.v40PlannerBridge === 'true') return;
-    mount.dataset.v40PlannerBridge = 'true';
-    const enhance = () => mount.querySelectorAll('.hull-registry-row').forEach(row => {
-      if (row.querySelector('.shipyard-plan-button')) return;
-      const label = row.querySelector('.hull-registry-name'); if (!label) return;
-      const text = app.util.normalize(label.textContent);
-      const target = text.includes('dunkirk') ? app.config.operations.shipyardTargets.dunkirk : text.includes('invincible') ? app.config.operations.shipyardTargets.invincible : null;
-      if (!target) return;
-      const button = document.createElement('button');
-      button.type = 'button'; button.className = 'shipyard-plan-button'; button.textContent = 'PRICE 1 HULL';
-      button.addEventListener('click', event => { event.stopPropagation(); openTarget(target, 1); });
-      label.appendChild(button);
-    });
-    enhance();
-    app.onRender('shipyard', enhance);
-  }
-
   function openTarget(productId, quantity = 1) {
     const recipe = core.recipesFor(productId)[0]; const product = core.product(productId);
     if (!recipe) return;
@@ -3241,7 +3307,6 @@ window.__RHW_RECIPE_CATALOG_GZIP_BASE64__ = (window.__RHW_RECIPE_CATALOG_GZIP_BA
       if (status) { status.textContent = 'RECIPE DATABASE ERROR'; status.dataset.tone = 'danger'; }
       throw error;
     }
-    installShipyardBridge();
     app.lifecycle.emit('calculator:ready');
   }
 
@@ -3485,8 +3550,7 @@ window.__RHW_RECIPE_CATALOG_GZIP_BASE64__ = (window.__RHW_RECIPE_CATALOG_GZIP_BA
     if (workspace.dataset.v40SessionPriceMode === 'true') return;
     workspace.dataset.v40SessionPriceMode = 'true';
 
-    // The legacy Shipyard planner uses a lexical openTarget() helper, so reset
-    // RHW costing defaults in capture phase before that click handler runs.
+    // Reset the costing session before the Shipyard opens its selected recipe.
     document.addEventListener('click', event => {
       if (event.target?.closest?.('.shipyard-plan-button')) startFreshRecipeSession();
     }, true);
@@ -5987,7 +6051,7 @@ window.__RHW_RECIPE_CATALOG_GZIP_BASE64__ = (window.__RHW_RECIPE_CATALOG_GZIP_BA
   const SEARCH_LIMIT = 10;
   const SEARCH_SELECTORS = Object.freeze([
     'tr', 'li', 'article', 'h2', 'h3', 'h4', '.alert-card', '.overview-row',
-    '.hull-registry-row', '.shipyard-component-row', '.shipyard-decision-metric',
+    '.shipyard-hull-card', '.shipyard-material-row', '.shipyard-decision-metric', '.shipyard-prerequisite',
     '.production-card', '.production-module-card', '.recipe-row', '.remote-route',
     '.market-row', '.supplier-grid > *', '.market-scan-grid > *'
   ]);
@@ -6139,7 +6203,7 @@ window.__RHW_RECIPE_CATALOG_GZIP_BASE64__ = (window.__RHW_RECIPE_CATALOG_GZIP_BA
   function candidateElements(node) {
     const panel = document.querySelector(`[data-command-panel="${node}"]`); if (!panel) return [];
     const seen = new Set(); const results = []; const selector = SEARCH_SELECTORS.join(',');
-    [...panel.querySelectorAll(selector)].forEach(element => { if (element.closest('.command-overview-sensor')) return; const text = compact(element.textContent); if (text.length < 3 || text.length > 650) return; const key = normalize(text).slice(0,260); if (!key || seen.has(key)) return; seen.add(key); const strong = element.querySelector?.('strong,.production-title,.hull-registry-name,h3,h4'); const rawLabel = compact(strong?.textContent || element.getAttribute?.('data-label') || text); const label = rawLabel.length > 110 ? `${rawLabel.slice(0,107)}…` : rawLabel; const view = element.closest?.('[data-inventory-panel]')?.dataset.inventoryPanel || ''; results.push({ node, element, text, label, view, normalized: normalize(text) }); });
+    [...panel.querySelectorAll(selector)].forEach(element => { if (element.closest('.command-overview-sensor')) return; const text = compact(element.textContent); if (text.length < 3 || text.length > 650) return; const key = normalize(text).slice(0,260); if (!key || seen.has(key)) return; seen.add(key); const strong = element.querySelector?.('strong,.production-title,.shipyard-hull-name,h3,h4'); const rawLabel = compact(strong?.textContent || element.getAttribute?.('data-label') || text); const label = rawLabel.length > 110 ? `${rawLabel.slice(0,107)}…` : rawLabel; const view = element.closest?.('[data-inventory-panel]')?.dataset.inventoryPanel || ''; results.push({ node, element, text, label, view, normalized: normalize(text) }); });
     return results;
   }
 
