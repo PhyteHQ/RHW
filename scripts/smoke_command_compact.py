@@ -55,7 +55,12 @@ def main() -> int:
               items=['Basic Alloy','Consumer Goods','Food Rations','Gold Ore','Niobium Ore'].map(name=>({name,quantity:0}));
               rhwBase={name:'Resolution Heavy Works',shop_items:items};
               rebuildItemCaches();renderAll();RHWV4.command.updateOverview();RHWV4.inventoryToolbar.syncAlerts();
-              return true;
+              // Status subscribers coalesce onto the next animation frame.
+              // Wait for that real UI update before filtering/focusing tabs.
+              return new Promise(resolve=>{
+                RHWV4.requestUiUpdate();
+                requestAnimationFrame(()=>requestAnimationFrame(()=>resolve(true)));
+              });
             })()""")
             result = base.ev(cdp, """(()=>{
               const visible=el=>{
@@ -118,7 +123,8 @@ def main() -> int:
               const visibleAreas=commandButtons.filter(visible);
               visibleAreas[0]?.focus();
               visibleAreas[0]?.dispatchEvent(new KeyboardEvent('keydown',{key:'End',bubbles:true,cancelable:true}));
-              const filteredKeyboard=document.activeElement===visibleAreas.at(-1)&&visibleAreas.every(b=>['low','critical'].includes(b.dataset.state));
+              const filteredKeyboard=visibleAreas.length>0&&document.activeElement===visibleAreas.at(-1)&&visibleAreas.every(b=>['low','critical'].includes(b.dataset.state));
+              const filteredAreas=commandButtons.map(b=>({key:b.dataset.commandNode,state:b.dataset.state,visible:visible(b)}));
               attention?.click();
               const attentionOff=document.body.dataset.commandFocus||'';
               document.getElementById('commandAlertDetails')?.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true,cancelable:true}));
@@ -127,7 +133,7 @@ def main() -> int:
               const manifestState={statusVisible:visible(status),manifestVisible:visible(manifest),active:document.getElementById('inventoryManifestTab')?.classList.contains('active')||false};
               document.getElementById('inventoryStatusTab')?.click();
               const statusState={statusVisible:visible(status),manifestVisible:visible(manifest),active:document.getElementById('inventoryStatusTab')?.classList.contains('active')||false};
-              return{initial,detailsVisible,disclosureFits,stableDisclosure,escapeClosed,attentionOn,attentionOff,filteredKeyboard,manifestState,statusState};
+              return{initial,detailsVisible,disclosureFits,stableDisclosure,escapeClosed,attentionOn,attentionOff,filteredKeyboard,filteredAreas,manifestState,statusState};
             })()""")
 
             initial = result.get("initial", {})
