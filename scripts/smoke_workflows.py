@@ -9,14 +9,13 @@ import smoke_v40_base as base
 MOBILE_WIDTHS = (360, 390, 412, 430)
 
 
-def test_boot_failure(cdp, frame_id):
+def test_boot_failure(cdp, frame_id, folder):
     bootstrap = base.safe((base.ROOT / "js/00-bootstrap.js").read_text(encoding="utf-8"))
     build_info = base.safe((base.ROOT / "js/build-info.js").read_text(encoding="utf-8"))
     markup = f"""<!doctype html><html><head><meta charset="utf-8"></head><body>
     <script>window.__RHW_BOOTSTRAP_TEST__={{failAsset:'./js/rhw-workspaces.js'}};</script>
     <script>{build_info}</script><script>{bootstrap}</script></body></html>"""
-    cdp.call("Page.navigate", {"url": "about:blank"})
-    cdp.call("Page.setDocumentContent", {"frameId": frame_id, "html": markup})
+    base.load_document(cdp, frame_id, markup, folder)
     end = time.time() + 3
     result = {}
     while time.time() < end:
@@ -785,12 +784,11 @@ def main():
             for method in ("Page.enable", "Runtime.enable", "Network.enable", "Log.enable"):
                 cdp.call(method)
             cdp.call("Network.setBlockedURLs", {"urls": ["https://*", "http://*"]})
-            test_boot_failure(cdp, page["id"])
+            test_boot_failure(cdp, page["id"], folder)
             cdp.take_runtime_failures()
             for workspace, node in base.ROUTES:
-                cdp.call("Page.navigate", {"url": "about:blank"})
                 cdp.take_runtime_failures()
-                cdp.call("Page.setDocumentContent", {"frameId": page["id"], "html": base.document(f"{workspace}/{node}")})
+                base.load_document(cdp, page["id"], base.document(f"{workspace}/{node}"), folder)
                 end = time.time() + 8
                 snap = {}
                 while time.time() < end:

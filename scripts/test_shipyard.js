@@ -62,6 +62,10 @@ ctx.__RHW_RECIPE_CATALOG__ = JSON.parse(zlib.gunzipSync(Buffer.from(ctx.__RHW_RE
   assert.equal(yard.analyze().buildable, 0, 'Explicit zero remains a known stock count');
   propulsion.quantity = null;
   assert.equal(yard.analyze().buildable, null, 'Null quantity is not a known zero');
+  for (const invalid of [false, true, [], {}, '   ']) {
+    propulsion.quantity = invalid;
+    assert.equal(yard.analyze().buildable, null, 'Invalid stock values must not become a build count');
+  }
   propulsion.quantity = 446;
 
   const archon = yard.selectedHull();
@@ -71,6 +75,8 @@ ctx.__RHW_RECIPE_CATALOG__ = JSON.parse(zlib.gunzipSync(Buffer.from(ctx.__RHW_RE
   assert.equal(yard.stockRecord(archon).stock, 3);
   hull.nickname = '';
   assert.equal(yard.stockRecord(archon).stock, 3, 'Public Modular Miner name is a valid exact alias');
+  hull.name = '"Archon" Modular Miner';
+  assert.equal(yard.stockRecord(archon).stock, 3, 'The full public quoted ship name resolves without a nickname');
   hull.name = 'Archon Mining Module';
   assert.equal(yard.stockRecord(archon).stock, null, 'Substring matches cannot count a module as a hull');
 

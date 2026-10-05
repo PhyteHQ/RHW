@@ -107,11 +107,11 @@ def main():
             if (String(input?.url || input).includes('darkstat.dd84ai.com/api/pobs')) {
               // Use real transport so the offline check cannot receive an
               // in-memory fixture when a new document resets navigator.onLine.
-              return original('/__rhw_test_pobs', {...options, method:'POST'});
+              return original('/__rhw_test_pobs', options);
             }
             if (String(input?.url || input).includes('darkstat.dd84ai.com/api/npc_bases')) {
               window.__rhwNpcRequests++;
-              return original('/__rhw_test_npc', {...options, method:'POST'});
+              return original('/__rhw_test_npc', options);
             }
             return original(input, options);
           };
@@ -348,6 +348,34 @@ def main():
         base.ev(cdp, "(()=>{location.hash='#pricecheck/obsolete';return true;})()")
         time.sleep(.15)
         assert base.ev(cdp, 'location.hash') == '#pricecheck/routes', 'Price Check uses the shared canonical route model'
+        # Production must open its precise module recipe, even when the same
+        # output can be unpacked from a freight container.
+        production_recipe = base.ev(cdp, """(()=>{
+          RHWV4.navigate('command','production');
+          document.querySelector('[data-production-product="basic alloy"] .production-calc-button').click();
+          return {recipe:opsRecipe.value,output:RHWV4.operationsCore.buildPlan({recipeId:opsRecipe.value,
+            quantity:1,affiliationId:'br_m_grp',useInventory:false,recursive:false,routingPolicy:'first'}).actualOutput,
+            materialNames:document.getElementById('opsMaterialPanel').textContent};
+        })()""")
+        assert production_recipe['recipe'] == 'recipe_scrap_advanced' and production_recipe['output'] == 750, production_recipe
+        assert 'Scrap Metal' in production_recipe['materialNames'] and 'Sealed Container' not in production_recipe['materialNames'], production_recipe
+        # A rejected named-save must leave the old archive and the newly typed
+        # editor text intact, and must show the failure instead of success.
+        failed_save = base.ev(cdp, """(()=>{
+          RHWV4.navigate('comms','forum');
+          const a=RHWV4,key=a.config.storageKeys.commsDrafts,write=a.store.set;
+          a.storage.saveDraft({...a.state.comms,message:'SAVED AUDIT TEXT'},'AUDIT STORAGE FAILURE');
+          const before=JSON.stringify(a.state.drafts),disk=localStorage.getItem(key);
+          commsDraftName.value='AUDIT STORAGE FAILURE';commsMessage.value='UNSAVED AUDIT TEXT';
+          a.store.set=(k,v)=>k===key?false:write(k,v);
+          try {
+            saveDraftBtn.click();
+            return {archive:JSON.stringify(a.state.drafts)===before,disk:localStorage.getItem(key)===disk,
+              text:commsMessage.value,warning:document.getElementById('commsStatus')?.textContent||''};
+          } finally {a.store.set=write;}
+        })()""")
+        assert failed_save['archive'] and failed_save['disk'] and failed_save['text'] == 'UNSAVED AUDIT TEXT', failed_save
+        assert 'COULD NOT BE SAVED' in failed_save['warning'], failed_save
         # Keyboard-sized viewport: focus and price must survive status updates.
         cdp.call('Emulation.setDeviceMetricsOverride', {'width': 390, 'height': 430, 'deviceScaleFactor': 1, 'mobile': True})
         base.ev(cdp, """(()=>{RHWV4.navigate('operations','calculator');const e=document.querySelector('[data-material-price]');e.value='123';e.dispatchEvent(new Event('input',{bubbles:true}));e.focus();e.scrollIntoView({block:'center'});return true;})()""")
@@ -361,6 +389,12 @@ def main():
         time.sleep(.15)
         cached = base.ev(cdp, '({available:telemetrySnapshot().available,stale:telemetrySnapshot().stale,notice:!telemetryNotice.hidden})')
         assert all(cached.values()), cached
+        offline_prices = base.ev(cdp, """(()=>{
+          const a=RHWV4;a.navigate('pricecheck','routes');
+          const row=a.pricecheck.effectiveRow(a.pricecheck.routes.find(r=>r.key==='food-rations'));
+          return {cached:!row.fresh&&row.live!==null,copy:document.querySelector('[data-route-key="food-rations"] .pricecheck-live').textContent};
+        })()""")
+        assert offline_prices['cached'] and offline_prices['copy'].startswith('CACHED'), offline_prices
         cdp.call('Page.reload')
         wait_ready(cdp, previous_document)
         offline = base.ev(cdp, """(()=>{RHWV4.navigate('command','inventory');scrollTo(0,0);return {revision:RHW_BUILD.revision,
@@ -378,8 +412,8 @@ def main():
             portable:/\\[img\\]https:\\/\\//.test(RHWV4.comms.buildBbcode())};
         })()""")
         assert all(forum_offline.values()), forum_offline
-        (OUT / 'checks.json').write_text(json.dumps({'layouts': report, 'shipyard': shipyard, 'shipyardRowHeaders': row_header_checks, 'marketLayouts': market_layouts, 'disclosure': disclosure, 'retired': retired, 'keyboard': focused, 'priceFocus': price_focus, 'priceEdit': price_edit, 'offline': offline}, indent=2))
-        print(f'Bundled interface passed: {len(report)} layouts, retired routes, keyboard focus, local fonts and offline reload.')
+        (OUT / 'checks.json').write_text(json.dumps({'layouts': report, 'shipyard': shipyard, 'shipyardRowHeaders': row_header_checks, 'marketLayouts': market_layouts, 'disclosure': disclosure, 'retired': retired, 'keyboard': focused, 'priceFocus': price_focus, 'priceEdit': price_edit, 'productionRecipe': production_recipe, 'failedSave': failed_save, 'offlinePrices': offline_prices, 'offline': offline}, indent=2))
+        print(f'Bundled interface passed: {len(report)} layouts, production recipe, rejected save, cached prices, keyboard focus, local fonts and offline reload.')
         return 0
     except Exception:
         if cdp:

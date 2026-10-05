@@ -427,7 +427,7 @@
     const age = Date.now() - Date.parse(priceAt || '');
     const fresh = route.sourceType === 'pob'
       ? rhw.available && !rhw.stale
-      : state.receivedAt > 0 && Number.isFinite(age) && age >= 0 && age < AUTO_REFRESH_MS * 2 && !state.lastError;
+      : navigator.onLine !== false && state.receivedAt > 0 && Number.isFinite(age) && age >= 0 && age < AUTO_REFRESH_MS * 2 && !state.lastError;
     const hasOverride = Object.prototype.hasOwnProperty.call(state.overrides, route.key) && finite(state.overrides[route.key]) !== null;
     const sourcePrice = hasOverride ? finite(state.overrides[route.key]) : live;
     const payout = rhw.available ? rhwPrice(route) : null;

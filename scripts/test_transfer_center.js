@@ -133,3 +133,59 @@ const beforeRejectedImport = JSON.stringify({ state: app.state, memory: [...memo
 app.legacyArchive.prepareImport = () => { throw new Error('LIMIT 100'); };
 assert.throws(() => app.storage.importPayload(incoming, { sections: ['drafts', 'senders', 'productionOrders'] }), /LIMIT 100/);
 assert.equal(JSON.stringify({ state: app.state, memory: [...memory] }), beforeRejectedImport);
+
+// Quota/blocked-storage failures must not replace or remove a saved draft/profile.
+const write = app.store.set;
+app.store.set = () => false;
+const draftsBefore = JSON.stringify(app.state.drafts);
+const sendersBefore = JSON.stringify(app.state.localSenders);
+const diskBefore = JSON.stringify([...memory]);
+assert.equal(app.storage.saveDraft({ ...app.state.comms, message: 'Unsaved replacement' }, app.state.drafts[0].name), null);
+assert.equal(app.storage.saveDraft(app.state.comms, 'Unsaved new draft'), null);
+assert.equal(app.storage.deleteDraft(app.state.drafts[0].id), false);
+assert.equal(JSON.stringify(app.state.drafts), draftsBefore, 'Failed draft writes preserve the current archive');
+assert.equal(app.storage.upsertSender({ name: 'Unsaved new sender' }), null);
+assert.equal(app.storage.upsertSender({ name: 'Unsaved edit' }, app.state.localSenders[0].key), null);
+assert.equal(app.storage.removeSender(app.state.localSenders[0].key), null);
+assert.equal(JSON.stringify(app.state.localSenders), sendersBefore, 'Failed sender writes preserve the registry');
+assert.equal(app.storage.saveCurrent(), false, 'Autosave exposes a failure instead of reporting success');
+assert.equal(JSON.stringify([...memory]), diskBefore);
+for (const section of ['drafts', 'senders', 'current']) {
+  assert.throws(() => app.storage.importPayload(incoming, { sections: [section] }), /LOCAL STORAGE WRITE FAILED/);
+  assert.equal(JSON.stringify(app.state.drafts), draftsBefore);
+  assert.equal(JSON.stringify(app.state.localSenders), sendersBefore);
+  assert.equal(app.state.comms.subject, 'REMOTE CURRENT', 'A rejected import leaves the current message in place');
+}
+
+app.store.set = write;
+const sender = app.storage.upsertSender({ name: 'Retained Signature', title: 'Retained Role' });
+const reference = { ...app.storage.defaultState(), senderKey: sender.key };
+app.storage.saveDraft(reference, 'Referenced Sender');
+app.state.comms = reference;
+for (const failKey of [keys.commsDrafts, keys.commsCurrent, keys.localSenders]) {
+  app.store.set = (key, value) => key === failKey ? false : write(key, value);
+  assert.equal(app.storage.removeSender(sender.key), null, `Removing a sender is blocked if ${failKey} cannot be saved`);
+  assert.ok(app.storage.senderByKey(sender.key), 'A sender remains available until its references and removal persist');
+}
+app.store.set = write;
+assert.equal(app.storage.removeSender(sender.key).name, 'Retained Signature');
+const referencedDraft = app.state.drafts.find(d => d.name === 'Referenced Sender');
+assert.equal(app.storage.resolveSender(referencedDraft.state).name, 'Retained Signature');
+assert.equal(app.storage.resolveSender(referencedDraft.state).title, 'Retained Role');
+console.log('Local save failures passed: drafts, sender edits/removal, reusable signatures and autosave.');
+
+memory.set(keys.localSenders, { unexpected: 'preserve sender data' });
+memory.set(keys.commsDrafts, 'preserve draft data');
+app.recoverCorruptStorageEntry = () => false;
+assert.doesNotThrow(() => app.storage.init(), 'Valid JSON with an invalid list shape must not block startup');
+assert.deepEqual(memory.get(keys.localSenders), { unexpected: 'preserve sender data' });
+assert.equal(memory.get(keys.commsDrafts), 'preserve draft data', 'Failed recovery must not overwrite the old entry');
+const recoveries = [];
+app.recoverCorruptStorageEntry = (key, raw) => { recoveries.push({ key, raw }); memory.delete(key); return true; };
+app.storage.init();
+assert.equal(recoveries.length, 2);
+assert.deepEqual(memory.get(keys.localSenders), []);
+assert.deepEqual(memory.get(keys.commsDrafts), []);
+assert.equal(JSON.parse(recoveries.find(r => r.key === keys.localSenders).raw).unexpected, 'preserve sender data');
+assert.equal(JSON.parse(recoveries.find(r => r.key === keys.commsDrafts).raw), 'preserve draft data');
+console.log('Malformed saved lists passed: recoverable startup and preservation when recovery fails.');

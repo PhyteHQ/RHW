@@ -100,6 +100,29 @@ def ev(cdp,expression):
         raise RuntimeError(description)
     raw=result.get("result",{}).get("value"); return json.loads(raw) if raw else {}
 
+def load_document(cdp, frame_id, markup, folder):
+    """Give inline workflow fixtures a fresh document with usable storage.
+
+    about:blank has an opaque origin, so every localStorage write there fails.
+    Use a temporary local file, then clear its test-only storage before boot.
+    The separate bundled-site suite tests real HTTP assets and offline reload.
+    """
+    fixture = Path(folder) / f"inline-{time.monotonic_ns()}.html"
+    fixture.write_text("<!doctype html><html><head></head><body></body></html>", encoding="utf-8")
+    url = fixture.as_uri()
+    cdp.call("Page.navigate", {"url": url})
+    end = time.time() + 4
+    while time.time() < end:
+        if ev(cdp, f"location.href === {json.dumps(url)} && document.readyState === 'complete'"):
+            break
+        time.sleep(.02)
+    else:
+        raise RuntimeError("Inline fixture failed to acquire a fresh document")
+    usable = ev(cdp, "(()=>{localStorage.clear();localStorage.setItem('__rhw_smoke_storage__','ok');const ok=localStorage.getItem('__rhw_smoke_storage__')==='ok';localStorage.removeItem('__rhw_smoke_storage__');return ok;})()")
+    if not usable:
+        raise RuntimeError("Inline workflow fixture must have working local storage")
+    cdp.call("Page.setDocumentContent", {"frameId": frame_id, "html": markup})
+
 def snapshot(cdp):
     return ev(cdp,"({ready:document.documentElement?.dataset.v40Ready||'',error:document.documentElement?.dataset.v40Error||'',workspace:document.body?.dataset.workspace||'',commandNode:document.body?.dataset.commandNode||'',operationsNode:document.body?.dataset.operationsNode||'',commsNode:document.body?.dataset.commsNode||'',pricecheckNode:document.body?.dataset.pricecheckNode||'',mountedNav:document.querySelector('#appContextNavSlot > .workspace-subnav')?.id||'',recipes:window.RHWV4?.operationsCore?.state?.catalog?.meta?.recipeCount||0,products:window.RHWV4?.operationsCore?.state?.catalog?.meta?.productCount||0,errors:window.__RHW_V4_SMOKE__?.errors||[]})")
 
@@ -187,8 +210,7 @@ def main():
             for method in ("Page.enable","Runtime.enable","Network.enable"): cdp.call(method)
             cdp.call("Network.setBlockedURLs",{"urls":["https://*","http://*"]})
             for workspace,node in ROUTES:
-                cdp.call("Page.navigate",{"url":"about:blank"})
-                cdp.call("Page.setDocumentContent",{"frameId":page["id"],"html":document(f"{workspace}/{node}")})
+                load_document(cdp, page["id"], document(f"{workspace}/{node}"), folder)
                 end=time.time()+8; snap={}
                 while time.time()<end:
                     snap=snapshot(cdp)

@@ -186,14 +186,63 @@ async function models() {
 
   nodes.clear();
   run(ctx, 'js/command/config.js');
-  vm.runInContext('globalThis.CAPITAL_SHIPYARD = DASHBOARD_CONFIG.capitalShipyard;', ctx);
+  vm.runInContext('globalThis.CAPITAL_SHIPYARD = DASHBOARD_CONFIG.capitalShipyard; const RECIPES = DASHBOARD_CONFIG.recipes;', ctx);
+  run(ctx, 'js/calculator/production-bridge.js');
+  const productionModules = vm.runInContext('RECIPES', ctx);
+  for (const spec of productionModules) {
+    const entry = app.productionPricing.findRecipeForLabel(spec.product);
+    assert.equal(entry.id, spec.recipeId, `Production shortcut for ${spec.product}`);
+    const plan = core.buildPlan({ productId: entry.outputs[0].id, recipeId: entry.id,
+      quantity: 1, affiliationId: 'br_m_grp', recursive: false, useInventory: false, routingPolicy: 'first' });
+    assert.equal(plan.actualOutput, spec.output, `${spec.product} batch output agrees with Production`);
+    const canonical = rows => Array.from(rows, ([name, qty]) => [name.toLowerCase(), qty]).sort((a, b) => a[0].localeCompare(b[0]));
+    assert.deepEqual(canonical(core.materialRows(plan).map(row => [row.name, row.required])), canonical(Array.from(spec.ingredients, row => [...row])), `${spec.product} inputs agree with Production`);
+  }
+  assert.equal(app.productionPricing.findRecipeForLabel('Basic Alloy').id, 'recipe_scrap_advanced', 'A production shortcut must not unpack a sealed container');
+  const alloy = core.state.recipesById.get('recipe_scrap_advanced');
+  core.state.recipesById.delete(alloy.id);
+  assert.equal(app.productionPricing.findRecipeForLabel('Basic Alloy'), null, 'A missing module recipe must not silently choose another variant');
+  core.state.recipesById.set(alloy.id, alloy);
   const yard = node();
   yard.insertAdjacentHTML = () => assert.fail('Retired planner must not be injected');
   nodes.set('shipyardControl', yard);
   ctx.MutationObserver = class { observe(target) { assert.notEqual(target, yard, 'Retired planner must not watch the Shipyard'); } };
+  app.config.storageKeys.calculatorPriceProfiles = 'price-profiles';
   run(ctx, 'js/calculator/price-profiles.js');
   assert.equal(nodes.has('shipyardBuildPlanner'), false, 'Shipyard starts without the retired planner');
   assert.equal(typeof app.priceProfiles.ensureProfilePanel, 'function', 'Calculator price profiles remain available');
+  // Exercise the actual save and delete UI handlers with a rejected write.
+  const profileKey = app.config.storageKeys.calculatorPriceProfiles;
+  memory.set(profileKey, [{ id: 'market', name: 'Market', prices: { ore: 12 }, updatedAt: 1 }]);
+  const priceInput = node(); priceInput.dataset.materialPrice = 'ore'; priceInput.value = '25';
+  const costPanel = node(), profilePanel = node();
+  costPanel.querySelector = () => null;
+  profilePanel.querySelector = selector => nodes.get(selector.slice(1)) || null;
+  nodes.set('opsPriceProfiles', profilePanel);
+  for (const id of ['opsPriceProfileSelect', 'opsPriceProfileName', 'opsPriceProfileStatus', 'opsPriceProfileSave', 'opsPriceProfileLoad', 'opsPriceProfileClear', 'opsPriceProfileDelete']) nodes.set(id, node());
+  nodes.get('opsPriceProfileSelect').value = 'market';
+  nodes.get('opsPriceProfileName').value = 'Changed Market';
+  ctx.document.querySelector = selector => selector === '#workspaceOperations .ops-cost-panel' ? costPanel : null;
+  ctx.document.querySelectorAll = selector => selector === '#workspaceOperations [data-material-price]' ? [priceInput] : [];
+  ctx.confirm = () => true;
+  app.priceProfiles.ensureProfilePanel();
+  const write = app.store.set;
+  app.store.set = () => false;
+  app.priceProfiles.saveCurrentProfile();
+  assert.equal(memory.get(profileKey)[0].name, 'Market');
+  assert.match(nodes.get('opsPriceProfileStatus').textContent, /COULD NOT BE SAVED/);
+  assert.equal(priceInput.value, '25', 'A failed save keeps session prices');
+  nodes.get('opsPriceProfileDelete').listeners.click();
+  assert.equal(memory.get(profileKey).length, 1);
+  assert.equal(nodes.get('opsPriceProfileName').value, 'Changed Market');
+  assert.match(nodes.get('opsPriceProfileStatus').textContent, /COULD NOT BE DELETED/);
+  app.store.set = write;
+  app.priceProfiles.saveCurrentProfile();
+  assert.equal(memory.get(profileKey)[0].name, 'Changed Market');
+  assert.equal(memory.get(profileKey)[0].prices.ore, 25);
+  assert.match(nodes.get('opsPriceProfileStatus').textContent, /SAVED/);
+  nodes.get('opsPriceProfileDelete').listeners.click();
+  assert.equal(memory.get(profileKey).length, 0);
   nodes.clear();
   run(ctx, 'js/tools/discovery.js');
   app.discoveryStatus.state.status = { catalog: { effective: { recipes: 285 } }, workflow: { reviewRequired: true, autoMerge: false } };
@@ -325,4 +374,43 @@ function overviewReferences() {
   console.log('Stock-only inventory, handling thresholds and input-batch references passed.');
 }
 
-(async () => { overviewReferences(); await models(); await serviceWorker(); await updates(); })().catch(error => { console.error(error); process.exitCode = 1; });
+function unknownTelemetry() {
+  const classes = new Set();
+  const ctx = vm.createContext({ console, numFormatter: new Intl.NumberFormat('de-DE'),
+    document: { getElementById: () => null, querySelector: () => null, addEventListener() {} },
+    telemetrySnapshot: () => ({ available: true, stale: false, detail: 'LIVE STOCK', tone: 'good' }),
+    escapeHTML: value => String(value),
+    els: { baseMoneyVal: node(), baseStorageVal: node(), baseHealthVal: node(),
+      baseHealthCard: { classList: { add: value => classes.add(value), remove: (...values) => values.forEach(value => classes.delete(value)) } } }
+  });
+  ctx.window = ctx;
+  ctx.els.baseMoneyVal.closest = () => null;
+  run(ctx, 'js/command/config.js');
+  run(ctx, 'js/shared/utils.js');
+  run(ctx, 'js/data/telemetry.js');
+  for (const raw of [null, undefined, '', '   ', false, true, [], {}, -1, NaN, Infinity]) {
+    ctx.rhwBase = { base_money: raw, storage_free: raw, base_health: raw };
+    ctx.updateBaseTelemetry();
+    assert.equal(ctx.els.baseMoneyVal.textContent, '–');
+    assert.equal(ctx.els.baseStorageVal.textContent, '–');
+    assert.equal(ctx.els.baseHealthVal.textContent, '–');
+    assert.equal(classes.size, 0, 'Unknown health must not trigger a critical-state color');
+  }
+  ctx.rhwBase = { money: 0, cargospace: 0, health: 0 };
+  ctx.updateBaseTelemetry();
+  assert.equal(ctx.els.baseMoneyVal.textContent, '$0');
+  assert.equal(ctx.els.baseStorageVal.textContent, '0');
+  assert.equal(ctx.els.baseHealthVal.textContent, '0%');
+  assert.ok(classes.has('health-critical'), 'An explicitly reported zero remains critical');
+  ctx.rhwBase = { credits: '12000', cargo_space_left: '3500', health: 24000000 };
+  ctx.updateBaseTelemetry();
+  assert.equal(ctx.els.baseMoneyVal.textContent, '$12.000');
+  assert.equal(ctx.els.baseStorageVal.textContent, '3.500');
+  assert.equal(ctx.els.baseHealthVal.textContent, '100%');
+  ctx.rhwBase = { storage_free: null, base_health: null };
+  ctx.updateBaseTelemetry();
+  assert.equal(classes.size, 0, 'A later unknown value clears the preceding health color');
+  console.log('Unknown telemetry passed: null/invalid values, real zero, legacy field aliases and health colors.');
+}
+
+(async () => { unknownTelemetry(); overviewReferences(); await models(); await serviceWorker(); await updates(); })().catch(error => { console.error(error); process.exitCode = 1; });

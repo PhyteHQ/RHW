@@ -116,7 +116,7 @@
     return `<section class="comms-node-panel" data-comms-panel="drafts" hidden>
       <section class="comms-panel drafts-panel">
         <div class="comms-panel-head"><div><span>DR</span><strong>LOCAL DRAFT ARCHIVE</strong></div><small>LOCAL + CROSS-DEVICE</small></div>
-        <div class="comms-archive-summary"><div><small>NAMED DRAFTS</small><strong id="commsDraftCount">0</strong></div><div><small>CURRENT WORK</small><strong>AUTOSAVED LOCALLY</strong></div><div><small>LATEST NAMED SAVE</small><strong id="commsDraftLatest">—</strong></div></div>
+        <div class="comms-archive-summary"><div><small>NAMED DRAFTS</small><strong id="commsDraftCount">0</strong></div><div><small>CURRENT WORK</small><strong>IN COMPOSER</strong></div><div><small>LATEST NAMED SAVE</small><strong id="commsDraftLatest">—</strong></div></div>
         <section id="rhwTransferCenter" class="rhw-transfer-center" aria-labelledby="rhwTransferTitle">
           <div class="rhw-transfer-intro"><span>DEVICE TRANSFER</span><strong id="rhwTransferTitle">MOVE YOUR RHW WORK SAFELY</strong><p>CREATE ONE PRIVATE BACKUP FILE FOR ANOTHER PHONE OR BROWSER. RHW NEVER UPLOADS THIS FILE TO A SERVER.</p></div>
           <div class="rhw-transfer-contents" aria-label="Backup contents"><span>DRAFTS</span><span>SENDERS</span><span>NEWSWIRE</span><span>PLANS</span><span>ORDERS</span><span>SETTINGS</span></div>
@@ -471,7 +471,7 @@
       location: state.location.trim(),
       encryption: state.encryption.trim()
     });
-    if (!profile) return;
+    if (!profile) { app.notify('SENDER COULD NOT BE SAVED // CHECK LOCAL STORAGE', 'warn'); return; }
     state.senderKey = profile.key;
     state.senderSnapshotName = profile.name;
     state.senderSnapshotTitle = profile.title;
@@ -485,6 +485,7 @@
   function saveDraft() {
     app.state.comms = readForm();
     const name = app.storage.saveDraft(app.state.comms, app.state.comms.draftName);
+    if (!name) { app.notify('DRAFT COULD NOT BE SAVED // CURRENT TEXT KEPT IN EDITOR', 'warn'); return; }
     renderDrafts();
     renderForm();
     app.notify(`DRAFT SAVED // ${name.toUpperCase()}`);
@@ -510,7 +511,7 @@
     if (count) count.textContent = String(sorted.length);
     if (latest) latest.textContent = sorted.length ? new Date(sorted[0].updatedAt).toLocaleString('de-DE', { dateStyle: 'short', timeStyle: 'short' }) : '—';
     if (!app.state.drafts.length) {
-      target.innerHTML = '<div class="comms-empty-state">NO NAMED DRAFTS IN LOCAL CACHE<small>THE CURRENT TRANSMISSION IS STILL AUTOSAVED</small></div>';
+      target.innerHTML = '<div class="comms-empty-state">NO NAMED DRAFTS IN LOCAL CACHE<small>CURRENT TEXT REMAINS IN THE COMPOSER</small></div>';
       return;
     }
     target.innerHTML = sorted.map(draft => {
@@ -583,7 +584,7 @@
       location: document.getElementById('v40SenderEditLocation')?.value.trim() || '',
       encryption: document.getElementById('v40SenderEditCipher')?.value.trim() || ''
     }, app.state.editingSenderKey);
-    if (!profile) return;
+    if (!profile) { app.notify('SENDER COULD NOT BE SAVED // CHECK LOCAL STORAGE', 'warn'); return; }
     if (app.state.comms?.senderKey === profile.key) {
       app.state.comms.senderSnapshotName = profile.name;
       app.state.comms.senderSnapshotTitle = profile.title;
@@ -673,7 +674,7 @@
       if (remove) {
         const draft = app.state.drafts.find(entry => entry.id === remove.dataset.deleteDraft);
         if (draft && window.confirm(`Delete draft “${draft.name}” from this browser?`)) {
-          app.storage.deleteDraft(draft.id);
+          if (!app.storage.deleteDraft(draft.id)) { app.notify('DRAFT COULD NOT BE REMOVED // CHECK LOCAL STORAGE', 'warn'); return; }
           renderDrafts();
           app.notify('DRAFT REMOVED', 'warn');
         }
@@ -727,7 +728,7 @@
       if (remove) {
         const sender = app.state.localSenders.find(entry => entry.key === remove.dataset.removeSender);
         if (sender && window.confirm(`Remove local sender profile “${sender.name}”? Existing drafts keep a sender snapshot.`)) {
-          app.storage.removeSender(sender.key);
+          if (!app.storage.removeSender(sender.key)) { app.notify('SENDER COULD NOT BE REMOVED // CHECK LOCAL STORAGE', 'warn'); return; }
           if (app.state.comms?.senderKey === sender.key) {
             const fallback = app.config.senders[0];
             app.state.comms.senderKey = fallback.key;
