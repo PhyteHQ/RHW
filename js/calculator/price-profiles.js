@@ -21,7 +21,7 @@
   }
 
   function saveProfiles(next) {
-    app.store.set(PROFILE_KEY, next.slice(0, 24));
+    return app.store.set(PROFILE_KEY, next.slice(0, 24)) !== false;
   }
 
   function currentPriceInputs() {
@@ -124,7 +124,11 @@
     const id = existing?.id || app.util.uid('price-profile');
     const profile = { id, name: rawName, prices: nextPrices, updatedAt: Date.now() };
     const next = [profile, ...list.filter(item => item.id !== id)].sort((a,b) => Number(b.updatedAt || 0) - Number(a.updatedAt || 0));
-    saveProfiles(next);
+    if (!saveProfiles(next)) {
+      setProfileStatus('PRICE PROFILE COULD NOT BE SAVED // CURRENT PRICES KEPT', 'warn');
+      app.notify?.('PRICE PROFILE COULD NOT BE SAVED', 'warn');
+      return;
+    }
     renderProfileSelect(id);
     const total = Object.keys(nextPrices).length;
     setProfileStatus(`${rawName.toUpperCase()} SAVED // ${total} MATERIAL PRICE${total === 1 ? '' : 'S'} IN PROFILE`, 'good');
@@ -173,7 +177,10 @@
     const profile = selectedProfile();
     if (!profile) { setProfileStatus('SELECT A SAVED PROFILE FIRST', 'warn'); return; }
     if (!window.confirm(`Delete saved price profile “${profile.name}”?`)) return;
-    saveProfiles(profiles().filter(item => item.id !== profile.id));
+    if (!saveProfiles(profiles().filter(item => item.id !== profile.id))) {
+      setProfileStatus('PRICE PROFILE COULD NOT BE DELETED // CHECK LOCAL STORAGE', 'warn');
+      return;
+    }
     const name = document.getElementById('opsPriceProfileName');
     if (name) name.value = '';
     profileStatus = [`${profile.name.toUpperCase()} DELETED // CURRENT CALCULATION UNCHANGED`, 'muted'];

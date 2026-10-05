@@ -104,37 +104,49 @@
   }
 
   function saveLocalSenders() {
-    app.store.set(keys.localSenders, app.state.localSenders);
+    return app.store.set(keys.localSenders, app.state.localSenders) !== false;
   }
 
   function saveDrafts() {
-    app.store.set(keys.commsDrafts, app.state.drafts);
+    return app.store.set(keys.commsDrafts, app.state.drafts) !== false;
+  }
+
+  function storedList(key) {
+    const raw = app.store.get(key, []);
+    if (Array.isArray(raw)) return { entries: raw, writable: true };
+    // Valid JSON can still have the wrong shape. Preserve it before resetting;
+    // if recovery cannot be saved, startup must not overwrite the old entry.
+    const recovered = app.recoverCorruptStorageEntry?.(key, JSON.stringify(raw), new Error('EXPECTED A SAVED LIST')) === true;
+    return { entries: [], writable: recovered };
   }
 
   function saveCurrent() {
-    if (!app.state.comms) return;
+    if (!app.state.comms) return false;
     snapshotSender(app.state.comms);
-    app.store.set(keys.commsCurrent, app.state.comms);
+    return app.store.set(keys.commsCurrent, app.state.comms) !== false;
   }
 
   function saveDraft(state, name) {
     const nextState = snapshotSender(normalizeState(state));
     const nextName = String(name || nextState.draftName || nextState.subject || `Transmission ${new Date().toLocaleDateString('de-DE')}`).trim();
     nextState.draftName = nextName;
-    const existing = app.state.drafts.find(draft => app.util.normalize(draft.name) === app.util.normalize(nextName));
-    if (existing) {
-      existing.state = nextState;
-      existing.updatedAt = Date.now();
+    const index = app.state.drafts.findIndex(draft => app.util.normalize(draft.name) === app.util.normalize(nextName));
+    const next = [...app.state.drafts];
+    if (index >= 0) {
+      next[index] = { ...next[index], state: nextState, updatedAt: Date.now() };
     } else {
-      app.state.drafts.push({ id: app.util.uid('draft'), name: nextName, state: nextState, updatedAt: Date.now() });
+      next.push({ id: app.util.uid('draft'), name: nextName, state: nextState, updatedAt: Date.now() });
     }
-    saveDrafts();
+    if (app.store.set(keys.commsDrafts, next) === false) return null;
+    app.state.drafts = next;
     return nextName;
   }
 
   function deleteDraft(id) {
-    app.state.drafts = app.state.drafts.filter(draft => draft.id !== id);
-    saveDrafts();
+    const next = app.state.drafts.filter(draft => draft.id !== id);
+    if (app.store.set(keys.commsDrafts, next) === false) return false;
+    app.state.drafts = next;
+    return true;
   }
 
   function upsertSender(profile, preferredKey = null) {
@@ -143,39 +155,49 @@
     const byKey = preferredKey ? app.state.localSenders.findIndex(sender => sender.key === preferredKey) : -1;
     const byName = app.state.localSenders.findIndex(sender => app.util.normalize(sender.name) === app.util.normalize(normalized.name));
     const index = byKey >= 0 ? byKey : byName;
+    const next = [...app.state.localSenders];
     if (index >= 0) {
-      normalized.key = app.state.localSenders[index].key;
-      app.state.localSenders[index] = normalized;
+      normalized.key = next[index].key;
+      next[index] = normalized;
     } else {
-      app.state.localSenders.push(normalized);
+      next.push(normalized);
     }
-    saveLocalSenders();
+    if (app.store.set(keys.localSenders, next) === false) return null;
+    app.state.localSenders = next;
     return normalized;
   }
 
   function snapshotReferences(sender) {
-    if (!sender?.key) return;
+    if (!sender?.key) return false;
     let changed = false;
-    app.state.drafts.forEach(draft => {
-      if (draft.state?.senderKey !== sender.key) return;
-      draft.state.senderSnapshotName = sender.name || draft.state.senderSnapshotName || '';
-      draft.state.senderSnapshotTitle = sender.title || draft.state.senderSnapshotTitle || '';
+    const nextDrafts = app.state.drafts.map(draft => {
+      if (draft.state?.senderKey !== sender.key) return draft;
       changed = true;
+      return { ...draft, state: { ...draft.state,
+        senderSnapshotName: sender.name || draft.state.senderSnapshotName || '',
+        senderSnapshotTitle: sender.title || draft.state.senderSnapshotTitle || '' } };
     });
-    if (changed) saveDrafts();
-    if (app.state.comms?.senderKey === sender.key) {
-      app.state.comms.senderSnapshotName = sender.name || app.state.comms.senderSnapshotName || '';
-      app.state.comms.senderSnapshotTitle = sender.title || app.state.comms.senderSnapshotTitle || '';
-      saveCurrent();
+    if (changed) {
+      if (app.store.set(keys.commsDrafts, nextDrafts) === false) return false;
+      app.state.drafts = nextDrafts;
     }
+    if (app.state.comms?.senderKey === sender.key) {
+      const nextCurrent = { ...app.state.comms,
+        senderSnapshotName: sender.name || app.state.comms.senderSnapshotName || '',
+        senderSnapshotTitle: sender.title || app.state.comms.senderSnapshotTitle || '' };
+      if (app.store.set(keys.commsCurrent, nextCurrent) === false) return false;
+      app.state.comms = nextCurrent;
+    }
+    return true;
   }
 
   function removeSender(key) {
     const sender = app.state.localSenders.find(entry => entry.key === key);
     if (!sender) return null;
-    snapshotReferences(sender);
-    app.state.localSenders = app.state.localSenders.filter(entry => entry.key !== key);
-    saveLocalSenders();
+    if (!snapshotReferences(sender)) return null;
+    const next = app.state.localSenders.filter(entry => entry.key !== key);
+    if (app.store.set(keys.localSenders, next) === false) return null;
+    app.state.localSenders = next;
     return sender;
   }
 
@@ -257,21 +279,23 @@
 
     if (includes('senders')) {
       const incomingSenders = (Array.isArray(raw.localSenders) ? raw.localSenders : []).map(normalizeSender).filter(Boolean);
-      app.state.localSenders = mergeByKey(app.state.localSenders, incomingSenders, sender => sender.key);
-      requireStored(keys.localSenders, app.state.localSenders);
+      const next = mergeByKey(app.state.localSenders, incomingSenders, sender => sender.key);
+      requireStored(keys.localSenders, next);
+      app.state.localSenders = next;
     }
     if (includes('drafts')) {
       const incomingDrafts = (Array.isArray(raw.drafts) ? raw.drafts : []).map(normalizeDraft).filter(Boolean);
-      app.state.drafts = mergeByKey(app.state.drafts, incomingDrafts, draft => draft.id);
-      requireStored(keys.commsDrafts, app.state.drafts);
+      const next = mergeByKey(app.state.drafts, incomingDrafts, draft => draft.id);
+      requireStored(keys.commsDrafts, next);
+      app.state.drafts = next;
     }
 
     if (includes('current') && raw.current && typeof raw.current === 'object') {
       const incomingCurrent = snapshotSender(normalizeState(raw.current));
       const valid = incomingCurrent.senderKey === '__custom__' || Boolean(senderByKey(incomingCurrent.senderKey));
       if (!valid && !incomingCurrent.senderSnapshotName) incomingCurrent.senderKey = app.config.senders[0].key;
+      requireStored(keys.commsCurrent, incomingCurrent);
       app.state.comms = incomingCurrent;
-      requireStored(keys.commsCurrent, app.state.comms);
     }
 
     if (version >= 2) {
@@ -345,11 +369,12 @@
     inspectPayload,
     exportPayload,
     init() {
-      app.state.localSenders = (app.store.get(keys.localSenders, []) || []).map(normalizeSender).filter(Boolean);
-      app.state.drafts = (app.store.get(keys.commsDrafts, []) || []).map(normalizeDraft).filter(Boolean);
+      const senders = storedList(keys.localSenders), drafts = storedList(keys.commsDrafts);
+      app.state.localSenders = senders.entries.map(normalizeSender).filter(Boolean);
+      app.state.drafts = drafts.entries.map(normalizeDraft).filter(Boolean);
       app.state.comms = snapshotSender(normalizeState(app.store.get(keys.commsCurrent, null)));
-      saveLocalSenders();
-      saveDrafts();
+      if (senders.writable) saveLocalSenders();
+      if (drafts.writable) saveDrafts();
       saveCurrent();
     }
   };

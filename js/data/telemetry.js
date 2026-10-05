@@ -23,7 +23,7 @@ function updateBaseTelemetry() {
   const healthDisplay = formatBaseHealth(health);
 
   if (els.baseMoneyVal) scrambleText(els.baseMoneyVal, formatCurrency(money));
-  if (els.baseStorageVal) scrambleText(els.baseStorageVal, Number.isFinite(Number(cargo)) ? numFormatter.format(cargo) : '–');
+  if (els.baseStorageVal) scrambleText(els.baseStorageVal, number(finiteNumber(cargo, null, 0)));
   if (els.baseHealthVal) scrambleText(els.baseHealthVal, healthDisplay);
 
   if (els.baseHealthCard) {

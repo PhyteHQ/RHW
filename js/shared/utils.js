@@ -52,7 +52,8 @@ if (typeof IntersectionObserver === 'function' && els.rpFooterTime) {
 function normalize(value) { return String(value || '').trim().toLowerCase(); }
 
 function finiteNumber(value, fallback = null, minimum = -Infinity) {
-  if (value === null || value === undefined || value === '') return fallback;
+  if (typeof value !== 'number' && typeof value !== 'string') return fallback;
+  if (typeof value === 'string' && !value.trim()) return fallback;
   const parsed = Number(value);
   return Number.isFinite(parsed) && parsed >= minimum ? parsed : fallback;
 }
@@ -286,8 +287,8 @@ function firstFiniteApiStockValue(item, keys) {
     if (!Object.prototype.hasOwnProperty.call(item, key)) continue;
     const raw = item[key];
     if (raw === null || raw === undefined || raw === '') continue;
-    const value = Number(raw);
-    if (Number.isFinite(value) && value >= 0) return value;
+    const value = finiteNumber(raw, null, 0);
+    if (value !== null) return value;
   }
   return null;
 }
@@ -364,8 +365,8 @@ function renderFeedstockProgress(item, state, fallbackKey) {
 }
 
 function formatBaseHealth(value) {
-  const n = Number(value);
-  if (!Number.isFinite(n)) return '–';
+  const n = finiteNumber(value, null, 0);
+  if (n === null) return '–';
   if (n <= 100) return `${n.toFixed(n % 1 ? 1 : 0)}%`;
   const pct = Math.max(0, Math.min(100, (n / configuredBaseHealthMax()) * 100));
   return `${pct.toFixed(pct % 1 ? 1 : 0)}%`;

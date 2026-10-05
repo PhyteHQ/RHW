@@ -179,12 +179,12 @@ const DASHBOARD_CONFIG = Object.freeze({
   }),
   exportOrder: ['Multi-Mode Focusing Chamber', 'Reactor Systems', 'Superstructure Systems', 'Gold', 'Niobium'],
   recipes: Object.freeze([
-    Object.freeze({ product: 'Multi-Mode Focusing Chamber', output: 10, byproducts: [['Toxic Waste', 300], ['Scrap Metal', 100]], ingredients: [['Gold',250], ['Super Alloy',125], ['Titanium',25], ['Hydrocarbons',25], ['Prototype Components',10], ['MOX',225]] }),
-    Object.freeze({ product: 'Reactor Systems', output: 1, byproducts: [], ingredients: [['Energy Field Equipment',25], ['Super Alloy',25], ['Niobium',25], ['MOX',25]] }),
-    Object.freeze({ product: 'Superstructure Systems', output: 1, byproducts: [], ingredients: [['Gold',25], ['Hull Panels',25], ['Ablative Armor Plating',25], ['Super Alloy',25]] }),
-    Object.freeze({ product: 'Basic Alloy', output: 750, byproducts: [['Toxic Waste', 150]], ingredients: [['Industrial Materials',75], ['MOX',100], ['Scrap Metal',750]] }),
-    Object.freeze({ product: 'Gold', output: 800, byproducts: [['Toxic Waste', 150]], ingredients: [['Gold Ore',425], ['MOX',170], ['Industrial Materials',85]] }),
-    Object.freeze({ product: 'Niobium', output: 800, byproducts: [['Toxic Waste', 150]], ingredients: [['Niobium Ore',425], ['MOX',170], ['Industrial Materials',85]] })
+    Object.freeze({ product: 'Multi-Mode Focusing Chamber', recipeId: 'recipe_weapon_part_focusing_chamber', output: 10, byproducts: [['Toxic Waste', 300], ['Scrap Metal', 100]], ingredients: [['Gold',250], ['Super Alloy',125], ['Titanium',25], ['Hydrocarbons',25], ['Prototype Components',10], ['MOX',225]] }),
+    Object.freeze({ product: 'Reactor Systems', recipeId: 'ship_part_reactor', output: 1, byproducts: [], ingredients: [['Energy Field Equipment',25], ['Super Alloy',25], ['Niobium',25], ['MOX',25]] }),
+    Object.freeze({ product: 'Superstructure Systems', recipeId: 'ship_part_superstructure', output: 1, byproducts: [], ingredients: [['Gold',25], ['Hull Panels',25], ['Ablative Armor Plating',25], ['Super Alloy',25]] }),
+    Object.freeze({ product: 'Basic Alloy', recipeId: 'recipe_scrap_advanced', output: 750, byproducts: [['Toxic Waste', 150]], ingredients: [['Industrial Materials',75], ['MOX',100], ['Scrap Metal',750]] }),
+    Object.freeze({ product: 'Gold', recipeId: 'recipe_gold_advanced', output: 800, byproducts: [['Toxic Waste', 150]], ingredients: [['Gold Ore',425], ['MOX',170], ['Industrial Materials',85]] }),
+    Object.freeze({ product: 'Niobium', recipeId: 'recipe_niobium_advanced', output: 800, byproducts: [['Toxic Waste', 150]], ingredients: [['Niobium Ore',425], ['MOX',170], ['Industrial Materials',85]] })
   ]),
   alerts: Object.freeze({
     'basic alloy': { type: 'min', red: 2500, yellow: 15000 },
@@ -459,7 +459,8 @@ if (typeof IntersectionObserver === 'function' && els.rpFooterTime) {
 function normalize(value) { return String(value || '').trim().toLowerCase(); }
 
 function finiteNumber(value, fallback = null, minimum = -Infinity) {
-  if (value === null || value === undefined || value === '') return fallback;
+  if (typeof value !== 'number' && typeof value !== 'string') return fallback;
+  if (typeof value === 'string' && !value.trim()) return fallback;
   const parsed = Number(value);
   return Number.isFinite(parsed) && parsed >= minimum ? parsed : fallback;
 }
@@ -693,8 +694,8 @@ function firstFiniteApiStockValue(item, keys) {
     if (!Object.prototype.hasOwnProperty.call(item, key)) continue;
     const raw = item[key];
     if (raw === null || raw === undefined || raw === '') continue;
-    const value = Number(raw);
-    if (Number.isFinite(value) && value >= 0) return value;
+    const value = finiteNumber(raw, null, 0);
+    if (value !== null) return value;
   }
   return null;
 }
@@ -771,8 +772,8 @@ function renderFeedstockProgress(item, state, fallbackKey) {
 }
 
 function formatBaseHealth(value) {
-  const n = Number(value);
-  if (!Number.isFinite(n)) return '–';
+  const n = finiteNumber(value, null, 0);
+  if (n === null) return '–';
   if (n <= 100) return `${n.toFixed(n % 1 ? 1 : 0)}%`;
   const pct = Math.max(0, Math.min(100, (n / configuredBaseHealthMax()) * 100));
   return `${pct.toFixed(pct % 1 ? 1 : 0)}%`;
@@ -819,7 +820,7 @@ function updateBaseTelemetry() {
   const healthDisplay = formatBaseHealth(health);
 
   if (els.baseMoneyVal) scrambleText(els.baseMoneyVal, formatCurrency(money));
-  if (els.baseStorageVal) scrambleText(els.baseStorageVal, Number.isFinite(Number(cargo)) ? numFormatter.format(cargo) : '–');
+  if (els.baseStorageVal) scrambleText(els.baseStorageVal, number(finiteNumber(cargo, null, 0)));
   if (els.baseHealthVal) scrambleText(els.baseHealthVal, healthDisplay);
 
   if (els.baseHealthCard) {

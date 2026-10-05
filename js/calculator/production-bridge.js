@@ -64,6 +64,11 @@
   function findRecipeForLabel(label) {
     const target = normalize(label);
     if (!target || !core.state.catalog) return null;
+    // A product may also be unpacked or refined by another recipe. Production
+    // shortcuts must price the module shown on the card, not a name match.
+    const module = typeof RECIPES !== 'undefined'
+      ? RECIPES.find(entry => normalize(entry.product) === target) : null;
+    if (module?.recipeId) return core.recipe(module.recipeId);
     const recipes = [...(core.state.catalog.recipes || [])];
     const scored = recipes.map(recipe => {
       const output = recipe.outputs?.[0];
