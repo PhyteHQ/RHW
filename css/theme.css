@@ -241,8 +241,6 @@ html.rhw-focus-pass .app-context-nav-slot { margin-top: 0;padding: 4px;border: 0
 
 html.rhw-focus-pass .app-context-nav-slot::before { display: none; }
 
-html.rhw-focus-pass #commandNodeNav button, html.rhw-focus-pass body[data-workspace="command"] #commandNodeNav.command-module-nav button[data-command-node] { display: flex;grid-template-columns: none;grid-template-rows: none;align-items: center;justify-content: center;height: 44px;min-height: 44px;max-height: none;padding: 8px 10px;gap: 8px;box-shadow: none;color: var(--muted); }
-
 html.rhw-focus-pass #commandNodeNav button::before, html.rhw-focus-pass #commandNodeNav button::after { display: none; }
 
 html.rhw-focus-pass .command-module-index { display: inline-flex;align-items:center;justify-content:center;min-width: 25px;padding: 3px;font: 11px var(--font-tech);background: #080d0c;border: 1px solid var(--line); }
@@ -253,7 +251,7 @@ html.rhw-focus-pass .command-module-copy small, html.rhw-focus-pass .command-mod
 
 html.rhw-focus-pass .inventory-view-nav { padding: 0;min-height: 0;gap: 8px;border: 0;margin: 0;background: transparent; }
 
-html.rhw-focus-pass .inventory-view-nav button { min-height: 44px !important;padding: 8px 14px !important;border: 1px solid transparent;border-bottom: 2px solid transparent;background: transparent;box-shadow: none; }
+html.rhw-focus-pass .inventory-view-nav button {border: 1px solid transparent;border-bottom: 2px solid transparent;background: transparent;box-shadow: none; }
 
 html.rhw-focus-pass .inventory-view-nav button span { display: inline;font: 500 13px/1.4 var(--font-main); }
 
@@ -263,7 +261,7 @@ html.rhw-focus-pass .inventory-view-nav button.active { background: #232720;bord
 
 html.rhw-focus-pass #commandStrip, html.rhw-focus-pass .command-area-heading, html.rhw-focus-pass .inventory-view-heading { display: none; }
 
-html.rhw-focus-pass .command-control-deck { background: transparent;padding: 0;border: 0;box-shadow: none;margin: 8px 0 12px;grid-template-columns: minmax(200px,1fr) auto auto; }
+html.rhw-focus-pass .command-control-deck { background: transparent;border: 0;box-shadow: none; }
 
 html.rhw-focus-pass #commandGlobalSearch { font: 14px/1.4 var(--font-main) !important; }
 
@@ -639,14 +637,10 @@ html.rhw-focus-pass .app-navigation-cluster { margin-top: 4px; }
 html.rhw-focus-pass .app-tabs button[data-workspace] { min-height: 48px;padding: 8px 4px; }
 html.rhw-focus-pass .app-tabs button[data-workspace] span { font-size: 20px; }
 html.rhw-focus-pass .app-context-nav-slot { margin-top: 0;padding: 4px; }
-html.rhw-focus-pass #commandNodeNav .workspace-subnav-tabs { grid-template-columns: repeat(2,minmax(0,1fr)) !important;gap: 4px; }
-html.rhw-focus-pass #commandNodeNav button { min-height: 44px;padding: 8px; }
 html.rhw-focus-pass .command-module-index { font-size: 11px; }
 html.rhw-focus-pass :is(.app-workspace,.uplink-panel) :is(input,select,textarea) { font-size: 16px !important;min-width: 0; }
 html.rhw-focus-pass .app-workspace button, html.rhw-focus-pass .app-workspace summary { min-height: 44px; }
 html.rhw-focus-pass #commandGlobalSearch { font-size: 16px !important; }
-html.rhw-focus-pass .command-control-deck { grid-template-columns: minmax(0,1fr) auto;margin-inline: 0;gap: 8px; }
-html.rhw-focus-pass .command-context-action { grid-column: 1 / -1;max-width: none; }
 html.rhw-focus-pass .workspace-heading { margin-bottom: 12px;padding: 8px 0; }
 html.rhw-focus-pass .workspace-heading p { display: none; }
 html.rhw-focus-pass :is(.panel-title,.shipyard-control-title) { font-size: 27px; }

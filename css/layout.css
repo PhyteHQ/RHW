@@ -23,6 +23,14 @@ html.rhw-focus-pass .app-secondary-nav .app-context-nav-slot { grid-column: 1;gr
 
 html.rhw-focus-pass .app-secondary-nav .workspace-subnav { margin: 0;border: 0;background: transparent;box-shadow: none; }
 
+html.rhw-focus-pass #commandNodeNav button, html.rhw-focus-pass body[data-workspace="command"] #commandNodeNav.command-module-nav button[data-command-node] { display: flex;grid-template-columns: none;grid-template-rows: none;align-items: center;justify-content: center;height: 44px;min-height: 44px;max-height: none;padding: 8px 10px;gap: 8px;box-shadow: none;color: var(--muted); }
+
+html.rhw-focus-pass #commandNodeNav .workspace-subnav-tabs { grid-template-columns: repeat(4,minmax(0,1fr));gap: 8px; }
+
+html.rhw-focus-pass body[data-command-focus="attention"]:not([data-command-attention-empty="true"]) #commandNodeNav button:not([data-state="critical"]):not([data-state="low"]) { display:none; }
+
+html.rhw-focus-pass body[data-command-focus="attention"]:not([data-command-attention-empty="true"]) #commandNodeNav .workspace-subnav-tabs { grid-template-columns:repeat(var(--rhw-attention-columns,2),minmax(0,1fr)); }
+
 html.rhw-focus-pass #workspaceCommand main { padding-top: 6px;gap: 0; }
 
 html.rhw-focus-pass #commandControlDeck { display: grid;grid-template-columns: minmax(200px,1fr) auto minmax(260px,1fr);gap: 10px;align-items: start;margin: 0 0 12px;padding: 0; }
@@ -35,7 +43,7 @@ html.rhw-focus-pass #commandControlDeck .inventory-view-nav { position: relative
 
 html.rhw-focus-pass body:not([data-command-node="inventory"]) #commandControlDeck .inventory-view-nav { display: none; }
 
-html.rhw-focus-pass #commandControlDeck .inventory-view-nav button { display: flex;align-items: center;justify-content: center;min-width: 0;height: 44px;padding: 8px !important;text-align: center; }
+html.rhw-focus-pass #commandControlDeck .inventory-view-nav button { display: flex;align-items: center;justify-content: center;min-width: 0;min-height: 44px;height: 44px;padding: 8px;text-align: center; }
 
 html.rhw-focus-pass #commandControlDeck .inventory-view-nav button.active { color: var(--gold);background: linear-gradient(110deg,#342b18,#171d15);box-shadow: inset 0 1px #f0c56b22; }
 
@@ -140,13 +148,20 @@ html.rhw-focus-pass .app-tabs button[data-workspace] span { font: 600 11px/1.3 v
 html.rhw-focus-pass #rhwFocusToolsBtn { padding-inline: 8px;font-size: 11px; }
 html.rhw-focus-pass body { padding-bottom: calc(16px + env(safe-area-inset-bottom,0px)); }
 html.rhw-focus-pass .app-secondary-nav { gap: 8px; }
-html.rhw-focus-pass .app-secondary-nav #commandNodeNav button { gap: 4px; }
+html.rhw-focus-pass #commandNodeNav .workspace-subnav-tabs { gap: 4px; }
+html.rhw-focus-pass #commandNodeNav button, html.rhw-focus-pass body[data-workspace="command"] #commandNodeNav.command-module-nav button[data-command-node] { gap: 0;padding-inline: 2px; }
+html.rhw-focus-pass body[data-workspace="command"] #commandNodeNav .command-module-copy strong { font-size: 12px;letter-spacing: 0;white-space: nowrap; }
 html.rhw-focus-pass .app-secondary-nav .command-module-index { display: none; }
 html.rhw-focus-pass .app-secondary-nav #rhwFocusToolsBtn { padding-inline: 10px; }
-html.rhw-focus-pass #commandControlDeck, html.rhw-focus-pass body[data-command-node="inventory"] #commandControlDeck, html.rhw-focus-pass body[data-command-node="inventory"] #commandControlDeck:has(#commandGlobalAlerts[hidden]) { grid-template-columns: minmax(0,1fr);gap: 8px; }
-html.rhw-focus-pass #commandGlobalAlerts { grid-column: 1; }
-html.rhw-focus-pass #commandAlertDetails { position: static;width: 100%;max-height: 60vh;margin-top: 6px;border: 0;box-shadow: none; }
-html.rhw-focus-pass #commandControlDeck .command-context-action { grid-column: 1;max-width: none; }
+html.rhw-focus-pass #commandControlDeck, html.rhw-focus-pass body[data-command-node="inventory"] #commandControlDeck, html.rhw-focus-pass body[data-command-node="inventory"] #commandControlDeck:has(#commandGlobalAlerts[hidden]) { grid-template-columns: minmax(0,1fr) minmax(0,1fr);gap: 8px; }
+html.rhw-focus-pass #commandControlDeck .inventory-view-nav, html.rhw-focus-pass #commandControlDeck .command-finder { grid-column: 1 / -1; }
+html.rhw-focus-pass body[data-command-node="inventory"] #commandControlDeck .command-finder { grid-column: auto; }
+html.rhw-focus-pass body[data-command-node="inventory"] #commandControlDeck:has(#commandGlobalAlerts[hidden]) .command-finder { grid-column: 1 / -1; }
+html.rhw-focus-pass #commandControlDeck .command-finder, html.rhw-focus-pass #commandGlobalAlerts { position: static; }
+html.rhw-focus-pass #commandGlobalSearch { padding-right: 10px; }
+html.rhw-focus-pass #commandGlobalAlerts { grid-column: auto; }
+html.rhw-focus-pass #commandAlertDetails, html.rhw-focus-pass #commandControlDeck .command-search-results { position: absolute;top: calc(100% + 6px);left: 0;right: 0;width: auto;max-height: 60vh;margin: 0; }
+html.rhw-focus-pass #commandControlDeck .command-context-action { grid-column: auto;min-width: 0;max-width: none;white-space: normal;font: 600 11px/1.3 var(--font-main);letter-spacing: 0; }
 html.rhw-focus-pass #inventoryStatusPanel .summary-grid { grid-template-columns: minmax(0,1fr); }
 html.rhw-focus-pass #inventoryStatusPanel .alert-card { grid-column: 1;flex: initial; }
 html.rhw-focus-pass .command-top-button { bottom: calc(16px + env(safe-area-inset-bottom,0px)); }
@@ -208,8 +223,6 @@ html.rhw-focus-pass .app-tabs button[data-workspace] { border-right-color: var(-
 html.rhw-focus-pass .app-tabs button[data-workspace].active { background: linear-gradient(110deg,#3d311a,#182017);box-shadow: inset 0 1px #f0c56b33,0 2px 12px #f0c56b0d; }
 
 html.rhw-focus-pass .app-secondary-nav { padding-block: 5px; }
-
-html.rhw-focus-pass #commandNodeNav .workspace-subnav-tabs { gap: 8px; }
 
 html.rhw-focus-pass #commandNodeNav button, html.rhw-focus-pass body[data-workspace="command"] #commandNodeNav.command-module-nav button[data-command-node] { border: 0;border-bottom: 2px solid transparent;border-radius: 0;background: transparent; }
 

@@ -71,7 +71,7 @@
 /* SOURCE: js/command/config.js */
 // ============================================================
 // RHW DASHBOARD CONFIGURATION
-// Edit features, recipes, tracked roles, thresholds, market scans and remote facilities here.
+// Edit features, production module identities, tracked roles, thresholds and market scans here.
 // ============================================================
 const DASHBOARD_CONFIG = Object.freeze({
   apiUrl: 'https://darkstat.dd84ai.com/api/pobs',
@@ -178,13 +178,13 @@ const DASHBOARD_CONFIG = Object.freeze({
     ])
   }),
   exportOrder: ['Multi-Mode Focusing Chamber', 'Reactor Systems', 'Superstructure Systems', 'Gold', 'Niobium'],
-  recipes: Object.freeze([
-    Object.freeze({ product: 'Multi-Mode Focusing Chamber', recipeId: 'recipe_weapon_part_focusing_chamber', output: 10, byproducts: [['Toxic Waste', 300], ['Scrap Metal', 100]], ingredients: [['Gold',250], ['Super Alloy',125], ['Titanium',25], ['Hydrocarbons',25], ['Prototype Components',10], ['MOX',225]] }),
-    Object.freeze({ product: 'Reactor Systems', recipeId: 'ship_part_reactor', output: 1, byproducts: [], ingredients: [['Energy Field Equipment',25], ['Super Alloy',25], ['Niobium',25], ['MOX',25]] }),
-    Object.freeze({ product: 'Superstructure Systems', recipeId: 'ship_part_superstructure', output: 1, byproducts: [], ingredients: [['Gold',25], ['Hull Panels',25], ['Ablative Armor Plating',25], ['Super Alloy',25]] }),
-    Object.freeze({ product: 'Basic Alloy', recipeId: 'recipe_scrap_advanced', output: 750, byproducts: [['Toxic Waste', 150]], ingredients: [['Industrial Materials',75], ['MOX',100], ['Scrap Metal',750]] }),
-    Object.freeze({ product: 'Gold', recipeId: 'recipe_gold_advanced', output: 800, byproducts: [['Toxic Waste', 150]], ingredients: [['Gold Ore',425], ['MOX',170], ['Industrial Materials',85]] }),
-    Object.freeze({ product: 'Niobium', recipeId: 'recipe_niobium_advanced', output: 800, byproducts: [['Toxic Waste', 150]], ingredients: [['Niobium Ore',425], ['MOX',170], ['Industrial Materials',85]] })
+  productionModules: Object.freeze([
+    Object.freeze({ product: 'Multi-Mode Focusing Chamber', recipeId: 'recipe_weapon_part_focusing_chamber' }),
+    Object.freeze({ product: 'Reactor Systems', recipeId: 'ship_part_reactor' }),
+    Object.freeze({ product: 'Superstructure Systems', recipeId: 'ship_part_superstructure' }),
+    Object.freeze({ product: 'Basic Alloy', recipeId: 'recipe_scrap_advanced' }),
+    Object.freeze({ product: 'Gold', recipeId: 'recipe_gold_advanced' }),
+    Object.freeze({ product: 'Niobium', recipeId: 'recipe_niobium_advanced' })
   ]),
   alerts: Object.freeze({
     'basic alloy': { type: 'min', red: 2500, yellow: 15000 },
@@ -308,7 +308,7 @@ const CONFISCATED = DASHBOARD_CONFIG.roles.confiscated;
 const REMOTE_FACILITIES = DASHBOARD_CONFIG.remoteFacilities;
 const CAPITAL_SHIPYARD = DASHBOARD_CONFIG.capitalShipyard;
 const EXPORT_ORDER = DASHBOARD_CONFIG.exportOrder;
-const RECIPES = DASHBOARD_CONFIG.recipes;
+const PRODUCTION_MODULES = DASHBOARD_CONFIG.productionModules;
 const CUSTOM_ALERTS = DASHBOARD_CONFIG.alerts;
 const BAR_MAX_FALLBACKS = DASHBOARD_CONFIG.barMaxFallbacks;
 
@@ -1055,6 +1055,7 @@ function roleLabel(role) {
 }
 
 function statusLabel(state, role) {
+  if (state === 'waiting') return 'UNKNOWN';
   if (role === 'byproduct' || role === 'confiscated') return state === 'critical' ? 'OVERFLOW' : (state === 'low' ? 'WARN' : 'STABLE');
   return state === 'critical' ? 'CRITICAL' : (state === 'low' ? 'LOW' : 'STABLE');
 }
@@ -1090,6 +1091,7 @@ function priceBuy(item) { return firstValidPrice(item, ['price_to_buy_from_base'
 function findCommodity(name) { return itemsByKey.get(keyFromName(name)) || null; }
 function stockFor(name) { const item = findCommodity(name); return item ? quantity(item) : 0; }
 function displayRecipeName(name) { return displayName({ name }); }
+function productionRecipes() { return window.RHWV4?.production?.recipes() || []; }
 
 function sortManifestBy(column) {
   if (!column) return;
@@ -1256,12 +1258,14 @@ function renderProductionModules() {
     els.productionGrid.innerHTML = `<div class="feature-empty production-empty">${failed ? 'TELEMETRY UNAVAILABLE' : 'AWAITING FIRST TELEMETRY BURST'}<small>${failed ? 'NO VERIFIED RHW INVENTORY IS AVAILABLE' : 'PRODUCTION ANALYSIS WILL APPEAR AFTER THE FIRST SUCCESSFUL SYNC'}</small></div>`;
     return;
   }
-  if (!Array.isArray(RECIPES) || !RECIPES.length) {
-    els.productionGrid.innerHTML = '<div class="feature-empty production-empty">PRODUCTION MODULES STANDBY<small>NO RECIPES CONFIGURED</small></div>';
+  const recipes = productionRecipes();
+  if (!recipes.length) {
+    els.productionGrid.innerHTML = '<div class="feature-empty production-empty">PRODUCTION RECIPES UNAVAILABLE<small>CAPACITY REQUIRES THE VERIFIED RECIPE CATALOG</small></div>';
+    applyProductionModuleFilters();
     return;
   }
 
-  els.productionGrid.innerHTML = RECIPES.map((recipe, index) => {
+  els.productionGrid.innerHTML = recipes.map((recipe, index) => {
     const analysis = analyzeRecipe(recipe);
     const ingredientRows = analysis.ingredientData.map(item => {
       const isBottleneck = analysis.bottleneck && item.name === analysis.bottleneck.name;
@@ -1285,6 +1289,10 @@ function renderProductionModules() {
       ? `<div class="byproduct-strip"><span>BYPRODUCT / CYCLE</span>${recipe.byproducts.map(bp => `<span class="byproduct-tag">${number(bp[1])} ${escapeHTML(displayRecipeName(bp[0]))}</span>`).join('')}</div>`
       : '';
 
+    const prerequisitesText = recipe.prerequisites?.length
+      ? `<div class="byproduct-strip production-prerequisites"><span>REQUIRED · NOT CONSUMED</span>${recipe.prerequisites.map(([name, qty]) => `<span class="byproduct-tag">${number(qty)} ${escapeHTML(name)}</span>`).join('')}</div>`
+      : '';
+
     const productKey = normalize(displayRecipeName(recipe.product));
     const mobileCollapsed = window.matchMedia?.('(max-width: 760px)').matches && !productionExpandedModules.has(productKey);
 
@@ -1299,7 +1307,7 @@ function renderProductionModules() {
               </div>
               <div class="production-stats">
                 <div class="production-stat production-stock-primary"><small>IN STOCK</small><strong>${number(analysis.productStock)}</strong></div>
-                <div class="production-stat"><small>MAX CYCLES</small><strong>${number(analysis.possibleCycles)}</strong></div>
+                <div class="production-stat"><small>MATERIAL CYCLES</small><strong>${number(analysis.possibleCycles)}</strong></div>
                 <div class="production-stat"><small>EST. YIELD</small><strong>${number(analysis.possibleOutput)}</strong></div>
               </div>
               ${nextGapText}
@@ -1309,6 +1317,7 @@ function renderProductionModules() {
               </div>
               <ul class="recipe-list">${ingredientRows}</ul>
               ${byproductsText}
+              ${prerequisitesText}
             </div>`;
   }).join('');
   applyProductionModuleFilters();
@@ -1744,7 +1753,9 @@ function renderSupplier() {
 /* SOURCE: js/command/inventory.js */
 function feedstockAnalysis(item) {
   const key = commodityKey(item);
-  const perRecipeRequirements = RECIPES.map(recipe => recipe.ingredients
+  const recipes = productionRecipes();
+  if (!recipes.length) return { key, required: null, quantity: quantity(item), cycles: null, state: 'waiting', perRecipeRequirements: [] };
+  const perRecipeRequirements = recipes.map(recipe => recipe.ingredients
     .filter(([ingredientName]) => keyFromName(ingredientName) === key)
     .reduce((sum, [, amount]) => sum + (Number(amount) || 0), 0))
     .filter(required => required > 0);
@@ -1916,7 +1927,7 @@ function renderOverview() {
       const analysis = feedstockAnalysis(item);
       return renderOverviewRow({
         state: analysis.state, role: 'procurement', name: displayName(item), item,
-        detail: analysis.cycles > 0 ? `${number(analysis.cycles)} INPUT BATCHES` : `${number(analysis.required - analysis.quantity)} NEEDED FOR 1 BATCH`, quantityValue: analysis.quantity,
+        detail: analysis.cycles === null ? 'RECIPE DATA UNAVAILABLE' : analysis.cycles > 0 ? `${number(analysis.cycles)} INPUT BATCHES` : `${number(analysis.required - analysis.quantity)} NEEDED FOR 1 BATCH`, quantityValue: analysis.quantity,
         progress: renderFeedstockProgress(item, analysis.state, fallbackKey)
       });
     }).join('');

@@ -66,8 +66,8 @@
     if (!target || !core.state.catalog) return null;
     // A product may also be unpacked or refined by another recipe. Production
     // shortcuts must price the module shown on the card, not a name match.
-    const module = typeof RECIPES !== 'undefined'
-      ? RECIPES.find(entry => normalize(entry.product) === target) : null;
+    const module = typeof PRODUCTION_MODULES !== 'undefined'
+      ? PRODUCTION_MODULES.find(entry => normalize(entry.product) === target) : null;
     if (module?.recipeId) return core.recipe(module.recipeId);
     const recipes = [...(core.state.catalog.recipes || [])];
     const scored = recipes.map(recipe => {
@@ -161,8 +161,8 @@
       if (input.placeholder) failures.push('price-placeholder');
     });
     try {
-      if (typeof RECIPES !== 'undefined') {
-        RECIPES.forEach(recipe => {
+      if (typeof PRODUCTION_MODULES !== 'undefined') {
+        PRODUCTION_MODULES.forEach(recipe => {
           if (!findRecipeForLabel(recipe.product)) failures.push(`production-recipe:${recipe.product}`);
         });
       }

@@ -83,6 +83,9 @@ def main() -> int:
                 selfFailures:RHWV4.inventoryToolbar?.selfTest?.()||[],
                 commandCount:commandButtons.length,
                 commandHeights:commandButtons.map(x=>rect(x).height),
+                commandSingleRow:commandButtons.every(x=>Math.abs(rect(x).top-rect(commandButtons[0]).top)<1),
+                commandLabelsFit:commandButtons.every(x=>x.scrollWidth<=x.clientWidth+1),
+                toolbarHeight:rect(toolbar).height,
                 modeCount:modeButtons.length,
                 modeHeights:modeButtons.map(x=>rect(x).height),
                 toolbar:modeNav?.parentElement===toolbar&&alerts?.parentElement===toolbar,
@@ -103,6 +106,8 @@ def main() -> int:
               };
               document.getElementById('commandAlertToggle')?.click();
               const detailsVisible=visible(document.getElementById('commandAlertDetails'));
+              const details=rect(document.getElementById('commandAlertDetails')),deck=rect(toolbar);
+              const disclosureFits=Math.abs(details.left-deck.left)<2&&Math.abs(details.right-deck.right)<2&&details.top>=deck.bottom;
               const action=alertList?.querySelector('button');
               action?.focus();
               RHWV4.command.updateOverview();
@@ -110,6 +115,10 @@ def main() -> int:
               const stableDisclosure=visible(document.getElementById('commandAlertDetails'))&&document.activeElement===action;
               attention?.click();
               const attentionOn=document.body.dataset.commandFocus||'';
+              const visibleAreas=commandButtons.filter(visible);
+              visibleAreas[0]?.focus();
+              visibleAreas[0]?.dispatchEvent(new KeyboardEvent('keydown',{key:'End',bubbles:true,cancelable:true}));
+              const filteredKeyboard=document.activeElement===visibleAreas.at(-1)&&visibleAreas.every(b=>['low','critical'].includes(b.dataset.state));
               attention?.click();
               const attentionOff=document.body.dataset.commandFocus||'';
               document.getElementById('commandAlertDetails')?.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true,cancelable:true}));
@@ -118,15 +127,17 @@ def main() -> int:
               const manifestState={statusVisible:visible(status),manifestVisible:visible(manifest),active:document.getElementById('inventoryManifestTab')?.classList.contains('active')||false};
               document.getElementById('inventoryStatusTab')?.click();
               const statusState={statusVisible:visible(status),manifestVisible:visible(manifest),active:document.getElementById('inventoryStatusTab')?.classList.contains('active')||false};
-              return{initial,detailsVisible,stableDisclosure,escapeClosed,attentionOn,attentionOff,manifestState,statusState};
+              return{initial,detailsVisible,disclosureFits,stableDisclosure,escapeClosed,attentionOn,attentionOff,filteredKeyboard,manifestState,statusState};
             })()""")
 
             initial = result.get("initial", {})
+            if not initial.get("commandSingleRow") or not initial.get("commandLabelsFit") or initial.get("toolbarHeight", 9999) > 105:
+                raise RuntimeError(f"Mobile Command navigation/toolbar is not compact: {result}")
             if initial.get("selfFailures"):
                 raise RuntimeError(f"Compact COMMAND self-test failed: {result}")
             if not initial.get("searchVisible") or initial.get("searchHeight", 0) < 43.5 or initial.get("searchName") != "Command finder":
                 raise RuntimeError(f"COMMAND search is hidden or too small to use: {result}")
-            if initial.get("commandCount") != 4 or any(h < 43.5 or h > 68 for h in initial.get("commandHeights", [])):
+            if initial.get("commandCount") != 4 or any(h < 43.5 or h > 50 for h in initial.get("commandHeights", [])):
                 raise RuntimeError(f"COMMAND module cards are not compact/touch-safe: {result}")
             if initial.get("modeCount") != 2 or initial.get("indexes") != 2 or any(h < 43.5 or h > 58 for h in initial.get("modeHeights", [])):
                 raise RuntimeError(f"Inventory mode controls are not unified/touch-safe: {result}")
@@ -143,7 +154,7 @@ def main() -> int:
             if initial.get("attentionVisible"):
                 raise RuntimeError(f"Duplicate attention control visible outside disclosure: {result}")
             if initial.get("alertCount", 0) > 0:
-                if not result.get("detailsVisible") or not result.get("stableDisclosure") or not result.get("escapeClosed"):
+                if not result.get("detailsVisible") or not result.get("disclosureFits") or not result.get("stableDisclosure") or not result.get("escapeClosed") or not result.get("filteredKeyboard"):
                     raise RuntimeError(f"Alert disclosure / focus / refresh regressed: {result}")
                 if result.get("attentionOn") != "attention" or result.get("attentionOff") != "all":
                     raise RuntimeError(f"NEEDS ATTENTION is not a reversible single toggle: {result}")

@@ -60,7 +60,7 @@ numeric order is explicit, and thrown failures reach the boot failure surface.
 | `shell:ready` | Workspace labels → primary navigation → Price Check |
 | `command:ready` | Status navigation → shared controls → surfaces → Logistics views → Inventory toolbar → Shipyard selection |
 | `command:before-activate` / `command:activated` | Scroll preparation, then status/control updates with previous and current node |
-| `catalog:loaded` | Discovery semantics → recipe labels → Shipyard requirements |
+| `catalog:loaded` | Discovery semantics → recipe labels → Production batches → Shipyard requirements |
 | `calculator:before-init` / `calculator:ready` | Session reset, then Production bridge → costing display → profiles → navigation → labels |
 | `forum:ready` / `forum:activated` | Mobile views → workspace navigation |
 | `discovery:ready` | Data-status tool placement |
@@ -79,6 +79,14 @@ Reusable catalysts are displayed separately from consumed materials. Material
 coverage is an alternative use of the shared inventory, never a reservation or
 a sum of concurrently buildable ships. Unknown stock remains unknown; cached
 stock is labelled. Selection is a local preference and is included in backups.
+
+`js/command/config.js` selects the six installed Production modules by recipe
+ID. `js/command/production-model.js` derives their consumed inputs, batch yields,
+byproducts and non-consumed prerequisites from the same corrected BMM plan used
+by the Calculator. The registry contains no duplicate recipe quantities. The
+`catalog:loaded` hook at order 30 invalidates these batches after semantics
+normalization (10), before the shared Command render (40). Missing recipes or an
+unavailable catalog leave material coverage unknown.
 
 ## Rendering and background work
 

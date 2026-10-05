@@ -37,17 +37,15 @@
       nav.addEventListener('keydown', event => {
         const button = event.target.closest('[data-command-node]');
         if (!button || !['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'].includes(event.key)) return;
-        const buttons = [...nav.querySelectorAll('[data-command-node]')];
+        const buttons = [...nav.querySelectorAll('[data-command-node]')].filter(candidate => !candidate.hidden && candidate.getClientRects().length);
         const current = buttons.indexOf(button);
         if (current < 0) return;
         event.preventDefault();
         let nextIndex = current;
         if (event.key === 'Home') nextIndex = 0;
         else if (event.key === 'End') nextIndex = buttons.length - 1;
-        else if (event.key === 'ArrowLeft') nextIndex = (current - 1 + buttons.length) % buttons.length;
-        else if (event.key === 'ArrowRight') nextIndex = (current + 1) % buttons.length;
-        else if (event.key === 'ArrowUp') nextIndex = (current - 2 + buttons.length) % buttons.length;
-        else if (event.key === 'ArrowDown') nextIndex = (current + 2) % buttons.length;
+        else if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') nextIndex = (current - 1 + buttons.length) % buttons.length;
+        else if (event.key === 'ArrowRight' || event.key === 'ArrowDown') nextIndex = (current + 1) % buttons.length;
         buttons[nextIndex]?.focus();
       });
     }

@@ -135,6 +135,10 @@ def main():
                   return {overflow:Math.max(document.documentElement.scrollWidth,document.body.scrollWidth)-innerWidth,
                     toolsInNav:nav.contains(tools),toolsHeight:tools.getBoundingClientRect().height,
                     contextVisible:visible(document.getElementById('appSecondaryNav')),panels:panels.length,
+                    commandButtons:[...document.querySelectorAll('#commandNodeNav [data-command-node]')].filter(visible).map(e=>({top:e.getBoundingClientRect().top,height:e.getBoundingClientRect().height,clipped:e.scrollWidth>e.clientWidth+1})),
+                    toolbarHeight:document.getElementById('commandControlDeck').getBoundingClientRect().height,
+                    firstInventoryTop:document.querySelector('#inventoryStatusPanel .alert-card').getBoundingClientRect().top,
+                    crestWidth:document.querySelector('.crest').getBoundingClientRect().width,
                     tabClipping:[...document.querySelectorAll('.app-tabs button')].some(b=>b.scrollWidth>b.clientWidth+2),
                     noticeVisible:visible(document.getElementById('telemetryNotice')),
                     font:document.fonts.check('16px Barlow'),
@@ -165,6 +169,12 @@ def main():
                 assert result['toolsInNav'] and result['toolsHeight'] >= 44 and result['panels'] == 1, (width, route, result)
                 assert result['contextVisible'] == (workspace == 'command'), (width, route, result)
                 assert result['font'] and result['inventoryStyled'] and not result['noticeVisible'], (width, route, result)
+                if width <= 760 and workspace == 'command':
+                    assert len(result['commandButtons']) == 4 and all(b['height'] >= 44 and not b['clipped'] for b in result['commandButtons']), (width, route, result)
+                    assert max(b['top'] for b in result['commandButtons']) - min(b['top'] for b in result['commandButtons']) < 1, (width, route, result)
+                    assert result['toolbarHeight'] <= 105 and result['crestWidth'] >= 70, (width, route, result)
+                    if route == 'command/inventory':
+                        assert result['firstInventoryTop'] <= 510, (width, result)
                 if width >= 1100 and workspace == 'operations':
                     assert result['inputs'] and all(0 < n <= 145 for n in result['inputs']), result
                 if width <= 760 and workspace == 'operations':
@@ -308,6 +318,18 @@ def main():
           search.value='';return {refresh,sorted,associated,fewer,restored,independent,searchFocus};
         })()""")
         assert all(disclosure.values()), disclosure
+        # Search results must remain readable across the full toolbar width even
+        # though the phone search field shares a row with Attention.
+        base.ev(cdp, """(()=>{RHWV4.navigate('command','inventory');scrollTo({top:0,behavior:'instant'});
+          commandGlobalSearch.value='Gold';commandGlobalSearch.focus();commandGlobalSearch.dispatchEvent(new Event('input',{bubbles:true}));return true;})()""")
+        time.sleep(.15)
+        command_search = base.ev(cdp, """(()=>{const box=commandSearchResults.getBoundingClientRect(),deck=commandControlDeck.getBoundingClientRect();
+          const result={visible:!commandSearchResults.hidden,count:commandSearchResults.querySelectorAll('[data-command-search-result]').length,
+            fits:Math.abs(box.left-deck.left)<2&&Math.abs(box.right-deck.right)<2&&box.top>=deck.bottom,
+            focused:document.activeElement===commandGlobalSearch};
+          commandGlobalSearch.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true,cancelable:true}));
+          result.closed=commandSearchResults.hidden&&commandGlobalSearch.value==='';return result;})()""")
+        assert command_search['visible'] and command_search['count'] > 0 and command_search['fits'] and command_search['focused'] and command_search['closed'], command_search
         # The old URL must resolve to a current view; no retired editor is mounted.
         retired = base.ev(cdp, """(()=>{RHWV4.navigate('comms','ticker');return {route:location.hash,
           editor:!!document.getElementById('v40NewswireManager'),orders:!!RHWV4.productionOrders,
@@ -352,11 +374,20 @@ def main():
         # output can be unpacked from a freight container.
         production_recipe = base.ev(cdp, """(()=>{
           RHWV4.navigate('command','production');
+          const cards=[...document.querySelectorAll('.production-card')];
+          const production={cards:cards.length,crew:cards.filter(card=>card.querySelector('.production-prerequisites')?.textContent.includes('Crew')).length,
+            materialCoverage:cards.every(card=>card.textContent.includes('MATERIAL CYCLES'))};
+          const core=RHWV4.operationsCore,catalog=core.state.catalog;
+          core.state.catalog=null;renderProductionModules();
+          production.unavailable=productionGrid.textContent.includes('PRODUCTION RECIPES UNAVAILABLE')&&!productionGrid.querySelector('.production-card');
+          core.state.catalog=catalog;renderProductionModules();
+          production.restored=productionGrid.querySelectorAll('.production-card').length===6;
           document.querySelector('[data-production-product="basic alloy"] .production-calc-button').click();
-          return {recipe:opsRecipe.value,output:RHWV4.operationsCore.buildPlan({recipeId:opsRecipe.value,
+          return {production,recipe:opsRecipe.value,output:RHWV4.operationsCore.buildPlan({recipeId:opsRecipe.value,
             quantity:1,affiliationId:'br_m_grp',useInventory:false,recursive:false,routingPolicy:'first'}).actualOutput,
             materialNames:document.getElementById('opsMaterialPanel').textContent};
         })()""")
+        assert production_recipe['production']['cards'] == 6 and production_recipe['production']['crew'] >= 3 and all(production_recipe['production'][key] for key in ('materialCoverage','unavailable','restored')), production_recipe
         assert production_recipe['recipe'] == 'recipe_scrap_advanced' and production_recipe['output'] == 750, production_recipe
         assert 'Scrap Metal' in production_recipe['materialNames'] and 'Sealed Container' not in production_recipe['materialNames'], production_recipe
         # A rejected named-save must leave the old archive and the newly typed
@@ -412,7 +443,7 @@ def main():
             portable:/\\[img\\]https:\\/\\//.test(RHWV4.comms.buildBbcode())};
         })()""")
         assert all(forum_offline.values()), forum_offline
-        (OUT / 'checks.json').write_text(json.dumps({'layouts': report, 'shipyard': shipyard, 'shipyardRowHeaders': row_header_checks, 'marketLayouts': market_layouts, 'disclosure': disclosure, 'retired': retired, 'keyboard': focused, 'priceFocus': price_focus, 'priceEdit': price_edit, 'productionRecipe': production_recipe, 'failedSave': failed_save, 'offlinePrices': offline_prices, 'offline': offline}, indent=2))
+        (OUT / 'checks.json').write_text(json.dumps({'layouts': report, 'shipyard': shipyard, 'shipyardRowHeaders': row_header_checks, 'marketLayouts': market_layouts, 'disclosure': disclosure, 'commandSearch': command_search, 'retired': retired, 'keyboard': focused, 'priceFocus': price_focus, 'priceEdit': price_edit, 'productionRecipe': production_recipe, 'failedSave': failed_save, 'offlinePrices': offline_prices, 'offline': offline}, indent=2))
         print(f'Bundled interface passed: {len(report)} layouts, production recipe, rejected save, cached prices, keyboard focus, local fonts and offline reload.')
         return 0
     except Exception:

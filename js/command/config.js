@@ -1,6 +1,6 @@
 // ============================================================
 // RHW DASHBOARD CONFIGURATION
-// Edit features, recipes, tracked roles, thresholds, market scans and remote facilities here.
+// Edit features, production module identities, tracked roles, thresholds and market scans here.
 // ============================================================
 const DASHBOARD_CONFIG = Object.freeze({
   apiUrl: 'https://darkstat.dd84ai.com/api/pobs',
@@ -107,13 +107,13 @@ const DASHBOARD_CONFIG = Object.freeze({
     ])
   }),
   exportOrder: ['Multi-Mode Focusing Chamber', 'Reactor Systems', 'Superstructure Systems', 'Gold', 'Niobium'],
-  recipes: Object.freeze([
-    Object.freeze({ product: 'Multi-Mode Focusing Chamber', recipeId: 'recipe_weapon_part_focusing_chamber', output: 10, byproducts: [['Toxic Waste', 300], ['Scrap Metal', 100]], ingredients: [['Gold',250], ['Super Alloy',125], ['Titanium',25], ['Hydrocarbons',25], ['Prototype Components',10], ['MOX',225]] }),
-    Object.freeze({ product: 'Reactor Systems', recipeId: 'ship_part_reactor', output: 1, byproducts: [], ingredients: [['Energy Field Equipment',25], ['Super Alloy',25], ['Niobium',25], ['MOX',25]] }),
-    Object.freeze({ product: 'Superstructure Systems', recipeId: 'ship_part_superstructure', output: 1, byproducts: [], ingredients: [['Gold',25], ['Hull Panels',25], ['Ablative Armor Plating',25], ['Super Alloy',25]] }),
-    Object.freeze({ product: 'Basic Alloy', recipeId: 'recipe_scrap_advanced', output: 750, byproducts: [['Toxic Waste', 150]], ingredients: [['Industrial Materials',75], ['MOX',100], ['Scrap Metal',750]] }),
-    Object.freeze({ product: 'Gold', recipeId: 'recipe_gold_advanced', output: 800, byproducts: [['Toxic Waste', 150]], ingredients: [['Gold Ore',425], ['MOX',170], ['Industrial Materials',85]] }),
-    Object.freeze({ product: 'Niobium', recipeId: 'recipe_niobium_advanced', output: 800, byproducts: [['Toxic Waste', 150]], ingredients: [['Niobium Ore',425], ['MOX',170], ['Industrial Materials',85]] })
+  productionModules: Object.freeze([
+    Object.freeze({ product: 'Multi-Mode Focusing Chamber', recipeId: 'recipe_weapon_part_focusing_chamber' }),
+    Object.freeze({ product: 'Reactor Systems', recipeId: 'ship_part_reactor' }),
+    Object.freeze({ product: 'Superstructure Systems', recipeId: 'ship_part_superstructure' }),
+    Object.freeze({ product: 'Basic Alloy', recipeId: 'recipe_scrap_advanced' }),
+    Object.freeze({ product: 'Gold', recipeId: 'recipe_gold_advanced' }),
+    Object.freeze({ product: 'Niobium', recipeId: 'recipe_niobium_advanced' })
   ]),
   alerts: Object.freeze({
     'basic alloy': { type: 'min', red: 2500, yellow: 15000 },
