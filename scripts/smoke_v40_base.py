@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import html, json, re, shutil, socket, subprocess, sys, tempfile, time, urllib.request
+import http.server, threading
 from pathlib import Path
 
 try:
@@ -100,16 +101,40 @@ def ev(cdp,expression):
         raise RuntimeError(description)
     raw=result.get("result",{}).get("value"); return json.loads(raw) if raw else {}
 
-def load_document(cdp, frame_id, markup, folder):
+def serve_inline_documents():
+    class Handler(http.server.SimpleHTTPRequestHandler):
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, directory=str(ROOT), **kwargs)
+
+        def do_GET(self):
+            if self.path.split('?', 1)[0] == '/__rhw_inline__.html':
+                content = b'<!doctype html><html><head></head><body></body></html>'
+                self.send_response(200)
+                self.send_header('Content-Type', 'text/html; charset=utf-8')
+                self.send_header('Content-Length', str(len(content)))
+                self.end_headers()
+                self.wfile.write(content)
+            else:
+                super().do_GET()
+
+        def log_message(self, *_args):
+            pass
+
+    server = http.server.ThreadingHTTPServer(('127.0.0.1', 0), Handler)
+    threading.Thread(target=server.serve_forever, daemon=True).start()
+    return server
+
+def load_document(cdp, frame_id, markup, origin):
     """Give inline workflow fixtures a fresh document with usable storage.
 
     about:blank has an opaque origin, so every localStorage write there fails.
-    Use a temporary local file, then clear its test-only storage before boot.
+    Use a local HTTP origin, then clear its test-only storage before boot.
     The separate bundled-site suite tests real HTTP assets and offline reload.
     """
-    fixture = Path(folder) / f"inline-{time.monotonic_ns()}.html"
-    fixture.write_text("<!doctype html><html><head></head><body></body></html>", encoding="utf-8")
-    url = fixture.as_uri()
+    url = f"{origin}/__rhw_inline__.html?fixture={time.monotonic_ns()}"
+    # The installed app worker serves index.html for navigations. Inline route
+    # fixtures need the empty document; worker navigation is tested separately.
+    cdp.call("Network.setBypassServiceWorker", {"bypass": True})
     cdp.call("Page.navigate", {"url": url})
     end = time.time() + 4
     while time.time() < end:
@@ -204,13 +229,15 @@ def main():
     try: chrome,browser,port,folder,log_path=launch()
     except Exception as exc: print(f"ERROR: {exc}",file=sys.stderr); return 1
     print(f"V4 smoke browser: {browser}")
+    server = serve_inline_documents()
+    origin = f"http://127.0.0.1:{server.server_port}"
     try:
         targets=json.loads(get(f"http://127.0.0.1:{port}/json/list",3)); page=next(x for x in targets if x.get("type")=="page"); cdp=CDP(page["webSocketDebuggerUrl"])
         try:
             for method in ("Page.enable","Runtime.enable","Network.enable"): cdp.call(method)
-            cdp.call("Network.setBlockedURLs",{"urls":["https://*","http://*"]})
+            cdp.call("Network.setBlockedURLs",{"urls":["https://*"]})
             for workspace,node in ROUTES:
-                load_document(cdp, page["id"], document(f"{workspace}/{node}"), folder)
+                load_document(cdp, page["id"], document(f"{workspace}/{node}"), origin)
                 end=time.time()+8; snap={}
                 while time.time()<end:
                     snap=snapshot(cdp)
@@ -227,6 +254,8 @@ def main():
                 elif (workspace,node)==("comms","forum"): test_comms(cdp)
         finally: cdp.close()
     finally:
+        server.shutdown()
+        server.server_close()
         chrome.terminate()
         try: chrome.wait(timeout=3)
         except subprocess.TimeoutExpired: chrome.kill()
