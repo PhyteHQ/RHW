@@ -69,9 +69,8 @@
 
   function productionAnalysis() {
     try {
-      /* RECIPES is also a top-level const from the stable classic-script bundle. */
-      if (typeof RECIPES === 'undefined' || !Array.isArray(RECIPES) || typeof window.analyzeRecipe !== 'function') return [];
-      return RECIPES.map(recipe => window.analyzeRecipe(recipe)).sort((a, b) => a.possibleCycles - b.possibleCycles);
+      if (typeof window.productionRecipes !== 'function' || typeof window.analyzeRecipe !== 'function') return [];
+      return window.productionRecipes().map(recipe => window.analyzeRecipe(recipe)).sort((a, b) => a.possibleCycles - b.possibleCycles);
     } catch { return []; }
   }
 
@@ -183,9 +182,9 @@
 
     const production = productionAnalysis();
     const weakest = production[0];
-    write('v40OverviewProduction', weakest ? `MIN ${app.util.number(weakest.possibleCycles)} CYCLES` : 'MODULES ONLINE');
-    write('v40OverviewProductionMeta', weakest?.bottleneck ? `${String(weakest.recipe.product).toUpperCase()} // ${String(weakest.bottleneck.displayName || weakest.bottleneck.name).toUpperCase()}` : 'LIVE CAPACITY + BOTTLENECK CONTROL');
-    setOverviewState('v40OverviewProduction', weakest?.cardState === 'critical' ? 'critical' : (weakest?.cardState === 'low' ? 'low' : 'ok'));
+    write('v40OverviewProduction', weakest ? `MIN ${app.util.number(weakest.possibleCycles)} CYCLES` : 'RECIPE DATA UNKNOWN');
+    write('v40OverviewProductionMeta', weakest?.bottleneck ? `${String(weakest.recipe.product).toUpperCase()} // ${String(weakest.bottleneck.displayName || weakest.bottleneck.name).toUpperCase()}` : 'AWAITING PRODUCTION RECIPE DATA');
+    setOverviewState('v40OverviewProduction', !weakest ? 'waiting' : weakest.cardState === 'critical' ? 'critical' : (weakest.cardState === 'low' ? 'low' : 'ok'));
 
     write('v40OverviewLogistics', document.getElementById('supplierLinkText')?.textContent?.trim() || 'SAT-LINK ONLINE');
     write('v40OverviewLogisticsMeta', 'SHIP COMPONENTS + INDUSTRIAL MATERIALS · ALL KNOWN POBS');

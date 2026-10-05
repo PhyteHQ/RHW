@@ -142,6 +142,7 @@ function roleLabel(role) {
 }
 
 function statusLabel(state, role) {
+  if (state === 'waiting') return 'UNKNOWN';
   if (role === 'byproduct' || role === 'confiscated') return state === 'critical' ? 'OVERFLOW' : (state === 'low' ? 'WARN' : 'STABLE');
   return state === 'critical' ? 'CRITICAL' : (state === 'low' ? 'LOW' : 'STABLE');
 }
@@ -177,6 +178,7 @@ function priceBuy(item) { return firstValidPrice(item, ['price_to_buy_from_base'
 function findCommodity(name) { return itemsByKey.get(keyFromName(name)) || null; }
 function stockFor(name) { const item = findCommodity(name); return item ? quantity(item) : 0; }
 function displayRecipeName(name) { return displayName({ name }); }
+function productionRecipes() { return window.RHWV4?.production?.recipes() || []; }
 
 function sortManifestBy(column) {
   if (!column) return;
@@ -343,12 +345,14 @@ function renderProductionModules() {
     els.productionGrid.innerHTML = `<div class="feature-empty production-empty">${failed ? 'TELEMETRY UNAVAILABLE' : 'AWAITING FIRST TELEMETRY BURST'}<small>${failed ? 'NO VERIFIED RHW INVENTORY IS AVAILABLE' : 'PRODUCTION ANALYSIS WILL APPEAR AFTER THE FIRST SUCCESSFUL SYNC'}</small></div>`;
     return;
   }
-  if (!Array.isArray(RECIPES) || !RECIPES.length) {
-    els.productionGrid.innerHTML = '<div class="feature-empty production-empty">PRODUCTION MODULES STANDBY<small>NO RECIPES CONFIGURED</small></div>';
+  const recipes = productionRecipes();
+  if (!recipes.length) {
+    els.productionGrid.innerHTML = '<div class="feature-empty production-empty">PRODUCTION RECIPES UNAVAILABLE<small>CAPACITY REQUIRES THE VERIFIED RECIPE CATALOG</small></div>';
+    applyProductionModuleFilters();
     return;
   }
 
-  els.productionGrid.innerHTML = RECIPES.map((recipe, index) => {
+  els.productionGrid.innerHTML = recipes.map((recipe, index) => {
     const analysis = analyzeRecipe(recipe);
     const ingredientRows = analysis.ingredientData.map(item => {
       const isBottleneck = analysis.bottleneck && item.name === analysis.bottleneck.name;
@@ -372,6 +376,10 @@ function renderProductionModules() {
       ? `<div class="byproduct-strip"><span>BYPRODUCT / CYCLE</span>${recipe.byproducts.map(bp => `<span class="byproduct-tag">${number(bp[1])} ${escapeHTML(displayRecipeName(bp[0]))}</span>`).join('')}</div>`
       : '';
 
+    const prerequisitesText = recipe.prerequisites?.length
+      ? `<div class="byproduct-strip production-prerequisites"><span>REQUIRED · NOT CONSUMED</span>${recipe.prerequisites.map(([name, qty]) => `<span class="byproduct-tag">${number(qty)} ${escapeHTML(name)}</span>`).join('')}</div>`
+      : '';
+
     const productKey = normalize(displayRecipeName(recipe.product));
     const mobileCollapsed = window.matchMedia?.('(max-width: 760px)').matches && !productionExpandedModules.has(productKey);
 
@@ -386,7 +394,7 @@ function renderProductionModules() {
               </div>
               <div class="production-stats">
                 <div class="production-stat production-stock-primary"><small>IN STOCK</small><strong>${number(analysis.productStock)}</strong></div>
-                <div class="production-stat"><small>MAX CYCLES</small><strong>${number(analysis.possibleCycles)}</strong></div>
+                <div class="production-stat"><small>MATERIAL CYCLES</small><strong>${number(analysis.possibleCycles)}</strong></div>
                 <div class="production-stat"><small>EST. YIELD</small><strong>${number(analysis.possibleOutput)}</strong></div>
               </div>
               ${nextGapText}
@@ -396,6 +404,7 @@ function renderProductionModules() {
               </div>
               <ul class="recipe-list">${ingredientRows}</ul>
               ${byproductsText}
+              ${prerequisitesText}
             </div>`;
   }).join('');
   applyProductionModuleFilters();

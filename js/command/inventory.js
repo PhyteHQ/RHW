@@ -1,6 +1,8 @@
 function feedstockAnalysis(item) {
   const key = commodityKey(item);
-  const perRecipeRequirements = RECIPES.map(recipe => recipe.ingredients
+  const recipes = productionRecipes();
+  if (!recipes.length) return { key, required: null, quantity: quantity(item), cycles: null, state: 'waiting', perRecipeRequirements: [] };
+  const perRecipeRequirements = recipes.map(recipe => recipe.ingredients
     .filter(([ingredientName]) => keyFromName(ingredientName) === key)
     .reduce((sum, [, amount]) => sum + (Number(amount) || 0), 0))
     .filter(required => required > 0);
@@ -172,7 +174,7 @@ function renderOverview() {
       const analysis = feedstockAnalysis(item);
       return renderOverviewRow({
         state: analysis.state, role: 'procurement', name: displayName(item), item,
-        detail: analysis.cycles > 0 ? `${number(analysis.cycles)} INPUT BATCHES` : `${number(analysis.required - analysis.quantity)} NEEDED FOR 1 BATCH`, quantityValue: analysis.quantity,
+        detail: analysis.cycles === null ? 'RECIPE DATA UNAVAILABLE' : analysis.cycles > 0 ? `${number(analysis.cycles)} INPUT BATCHES` : `${number(analysis.required - analysis.quantity)} NEEDED FOR 1 BATCH`, quantityValue: analysis.quantity,
         progress: renderFeedstockProgress(item, analysis.state, fallbackKey)
       });
     }).join('');

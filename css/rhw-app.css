@@ -3789,8 +3789,6 @@ html.rhw-unified-ui { scroll-behavior:smooth; }
 
 #commandNodeNav .command-module-state::after { content:attr(data-badge);display:grid;place-items:center;flex:0 0 auto;min-width:18px;height:18px;padding:0 4px;border:1px solid color-mix(in srgb,var(--module-state) 35%,transparent);border-radius:9px;background:color-mix(in srgb,var(--module-state) 10%,transparent);color:color-mix(in srgb,var(--module-state) 82%,white);font-size:7px; }
 
-body[data-command-focus="attention"]:not([data-command-attention-empty="true"]) #commandNodeNav button:not([data-state="critical"]):not([data-state="low"]) { display:none; }
-
 .command-attention-note { display:none;margin:0 0 10px;padding:9px 11px;border:1px solid rgba(120,173,138,.2);border-radius:6px;background:rgba(120,173,138,.045);color:#89b999;font-family:var(--font-tech);font-size:8px;letter-spacing:.07em;text-align:center; }
 
 body[data-command-focus="attention"][data-command-attention-empty="true"] .command-attention-note { display:block; }
@@ -3798,10 +3796,6 @@ body[data-command-focus="attention"][data-command-attention-empty="true"] .comma
 .rhw-target-highlight { position:relative;z-index:2;outline:2px solid color-mix(in srgb,var(--app-nav-accent) 78%,white);outline-offset:3px;box-shadow:0 0 0 5px rgba(var(--app-nav-accent-rgb),.08),0 0 26px rgba(var(--app-nav-accent-rgb),.24);scroll-margin-top:calc(var(--rhw-sticky-nav-offset,145px) + 16px); }
 
 .command-top-button { position:fixed;z-index:125;right:10px;bottom:calc(var(--rhw-mobile-dock-height,70px) + var(--rhw-mobile-safe-bottom,0px) + 18px);display:none;min-height:44px;padding:7px 11px;border:1px solid rgba(212,175,55,.3);border-radius:10px;background:rgba(7,7,7,.94);color:#e4c75f;box-shadow:0 12px 30px rgba(0,0,0,.48);font-family:var(--font-tech);font-size:8px;font-weight:700;letter-spacing:.08em;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px); }
-
-@media(min-width:761px){
-body[data-command-focus="attention"]:not([data-command-attention-empty="true"]) #commandNodeNav .workspace-subnav-tabs { grid-template-columns:repeat(var(--rhw-attention-columns,2),minmax(0,1fr)); }
-}
 
 @media(max-width:980px){
 .rhw-module-nav:not(.command-module-nav) button { grid-template-columns:auto minmax(0,1fr);grid-template-areas:"module-index module-copy" "module-state module-state";gap:7px 10px;min-height:84px;padding:10px 11px; }
@@ -4014,23 +4008,9 @@ body:not([data-workspace="command"]) .rhw-inventory-mode-nav, body:not([data-com
 
 .command-focus-modes.rhw-attention-empty { display:none; }
 
-@media(max-width:980px){
-body[data-workspace="command"] #commandNodeNav.command-module-nav button[data-command-node] { height:64px;min-height:64px;max-height:64px;grid-template-columns:22px minmax(0,1fr);grid-template-areas:"index copy" "state state";grid-template-rows:22px minmax(0,1fr);align-items:center;gap:3px 6px;padding:5px 7px;overflow:hidden
-        ; }
-body[data-workspace="command"] #commandNodeNav .command-module-index { width:22px;height:22px;font-size:7px; }
-body[data-workspace="command"] #commandNodeNav .command-module-copy { gap:0; }
-body[data-workspace="command"] #commandNodeNav .command-module-copy strong { font-size:15px;line-height:.95; }
-body[data-workspace="command"] #commandNodeNav .command-module-copy small { display:none; }
-body[data-workspace="command"] #commandNodeNav .command-module-state { justify-self:stretch;max-width:none;min-width:0;padding:3px 4px;gap:3px;font-size:10px;letter-spacing:.02em;color:#d0cabc;white-space:normal;line-height:1.3;text-align:center;overflow:hidden
-        ; }
-body[data-workspace="command"] #commandNodeNav .command-module-state::after { min-width:16px;height:16px;padding:0 3px;font-size:10px
-        ; }
-}
 
 @media(max-width:760px){
 body[data-workspace="command"] .app-context-nav-slot.rhw-command-compact-shell, body[data-workspace="command"] #appContextNavSlot.rhw-command-compact-shell { background:#070707; }
-body[data-workspace="command"] #commandNodeNav.command-module-nav button[data-command-node] { height:64px;min-height:64px;max-height:64px
-        ; }
 .command-control-deck { grid-template-columns:minmax(0,1fr) auto;gap:5px;margin:0 9px 7px;padding:5px; }
 .command-control-deck .command-finder-label { min-height:44px;padding:0 7px; }
 .command-control-deck .command-finder-label>span:first-child { display:none; }
@@ -4044,11 +4024,6 @@ body[data-workspace="command"] #commandNodeNav.command-module-nav button[data-co
 }
 
 @media(max-width:390px){
-body[data-workspace="command"] #commandNodeNav.command-module-nav button[data-command-node] { height:64px;min-height:64px;max-height:64px;grid-template-columns:20px minmax(0,1fr);padding:5px 6px
-        ; }
-body[data-workspace="command"] #commandNodeNav .command-module-index { width:20px;height:20px; }
-body[data-workspace="command"] #commandNodeNav .command-module-copy strong { font-size:14px; }
-body[data-workspace="command"] #commandNodeNav .command-module-state { font-size:10px; }
 .rhw-inventory-mode-nav button>span { font-size:14px; }
 }
 
@@ -4539,8 +4514,6 @@ html.rhw-focus-pass .app-context-nav-slot { margin-top: 0;padding: 4px;border: 0
 
 html.rhw-focus-pass .app-context-nav-slot::before { display: none; }
 
-html.rhw-focus-pass #commandNodeNav button, html.rhw-focus-pass body[data-workspace="command"] #commandNodeNav.command-module-nav button[data-command-node] { display: flex;grid-template-columns: none;grid-template-rows: none;align-items: center;justify-content: center;height: 44px;min-height: 44px;max-height: none;padding: 8px 10px;gap: 8px;box-shadow: none;color: var(--muted); }
-
 html.rhw-focus-pass #commandNodeNav button::before, html.rhw-focus-pass #commandNodeNav button::after { display: none; }
 
 html.rhw-focus-pass .command-module-index { display: inline-flex;align-items:center;justify-content:center;min-width: 25px;padding: 3px;font: 11px var(--font-tech);background: #080d0c;border: 1px solid var(--line); }
@@ -4551,7 +4524,7 @@ html.rhw-focus-pass .command-module-copy small, html.rhw-focus-pass .command-mod
 
 html.rhw-focus-pass .inventory-view-nav { padding: 0;min-height: 0;gap: 8px;border: 0;margin: 0;background: transparent; }
 
-html.rhw-focus-pass .inventory-view-nav button { min-height: 44px !important;padding: 8px 14px !important;border: 1px solid transparent;border-bottom: 2px solid transparent;background: transparent;box-shadow: none; }
+html.rhw-focus-pass .inventory-view-nav button {border: 1px solid transparent;border-bottom: 2px solid transparent;background: transparent;box-shadow: none; }
 
 html.rhw-focus-pass .inventory-view-nav button span { display: inline;font: 500 13px/1.4 var(--font-main); }
 
@@ -4561,7 +4534,7 @@ html.rhw-focus-pass .inventory-view-nav button.active { background: #232720;bord
 
 html.rhw-focus-pass #commandStrip, html.rhw-focus-pass .command-area-heading, html.rhw-focus-pass .inventory-view-heading { display: none; }
 
-html.rhw-focus-pass .command-control-deck { background: transparent;padding: 0;border: 0;box-shadow: none;margin: 8px 0 12px;grid-template-columns: minmax(200px,1fr) auto auto; }
+html.rhw-focus-pass .command-control-deck { background: transparent;border: 0;box-shadow: none; }
 
 html.rhw-focus-pass #commandGlobalSearch { font: 14px/1.4 var(--font-main) !important; }
 
@@ -4937,14 +4910,10 @@ html.rhw-focus-pass .app-navigation-cluster { margin-top: 4px; }
 html.rhw-focus-pass .app-tabs button[data-workspace] { min-height: 48px;padding: 8px 4px; }
 html.rhw-focus-pass .app-tabs button[data-workspace] span { font-size: 20px; }
 html.rhw-focus-pass .app-context-nav-slot { margin-top: 0;padding: 4px; }
-html.rhw-focus-pass #commandNodeNav .workspace-subnav-tabs { grid-template-columns: repeat(2,minmax(0,1fr)) !important;gap: 4px; }
-html.rhw-focus-pass #commandNodeNav button { min-height: 44px;padding: 8px; }
 html.rhw-focus-pass .command-module-index { font-size: 11px; }
 html.rhw-focus-pass :is(.app-workspace,.uplink-panel) :is(input,select,textarea) { font-size: 16px !important;min-width: 0; }
 html.rhw-focus-pass .app-workspace button, html.rhw-focus-pass .app-workspace summary { min-height: 44px; }
 html.rhw-focus-pass #commandGlobalSearch { font-size: 16px !important; }
-html.rhw-focus-pass .command-control-deck { grid-template-columns: minmax(0,1fr) auto;margin-inline: 0;gap: 8px; }
-html.rhw-focus-pass .command-context-action { grid-column: 1 / -1;max-width: none; }
 html.rhw-focus-pass .workspace-heading { margin-bottom: 12px;padding: 8px 0; }
 html.rhw-focus-pass .workspace-heading p { display: none; }
 html.rhw-focus-pass :is(.panel-title,.shipyard-control-title) { font-size: 27px; }
@@ -5008,6 +4977,14 @@ html.rhw-focus-pass .app-secondary-nav .app-context-nav-slot { grid-column: 1;gr
 
 html.rhw-focus-pass .app-secondary-nav .workspace-subnav { margin: 0;border: 0;background: transparent;box-shadow: none; }
 
+html.rhw-focus-pass #commandNodeNav button, html.rhw-focus-pass body[data-workspace="command"] #commandNodeNav.command-module-nav button[data-command-node] { display: flex;grid-template-columns: none;grid-template-rows: none;align-items: center;justify-content: center;height: 44px;min-height: 44px;max-height: none;padding: 8px 10px;gap: 8px;box-shadow: none;color: var(--muted); }
+
+html.rhw-focus-pass #commandNodeNav .workspace-subnav-tabs { grid-template-columns: repeat(4,minmax(0,1fr));gap: 8px; }
+
+html.rhw-focus-pass body[data-command-focus="attention"]:not([data-command-attention-empty="true"]) #commandNodeNav button:not([data-state="critical"]):not([data-state="low"]) { display:none; }
+
+html.rhw-focus-pass body[data-command-focus="attention"]:not([data-command-attention-empty="true"]) #commandNodeNav .workspace-subnav-tabs { grid-template-columns:repeat(var(--rhw-attention-columns,2),minmax(0,1fr)); }
+
 html.rhw-focus-pass #workspaceCommand main { padding-top: 6px;gap: 0; }
 
 html.rhw-focus-pass #commandControlDeck { display: grid;grid-template-columns: minmax(200px,1fr) auto minmax(260px,1fr);gap: 10px;align-items: start;margin: 0 0 12px;padding: 0; }
@@ -5020,7 +4997,7 @@ html.rhw-focus-pass #commandControlDeck .inventory-view-nav { position: relative
 
 html.rhw-focus-pass body:not([data-command-node="inventory"]) #commandControlDeck .inventory-view-nav { display: none; }
 
-html.rhw-focus-pass #commandControlDeck .inventory-view-nav button { display: flex;align-items: center;justify-content: center;min-width: 0;height: 44px;padding: 8px !important;text-align: center; }
+html.rhw-focus-pass #commandControlDeck .inventory-view-nav button { display: flex;align-items: center;justify-content: center;min-width: 0;min-height: 44px;height: 44px;padding: 8px;text-align: center; }
 
 html.rhw-focus-pass #commandControlDeck .inventory-view-nav button.active { color: var(--gold);background: linear-gradient(110deg,#342b18,#171d15);box-shadow: inset 0 1px #f0c56b22; }
 
@@ -5125,13 +5102,20 @@ html.rhw-focus-pass .app-tabs button[data-workspace] span { font: 600 11px/1.3 v
 html.rhw-focus-pass #rhwFocusToolsBtn { padding-inline: 8px;font-size: 11px; }
 html.rhw-focus-pass body { padding-bottom: calc(16px + env(safe-area-inset-bottom,0px)); }
 html.rhw-focus-pass .app-secondary-nav { gap: 8px; }
-html.rhw-focus-pass .app-secondary-nav #commandNodeNav button { gap: 4px; }
+html.rhw-focus-pass #commandNodeNav .workspace-subnav-tabs { gap: 4px; }
+html.rhw-focus-pass #commandNodeNav button, html.rhw-focus-pass body[data-workspace="command"] #commandNodeNav.command-module-nav button[data-command-node] { gap: 0;padding-inline: 2px; }
+html.rhw-focus-pass body[data-workspace="command"] #commandNodeNav .command-module-copy strong { font-size: 12px;letter-spacing: 0;white-space: nowrap; }
 html.rhw-focus-pass .app-secondary-nav .command-module-index { display: none; }
 html.rhw-focus-pass .app-secondary-nav #rhwFocusToolsBtn { padding-inline: 10px; }
-html.rhw-focus-pass #commandControlDeck, html.rhw-focus-pass body[data-command-node="inventory"] #commandControlDeck, html.rhw-focus-pass body[data-command-node="inventory"] #commandControlDeck:has(#commandGlobalAlerts[hidden]) { grid-template-columns: minmax(0,1fr);gap: 8px; }
-html.rhw-focus-pass #commandGlobalAlerts { grid-column: 1; }
-html.rhw-focus-pass #commandAlertDetails { position: static;width: 100%;max-height: 60vh;margin-top: 6px;border: 0;box-shadow: none; }
-html.rhw-focus-pass #commandControlDeck .command-context-action { grid-column: 1;max-width: none; }
+html.rhw-focus-pass #commandControlDeck, html.rhw-focus-pass body[data-command-node="inventory"] #commandControlDeck, html.rhw-focus-pass body[data-command-node="inventory"] #commandControlDeck:has(#commandGlobalAlerts[hidden]) { grid-template-columns: minmax(0,1fr) minmax(0,1fr);gap: 8px; }
+html.rhw-focus-pass #commandControlDeck .inventory-view-nav, html.rhw-focus-pass #commandControlDeck .command-finder { grid-column: 1 / -1; }
+html.rhw-focus-pass body[data-command-node="inventory"] #commandControlDeck .command-finder { grid-column: auto; }
+html.rhw-focus-pass body[data-command-node="inventory"] #commandControlDeck:has(#commandGlobalAlerts[hidden]) .command-finder { grid-column: 1 / -1; }
+html.rhw-focus-pass #commandControlDeck .command-finder, html.rhw-focus-pass #commandGlobalAlerts { position: static; }
+html.rhw-focus-pass #commandGlobalSearch { padding-right: 10px; }
+html.rhw-focus-pass #commandGlobalAlerts { grid-column: auto; }
+html.rhw-focus-pass #commandAlertDetails, html.rhw-focus-pass #commandControlDeck .command-search-results { position: absolute;top: calc(100% + 6px);left: 0;right: 0;width: auto;max-height: 60vh;margin: 0; }
+html.rhw-focus-pass #commandControlDeck .command-context-action { grid-column: auto;min-width: 0;max-width: none;white-space: normal;font: 600 11px/1.3 var(--font-main);letter-spacing: 0; }
 html.rhw-focus-pass #inventoryStatusPanel .summary-grid { grid-template-columns: minmax(0,1fr); }
 html.rhw-focus-pass #inventoryStatusPanel .alert-card { grid-column: 1;flex: initial; }
 html.rhw-focus-pass .command-top-button { bottom: calc(16px + env(safe-area-inset-bottom,0px)); }
@@ -5193,8 +5177,6 @@ html.rhw-focus-pass .app-tabs button[data-workspace] { border-right-color: var(-
 html.rhw-focus-pass .app-tabs button[data-workspace].active { background: linear-gradient(110deg,#3d311a,#182017);box-shadow: inset 0 1px #f0c56b33,0 2px 12px #f0c56b0d; }
 
 html.rhw-focus-pass .app-secondary-nav { padding-block: 5px; }
-
-html.rhw-focus-pass #commandNodeNav .workspace-subnav-tabs { gap: 8px; }
 
 html.rhw-focus-pass #commandNodeNav button, html.rhw-focus-pass body[data-workspace="command"] #commandNodeNav.command-module-nav button[data-command-node] { border: 0;border-bottom: 2px solid transparent;border-radius: 0;background: transparent; }
 

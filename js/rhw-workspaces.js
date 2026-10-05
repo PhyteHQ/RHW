@@ -1180,9 +1180,8 @@ const RHW_APP_CONFIG = Object.freeze({
 
   function productionAnalysis() {
     try {
-      /* RECIPES is also a top-level const from the stable classic-script bundle. */
-      if (typeof RECIPES === 'undefined' || !Array.isArray(RECIPES) || typeof window.analyzeRecipe !== 'function') return [];
-      return RECIPES.map(recipe => window.analyzeRecipe(recipe)).sort((a, b) => a.possibleCycles - b.possibleCycles);
+      if (typeof window.productionRecipes !== 'function' || typeof window.analyzeRecipe !== 'function') return [];
+      return window.productionRecipes().map(recipe => window.analyzeRecipe(recipe)).sort((a, b) => a.possibleCycles - b.possibleCycles);
     } catch { return []; }
   }
 
@@ -1294,9 +1293,9 @@ const RHW_APP_CONFIG = Object.freeze({
 
     const production = productionAnalysis();
     const weakest = production[0];
-    write('v40OverviewProduction', weakest ? `MIN ${app.util.number(weakest.possibleCycles)} CYCLES` : 'MODULES ONLINE');
-    write('v40OverviewProductionMeta', weakest?.bottleneck ? `${String(weakest.recipe.product).toUpperCase()} // ${String(weakest.bottleneck.displayName || weakest.bottleneck.name).toUpperCase()}` : 'LIVE CAPACITY + BOTTLENECK CONTROL');
-    setOverviewState('v40OverviewProduction', weakest?.cardState === 'critical' ? 'critical' : (weakest?.cardState === 'low' ? 'low' : 'ok'));
+    write('v40OverviewProduction', weakest ? `MIN ${app.util.number(weakest.possibleCycles)} CYCLES` : 'RECIPE DATA UNKNOWN');
+    write('v40OverviewProductionMeta', weakest?.bottleneck ? `${String(weakest.recipe.product).toUpperCase()} // ${String(weakest.bottleneck.displayName || weakest.bottleneck.name).toUpperCase()}` : 'AWAITING PRODUCTION RECIPE DATA');
+    setOverviewState('v40OverviewProduction', !weakest ? 'waiting' : weakest.cardState === 'critical' ? 'critical' : (weakest.cardState === 'low' ? 'low' : 'ok'));
 
     write('v40OverviewLogistics', document.getElementById('supplierLinkText')?.textContent?.trim() || 'SAT-LINK ONLINE');
     write('v40OverviewLogisticsMeta', 'SHIP COMPONENTS + INDUSTRIAL MATERIALS · ALL KNOWN POBS');
@@ -2674,6 +2673,55 @@ window.__RHW_RECIPE_CATALOG_GZIP_BASE64__ = (window.__RHW_RECIPE_CATALOG_GZIP_BA
 
 ;
 
+/* SOURCE: js/command/production-model.js */
+/* Production batch quantities come from the shared, corrected BMM planner. */
+(function initRhwProductionModel() {
+  'use strict';
+  const app = window.RHWV4;
+  const core = app?.operationsCore;
+  if (!core || typeof PRODUCTION_MODULES === 'undefined') return;
+  const plans = new Map();
+
+  function requirements(module) {
+    if (!core.state.catalog || !module) return null;
+    const recipe = core.recipe(module.recipeId);
+    if (!recipe || !core.authorizedFor(recipe, app.config.operations.defaultAffiliation)) return null;
+    const cached = plans.get(module.recipeId);
+    if (cached?.source === recipe) return cached.batch;
+    try {
+      const output = core.effectiveOutput(recipe, app.config.operations.defaultAffiliation);
+      if (!output?.id) return null;
+      const plan = core.buildPlan({ productId: output.id, recipeId: recipe.id, quantity: 1,
+        affiliationId: app.config.operations.defaultAffiliation, recursive: false,
+        useInventory: false, routingPolicy: 'first' });
+      const materials = core.materialRows(plan);
+      if (!(plan.actualOutput > 0) || !materials.length || materials.some(row => !(row.required > 0))) return null;
+      const batch = Object.freeze({ ...module, output: plan.actualOutput,
+        ingredients: Object.freeze(materials.map(row => Object.freeze([row.name, row.required]))),
+        byproducts: Object.freeze(plan.byproducts.map(row => Object.freeze([row.name, row.qty]))),
+        prerequisites: Object.freeze(plan.catalysts.map(row => Object.freeze([row.name, row.qty]))) });
+      plans.set(module.recipeId, { source: recipe, batch });
+      return batch;
+    } catch {
+      // Missing/restricted catalog data must never become a zero-input batch
+      // or silently select another recipe for the same product.
+      return null;
+    }
+  }
+
+  function recipes() {
+    const batches = PRODUCTION_MODULES.map(requirements);
+    return batches.length && batches.every(Boolean) ? batches : [];
+  }
+
+  app.production = { requirements, recipes };
+  // Semantics are normalized at order 10; the shared Command render follows
+  // at order 40. Invalidate derived batches before that render.
+  app.lifecycle.on('catalog:loaded', 'production-recipes', 30, () => { plans.clear(); });
+})();
+
+;
+
 /* SOURCE: js/command/shipyard-model.js */
 /* Ship-specific stock and requirements, using the Calculator's recipe planner. */
 (function initRhwShipyard() {
@@ -3595,8 +3643,8 @@ window.__RHW_RECIPE_CATALOG_GZIP_BASE64__ = (window.__RHW_RECIPE_CATALOG_GZIP_BA
     if (!target || !core.state.catalog) return null;
     // A product may also be unpacked or refined by another recipe. Production
     // shortcuts must price the module shown on the card, not a name match.
-    const module = typeof RECIPES !== 'undefined'
-      ? RECIPES.find(entry => normalize(entry.product) === target) : null;
+    const module = typeof PRODUCTION_MODULES !== 'undefined'
+      ? PRODUCTION_MODULES.find(entry => normalize(entry.product) === target) : null;
     if (module?.recipeId) return core.recipe(module.recipeId);
     const recipes = [...(core.state.catalog.recipes || [])];
     const scored = recipes.map(recipe => {
@@ -3690,8 +3738,8 @@ window.__RHW_RECIPE_CATALOG_GZIP_BASE64__ = (window.__RHW_RECIPE_CATALOG_GZIP_BA
       if (input.placeholder) failures.push('price-placeholder');
     });
     try {
-      if (typeof RECIPES !== 'undefined') {
-        RECIPES.forEach(recipe => {
+      if (typeof PRODUCTION_MODULES !== 'undefined') {
+        PRODUCTION_MODULES.forEach(recipe => {
           if (!findRecipeForLabel(recipe.product)) failures.push(`production-recipe:${recipe.product}`);
         });
       }
@@ -5927,17 +5975,15 @@ window.__RHW_RECIPE_CATALOG_GZIP_BASE64__ = (window.__RHW_RECIPE_CATALOG_GZIP_BA
       nav.addEventListener('keydown', event => {
         const button = event.target.closest('[data-command-node]');
         if (!button || !['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'].includes(event.key)) return;
-        const buttons = [...nav.querySelectorAll('[data-command-node]')];
+        const buttons = [...nav.querySelectorAll('[data-command-node]')].filter(candidate => !candidate.hidden && candidate.getClientRects().length);
         const current = buttons.indexOf(button);
         if (current < 0) return;
         event.preventDefault();
         let nextIndex = current;
         if (event.key === 'Home') nextIndex = 0;
         else if (event.key === 'End') nextIndex = buttons.length - 1;
-        else if (event.key === 'ArrowLeft') nextIndex = (current - 1 + buttons.length) % buttons.length;
-        else if (event.key === 'ArrowRight') nextIndex = (current + 1) % buttons.length;
-        else if (event.key === 'ArrowUp') nextIndex = (current - 2 + buttons.length) % buttons.length;
-        else if (event.key === 'ArrowDown') nextIndex = (current + 2) % buttons.length;
+        else if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') nextIndex = (current - 1 + buttons.length) % buttons.length;
+        else if (event.key === 'ArrowRight' || event.key === 'ArrowDown') nextIndex = (current + 1) % buttons.length;
         buttons[nextIndex]?.focus();
       });
     }
@@ -6202,7 +6248,7 @@ window.__RHW_RECIPE_CATALOG_GZIP_BASE64__ = (window.__RHW_RECIPE_CATALOG_GZIP_BA
     const host = document.getElementById('commandNodeHost'); if (!host) return false;
     if (!document.getElementById('commandControlDeck')) {
       const deck = document.createElement('section'); deck.id = 'commandControlDeck'; deck.className = 'command-control-deck'; deck.setAttribute('aria-label', 'Command search and focus controls');
-      deck.innerHTML = `<div class="command-finder"><label class="command-finder-label" for="commandGlobalSearch"><span>COMMAND FINDER</span><span class="command-finder-input-wrap"><input id="commandGlobalSearch" type="search" aria-label="Command finder" autocomplete="off" spellcheck="false" placeholder="Find stock, hull, recipe, route…" /><b class="command-finder-key" aria-hidden="true">/</b></span></label><div id="commandSearchResults" class="command-search-results" role="listbox" aria-label="Command search results" hidden></div></div><div class="command-focus-modes" role="group" aria-label="Command area focus"><button type="button" data-command-focus-mode="all">ALL AREAS</button><button type="button" data-command-focus-mode="attention">NEEDS ATTENTION <b id="commandAttentionCount">0</b></button></div><button type="button" id="commandContextAction" class="command-context-action" hidden></button>`;
+      deck.innerHTML = `<div class="command-finder"><label class="command-finder-label" for="commandGlobalSearch"><span>COMMAND FINDER</span><span class="command-finder-input-wrap"><input id="commandGlobalSearch" type="search" aria-label="Command finder" autocomplete="off" spellcheck="false" placeholder="Search RHW…" title="Find stock, hull, recipe or route" /><b class="command-finder-key" aria-hidden="true">/</b></span></label><div id="commandSearchResults" class="command-search-results" role="listbox" aria-label="Command search results" hidden></div></div><div class="command-focus-modes" role="group" aria-label="Command area focus"><button type="button" data-command-focus-mode="all">ALL AREAS</button><button type="button" data-command-focus-mode="attention">NEEDS ATTENTION <b id="commandAttentionCount">0</b></button></div><button type="button" id="commandContextAction" class="command-context-action" hidden></button>`;
       host.insertAdjacentElement('beforebegin', deck);
       const note = document.createElement('div'); note.className = 'command-attention-note'; note.id = 'commandAttentionNote'; note.textContent = 'NO ACTIVE COMMAND ATTENTION ITEMS // ALL MONITORED AREAS REMAIN AVAILABLE'; host.insertAdjacentElement('beforebegin', note);
       const input = document.getElementById('commandGlobalSearch');

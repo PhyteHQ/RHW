@@ -186,9 +186,14 @@ async function models() {
 
   nodes.clear();
   run(ctx, 'js/command/config.js');
-  vm.runInContext('globalThis.CAPITAL_SHIPYARD = DASHBOARD_CONFIG.capitalShipyard; const RECIPES = DASHBOARD_CONFIG.recipes;', ctx);
+  vm.runInContext('globalThis.CAPITAL_SHIPYARD = DASHBOARD_CONFIG.capitalShipyard; const PRODUCTION_MODULES = DASHBOARD_CONFIG.productionModules;', ctx);
   run(ctx, 'js/calculator/production-bridge.js');
-  const productionModules = vm.runInContext('RECIPES', ctx);
+  run(ctx, 'js/command/production-model.js');
+  const moduleRegistry = vm.runInContext('PRODUCTION_MODULES', ctx);
+  assert.equal(moduleRegistry.length, 6);
+  assert.ok(moduleRegistry.every(module => Object.keys(module).sort().join(',') === 'product,recipeId'), 'The registry must not carry duplicate recipe quantities');
+  const productionModules = app.production.recipes();
+  assert.equal(productionModules.length, 6, 'All installed modules resolve from the catalog');
   for (const spec of productionModules) {
     const entry = app.productionPricing.findRecipeForLabel(spec.product);
     assert.equal(entry.id, spec.recipeId, `Production shortcut for ${spec.product}`);
@@ -202,7 +207,34 @@ async function models() {
   const alloy = core.state.recipesById.get('recipe_scrap_advanced');
   core.state.recipesById.delete(alloy.id);
   assert.equal(app.productionPricing.findRecipeForLabel('Basic Alloy'), null, 'A missing module recipe must not silently choose another variant');
+  assert.equal(app.production.recipes().length, 0, 'A missing recipe must not retain cached material coverage');
   core.state.recipesById.set(alloy.id, alloy);
+  const catalog = core.state.catalog;
+  core.state.catalog = null;
+  assert.equal(app.production.recipes().length, 0, 'An unavailable catalog must not become a zero-input batch');
+  core.state.catalog = catalog;
+  const refining = core.recipe('recipe_niobium_advanced');
+  const previous = app.production.recipes().find(spec => spec.recipeId === refining.id);
+  assert.equal(previous.output, 800);
+  assert.equal(previous.ingredients.find(([name]) => name === 'Niobium Ore')[1], 425, 'BMM reduces the base ore requirement');
+  assert.equal(previous.byproducts.find(([name]) => name === 'Toxic Waste')[1], 150);
+  assert.equal(previous.prerequisites.find(([name]) => name === 'Crew')[1], 100, 'Crew is required without becoming consumed feedstock');
+  assert.ok(!previous.ingredients.some(([name]) => name === 'Crew'));
+  // A catalog refresh must update quantities even when the source recipe object
+  // is reused. This exercises cache invalidation, BMM and non-consumed inputs.
+  const ore = refining.inputs.find(input => input.options[0].id === 'commodity_niobium_ore').options[0];
+  const waste = refining.outputs.find(output => output.id === 'commodity_toxic_waste');
+  const saved = { ore: ore.qty, output: refining.outputs[0].qty, waste: waste.qty };
+  ore.qty = 600; refining.outputs[0].qty = 900; waste.qty = 175;
+  app.lifecycle.emit('catalog:loaded', { catalog });
+  const updated = app.production.recipes().find(spec => spec.recipeId === refining.id);
+  assert.notEqual(updated, previous);
+  assert.equal(updated.output, 900);
+  assert.equal(updated.ingredients.find(([name]) => name === 'Niobium Ore')[1], 510);
+  assert.equal(updated.byproducts.find(([name]) => name === 'Toxic Waste')[1], 175);
+  ore.qty = saved.ore; refining.outputs[0].qty = saved.output; waste.qty = saved.waste;
+  app.lifecycle.emit('catalog:loaded', { catalog });
+  console.log('Production catalog passed: all six modules, BMM inputs, byproducts, non-consumed crew, refresh propagation and unavailable recipes.');
   const yard = node();
   yard.insertAdjacentHTML = () => assert.fail('Retired planner must not be injected');
   nodes.set('shipyardControl', yard);
@@ -262,6 +294,7 @@ async function models() {
   assert.match(app.discoveryStatus.urls.workflow, /PhyteHQ\/RHW/);
   assert.match(app.diagnostics.buildReport(), new RegExp(ctx.RHW_BUILD.revision));
   console.log(`Catalog, quote/UI parity, Archon aliases, telemetry and sync health passed (${plans} recipes).`);
+  return app.production.recipes();
 }
 
 async function serviceWorker() {
@@ -338,7 +371,7 @@ async function updates() {
   console.log('Service-worker cache provenance and update lifecycle passed.');
 }
 
-function overviewReferences() {
+function overviewReferences(recipes) {
   const ctx = vm.createContext({
     quantity: item => Number(item?.quantity || 0),
     commodityKey: item => String(item?.name || '').toLowerCase(),
@@ -347,10 +380,10 @@ function overviewReferences() {
     number: value => Number(value).toLocaleString('de-DE'),
     escapeHTML: value => String(value).replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char])),
     statusPill: () => '<span class="pill">STABLE</span>',
-    readinessText: () => 'READY'
+    readinessText: () => 'READY', productionRecipes: () => recipes
   });
   run(ctx, 'js/command/config.js');
-  vm.runInContext('const CUSTOM_ALERTS=DASHBOARD_CONFIG.alerts, FEEDSTOCK=DASHBOARD_CONFIG.roles.feedstock, RECIPES=DASHBOARD_CONFIG.recipes;', ctx);
+  vm.runInContext('const CUSTOM_ALERTS=DASHBOARD_CONFIG.alerts, FEEDSTOCK=DASHBOARD_CONFIG.roles.feedstock;', ctx);
   run(ctx, 'js/command/inventory.js');
   const evaluate = code => vm.runInContext(code, ctx);
   const ref = (item, role) => JSON.parse(evaluate(`JSON.stringify(overviewStockReference(${JSON.stringify(item)},${JSON.stringify(role)}))`));
@@ -413,4 +446,4 @@ function unknownTelemetry() {
   console.log('Unknown telemetry passed: null/invalid values, real zero, legacy field aliases and health colors.');
 }
 
-(async () => { unknownTelemetry(); overviewReferences(); await models(); await serviceWorker(); await updates(); })().catch(error => { console.error(error); process.exitCode = 1; });
+(async () => { unknownTelemetry(); const recipes = await models(); overviewReferences(recipes); await serviceWorker(); await updates(); })().catch(error => { console.error(error); process.exitCode = 1; });
