@@ -434,6 +434,7 @@ const RHW_APP_CONFIG = Object.freeze({
           stored = { ...value };
           delete stored.materialPrices;
           delete stored.materialPriceSources;
+          delete stored.altSelections;
         }
         localStorage.setItem(key, JSON.stringify(stored));
         return true;
@@ -2477,19 +2478,6 @@ window.__RHW_RECIPE_CATALOG_GZIP_BASE64__ = (window.__RHW_RECIPE_CATALOG_GZIP_BA
   function product(id) { return state.productsById.get(id) || { id, name: id, recipeIds: [] }; }
   function recipesFor(id) { return state.recipesByProduct.get(id) || []; }
   function recipe(id) { return state.recipesById.get(id) || null; }
-  function alternativeGroups(recipeEntry, selections = {}) {
-    return (recipeEntry?.inputs || []).flatMap((group, index) => {
-      if ((group.options || []).length < 2) return [];
-      const key = `${recipeEntry.id}:${index}`;
-      const selected = group.options.find(option => option.id === selections[key]) || group.options[0];
-      return [{ key, index, options: group.options, selected }];
-    });
-  }
-  function normalizeAlternatives(recipeEntry, selections = {}) {
-    return Object.fromEntries(alternativeGroups(recipeEntry, selections)
-      .filter(group => group.options.some(option => option.id === selections[group.key]))
-      .map(group => [group.key, selections[group.key]]));
-  }
   function unitPrice(prices, id) {
     const raw = prices?.[id];
     if ((typeof raw !== 'number' && typeof raw !== 'string') || String(raw).trim() === '') return null;
@@ -2719,7 +2707,7 @@ window.__RHW_RECIPE_CATALOG_GZIP_BASE64__ = (window.__RHW_RECIPE_CATALOG_GZIP_BA
         if (!authorizedFor(entry, calc.affiliationId)) return { recipe: entry, authorized: false };
         const plan = app.operationsCore.buildPlan({ productId: output.id, recipeId: entry.id,
           quantity: calc.quantity, affiliationId: calc.affiliationId, recursive: false,
-          useInventory: false, routingPolicy: 'first', altSelections: calc.altSelections || {} });
+          useInventory: false, routingPolicy: 'first', altSelections: {} });
         const rows = materialRows(plan);
         for (const row of rows) if (!materials.has(row.id)) materials.set(row.id, row);
         return { recipe: entry, authorized: true, plan, rows, pricing: priceQuote(rows, calc, plan) };
@@ -2732,7 +2720,7 @@ window.__RHW_RECIPE_CATALOG_GZIP_BASE64__ = (window.__RHW_RECIPE_CATALOG_GZIP_BA
   }
 
   app.operationsCore = { state, loadCatalog, product, recipe, recipesFor, factorFor, authorizedFor, telemetryReady, telemetryQuantity, buildPlan, priceQuote, displayName, materialRows, effectiveOutput, compareRecipes,
-    alternativeGroups, normalizeAlternatives, unitPrice, rhwPriceSnapshot, rhwQuote, importRhwPrices };
+    unitPrice, rhwPriceSnapshot, rhwQuote, importRhwPrices };
 })();
 
 ;
@@ -2745,26 +2733,6 @@ window.__RHW_RECIPE_CATALOG_GZIP_BASE64__ = (window.__RHW_RECIPE_CATALOG_GZIP_BA
   const core = app?.operationsCore;
   if (!core || typeof PRODUCTION_MODULES === 'undefined') return;
   const plans = new Map();
-  const selections = { ...(app.store.get(app.config.storageKeys.calculatorState, {})?.altSelections || {}) };
-
-  function selectionsFor(recipeId) {
-    return core.normalizeAlternatives(core.recipe(recipeId), selections);
-  }
-
-  function selectAlternative(recipeId, groupIndex, optionId) {
-    if (!PRODUCTION_MODULES.some(module => module.recipeId === recipeId)) return false;
-    const recipe = core.recipe(recipeId);
-    const group = core.alternativeGroups(recipe).find(entry => entry.index === Number(groupIndex));
-    if (!group?.options.some(option => option.id === optionId)) return false;
-    selections[group.key] = optionId;
-    const calc = app.state.calculator || app.store.get(app.config.storageKeys.calculatorState, {}) || {};
-    app.state.calculator = { ...calc, altSelections: { ...(calc.altSelections || {}), [group.key]: optionId } };
-    app.store.set(app.config.storageKeys.calculatorState, app.state.calculator);
-    plans.delete(recipeId);
-    window.renderAll?.();
-    app.requestUiUpdate?.();
-    return true;
-  }
 
   function requirements(module) {
     if (!core.state.catalog || !module) return null;
@@ -2777,12 +2745,15 @@ window.__RHW_RECIPE_CATALOG_GZIP_BASE64__ = (window.__RHW_RECIPE_CATALOG_GZIP_BA
       if (!output?.id) return null;
       const plan = core.buildPlan({ productId: output.id, recipeId: recipe.id, quantity: 1,
         affiliationId: app.config.operations.defaultAffiliation, recursive: false,
-        useInventory: false, routingPolicy: 'first', altSelections: selectionsFor(recipe.id) });
+        useInventory: false, routingPolicy: 'first' });
       const materials = core.materialRows(plan);
       if (!(plan.actualOutput > 0) || !materials.length || materials.some(row => !(row.required > 0))) return null;
       const batch = Object.freeze({ ...module, output: plan.actualOutput,
-        altSelections: Object.freeze(selectionsFor(recipe.id)),
-        alternatives: core.alternativeGroups(recipe, selections),
+        // These are interchangeable stocks, not a player-selected recipe mode.
+        // Keep catalog order (for example Gold before Wildcat Gold).
+        inputOptions: Object.freeze(Object.fromEntries((recipe.inputs || [])
+          .filter(group => group.options.length > 1)
+          .map(group => [group.options[0].name, Object.freeze(group.options.map(option => option.name))]))),
         ingredients: Object.freeze(materials.map(row => Object.freeze([row.name, row.required]))),
         byproducts: Object.freeze(plan.byproducts.map(row => Object.freeze([row.name, row.qty]))),
         prerequisites: Object.freeze(plan.catalysts.map(row => Object.freeze([row.name, row.qty]))) });
@@ -2800,7 +2771,7 @@ window.__RHW_RECIPE_CATALOG_GZIP_BASE64__ = (window.__RHW_RECIPE_CATALOG_GZIP_BA
     return batches.length && batches.every(Boolean) ? batches : [];
   }
 
-  app.production = { requirements, recipes, selectionsFor, selectAlternative };
+  app.production = { requirements, recipes };
   // Semantics are normalized at order 10; the shared Command render follows
   // at order 40. Invalidate derived batches before that render.
   app.lifecycle.on('catalog:loaded', 'production-recipes', 30, () => { plans.clear(); });
@@ -2973,7 +2944,6 @@ window.__RHW_RECIPE_CATALOG_GZIP_BASE64__ = (window.__RHW_RECIPE_CATALOG_GZIP_BA
       search: typeof base.search === 'string' ? base.search : '',
       marginPercent: clampMargin(base.marginPercent),
       comparisonOpen: base.comparisonOpen === true,
-      altSelections: base.altSelections && typeof base.altSelections === 'object' ? { ...base.altSelections } : {},
       materialPriceSources: base.materialPriceSources && typeof base.materialPriceSources === 'object' ? { ...base.materialPriceSources } : {},
       materialPrices: base.materialPrices && typeof base.materialPrices === 'object' ? { ...base.materialPrices } : {}
     };
@@ -3118,7 +3088,7 @@ window.__RHW_RECIPE_CATALOG_GZIP_BASE64__ = (window.__RHW_RECIPE_CATALOG_GZIP_BA
   }
 
   function buildQuote(calc) {
-    return core.buildPlan({ productId: calc.productId, recipeId: calc.recipeId, quantity: calc.quantity, affiliationId: calc.affiliationId, useInventory: false, recursive: false, routingPolicy: 'first', altSelections: calc.altSelections });
+    return core.buildPlan({ productId: calc.productId, recipeId: calc.recipeId, quantity: calc.quantity, affiliationId: calc.affiliationId, useInventory: false, recursive: false, routingPolicy: 'first', altSelections: {} });
   }
 
   function materialRows(plan) {
@@ -3171,7 +3141,7 @@ window.__RHW_RECIPE_CATALOG_GZIP_BASE64__ = (window.__RHW_RECIPE_CATALOG_GZIP_BA
         return `<label><span>${esc(row.name)}</span><div class="ops-price-input-wrap"><input class="ops-price-input" data-material-price="${esc(row.id)}" aria-label="${esc(row.name)} price per unit" type="number" inputmode="decimal" min="0" step="any" value="${price === null ? '' : esc(String(price))}"><span>$</span></div></label>`;
       }).join('')}</div></div>` : ''}
       <div id="opsComparisonResults">${comparisonResultsMarkup(comparison, calc)}</div>
-      <p class="ops-comparison-note">Required catalysts and byproducts remain in each variant’s Recipe Notes. Each variant uses its selected inputs; recipes without a selection use their first input option. Change inputs in the calculator to compare another material choice.</p>
+      <p class="ops-comparison-note">Required catalysts and byproducts remain in each variant’s Recipe Notes. Alternative inputs use the same default option as the calculator.</p>
     </section>`;
   }
 
@@ -3225,26 +3195,12 @@ window.__RHW_RECIPE_CATALOG_GZIP_BASE64__ = (window.__RHW_RECIPE_CATALOG_GZIP_BA
     });
   }
 
-  function alternativeInputsMarkup(recipe, calc) {
-    const groups = core.alternativeGroups(recipe, calc.altSelections);
-    if (!groups.length) return '';
-    const factor = core.factorFor(recipe, calc.affiliationId);
-    return `<div class="ops-input-choices"><p>CHOOSE ONE MATERIAL PER INPUT · quantities and costs follow this selection.</p>${groups.map(group => `<label class="comms-field"><span>INPUT ${group.index + 1}</span><select data-ops-alternative="${group.index}" aria-label="Recipe input ${group.index + 1}">${group.options.map(option => {
-      const required = Math.ceil(Number(option.qty) * factor - 1e-9);
-      const entered = storedPrice(calc.materialPrices, option.id);
-      const quote = core.rhwQuote(option);
-      const price = entered ?? quote?.price ?? null;
-      const label = `${option.name} · ${fmt(required)} / cycle${price === null ? ' · price unknown' : ` · ${preciseMoney(required * price)} / cycle (${entered === null ? quote?.basis === 'base-sells' ? 'RHW sells' : 'RHW buys' : 'entered price'})`}`;
-      return `<option value="${esc(option.id)}"${option.id === group.selected.id ? ' selected' : ''}>${esc(label)}</option>`;
-    }).join('')}</select></label>`).join('')}</div>`;
-  }
-
   function loadRhwPrices() {
     const calc = currentState();
     const recipe = core.recipe(calc.recipeId);
     if (!recipe || !core.rhwPriceSnapshot().available) return false;
     const recipes = calc.comparisonOpen ? core.compareRecipes(calc).entries.filter(entry => entry.authorized).map(entry => entry.recipe) : [recipe];
-    // Include alternatives so switching inputs keeps their imported quotations.
+    // Keep quotations for all valid inputs and open recipe variants available.
     const materials = recipes.flatMap(entry => (entry.inputs || []).flatMap(group => group.options || []));
     const result = core.importRhwPrices(calc, materials);
     saveState({ materialPrices: result.materialPrices, materialPriceSources: result.materialPriceSources });
@@ -3355,7 +3311,7 @@ window.__RHW_RECIPE_CATALOG_GZIP_BASE64__ = (window.__RHW_RECIPE_CATALOG_GZIP_BA
         <div class="ops-mobile-decision" aria-label="Current quote summary"><div><small>RECOMMENDED SALE</small><strong id="opsMobileSellUnit">${money(pricing.sellPerUnit)}</strong></div><div><small>COST / ITEM</small><strong id="opsMobileUnitCost">${money(pricing.unitCost)}</strong></div><div><small>TOTAL PROFIT</small><strong id="opsMobileProfit">${money(pricing.profit)}</strong></div></div>
         <nav class="ops-mobile-jumps" aria-label="Calculator sections"><button type="button" data-ops-jump="opsMaterialPanel">ENTER MATERIAL PRICES</button><button type="button" data-ops-jump="opsQuotePanel">VIEW FULL QUOTE</button></nav>
       </section>
-      <section class="ops-panel ops-cost-panel" id="opsMaterialPanel"><div class="ops-panel-head"><div><span>02</span><strong>MATERIAL COST</strong></div><small>ENTER YOUR UNIT PRICES</small></div>${rhwPriceControlsMarkup()}${alternativeInputsMarkup(recipe, calc)}${materialsMarkup(rows, calc)}${plan.recipeFeeTotal ? `<div class="ops-recipe-fee"><div><small>FIXED RECIPE FEE · INCLUDED IN QUOTE</small><strong>${money(plan.recipeFeePerCycle)} / CYCLE × ${fmt(plan.cycles)}</strong></div><b>${money(plan.recipeFeeTotal)}</b></div>` : ''}<div class="ops-price-memory">Prices apply to this calculation. Save a price profile to reuse them.</div>${notesMarkup(plan)}<button class="ops-mobile-quote-jump" type="button" data-ops-jump="opsQuotePanel">VIEW UPDATED QUOTE</button></section>
+      <section class="ops-panel ops-cost-panel" id="opsMaterialPanel"><div class="ops-panel-head"><div><span>02</span><strong>MATERIAL COST</strong></div><small>ENTER YOUR UNIT PRICES</small></div>${rhwPriceControlsMarkup()}${materialsMarkup(rows, calc)}${plan.recipeFeeTotal ? `<div class="ops-recipe-fee"><div><small>FIXED RECIPE FEE · INCLUDED IN QUOTE</small><strong>${money(plan.recipeFeePerCycle)} / CYCLE × ${fmt(plan.cycles)}</strong></div><b>${money(plan.recipeFeeTotal)}</b></div>` : ''}<div class="ops-price-memory">Prices apply to this calculation. Save a price profile to reuse them.</div>${notesMarkup(plan)}<button class="ops-mobile-quote-jump" type="button" data-ops-jump="opsQuotePanel">VIEW UPDATED QUOTE</button></section>
       <section class="ops-panel ops-quote-panel" id="opsQuotePanel"><div class="ops-panel-head"><div><span>03</span><strong>PRICE CALCULATION</strong></div><small>COST → MARGIN → SELL PRICE</small></div>${quoteMarkup(pricing, calc, rows, plan.actualOutput)}</section>
       ${comparisonMarkup(comparison, calc, rows)}
     </div>`;
@@ -3412,17 +3368,6 @@ window.__RHW_RECIPE_CATALOG_GZIP_BASE64__ = (window.__RHW_RECIPE_CATALOG_GZIP_BA
 
   function bindCalculator(plan, rows) {
     document.getElementById('opsLoadRhwPrices')?.addEventListener('click', loadRhwPrices);
-    document.querySelectorAll('[data-ops-alternative]').forEach(select => select.addEventListener('change', event => {
-      const calc = currentState();
-      const recipe = core.recipe(calc.recipeId);
-      const index = Number(event.target.dataset.opsAlternative);
-      const group = core.alternativeGroups(recipe).find(entry => entry.index === index);
-      if (!group?.options.some(option => option.id === event.target.value)) return;
-      saveState({ altSelections: { ...calc.altSelections, [group.key]: event.target.value } });
-      if (calc.affiliationId === app.config.operations.defaultAffiliation) app.production?.selectAlternative(recipe.id, index, event.target.value);
-      renderCalculator();
-      [...document.querySelectorAll('[data-ops-alternative]')].find(node => Number(node.dataset.opsAlternative) === index)?.focus({ preventScroll: true });
-    }));
     document.getElementById('opsCompareToggle')?.addEventListener('click', () => {
       const open = !currentState().comparisonOpen;
       saveState({ comparisonOpen: open });
@@ -3500,7 +3445,6 @@ window.__RHW_RECIPE_CATALOG_GZIP_BASE64__ = (window.__RHW_RECIPE_CATALOG_GZIP_BA
       recipeId: recipe.id,
       quantity: Math.max(1, Math.floor(num(selection.quantity, 1))),
       affiliationId: selection.affiliationId || app.config.operations.defaultAffiliation,
-      altSelections: { ...currentState().altSelections, ...core.normalizeAlternatives(recipe, selection.altSelections || currentState().altSelections) },
       search
     });
     app.navigate('operations', 'calculator'); renderCalculator();
@@ -3783,6 +3727,7 @@ window.__RHW_RECIPE_CATALOG_GZIP_BASE64__ = (window.__RHW_RECIPE_CATALOG_GZIP_BA
     const clean = { ...stored, affiliationId: DEFAULT_IFF };
     delete clean.materialPrices;
     delete clean.materialPriceSources;
+    delete clean.altSelections;
     app.store.set(CALC_KEY, clean);
   }
 
@@ -3847,9 +3792,9 @@ window.__RHW_RECIPE_CATALOG_GZIP_BASE64__ = (window.__RHW_RECIPE_CATALOG_GZIP_BA
       search: recipeDisplayName(recipe),
       affiliationId: DEFAULT_IFF,
       materialPrices: {},
-      materialPriceSources: {},
-      altSelections: { ...(current.altSelections || {}), ...(app.production?.selectionsFor(recipe.id) || {}) }
+      materialPriceSources: {}
     };
+    delete app.state.calculator.altSelections;
     app.store.set(CALC_KEY, app.state.calculator);
     return true;
   }

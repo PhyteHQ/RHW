@@ -53,7 +53,6 @@
       search: typeof base.search === 'string' ? base.search : '',
       marginPercent: clampMargin(base.marginPercent),
       comparisonOpen: base.comparisonOpen === true,
-      altSelections: base.altSelections && typeof base.altSelections === 'object' ? { ...base.altSelections } : {},
       materialPriceSources: base.materialPriceSources && typeof base.materialPriceSources === 'object' ? { ...base.materialPriceSources } : {},
       materialPrices: base.materialPrices && typeof base.materialPrices === 'object' ? { ...base.materialPrices } : {}
     };
@@ -198,7 +197,7 @@
   }
 
   function buildQuote(calc) {
-    return core.buildPlan({ productId: calc.productId, recipeId: calc.recipeId, quantity: calc.quantity, affiliationId: calc.affiliationId, useInventory: false, recursive: false, routingPolicy: 'first', altSelections: calc.altSelections });
+    return core.buildPlan({ productId: calc.productId, recipeId: calc.recipeId, quantity: calc.quantity, affiliationId: calc.affiliationId, useInventory: false, recursive: false, routingPolicy: 'first', altSelections: {} });
   }
 
   function materialRows(plan) {
@@ -251,7 +250,7 @@
         return `<label><span>${esc(row.name)}</span><div class="ops-price-input-wrap"><input class="ops-price-input" data-material-price="${esc(row.id)}" aria-label="${esc(row.name)} price per unit" type="number" inputmode="decimal" min="0" step="any" value="${price === null ? '' : esc(String(price))}"><span>$</span></div></label>`;
       }).join('')}</div></div>` : ''}
       <div id="opsComparisonResults">${comparisonResultsMarkup(comparison, calc)}</div>
-      <p class="ops-comparison-note">Required catalysts and byproducts remain in each variant’s Recipe Notes. Each variant uses its selected inputs; recipes without a selection use their first input option. Change inputs in the calculator to compare another material choice.</p>
+      <p class="ops-comparison-note">Required catalysts and byproducts remain in each variant’s Recipe Notes. Alternative inputs use the same default option as the calculator.</p>
     </section>`;
   }
 
@@ -305,26 +304,12 @@
     });
   }
 
-  function alternativeInputsMarkup(recipe, calc) {
-    const groups = core.alternativeGroups(recipe, calc.altSelections);
-    if (!groups.length) return '';
-    const factor = core.factorFor(recipe, calc.affiliationId);
-    return `<div class="ops-input-choices"><p>CHOOSE ONE MATERIAL PER INPUT · quantities and costs follow this selection.</p>${groups.map(group => `<label class="comms-field"><span>INPUT ${group.index + 1}</span><select data-ops-alternative="${group.index}" aria-label="Recipe input ${group.index + 1}">${group.options.map(option => {
-      const required = Math.ceil(Number(option.qty) * factor - 1e-9);
-      const entered = storedPrice(calc.materialPrices, option.id);
-      const quote = core.rhwQuote(option);
-      const price = entered ?? quote?.price ?? null;
-      const label = `${option.name} · ${fmt(required)} / cycle${price === null ? ' · price unknown' : ` · ${preciseMoney(required * price)} / cycle (${entered === null ? quote?.basis === 'base-sells' ? 'RHW sells' : 'RHW buys' : 'entered price'})`}`;
-      return `<option value="${esc(option.id)}"${option.id === group.selected.id ? ' selected' : ''}>${esc(label)}</option>`;
-    }).join('')}</select></label>`).join('')}</div>`;
-  }
-
   function loadRhwPrices() {
     const calc = currentState();
     const recipe = core.recipe(calc.recipeId);
     if (!recipe || !core.rhwPriceSnapshot().available) return false;
     const recipes = calc.comparisonOpen ? core.compareRecipes(calc).entries.filter(entry => entry.authorized).map(entry => entry.recipe) : [recipe];
-    // Include alternatives so switching inputs keeps their imported quotations.
+    // Keep quotations for all valid inputs and open recipe variants available.
     const materials = recipes.flatMap(entry => (entry.inputs || []).flatMap(group => group.options || []));
     const result = core.importRhwPrices(calc, materials);
     saveState({ materialPrices: result.materialPrices, materialPriceSources: result.materialPriceSources });
@@ -435,7 +420,7 @@
         <div class="ops-mobile-decision" aria-label="Current quote summary"><div><small>RECOMMENDED SALE</small><strong id="opsMobileSellUnit">${money(pricing.sellPerUnit)}</strong></div><div><small>COST / ITEM</small><strong id="opsMobileUnitCost">${money(pricing.unitCost)}</strong></div><div><small>TOTAL PROFIT</small><strong id="opsMobileProfit">${money(pricing.profit)}</strong></div></div>
         <nav class="ops-mobile-jumps" aria-label="Calculator sections"><button type="button" data-ops-jump="opsMaterialPanel">ENTER MATERIAL PRICES</button><button type="button" data-ops-jump="opsQuotePanel">VIEW FULL QUOTE</button></nav>
       </section>
-      <section class="ops-panel ops-cost-panel" id="opsMaterialPanel"><div class="ops-panel-head"><div><span>02</span><strong>MATERIAL COST</strong></div><small>ENTER YOUR UNIT PRICES</small></div>${rhwPriceControlsMarkup()}${alternativeInputsMarkup(recipe, calc)}${materialsMarkup(rows, calc)}${plan.recipeFeeTotal ? `<div class="ops-recipe-fee"><div><small>FIXED RECIPE FEE · INCLUDED IN QUOTE</small><strong>${money(plan.recipeFeePerCycle)} / CYCLE × ${fmt(plan.cycles)}</strong></div><b>${money(plan.recipeFeeTotal)}</b></div>` : ''}<div class="ops-price-memory">Prices apply to this calculation. Save a price profile to reuse them.</div>${notesMarkup(plan)}<button class="ops-mobile-quote-jump" type="button" data-ops-jump="opsQuotePanel">VIEW UPDATED QUOTE</button></section>
+      <section class="ops-panel ops-cost-panel" id="opsMaterialPanel"><div class="ops-panel-head"><div><span>02</span><strong>MATERIAL COST</strong></div><small>ENTER YOUR UNIT PRICES</small></div>${rhwPriceControlsMarkup()}${materialsMarkup(rows, calc)}${plan.recipeFeeTotal ? `<div class="ops-recipe-fee"><div><small>FIXED RECIPE FEE · INCLUDED IN QUOTE</small><strong>${money(plan.recipeFeePerCycle)} / CYCLE × ${fmt(plan.cycles)}</strong></div><b>${money(plan.recipeFeeTotal)}</b></div>` : ''}<div class="ops-price-memory">Prices apply to this calculation. Save a price profile to reuse them.</div>${notesMarkup(plan)}<button class="ops-mobile-quote-jump" type="button" data-ops-jump="opsQuotePanel">VIEW UPDATED QUOTE</button></section>
       <section class="ops-panel ops-quote-panel" id="opsQuotePanel"><div class="ops-panel-head"><div><span>03</span><strong>PRICE CALCULATION</strong></div><small>COST → MARGIN → SELL PRICE</small></div>${quoteMarkup(pricing, calc, rows, plan.actualOutput)}</section>
       ${comparisonMarkup(comparison, calc, rows)}
     </div>`;
@@ -492,17 +477,6 @@
 
   function bindCalculator(plan, rows) {
     document.getElementById('opsLoadRhwPrices')?.addEventListener('click', loadRhwPrices);
-    document.querySelectorAll('[data-ops-alternative]').forEach(select => select.addEventListener('change', event => {
-      const calc = currentState();
-      const recipe = core.recipe(calc.recipeId);
-      const index = Number(event.target.dataset.opsAlternative);
-      const group = core.alternativeGroups(recipe).find(entry => entry.index === index);
-      if (!group?.options.some(option => option.id === event.target.value)) return;
-      saveState({ altSelections: { ...calc.altSelections, [group.key]: event.target.value } });
-      if (calc.affiliationId === app.config.operations.defaultAffiliation) app.production?.selectAlternative(recipe.id, index, event.target.value);
-      renderCalculator();
-      [...document.querySelectorAll('[data-ops-alternative]')].find(node => Number(node.dataset.opsAlternative) === index)?.focus({ preventScroll: true });
-    }));
     document.getElementById('opsCompareToggle')?.addEventListener('click', () => {
       const open = !currentState().comparisonOpen;
       saveState({ comparisonOpen: open });
@@ -580,7 +554,6 @@
       recipeId: recipe.id,
       quantity: Math.max(1, Math.floor(num(selection.quantity, 1))),
       affiliationId: selection.affiliationId || app.config.operations.defaultAffiliation,
-      altSelections: { ...currentState().altSelections, ...core.normalizeAlternatives(recipe, selection.altSelections || currentState().altSelections) },
       search
     });
     app.navigate('operations', 'calculator'); renderCalculator();

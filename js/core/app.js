@@ -200,6 +200,7 @@
           stored = { ...value };
           delete stored.materialPrices;
           delete stored.materialPriceSources;
+          delete stored.altSelections;
         }
         localStorage.setItem(key, JSON.stringify(stored));
         return true;

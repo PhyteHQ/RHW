@@ -886,10 +886,6 @@ html.rhw-pricecheck-enabled .app-tabs [data-workspace="pricecheck"] span { font-
 [data-command-panel="logistics"] .market-sort-button { font-size:9px; }
 [data-command-panel="logistics"] .supplier-grid small, [data-command-panel="logistics"] .market-scan-grid small { font-size:9px;line-height:1.35; }
 }
-/* Production input preferences share the Calculator's actual recipe choices. */
-.production-input-choices { display: grid;grid-template-columns: repeat(auto-fit,minmax(min(100%,180px),1fr));gap: 10px;margin: 12px 0; }
-.production-input-choices label { display: grid;gap: 5px;min-width: 0; }
-.production-input-choices label>span,.production-stock-note { color: var(--muted);font: 12px/1.5 var(--font-main); }
-.production-input-choices select { min-width: 0;width: 100%;min-height: 44px;padding: 8px;color: var(--text);border: 1px solid var(--line);background: var(--surface-input);font: 14px/1.4 var(--font-main); }
+.recipe-stock-breakdown { display: block;margin-top: 3px;color: var(--muted);font: 11px/1.5 var(--font-tech);overflow-wrap: anywhere; }
+.production-stock-note { color: var(--muted);font: 12px/1.5 var(--font-main); }
 .production-card.waiting .module-state,.pill.other { color: var(--muted);border-color: var(--line); }
-.production-card-collapsed .production-input-choices { display: none; }

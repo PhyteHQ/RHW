@@ -71,9 +71,9 @@ selects affiliation outputs without temporarily mutating shared catalog data.
 Session-only material prices are enforced at the single storage write boundary;
 named price profiles remain persistent.
 
-`js/calculator/model.js` also owns validated input-choice maps and explicit
-RHW purchase-quote imports. Quote provenance shares the session-only price
-boundary; input preferences are retained in Calculator state. Imports value
+`js/calculator/model.js` also owns explicit RHW quote imports. Quote provenance
+shares the session-only price boundary; removed input preferences are discarded
+from Calculator state. Imports value
 Reactor Systems and Superstructure Systems at RHW's BASE SELLS quotation;
 other inputs use BASE BUYS. Missing prices never fall back to the opposite
 quotation direction. The captured source includes this direction and original
@@ -97,11 +97,13 @@ by the Calculator. The registry contains no duplicate recipe quantities. The
 normalization (10), before the shared Command render (40). Missing recipes or an
 unavailable catalog leave material coverage unknown.
 
-Production and the BMM Calculator share per-recipe input choices. Changes
-invalidate the derived batch before rendering, and the Production shortcut
-passes those exact choices to costing. Capacity uses the selected input's
-reported quantity, never a pooled quantity for alternative commodities. The
-full inventory independently reads all reported positions; operational warning
+Production derives each input's valid alternatives in catalog order and combines
+their reported stocks automatically. Gold and Wildcat Gold therefore cover the
+same input together, as do interchangeable fuels and Scrap Metal/Iron. Per-item
+stock breakdowns remain visible; no manual input preferences are exposed or
+applied. Invalid reported quantities leave capacity unknown. Calculator costing
+and comparisons use their original default option; old selections are discarded.
+The full inventory independently reads all reported positions; operational warning
 boards continue to use their configured role scope.
 
 ## Rendering and background work

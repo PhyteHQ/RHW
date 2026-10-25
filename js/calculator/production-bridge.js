@@ -35,6 +35,7 @@
     const clean = { ...stored, affiliationId: DEFAULT_IFF };
     delete clean.materialPrices;
     delete clean.materialPriceSources;
+    delete clean.altSelections;
     app.store.set(CALC_KEY, clean);
   }
 
@@ -99,9 +100,9 @@
       search: recipeDisplayName(recipe),
       affiliationId: DEFAULT_IFF,
       materialPrices: {},
-      materialPriceSources: {},
-      altSelections: { ...(current.altSelections || {}), ...(app.production?.selectionsFor(recipe.id) || {}) }
+      materialPriceSources: {}
     };
+    delete app.state.calculator.altSelections;
     app.store.set(CALC_KEY, app.state.calculator);
     return true;
   }

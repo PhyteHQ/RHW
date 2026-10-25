@@ -1131,11 +1131,23 @@ function analyzeRecipe(recipe) {
     const originalName = pair[0];
     const required = pair[1];
 
-    const item = findCommodity(originalName);
-    const stock = firstFiniteApiStockValue(item, ['quantity', 'amount', 'stock']);
+    const names = recipe.inputOptions?.[originalName] || [originalName];
+    const stocks = names.map(name => {
+      const item = findCommodity(name);
+      return { name, item, stock: firstFiniteApiStockValue(item, ['quantity', 'amount', 'stock']) };
+    });
+    // An unlisted alternative contributes no reported stock. A reported item
+    // with an invalid/missing quantity must still leave capacity unknown.
+    const known = stocks.some(entry => entry.stock !== null)
+      && stocks.every(entry => !entry.item || entry.stock !== null);
+    const stock = known ? stocks.reduce((sum, entry) => sum + (entry.stock ?? 0), 0) : null;
+    const extraHtml = names.length > 1 ? `<span class="recipe-stock-breakdown">${stocks.map(entry => {
+      const label = keyFromName(entry.name) === 'gold' ? 'STD' : keyFromName(entry.name) === 'wildcat gold' ? 'WC' : displayRecipeName(entry.name);
+      return `${escapeHTML(label)}: ${number(entry.item ? entry.stock : 0)}`;
+    }).join(' // ')}</span>` : '';
     const cycles = stock === null ? null : required > 0 ? Math.floor(stock / required) : 0;
     const currentCycleGap = stock === null ? null : Math.max(0, required - stock);
-    return { name: originalName, displayName: displayRecipeName(originalName), extraHtml: '', required, stock, cycles, currentCycleGap };
+    return { name: originalName, displayName: names.map(displayRecipeName).join(' / '), extraHtml, required, stock, cycles, currentCycleGap };
   });
 
   const known = ingredientData.every(ingredient => ingredient.stock !== null);
@@ -1223,15 +1235,6 @@ function ensureProductionModuleTools() {
   }
   if (els.productionGrid.dataset.cardDetailsBound !== 'true') {
     els.productionGrid.dataset.cardDetailsBound = 'true';
-    els.productionGrid.addEventListener('change', event => {
-      const select = event.target.closest('[data-production-alternative]');
-      if (!select) return;
-      const { productionRecipe, productionAlternative } = select.dataset;
-      if (window.RHWV4?.production?.selectAlternative(productionRecipe, productionAlternative, select.value)) {
-        [...els.productionGrid.querySelectorAll('[data-production-alternative]')]
-          .find(node => node.dataset.productionRecipe === productionRecipe && node.dataset.productionAlternative === productionAlternative)?.focus({ preventScroll: true });
-      }
-    });
     els.productionGrid.addEventListener('click', event => {
       const button = event.target.closest('.production-card-toggle');
       if (!button) return;
@@ -1291,8 +1294,6 @@ function renderProductionModules() {
       ? `<div class="byproduct-strip production-prerequisites"><span>REQUIRED · NOT CONSUMED</span>${recipe.prerequisites.map(([name, qty]) => `<span class="byproduct-tag">${number(qty)} ${escapeHTML(name)}</span>`).join('')}</div>`
       : '';
 
-    const alternatives = recipe.alternatives?.length ? `<div class="production-input-choices">${recipe.alternatives.map(group => `<label><span>INPUT CHOICE</span><select data-production-recipe="${escapeHTML(recipe.recipeId)}" data-production-alternative="${group.index}" aria-label="${escapeHTML(recipe.product)} input ${group.index + 1}">${group.options.map(option => `<option value="${escapeHTML(option.id)}"${option.id === group.selected.id ? ' selected' : ''}>${escapeHTML(option.name)}</option>`).join('')}</select></label>`).join('')}</div>` : '';
-
     const productKey = normalize(displayRecipeName(recipe.product));
     const mobileCollapsed = window.matchMedia?.('(max-width: 760px)').matches && !productionExpandedModules.has(productKey);
 
@@ -1311,8 +1312,7 @@ function renderProductionModules() {
                 <div class="production-stat"><small>EST. YIELD</small><strong>${number(analysis.possibleOutput)}</strong></div>
               </div>
               ${nextGapText}
-              ${analysis.possibleCycles === null ? '<div class="production-stock-note">INPUT STOCK UNKNOWN · SELECTED MATERIALS ONLY</div>' : ''}
-              ${alternatives}
+              ${analysis.possibleCycles === null ? '<div class="production-stock-note">INPUT STOCK UNKNOWN</div>' : ''}
               <button type="button" class="production-card-toggle" aria-expanded="${mobileCollapsed ? 'false' : 'true'}"><span>${mobileCollapsed ? 'SHOW MATERIALS' : 'HIDE MATERIALS'}</span></button>
               <div class="recipe-column-head" aria-hidden="true">
                 <span>Material</span><span>Required / Cycle</span><span>Current Stock</span>
