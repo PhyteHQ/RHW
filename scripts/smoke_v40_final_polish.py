@@ -194,12 +194,16 @@ def main() -> int:
             cdp.call('Emulation.setDeviceMetricsOverride', {'width':390,'height':820,'deviceScaleFactor':1,'mobile':True})
             for material, view in [('Reactor Systems','market'),('Prototype Components','materials')]:
                 base.ev(cdp, f"""(()=>{{
-                  hasVerifiedTelemetry=()=>true;stockFor=()=>0;findCommodity=()=>null;
-                  // Shipyard shortages require reported quantities. Missing
+                  hasVerifiedTelemetry=()=>true;
+                  // Shipyard and Production shortages require reported quantities. Missing
                   // inventory is deliberately unknown, not an empty warehouse.
-                  items=RHWV4.shipyard.requirements().materials.map(row=>({{
+                  const requirements=[...RHWV4.shipyard.requirements().materials,
+                    ...productionRecipes().flatMap(recipe=>recipe.ingredients.map(([name])=>({{name}})))];
+                  items=[...new Map(requirements.map(row=>[keyFromName(row.name),{{
                     nickname:row.id,name:row.name,quantity:0
-                  }}));rebuildItemCaches();
+                  }}])).values()];
+                  findCommodity=name=>itemsByKey.get(keyFromName(name))||null;
+                  rebuildItemCaches();
                   renderShipyardControl();renderProductionModules();
                   RHWV4.navigate('command',{json.dumps('shipyard' if view=='market' else 'production')});return true;
                 }})()""")
