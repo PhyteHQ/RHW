@@ -190,6 +190,10 @@ function updateRoleSegments() {
   });
 }
 
+function manifestState(item) {
+  return firstFiniteApiStockValue(item, ['quantity', 'amount', 'stock']) === null ? 'waiting' : operationalState(item);
+}
+
 function renderManifest() {
   if (!els.itemsBody || !els.search || !els.roleFilter) return;
   if (!hasVerifiedTelemetry()) {
@@ -201,7 +205,9 @@ function renderManifest() {
   const query = normalize(els.search.value);
   const roleFilter = els.roleFilter.value;
 
-  const visible = operationalItems().filter(item => {
+  // Status boards keep their configured operational roles. The full manifest
+  // includes every reported item, including equipment and uncategorized goods.
+  const visible = items.filter(item => !item.synthetic).filter(item => {
     const role = assetRole(item);
     const matchesQuery = !query || normalize(displayName(item)).includes(query) || normalize(itemName(item)).includes(query);
     return matchesQuery && (roleFilter === 'all' || hasAssetRole(item, roleFilter));
@@ -218,10 +224,10 @@ function renderManifest() {
     if (sortCol === 'name') { valA = displayName(a); valB = displayName(b); }
     else if (sortCol === 'role') { valA = assetRoles(a).join(' / '); valB = assetRoles(b).join(' / '); }
     else if (sortCol === 'status') {
-      const weight = { critical: 1, low: 2, ok: 3 };
-      valA = weight[operationalState(a)]; valB = weight[operationalState(b)];
+      const weight = { critical: 1, low: 2, ok: 3, waiting: 4 };
+      valA = weight[manifestState(a)]; valB = weight[manifestState(b)];
     }
-    else if (sortCol === 'quantity') { valA = quantity(a); valB = quantity(b); }
+    else if (sortCol === 'quantity') { valA = firstFiniteApiStockValue(a, ['quantity', 'amount', 'stock']) ?? -1; valB = firstFiniteApiStockValue(b, ['quantity', 'amount', 'stock']) ?? -1; }
     else if (sortCol === 'sell') { valA = priceSell(a) ?? -1; valB = priceSell(b) ?? -1; }
     else if (sortCol === 'buy') { valA = priceBuy(a) ?? -1; valB = priceBuy(b) ?? -1; }
 
@@ -234,8 +240,8 @@ function renderManifest() {
 
   els.itemsBody.innerHTML = visible.map(item => {
     const role = assetRole(item);
-    const state = operationalState(item);
-    return `<tr><td class="asset-cell"><strong>${escapeHTML(displayName(item))}</strong></td><td>${rolePillsFor(item)}</td><td>${statusPill(state, role)}</td><td class="numeric-cell">${number(quantity(item))}</td><td class="numeric-cell price-cell sell-price">${formatCurrency(priceSell(item))}</td><td class="numeric-cell price-cell buy-price">${formatCurrency(priceBuy(item))}</td></tr>`;
+    const state = manifestState(item);
+    return `<tr><td class="asset-cell"><strong>${escapeHTML(displayName(item))}</strong></td><td>${rolePillsFor(item)}</td><td>${statusPill(state, role)}</td><td class="numeric-cell">${number(firstFiniteApiStockValue(item, ['quantity', 'amount', 'stock']))}</td><td class="numeric-cell price-cell sell-price">${formatCurrency(priceSell(item))}</td><td class="numeric-cell price-cell buy-price">${formatCurrency(priceBuy(item))}</td></tr>`;
   }).join('');
 }
 

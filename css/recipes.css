@@ -57,6 +57,17 @@ html.rhw-focus-pass .ops-comparison-locked td { color: #b9b3a6;text-align: left;
 
 html.rhw-focus-pass .ops-comparison-table button { width: 100%; }
 
+html.rhw-focus-pass .ops-rhw-prices { margin: 16px;padding: 14px;border: 1px solid var(--line);background: var(--surface-input); }
+html.rhw-focus-pass #opsLoadRhwPrices { min-height: 44px;padding: 10px 14px;border: 1px solid #796740;background: #27241d;color: #ebd49a;font: 600 13px/1.4 var(--font-main);cursor: pointer; }
+html.rhw-focus-pass #opsLoadRhwPrices:disabled { opacity: .65;cursor: default; }
+html.rhw-focus-pass .ops-rhw-prices p { margin: 10px 0 6px;color: var(--text);font: 14px/1.5 var(--font-main); }
+html.rhw-focus-pass :is(#opsRhwPriceStatus,.ops-material-price-source) { display: block;color: var(--muted);font: 12px/1.5 var(--font-main);overflow-wrap: anywhere; }
+html.rhw-focus-pass .ops-material-price-source { margin-top: 6px; }
+html.rhw-focus-pass .ops-input-choices { margin: 16px;display: grid;grid-template-columns: repeat(auto-fit,minmax(min(100%,240px),1fr));gap: 12px; }
+html.rhw-focus-pass .ops-input-choices p { grid-column: 1 / -1;margin: 0;color: var(--muted);font: 13px/1.5 var(--font-main); }
+html.rhw-focus-pass .ops-input-choices :is(label,select) { min-width: 0;width: 100%; }
+html.rhw-focus-pass .ops-input-choices select { min-height: 44px; }
+
 @media (max-width: 1000px) {
 html.rhw-focus-pass .ops-comparison-table, html.rhw-focus-pass .ops-comparison-table tbody { display: block; }
 html.rhw-focus-pass .ops-comparison-table thead { position: absolute;width: 1px;height: 1px;padding: 0;clip-path: inset(50%);overflow: hidden; }

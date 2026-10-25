@@ -41,6 +41,60 @@
   function product(id) { return state.productsById.get(id) || { id, name: id, recipeIds: [] }; }
   function recipesFor(id) { return state.recipesByProduct.get(id) || []; }
   function recipe(id) { return state.recipesById.get(id) || null; }
+  function alternativeGroups(recipeEntry, selections = {}) {
+    return (recipeEntry?.inputs || []).flatMap((group, index) => {
+      if ((group.options || []).length < 2) return [];
+      const key = `${recipeEntry.id}:${index}`;
+      const selected = group.options.find(option => option.id === selections[key]) || group.options[0];
+      return [{ key, index, options: group.options, selected }];
+    });
+  }
+  function normalizeAlternatives(recipeEntry, selections = {}) {
+    return Object.fromEntries(alternativeGroups(recipeEntry, selections)
+      .filter(group => group.options.some(option => option.id === selections[group.key]))
+      .map(group => [group.key, selections[group.key]]));
+  }
+  function unitPrice(prices, id) {
+    const raw = prices?.[id];
+    if ((typeof raw !== 'number' && typeof raw !== 'string') || String(raw).trim() === '') return null;
+    const value = Number(raw);
+    return Number.isFinite(value) && value >= 0 ? value : null;
+  }
+  function rhwPriceSnapshot() {
+    try { if (typeof telemetrySnapshot === 'function') return telemetrySnapshot(); } catch {}
+    return { available: false, stale: false, fetchedAt: null };
+  }
+  function rhwQuote(material) {
+    const snapshot = rhwPriceSnapshot();
+    if (!snapshot.available) return null;
+    try {
+      const item = typeof findCommodity === 'function' ? findCommodity(material.name || material.id) : null;
+      if (!item || item.missing) return null;
+      // BASE BUYS is the payment to a supplier. A generic `price` field is a
+      // sale quotation and must never silently stand in for this cost basis.
+      for (const key of ['price_to_sell_to_base', 'sell_price', 'price_sell']) {
+        const price = unitPrice(item, key);
+        if (price !== null) return { price, fetchedAt: snapshot.fetchedAt, stale: snapshot.stale };
+      }
+    } catch {}
+    return null;
+  }
+  function importRhwPrices(calc, materials) {
+    const materialPrices = { ...(calc.materialPrices || {}) };
+    const materialPriceSources = { ...(calc.materialPriceSources || {}) };
+    let imported = 0, preserved = 0, missing = 0;
+    for (const material of new Map(materials.map(row => [row.id, row])).values()) {
+      const current = unitPrice(materialPrices, material.id);
+      const source = materialPriceSources[material.id];
+      if (current !== null && !(source?.kind === 'rhw' && source.price === current)) { preserved++; continue; }
+      const quote = rhwQuote(material);
+      if (!quote) { missing++; continue; }
+      materialPrices[material.id] = quote.price;
+      materialPriceSources[material.id] = { kind: 'rhw', price: quote.price, fetchedAt: quote.fetchedAt };
+      imported++;
+    }
+    return { materialPrices, materialPriceSources, imported, preserved, missing };
+  }
   function outputsFor(recipeEntry, affiliationId) {
     if (!recipeEntry?.__rhwAffiliationCandidates?.length) return recipeEntry?.outputs || [];
     const effective = app.recipeCorrections.outputFor(recipeEntry, affiliationId);
@@ -222,7 +276,7 @@
         if (!authorizedFor(entry, calc.affiliationId)) return { recipe: entry, authorized: false };
         const plan = app.operationsCore.buildPlan({ productId: output.id, recipeId: entry.id,
           quantity: calc.quantity, affiliationId: calc.affiliationId, recursive: false,
-          useInventory: false, routingPolicy: 'first', altSelections: {} });
+          useInventory: false, routingPolicy: 'first', altSelections: calc.altSelections || {} });
         const rows = materialRows(plan);
         for (const row of rows) if (!materials.has(row.id)) materials.set(row.id, row);
         return { recipe: entry, authorized: true, plan, rows, pricing: priceQuote(rows, calc, plan) };
@@ -234,5 +288,6 @@
     return { output: { ...output, name: displayName(product(output.id)) }, entries, materials: [...materials.values()], complete, bestIds };
   }
 
-  app.operationsCore = { state, loadCatalog, product, recipe, recipesFor, factorFor, authorizedFor, telemetryReady, telemetryQuantity, buildPlan, priceQuote, displayName, materialRows, effectiveOutput, compareRecipes };
+  app.operationsCore = { state, loadCatalog, product, recipe, recipesFor, factorFor, authorizedFor, telemetryReady, telemetryQuantity, buildPlan, priceQuote, displayName, materialRows, effectiveOutput, compareRecipes,
+    alternativeGroups, normalizeAlternatives, unitPrice, rhwPriceSnapshot, rhwQuote, importRhwPrices };
 })();

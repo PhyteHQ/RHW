@@ -199,6 +199,7 @@
         if (key === app.config.storageKeys.calculatorState && value && typeof value === 'object') {
           stored = { ...value };
           delete stored.materialPrices;
+          delete stored.materialPriceSources;
         }
         localStorage.setItem(key, JSON.stringify(stored));
         return true;
