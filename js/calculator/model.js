@@ -41,19 +41,6 @@
   function product(id) { return state.productsById.get(id) || { id, name: id, recipeIds: [] }; }
   function recipesFor(id) { return state.recipesByProduct.get(id) || []; }
   function recipe(id) { return state.recipesById.get(id) || null; }
-  function alternativeGroups(recipeEntry, selections = {}) {
-    return (recipeEntry?.inputs || []).flatMap((group, index) => {
-      if ((group.options || []).length < 2) return [];
-      const key = `${recipeEntry.id}:${index}`;
-      const selected = group.options.find(option => option.id === selections[key]) || group.options[0];
-      return [{ key, index, options: group.options, selected }];
-    });
-  }
-  function normalizeAlternatives(recipeEntry, selections = {}) {
-    return Object.fromEntries(alternativeGroups(recipeEntry, selections)
-      .filter(group => group.options.some(option => option.id === selections[group.key]))
-      .map(group => [group.key, selections[group.key]]));
-  }
   function unitPrice(prices, id) {
     const raw = prices?.[id];
     if ((typeof raw !== 'number' && typeof raw !== 'string') || String(raw).trim() === '') return null;
@@ -283,7 +270,7 @@
         if (!authorizedFor(entry, calc.affiliationId)) return { recipe: entry, authorized: false };
         const plan = app.operationsCore.buildPlan({ productId: output.id, recipeId: entry.id,
           quantity: calc.quantity, affiliationId: calc.affiliationId, recursive: false,
-          useInventory: false, routingPolicy: 'first', altSelections: calc.altSelections || {} });
+          useInventory: false, routingPolicy: 'first', altSelections: {} });
         const rows = materialRows(plan);
         for (const row of rows) if (!materials.has(row.id)) materials.set(row.id, row);
         return { recipe: entry, authorized: true, plan, rows, pricing: priceQuote(rows, calc, plan) };
@@ -296,5 +283,5 @@
   }
 
   app.operationsCore = { state, loadCatalog, product, recipe, recipesFor, factorFor, authorizedFor, telemetryReady, telemetryQuantity, buildPlan, priceQuote, displayName, materialRows, effectiveOutput, compareRecipes,
-    alternativeGroups, normalizeAlternatives, unitPrice, rhwPriceSnapshot, rhwQuote, importRhwPrices };
+    unitPrice, rhwPriceSnapshot, rhwQuote, importRhwPrices };
 })();

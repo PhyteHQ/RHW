@@ -57,7 +57,7 @@ jobs:
       - name: Validate audit regressions
         run: node scripts/test_audit_regressions.js
 
-      - name: Validate procurement prices, input choices and full inventory
+      - name: Validate procurement prices, pooled inputs and full inventory
         run: node scripts/test_procurement_inputs.js
 
       - name: Validate Price Check provenance and backup

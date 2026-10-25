@@ -40,7 +40,7 @@ app.route.write('command', 'overview');
 assert.equal(context.location.hash, '#command/inventory');
 app.store.set(app.config.storageKeys.calculatorState, { quantity: 8, materialPrices: { ore: 10 },
   materialPriceSources: { ore: { kind: 'rhw', price: 10 } }, altSelections: { 'recipe:1': 'ore' } });
-assert.deepEqual(plain(app.store.get(app.config.storageKeys.calculatorState)), { quantity: 8, altSelections: { 'recipe:1': 'ore' } });
+assert.deepEqual(plain(app.store.get(app.config.storageKeys.calculatorState)), { quantity: 8 });
 app.store.set(app.config.storageKeys.calculatorPriceProfiles, [{ prices: { ore: 0 } }]);
 assert.equal(app.store.get(app.config.storageKeys.calculatorPriceProfiles)[0].prices.ore, 0);
 assert.match(app.config.forum.logoUrl, /^https:\/\//, 'Exported forum images need a public URL');
