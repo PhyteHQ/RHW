@@ -55,6 +55,7 @@ def build(root=ROOT):
              *['./' + p for p in OUTPUTS.values()], './assets/discovery-status.json',
              './assets/rhw-crest.png', './assets/rhw-forum-logo.png', './assets/favicon.png', './assets/apple-touch-icon.png',
              './assets/pwa-icon-192.png', './assets/pwa-icon-512.png', './assets/pwa-icon-maskable-512.png',
+             *assets.get('modules', []),
              *['./' + str(p.relative_to(root)) for p in sorted((root / 'assets/fonts').glob('*')) if p.suffix in {'.woff2', '.woff', '.ttf'}]]
     generated['js/app-shell.js'] = '/* GENERATED offline shell. */\nself.RHW_APP_SHELL = ' + json.dumps(shell, indent=2) + ';\n'
     generated['assets/build-assets.json'] = json.dumps(metrics, indent=2) + '\n'

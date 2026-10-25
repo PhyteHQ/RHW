@@ -1,0 +1,99 @@
+#!/usr/bin/env python3
+"""Real context button, lazy modules, worker, cache and mobile supply dialog."""
+import base64
+import json
+from pathlib import Path
+import shutil
+import time
+import smoke_v40 as base
+
+
+def wait_for(cdp, expression, seconds=20):
+    end = time.time() + seconds
+    while time.time() < end:
+        if base.ev(cdp, expression):
+            return
+        time.sleep(.1)
+    raise RuntimeError(f"Supply UI timed out: {base.ev(cdp, 'document.body.innerText.slice(-3500)')}")
+
+
+def main():
+    chrome, _browser, port, folder, _log = base.launch()
+    server = base.serve_inline_documents()
+    origin = f'http://127.0.0.1:{server.server_port}'
+    cdp = None
+    try:
+        target = next(page for page in json.loads(base.get(f'http://127.0.0.1:{port}/json/list', 3)) if page.get('type') == 'page')
+        cdp = base.CDP(target['webSocketDebuggerUrl'])
+        for method in ('Page.enable', 'Runtime.enable', 'Network.enable'):
+            cdp.call(method)
+        cdp.call('Network.setBlockedURLs', {'urls': ['https://*']})
+        cdp.call('Emulation.setDeviceMetricsOverride', {'width': 390, 'height': 844, 'deviceScaleFactor': 1, 'mobile': True})
+        names = ['Hull Panels', 'Ablative Armor Plating', 'Super Alloy', 'Gold', 'Wildcat Gold', 'Industrial Materials', 'MOX', 'Scrap Metal']
+        goods = [{'nickname': 'fixture_' + str(i), 'name': name, 'category': 'commodity', 'quantity': 10000,
+                  'min_stock': 0, 'max_stock': 20000, 'price': 100, 'sell_price': 150, 'volume': 1, 'original_volume': 1} for i, name in enumerate(names)]
+        goods[1].update(nickname='ablative', quantity=0, volume=2, original_volume=2)
+        pob = {'nickname': 'rhw', 'name': 'Resolution Heavy Works', 'system_nickname': 'br01', 'system_name': 'New London',
+               'base_pos': [0, 0, 0], 'money': 100000000, 'cargospace': 1000000, 'health': 24000000, 'shop_items': goods}
+        def market(base_id, name, pos, buy, sell, volume):
+            return {'base_nickname': base_id, 'base_name': name, 'system_nick': 'br01', 'system_name': 'New London',
+                    'base_pos': pos, 'base_sells': True, 'price_base_sells_for': buy, 'price_base_buys_for': sell, 'volume': volume}
+        commodities = [
+            {'nickname': 'ablative', 'name': 'Ablative Armor Plating', 'volume': 2,
+             'market_goods': [market('oder', 'Oder Shipyard', [300000, 0, 0], 100, 150, 2)]},
+            {'nickname': 'alloy', 'name': 'Super Alloy', 'volume': 1,
+             'market_goods': [market('waterloo', 'Waterloo Station', [150000, 0, 0], 10, 10, 1), market('oder', 'Oder Shipyard', [300000, 0, 0], 100, 50, 1)]}
+        ]
+        nav = {'schema': 1, 'nodes': [{'id': name, 'system': 'br01', 'pos': [pos, 0, 0], 'kind': 'base', 'allows': ['medium', 'large', 'berth']} for name, pos in [('rhw', 0), ('waterloo', 150000), ('oder', 300000)]],
+               'baseNodes': {'rhw': 'rhw', 'waterloo': 'waterloo', 'oder': 'oder'},
+               'links': [{'from': a, 'to': b, 'kind': 'lane', 'speed': 2500} for a, b in [('rhw', 'waterloo'), ('waterloo', 'rhw'), ('waterloo', 'oder'), ('oder', 'waterloo')]]}
+        ships = [{'nickname': 'dsy_advanced_train', 'name': 'Advanced Train', 'hold_size': 5000, 'cruise_speed': 350, 'dock_type': 2},
+                 {'nickname': 'pilgrim_liner', 'name': 'Pilgrim Liner', 'hold_size': 4300, 'cruise_speed': 415, 'dock_type': 3}]
+        fixture = {'pobs': [pob], 'commodities': commodities, 'ships': ships, 'npc_bases': [], 'factions': [], 'tractors': []}
+        script = "<script>window.supplyFixture=" + json.dumps(fixture) + ";window.supplyNav=" + json.dumps(nav) + ";window.supplyRequests=[];const originalFetch=window.fetch;window.fetch=(url,options)=>{const u=String(url);if(u.includes('/api/')){const key=u.split('/api/')[1].split('?')[0];supplyRequests.push(key);if(window.supplyOffline)return Promise.reject(Error('Fixture offline'));return Promise.resolve(new Response(JSON.stringify(supplyFixture[key]||[]),{status:200}));}if(u.includes('/assets/navigation.json.gz'))return Promise.resolve(new Response(JSON.stringify(supplyNav),{status:200}));return originalFetch(url,options);};</script>"
+        markup = base.document('command/production').replace('<head>', '<head>' + script, 1)
+        base.load_document(cdp, target['id'], markup, origin)
+        wait_for(cdp, "document.documentElement.dataset.v40Ready==='true' && !!document.querySelector('[data-supply-commodity=\"Ablative Armor Plating\"]')")
+        if base.ev(cdp, "supplyRequests.includes('commodities')"):
+            raise RuntimeError('Supply market must not load before the feature is opened')
+        base.ev(cdp, "(()=>{const b=document.querySelector('[data-supply-commodity=\"Ablative Armor Plating\"]');b.closest('.production-card')?.querySelector('.production-card-toggle')?.click();b.focus();b.click();return true})()")
+        wait_for(cdp, "document.querySelectorAll('#rhwSupplyDialog .supply-result').length>=2")
+        facts = base.ev(cdp, "(()=>({target:document.getElementById('supplyCommodity').value,text:document.getElementById('supplyResults').innerText,count:document.querySelectorAll('.supply-result').length,choices:document.querySelectorAll('[data-production-alternative]').length,open:document.getElementById('rhwSupplyDialog').open}))()")
+        if not facts['open'] or facts['target'] != 'Ablative Armor Plating' or facts['count'] > 3 or facts['choices'] != 0 or 'Waterloo Station' not in facts['text'] or 'Oder Shipyard' not in facts['text'] or '2,500' not in facts['text']:
+            raise RuntimeError(f'Supply context/worker result failed: {facts}')
+        for width, height in [(360, 800), (390, 844), (1440, 1000)]:
+            cdp.call('Emulation.setDeviceMetricsOverride', {'width': width, 'height': height, 'deviceScaleFactor': 1, 'mobile': width < 760})
+            fit = base.ev(cdp, "(()=>{const d=document.getElementById('rhwSupplyDialog'),r=d.getBoundingClientRect();return {overflow:d.scrollWidth>d.clientWidth+1,left:r.left,right:r.right,width:innerWidth,button:document.getElementById('supplySearch').getBoundingClientRect().height};})()")
+            if fit['overflow'] or fit['left'] < -1 or fit['right'] > width + 1 or fit['button'] < 44:
+                raise RuntimeError(f'Supply dialog overflow at {width}: {fit}')
+            base.ev(cdp, "document.querySelector('.supply-result').scrollIntoView({block:'start',behavior:'instant'})")
+            out = Path(__file__).resolve().parents[1] / 'artifacts/interface'
+            out.mkdir(parents=True, exist_ok=True)
+            shot = cdp.call('Page.captureScreenshot', {'format': 'png'})
+            (out / f'supply-route-{width}.png').write_bytes(base64.b64decode(shot['data']))
+        base.ev(cdp, "(()=>{document.getElementById('supplyExtra').value='0';document.getElementById('supplyExtra').dispatchEvent(new Event('change',{bubbles:true}));document.getElementById('supplySearch').click();return true})()")
+        wait_for(cdp, "!document.getElementById('supplySearch').disabled && document.getElementById('supplyResults').dataset.stale==='false'")
+        if base.ev(cdp, "document.getElementById('supplyResults').innerText.includes('Waterloo Station')"):
+            raise RuntimeError('Direct-only setting retained an extra trading stop')
+        base.ev(cdp, "(()=>{window.supplyOffline=true;document.getElementById('supplyRefresh').click();return true})()")
+        wait_for(cdp, "!document.getElementById('supplySearch').disabled")
+        if 'CACHED' not in base.ev(cdp, "document.getElementById('supplySource').textContent"):
+            raise RuntimeError('Failed refresh must label saved market data')
+        base.ev(cdp, "document.getElementById('supplyClose').click()")
+        wait_for(cdp, "!document.getElementById('rhwSupplyDialog').open && document.activeElement.dataset.supplyCommodity==='Ablative Armor Plating'", 3)
+        print('Supply browser passed: real Production button, lazy load, module worker, Waterloo/Oder backhaul, ship/volume data, no recipe selectors, direct-only control, cache provenance, focus and 360/390/1440px dialog.')
+    finally:
+        if cdp:
+            cdp.close()
+        server.shutdown()
+        chrome.terminate()
+        try:
+            chrome.wait(timeout=3)
+        except Exception:
+            chrome.kill()
+        shutil.rmtree(folder, ignore_errors=True)
+    return 0
+
+
+if __name__ == '__main__':
+    raise SystemExit(main())

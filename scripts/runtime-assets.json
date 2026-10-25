@@ -8,7 +8,8 @@
     "./css/components.css",
     "./css/theme.css",
     "./css/layout.css",
-    "./css/recipes.css"
+    "./css/recipes.css",
+    "./css/supply.css"
   ],
   "dashboard": [
     "./js/core/refresh.js",
@@ -64,6 +65,20 @@
     "./js/command/inventory-toolbar.js",
     "./js/core/tools-navigation.js",
     "./js/price-check/workspace.js",
+    "./js/command/supply-routes.js",
     "./js/core/boot.js"
+  ],
+  "modules": [
+    "./js/supply/ui.mjs",
+    "./js/supply/planner.mjs",
+    "./js/supply/worker.mjs",
+    "./js/supply/access.mjs",
+    "./js/supply/ship-profiles.mjs",
+    "./js/supply/core/trade.mjs",
+    "./js/supply/core/cargo.mjs",
+    "./js/supply/core/navigation.mjs",
+    "./js/supply/core/vendor/lp-solver.mjs",
+    "./js/supply/core/vendor/LP-SOLVER-LICENSE.txt",
+    "./assets/navigation.json.gz"
   ]
 }

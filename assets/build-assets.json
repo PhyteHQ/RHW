@@ -1,17 +1,17 @@
 {
   "css/rhw-app.css": {
-    "sources": 9,
-    "bytes": 344603,
-    "sha256": "4b1fd25593c87694be90a369c6016b95ccd203b074d5678f0064ea68fe08fd25"
+    "sources": 10,
+    "bytes": 350860,
+    "sha256": "25f70047fb7963cfbc55a4735866c5dda11225f4b29376f1a5f3913e4dfefa07"
   },
   "js/rhw-dashboard.js": {
     "sources": 13,
-    "bytes": 105883,
-    "sha256": "36e3ed4114877b52c14b6e6095b56f680303b7f397f5c13c6d332ff6cb64594d"
+    "bytes": 106124,
+    "sha256": "d9c41281d449a25ca8f7cd886105176b059af8967903c022286d4f2949aebe3e"
   },
   "js/rhw-workspaces.js": {
-    "sources": 39,
-    "bytes": 460216,
-    "sha256": "9cfe90cd77141e2368df83b0c0782dc5bd0a68f2d7f2dc65eb3089895a1a18cd"
+    "sources": 40,
+    "bytes": 463302,
+    "sha256": "9962f8d1a9116fa149e5bc215a0b2bc31a0080f6abbac7d794b29c1265c8aa9d"
   }
 }

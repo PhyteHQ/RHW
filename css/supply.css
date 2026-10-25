@@ -1,0 +1,70 @@
+/* RHW supply planning uses the existing industrial gold/silver palette. */
+.rhw-supply-button { display: inline-flex;align-items: center;justify-content: center;min-height: 36px;margin: 5px 0 0;padding: 7px 10px;border: 1px solid #817146;background: #242219;color: #e9d49e;font: 600 11px/1.35 var(--font-main);letter-spacing: .04em;cursor: pointer; }
+.recipe-name .rhw-supply-button { display: flex;width: fit-content; }
+.asset-cell .rhw-supply-button { display: flex; }
+.rhw-supply-launcher { display: flex;align-items: center;justify-content: space-between;gap: 16px;padding: 16px;margin: 12px 0;border: 1px solid var(--line);background: var(--surface-input); }
+.rhw-supply-launcher strong,.rhw-supply-launcher span { display: block; }
+.rhw-supply-launcher strong { color: var(--gold);font: 600 20px var(--font-main); }
+.rhw-supply-launcher span { color: var(--muted);font: 14px/1.5 var(--font-main); }
+.rhw-supply-dialog { width: min(1100px,calc(100vw - 32px));max-width: none;max-height: calc(100dvh - 32px);padding: 0;border: 1px solid #817146;background: #101513;color: #e6e7df;box-shadow: 0 18px 80px #000b; }
+.rhw-supply-dialog::backdrop { background: #000c; }
+.rhw-supply-dialog * { box-sizing: border-box; }
+.supply-heading { position: sticky;top: 0;z-index: 2;display: flex;align-items: flex-start;justify-content: space-between;gap: 20px;padding: 20px;background: #171d18;border-bottom: 1px solid #6d603f; }
+.supply-heading small,.supply-result header small { color: #ddc481;letter-spacing: .1em;font: 600 12px/1.4 var(--font-main); }
+.supply-heading h2 { margin: 3px 0;color: #ecd38f;font: 600 30px/1.2 var(--font-main); }
+.supply-heading p { margin: 5px 0 0;color: #bac0b7;font: 15px/1.5 var(--font-main); }
+.supply-content { padding: 20px; }
+.supply-fields { display: grid;grid-template-columns: repeat(2,minmax(0,1fr));gap: 14px; }
+.supply-fields label { display: grid;gap: 6px;min-width: 0;color: #ced0c5;font: 600 12px/1.5 var(--font-main); }
+.supply-fields :is(select,input) { width: 100%;min-width: 0;min-height: 46px;padding: 10px;color: #f0f0e5;background: #080e0c;border: 1px solid #6c7263;border-radius: 0;font: 16px/1.4 var(--font-main); }
+.supply-fields .supply-check { display: flex;align-items: center;gap: 10px;font-size: 15px; }
+.supply-check input { width: 22px;min-height: 22px; }
+.supply-settings { margin: 14px 0;border: 1px solid #454d40;padding: 12px; }
+.supply-settings summary,.supply-details summary { padding: 4px 0;min-height: 32px;cursor: pointer;font: 600 13px/1.5 var(--font-main);color: #d2d2bc; }
+.supply-settings[open] summary { margin-bottom: 12px; }
+.supply-settings p,.supply-details>p { color: #b7bdb3;font: 14px/1.6 var(--font-main); }
+.supply-actions { display: flex;flex-wrap: wrap;gap: 10px; }
+.rhw-supply-dialog button { min-height: 44px;padding: 10px 14px;border: 1px solid #7b6d46;background: #28251b;color: #ead393;font: 600 13px/1.4 var(--font-main);cursor: pointer; }
+.rhw-supply-dialog button:disabled { opacity: .5;cursor: wait; }
+.rhw-supply-dialog :is(button,summary,select,input):focus-visible { outline: 2px solid #ead393;outline-offset: 3px; }
+.supply-source { color: #aeb8ae;font: 12px/1.6 var(--font-main);overflow-wrap: anywhere; }
+#supplyStatus { min-height: 24px;color: #e3cb90;font: 13px/1.5 var(--font-main); }
+#supplyResults[data-stale="true"] { opacity: .6; }
+.supply-result { margin-top: 18px;border: 1px solid #56604e;background: #161d18; }
+.supply-result.supply-recommended { border-top: 3px solid #cdb36f; }
+.supply-result>header { display: flex;justify-content: space-between;gap: 16px;padding: 16px; }
+.supply-result h3 { margin: 4px 0 0;color: #f0e3b8;font: 600 25px/1.3 var(--font-main); }
+.supply-result>header>span { align-self: center;color: #bbc2b5;font: 13px/1.4 var(--font-main); }
+.supply-itinerary { display: flex;align-items: center;flex-wrap: wrap;gap: 8px;padding: 0 16px 16px;color: #e5e9db;font: 16px/1.5 var(--font-main); }
+.supply-itinerary b { color: #b7a572; }
+.supply-metrics { display: grid;grid-template-columns: repeat(4,minmax(0,1fr));gap: 1px;background: #434b3d;border-block: 1px solid #434b3d; }
+.supply-metrics>div { min-width: 0;padding: 14px;background: #0d140f; }
+.supply-metrics small,.supply-metrics strong,.supply-metrics span { display: block;overflow-wrap: anywhere; }
+.supply-metrics small { color: #bbc3b4;font: 11px/1.5 var(--font-main); }
+.supply-metrics strong { margin: 4px 0;color: #efcf78;font: 600 clamp(20px,2.3vw,28px)/1.3 var(--font-main); }
+.supply-metrics span { color: #c0c7ba;font: 13px/1.5 var(--font-main); }
+.supply-metrics .supply-loss { color: #ffad9f; }
+.supply-ship-note,.supply-access-note { margin: 14px 16px;color: #c0c6ba;font: 13px/1.6 var(--font-main); }
+.supply-access-note { color: #e0c991; }
+.supply-details { margin: 0 16px 16px;border-top: 1px solid #49513f;padding-top: 10px; }
+.supply-details section { margin: 12px 0;padding: 12px;border: 1px solid #454e3d;background: #0c120f; }
+.supply-details h4 { margin: 0 0 8px;color: #dfd4b4;font: 600 17px/1.4 var(--font-main); }
+.supply-details section p { margin: 6px 0;color: #d8ded0;font: 15px/1.6 var(--font-main); }
+.supply-details section small,.supply-details .supply-path { color: #aebda8;font: 13px/1.6 var(--font-main);overflow-wrap: anywhere; }
+.supply-empty { margin: 15px 0;padding: 20px;border: 1px solid #59604d;color: #ddc68e;font: 600 16px/1.5 var(--font-main); }
+.supply-empty p { margin-bottom: 0;color: #c2c7b9;font: 15px/1.6 var(--font-main); }
+@media (max-width:760px) {
+  .rhw-supply-button { min-height: 44px;font-size: 11px; }
+  .rhw-supply-launcher { align-items: stretch;flex-direction: column; }
+  .rhw-supply-dialog { width: calc(100vw - 12px);max-height: calc(100dvh - 12px); }
+  .supply-heading { padding: 14px;gap: 10px; }
+  .supply-heading h2 { font-size: 25px; }
+  .supply-heading p { font-size: 14px; }
+  .supply-content { padding: 14px; }
+  .supply-fields { grid-template-columns: minmax(0,1fr); }
+  .supply-metrics { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .supply-result>header { flex-direction: column;gap: 6px; }
+  .supply-result>header>span { align-self: flex-start; }
+  .supply-actions>button:first-child { flex: 1 0 100%; }
+  .supply-metrics strong { font-size: 23px; }
+}

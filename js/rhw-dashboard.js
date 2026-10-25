@@ -1275,7 +1275,7 @@ function renderProductionModules() {
         : '';
 
       return `<li class="${isBottleneck ? 'bottleneck' : ''}">
-                <span class="recipe-name">${escapeHTML(item.displayName)}${item.extraHtml || ''}${typeof purchaseSourceButton === 'function' ? purchaseSourceButton(item.name, item.currentCycleGap) : ''}</span>
+                <span class="recipe-name">${escapeHTML(item.displayName)}${item.extraHtml || ''}${typeof purchaseSourceButton === 'function' ? purchaseSourceButton(item.name, item.currentCycleGap) : ''}${typeof supplyRouteButton === 'function' ? supplyRouteButton(item.name) : ''}</span>
                 <span class="recipe-required">${number(item.required)}</span>
                 <span class="recipe-stock">${number(item.stock)}${shortText}</span>
               </li>`;
@@ -1393,7 +1393,7 @@ function renderShipyardControl() {
     const state = buildable === null ? 'unknown' : shipyardTrafficState(buildable);
     const unknown = materials.filter(row => row.stock === null);
     const rows = materials.map(row => `<tr class="shipyard-material-row ${row.state}${row.id === bottleneck?.id ? ' bottleneck' : ''}" data-shipyard-material="${escapeHTML(row.id)}">
-      <th scope="row"><div class="shipyard-material-name"><span>${escapeHTML(row.name)}</span>${row.gap > 0 && typeof purchaseSourceButton === 'function' ? purchaseSourceButton(row.name, row.gap) : ''}</div></th>
+      <th scope="row"><div class="shipyard-material-name"><span>${escapeHTML(row.name)}</span>${row.gap > 0 && typeof purchaseSourceButton === 'function' ? purchaseSourceButton(row.name, row.gap) : ''}${typeof supplyRouteButton === 'function' ? supplyRouteButton(row.name) : ''}</div></th>
       <td data-label="PER SHIP">${number(row.required)}</td><td data-label="STOCK">${row.stock === null ? '—' : number(row.stock)}</td>
       <td data-label="MISSING" class="shipyard-material-gap">${row.gap > 0 ? `<span class="shipyard-shortage">+${number(row.gap)}</span>` : '—'}</td>
     </tr>`).join('');
@@ -1996,7 +1996,7 @@ function renderManifest() {
   els.itemsBody.innerHTML = visible.map(item => {
     const role = assetRole(item);
     const state = manifestState(item);
-    return `<tr><td class="asset-cell"><strong>${escapeHTML(displayName(item))}</strong></td><td>${rolePillsFor(item)}</td><td>${statusPill(state, role)}</td><td class="numeric-cell">${number(firstFiniteApiStockValue(item, ['quantity', 'amount', 'stock']))}</td><td class="numeric-cell price-cell sell-price">${formatCurrency(priceSell(item))}</td><td class="numeric-cell price-cell buy-price">${formatCurrency(priceBuy(item))}</td></tr>`;
+    return `<tr><td class="asset-cell"><strong>${escapeHTML(displayName(item))}</strong>${typeof supplyRouteButton === 'function' ? supplyRouteButton(displayName(item)) : ''}</td><td>${rolePillsFor(item)}</td><td>${statusPill(state, role)}</td><td class="numeric-cell">${number(firstFiniteApiStockValue(item, ['quantity', 'amount', 'stock']))}</td><td class="numeric-cell price-cell sell-price">${formatCurrency(priceSell(item))}</td><td class="numeric-cell price-cell buy-price">${formatCurrency(priceBuy(item))}</td></tr>`;
   }).join('');
 }
 
