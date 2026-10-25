@@ -30,8 +30,7 @@
       receivedAt: typeof lastLoaded !== 'undefined' && lastLoaded ? lastLoaded.getTime() : 0,
       stale: typeof dataIsStale !== 'undefined' && dataIsStale };
   }
-  async function open(name) {
-    const trigger = document.activeElement;
+  async function open(name, trigger = document.activeElement) {
     try {
       modulePromise ||= import(new URL('./js/supply/ui.mjs', document.baseURI).href).catch(error => { modulePromise = null; throw error; });
       const module = await modulePromise;
@@ -40,7 +39,7 @@
   }
   document.addEventListener('click', event => {
     const trigger = event.target.closest('[data-supply-commodity]');
-    if (trigger) open(trigger.dataset.supplyCommodity);
+    if (trigger) open(trigger.dataset.supplyCommodity, trigger);
   });
   app.lifecycle.on('command:ready', 'supply-route-launcher', 90, () => {
     const panel = document.querySelector('[data-command-panel="logistics"]');

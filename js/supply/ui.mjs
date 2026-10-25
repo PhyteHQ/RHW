@@ -214,7 +214,13 @@ function mount() {
     <div class="supply-content"><form id="supplyForm"><div class="supply-fields"><label>COMMODITY<select id="supplyCommodity"></select></label><label>SHIP<select id="supplyShip"></select></label></div><details class="supply-settings"><summary>DELIVERY SETTINGS</summary><div class="supply-fields"><label>MAX EXTRA TIME<select id="supplyExtra"><option value="0">Direct supply only</option><option value="10">10% extra</option><option value="20" selected>20% extra</option><option value="35">35% extra</option><option value="50">50% extra</option></select></label><label>START CAPITAL · $<input id="supplyCapital" type="number" min="0" step="1" inputmode="numeric" placeholder="Show capital required"></label><label>DELIVERY QUANTITY<input id="supplyQuantity" type="number" min="1" step="1" inputmode="numeric" placeholder="Full hold within RHW limits"></label><label class="supply-check"><input id="supplyPobs" type="checkbox" checked>Include POB sellers</label></div><p>Fast supply ranks units delivered per hour. The profit alternative must stay within the time allowance and retain comparable supply throughput. Every run starts and ends at RHW.</p></details><div class="supply-actions"><button type="submit" id="supplySearch">CALCULATE SUPPLY ROUTE</button><button type="button" id="supplyRefresh">REFRESH MARKETS</button><button type="button" id="supplyCancel" hidden>CANCEL SEARCH</button></div></form><p id="supplySource" class="supply-source"></p><p id="supplyStatus" role="status" aria-live="polite"></p><div id="supplyResults"></div></div>`;
   document.body.append(dialog);
   $('supplyClose').addEventListener('click', () => dialog.close());
-  dialog.addEventListener('close', () => { stop(); context?.trigger?.focus?.({ preventScroll: true }); });
+  dialog.addEventListener('close', () => {
+    stop();
+    const visible = node => node?.isConnected && node.getClientRects().length > 0;
+    const trigger = visible(context?.trigger) ? context.trigger : [...document.querySelectorAll('[data-supply-commodity]')]
+      .find(node => node.dataset.supplyCommodity === context?.commodity && visible(node));
+    trigger?.focus({ preventScroll: true });
+  });
   $('supplyCancel').addEventListener('click', stop);
   $('supplyRefresh').addEventListener('click', () => search(true));
   $('supplyForm').addEventListener('submit', event => { event.preventDefault(); search(); });

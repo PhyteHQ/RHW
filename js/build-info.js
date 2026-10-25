@@ -1,6 +1,6 @@
 /* GENERATED content revision; do not edit. */
 globalThis.RHW_BUILD = Object.freeze({
-  revision: 'sha256-07ee3a290628cdde3e14',
+  revision: 'sha256-f4d2380b2c97830e5592',
   repository: 'PhyteHQ/RHW',
   branch: 'main'
 });
