@@ -7946,7 +7946,8 @@ window.__RHW_RECIPE_CATALOG_GZIP_BASE64__ = (window.__RHW_RECIPE_CATALOG_GZIP_BA
   }
   function button(name) {
     if (!commodities().some(item => keyFromName(item) === keyFromName(name))) return '';
-    return `<button type="button" class="rhw-supply-button" data-supply-commodity="${escapeHTML(name)}" aria-label="Supply ${escapeHTML(name)} to RHW">SUPPLY ROUTE</button>`;
+    const label = `Plan supply route for ${escapeHTML(name)}`;
+    return `<button type="button" class="rhw-supply-button rhw-supply-icon" data-supply-commodity="${escapeHTML(name)}" aria-label="${label}" title="${label}"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="5" cy="5" r="2"/><circle cx="19" cy="19" r="2"/><path d="M7 5h9a3 3 0 0 1 0 6H8a4 4 0 0 0 0 8h9"/></svg></button>`;
   }
   function telemetry() {
     return { pobs: typeof allBases !== 'undefined' ? allBases : [],

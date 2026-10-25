@@ -100,9 +100,9 @@
 
 :root {
   --bg: var(--palette-canvas);
-  --panel: #121716;
+  --panel: #101115;
   --line: var(--palette-line);
-  --line-soft: #252e2b;
+  --line-soft: #23242a;
   --text: var(--palette-text);
   --muted: var(--palette-muted);
   --gold: var(--palette-gold);
@@ -110,14 +110,14 @@
   --danger: var(--palette-danger);
   --warn: var(--palette-warning);
   --good: var(--palette-positive);
-  --blue-soft: rgba(175,194,185,.1);
-  --remote: #afc2b9;
+  --blue-soft: rgba(181,187,201,.1);
+  --remote: #b5bbc9;
   --waste: #b7afa0;
   --waste-soft: rgba(183,175,160,.15);
-  --surface-input: #080d0c;
-  --surface-raised: #1c2521;
-  --surface-hover: #253029;
-  --rhw-head-fill: linear-gradient(110deg,#242820,#141a17 76%);
+  --surface-input: #090a0d;
+  --surface-raised: #18191f;
+  --surface-hover: #22232b;
+  --rhw-head-fill: linear-gradient(110deg,#26221b,#121318 76%);
   --rhw-space-sm: 8px;
   --rhw-space-md: 16px;
   --rhw-space-lg: 24px;

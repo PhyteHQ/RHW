@@ -66,6 +66,6 @@ JavaScript is organized into `core`, `command`, `calculator`, `price-check`, `fo
 
 ## Industrial identity and September audit
 
-The interface follows the RHW crest: neutral charcoal surfaces, gold navigation, silver accents and industrial frames. Metals use Au/Nb marks, ores have compact input panels, and Prototype Components use a steel/gold supplier ledger. Status colours describe actual data states; no offers is neutral. The browser title stays **RHW COMMAND**. Desktop/mobile readability, reduced-motion and low-effects behavior are preserved.
+The interface follows the RHW crest: dark charcoal surfaces, gold navigation, silver accents and fine industrial frames. Production and Full Manifest use compact route icons beside commodity names, with accessible labels, hover hints and phone-sized touch targets. Supply results use the same dark panels and restrained gold emphasis. Metals use Au/Nb marks, ores have compact input panels, and Prototype Components use a steel/gold supplier ledger. Status colours describe actual data states; no offers is neutral. The browser title stays **RHW COMMAND**. Desktop/mobile readability, reduced-motion and low-effects behavior are preserved.
 
 Calculator search ranks exact product names before substrings, preserves input on same-recipe searches and starts a new recipe with blank prices and BMM. Price Check records per-route timestamps, distinguishes cached prices, clears quotes missing from successful responses and retries unresolved sources. The backup format is V5, with V1–V4 import compatibility.
