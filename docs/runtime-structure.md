@@ -106,6 +106,36 @@ and comparisons use their original default option; old selections are discarded.
 The full inventory independently reads all reported positions; operational warning
 boards continue to use their configured role scope.
 
+## Supply routes
+
+`js/command/supply-routes.js` owns context buttons and the lazy dialog entry. It
+uses named lifecycle hooks and does not replace Production, Shipyard or Logistics
+methods. The actual dialog lives in `js/supply/ui.mjs`. Its module worker runs
+`planner.mjs`; the UI only receives numeric verified quotes and formats them.
+The dialog suspends editable controls during a run and cancels work on close.
+
+`js/supply/core/` is copied unchanged from PhyteHQ/DTR commit
+`722e34d975f52eb6c1dd2f9d6d7bdb93a7dba0d4`: `trade.mjs`, `cargo.mjs`,
+`navigation.mjs` and the LP solver with its bundled license. `ship-profiles.mjs`
+and `assets/navigation.json.gz` share that source. No Corsair policy is imported:
+`access.mjs` reads BMM ID rephacks and marks unresolved personal/POB access.
+
+Supply quotes solve delivery quantity first, fix it, then optimize profit. The
+shared transaction simulator verifies the resulting cargo, pilot cash, POB cash,
+space, reserve and stock-limit changes. A zero-quantity optional trade becomes an
+honest empty leg. Target goods cannot be exported on earlier legs. Direct supply
+ranks units/hour; optional side trades have at most one extra stop and an explicit
+time/throughput window. Candidate caps and time limits are exposed in result
+status, and no more than three distinct recommendations are rendered.
+
+The runtime manifest's `modules` entries are copied to dist and hashed into the
+same release/offline shell as the bundles, including the compressed navigation
+asset and solver license. They do not load into the main page before use.
+Market snapshots are cached in a dedicated IndexedDB database; cache failure does
+not prevent a live calculation. Every open/search checks POB age. NPC/ship data
+have separate timestamps and retention. Failed refreshes keep saved timestamps
+and label saved data, rather than inventing current quotations.
+
 ## Rendering and background work
 
 `js/core/refresh.js` owns scoped `onRender(view, callback)` notifications and

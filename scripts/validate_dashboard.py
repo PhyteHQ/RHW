@@ -43,7 +43,7 @@ def main():
             errors.append(f'Missing runtime source: {source}')
     # An orphaned module is an error, not a new historical-code archive.
     generated = set(OUTPUTS.values()) | {'js/build-info.js', 'js/app-shell.js', 'js/00-bootstrap.js'}
-    actual = {str(p.relative_to(ROOT)) for folder in ('js', 'css') for p in (ROOT / folder).rglob('*') if p.suffix in {'.js', '.css'}}
+    actual = {str(p.relative_to(ROOT)) for folder in ('js', 'css') for p in (ROOT / folder).rglob('*') if p.suffix in {'.js', '.mjs', '.css'}}
     orphans = actual - set(sources) - generated
     if orphans:
         errors.append(f'Unshipped runtime sources: {sorted(orphans)}')
@@ -61,6 +61,8 @@ def main():
     if '<title>RHW COMMAND</title>' not in index:
         errors.append('The browser title must remain RHW COMMAND.')
     for name in sources:
+        if Path(name).suffix not in {'.js', '.mjs', '.css', '.html'}:
+            continue
         text = (ROOT / name).read_text()
         for tag in re.findall(r'<a\b[^>]*>', text, re.I):
             if re.search(r'\btarget=["\']_blank["\']', tag, re.I) and not re.search(r'\brel=["\'][^"\']*\bnoopener\b', tag, re.I):
