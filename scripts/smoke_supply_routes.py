@@ -14,7 +14,8 @@ def wait_for(cdp, expression, seconds=20):
         if base.ev(cdp, expression):
             return
         time.sleep(.1)
-    raise RuntimeError(f"Supply UI timed out: {base.ev(cdp, 'document.body.innerText.slice(-3500)')}")
+    debug = base.ev(cdp, "(()=>({status:document.getElementById('supplyStatus')?.textContent,open:document.getElementById('rhwSupplyDialog')?.open,active:document.activeElement?.outerHTML,buttons:[...document.querySelectorAll('[data-supply-commodity]')].filter(node=>node.getClientRects().length>0).map(node=>({name:node.dataset.supplyCommodity,hidden:!!node.closest('[hidden]'),disabled:node.disabled,card:node.closest('.production-card')?.className}))}))()")
+    raise RuntimeError(f'Supply UI timed out: {debug}')
 
 
 def main():
@@ -79,6 +80,13 @@ def main():
         wait_for(cdp, "!document.getElementById('supplySearch').disabled")
         if 'CACHED' not in base.ev(cdp, "document.getElementById('supplySource').textContent"):
             raise RuntimeError('Failed refresh must label saved market data')
+        base.ev(cdp, "document.getElementById('supplyClose').click()")
+        wait_for(cdp, "!document.getElementById('rhwSupplyDialog').open && !!document.activeElement.closest('.production-card')", 3)
+        # A desktop resize hides mobile material lists. Keep focus in the source
+        # module, then separately verify exact trigger restoration on the phone.
+        cdp.call('Emulation.setDeviceMetricsOverride', {'width': 390, 'height': 844, 'deviceScaleFactor': 1, 'mobile': True})
+        base.ev(cdp, "(()=>{window.supplyOffline=false;const b=document.querySelector('.production-card [data-supply-commodity=\"Ablative Armor Plating\"]');b.focus();b.click();return true})()")
+        wait_for(cdp, "document.getElementById('rhwSupplyDialog').open && !document.getElementById('supplySearch').disabled && document.querySelectorAll('.supply-result').length>0")
         base.ev(cdp, "document.getElementById('supplyClose').click()")
         wait_for(cdp, "!document.getElementById('rhwSupplyDialog').open && document.activeElement.dataset.supplyCommodity==='Ablative Armor Plating'", 3)
         print('Supply browser passed: real Production button, lazy load, module worker, Waterloo/Oder backhaul, ship/volume data, no recipe selectors, direct-only control, cache provenance, focus and 360/390/1440px dialog.')

@@ -2,6 +2,9 @@
 .rhw-supply-button { display: inline-flex;align-items: center;justify-content: center;min-height: 36px;margin: 5px 0 0;padding: 7px 10px;border: 1px solid #817146;background: #242219;color: #e9d49e;font: 600 11px/1.35 var(--font-main);letter-spacing: .04em;cursor: pointer; }
 .recipe-name .rhw-supply-button { display: flex;width: fit-content; }
 .asset-cell .rhw-supply-button { display: flex; }
+.shipyard-material-name>.rhw-supply-name { min-height: 44px;min-width: 0;max-width: 100%;padding: 0;background: transparent;border: 0;color: inherit;text-align: left;font: inherit;text-decoration: underline;text-decoration-color: #9e8c55;text-underline-offset: 4px;cursor: pointer; }
+.shipyard-material-name>.rhw-supply-name:focus-visible { outline: 2px solid var(--gold);outline-offset: 2px; }
+.shipyard-material-table tbody th { padding-block: 8px; }
 .rhw-supply-launcher { display: flex;align-items: center;justify-content: space-between;gap: 16px;padding: 16px;margin: 12px 0;border: 1px solid var(--line);background: var(--surface-input); }
 .rhw-supply-launcher strong,.rhw-supply-launcher span { display: block; }
 .rhw-supply-launcher strong { color: var(--gold);font: 600 20px var(--font-main); }
@@ -30,7 +33,7 @@
 .supply-source { color: #aeb8ae;font: 12px/1.6 var(--font-main);overflow-wrap: anywhere; }
 #supplyStatus { min-height: 24px;color: #e3cb90;font: 13px/1.5 var(--font-main); }
 #supplyResults[data-stale="true"] { opacity: .6; }
-.supply-result { margin-top: 18px;border: 1px solid #56604e;background: #161d18; }
+.supply-result { margin-top: 18px;border: 1px solid #56604e;background: #161d18;scroll-margin-top: 150px; }
 .supply-result.supply-recommended { border-top: 3px solid #cdb36f; }
 .supply-result>header { display: flex;justify-content: space-between;gap: 16px;padding: 16px; }
 .supply-result h3 { margin: 4px 0 0;color: #f0e3b8;font: 600 25px/1.3 var(--font-main); }

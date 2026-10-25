@@ -140,7 +140,7 @@ function staleResults() {
 function timePath(leg) {
   const nodes = new Map(prepared.navigation.nodes.map(node => [node.id, node]));
   const systems = [];
-  const names = prepared.navigation.systemNames || {};
+  const names = Object.fromEntries(prepared.dataset.bases.filter(base => base.system && base.systemName).map(base => [base.system, base.systemName]));
   for (const step of leg.flight?.path || []) if (step.kind === 'jump') {
     const from = names[step.fromSystem] || nodes.get(step.from)?.system || step.fromSystem;
     const to = names[step.toSystem] || nodes.get(step.to)?.system || step.toSystem;
@@ -216,10 +216,21 @@ function mount() {
   $('supplyClose').addEventListener('click', () => dialog.close());
   dialog.addEventListener('close', () => {
     stop();
-    const visible = node => node?.isConnected && node.getClientRects().length > 0;
-    const trigger = visible(context?.trigger) ? context.trigger : [...document.querySelectorAll('[data-supply-commodity]')]
-      .find(node => node.dataset.supplyCommodity === context?.commodity && visible(node));
-    trigger?.focus({ preventScroll: true });
+    // Wait for the native modal's focus/inert restoration before restoring the
+    // context button (which may have been replaced by a telemetry render).
+    requestAnimationFrame(() => {
+      if (dialog.open) return;
+      const visible = node => node?.isConnected && node.getClientRects().length > 0 && !node.closest('[hidden]');
+      const trigger = visible(context?.trigger) ? context.trigger : [...document.querySelectorAll('[data-supply-commodity]')]
+        .find(node => node.dataset.supplyCommodity === context?.commodity && visible(node));
+      const oldCard = context?.trigger?.closest('.production-card');
+      const card = oldCard?.isConnected ? oldCard : [...document.querySelectorAll('.production-card')]
+        .find(node => oldCard && node.dataset.productionProduct === oldCard.dataset.productionProduct);
+      // Desktop can hide the material list after a phone/desktop resize. Return
+      // to a visible control on the same module rather than focusing hidden UI.
+      const fallback = [...(card?.querySelectorAll('.production-card-toggle,.production-calc-button') || [])].find(visible);
+      (trigger || fallback)?.focus({ preventScroll: true });
+    });
   });
   $('supplyCancel').addEventListener('click', stop);
   $('supplyRefresh').addEventListener('click', () => search(true));
