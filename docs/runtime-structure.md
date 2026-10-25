@@ -124,8 +124,11 @@ Supply quotes solve delivery quantity first, fix it, then optimize profit. The
 shared transaction simulator verifies the resulting cargo, pilot cash, POB cash,
 space, reserve and stock-limit changes. A zero-quantity optional trade becomes an
 honest empty leg. Target goods cannot be exported on earlier legs. Direct supply
-ranks units/hour; optional side trades have at most one extra stop and an explicit
-time/throughput window. Candidate caps and time limits are exposed in result
+ranks units/hour to define the time/throughput window. Within that window,
+`rankSupplyRoutes` recommends the best positive hauler $/hour first, retaining
+the fast-supply baseline as an alternative. Loss-only routes retain that baseline.
+Optional side trades have at most one extra stop. The recommended result carries
+numeric comparison data so the UI explains the tradeoff explicitly. Candidate caps and time limits are exposed in result
 status, and no more than three distinct recommendations are rendered.
 
 The runtime manifest's `modules` entries are copied to dist and hashed into the

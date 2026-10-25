@@ -5523,6 +5523,8 @@ html.rhw-focus-pass .ops-comparison-table .ops-comparison-unit { border-top: 1px
 .supply-metrics strong { margin: 4px 0;color: #efcf78;font: 600 clamp(20px,2.3vw,28px)/1.3 var(--font-main); }
 .supply-metrics span { color: #c0c7ba;font: 13px/1.5 var(--font-main); }
 .supply-metrics .supply-loss { color: #ffad9f; }
+.supply-recommendation-reason { margin: 14px 16px;padding: 12px;border-left: 2px solid #cdb36f;background: #22291b;color: #e1dfcd;font: 14px/1.6 var(--font-main); }
+.supply-recommendation-reason strong { display: block;margin-bottom: 4px;color: #e7ce8d;font-size: 12px;letter-spacing: .04em; }
 .supply-ship-note,.supply-access-note { margin: 14px 16px;color: #c0c6ba;font: 13px/1.6 var(--font-main); }
 .supply-access-note { color: #e0c991; }
 .supply-details { margin: 0 16px 16px;border-top: 1px solid #49513f;padding-top: 10px; }

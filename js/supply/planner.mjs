@@ -120,6 +120,36 @@ function bestTrades(source, target, good, profile, limit = 3) {
 const signature = route => JSON.stringify([route.ship.id, route.legs.map((leg, i) => [leg.source, leg.target, leg.good, route.quantities[i]])]);
 const supplySort = (a, b) => b.unitsPerHour - a.unitsPerHour || a.seconds - b.seconds || b.hourlyProfit - a.hourlyProfit;
 
+// Delivery speed defines the acceptable window. Within that window the best
+// positive $/hour is the recommendation, not a permanently second-class option.
+export function rankSupplyRoutes(routes, extraPercent = 20) {
+  const direct = routes.filter(route => !route.extraStop).sort(supplySort);
+  const baseline = direct[0];
+  if (!baseline) return [];
+  const allowance = Math.min(50, Math.max(0, Number(extraPercent) || 0));
+  const efficient = routes.filter(route => (!route.extraStop || allowance > 0)
+    && route.seconds <= baseline.seconds * (1 + allowance / 100) + 0.01
+    && route.unitsPerHour >= baseline.unitsPerHour / (1 + allowance / 100) - 0.01);
+  const earning = efficient.filter(route => route.profit > 0).sort((a, b) => b.hourlyProfit - a.hourlyProfit
+    || supplySort(a, b) || a.capitalNeeded - b.capitalNeeded)[0];
+  const recommended = earning?.hourlyProfit > baseline.hourlyProfit + 0.01 ? earning : baseline;
+  const selected = [], signatures = new Set();
+  function pick(route, label, recommendation) {
+    if (!route || signatures.has(signature(route))) return;
+    signatures.add(signature(route)); selected.push({ ...route, label, ...(recommendation ? { recommendation } : {}) });
+  }
+  pick(recommended, recommended === baseline ? 'RECOMMENDED · FAST SUPPLY' : 'RECOMMENDED · BEST $/H WITHIN LIMIT', {
+    kind: recommended === baseline ? 'fast-supply' : 'profit-within-limit',
+    fastDelivered: baseline.delivered,
+    profitDelta: recommended.profit - baseline.profit,
+    hourlyProfitDelta: recommended.hourlyProfit - baseline.hourlyProfit
+  });
+  if (recommended !== baseline) pick(baseline, 'FAST SUPPLY');
+  const quick = [...direct].sort((a, b) => a.seconds - b.seconds || supplySort(a, b))[0];
+  if (quick && quick.seconds < baseline.seconds - 1) pick(quick, 'QUICKEST RETURN');
+  return selected.slice(0, 3);
+}
+
 export async function searchSupply(dataset, navigation, profiles, options = {}, progress = () => {}, canceled = () => false) {
   validateDataset(dataset);
   const rhw = findRhw(dataset), commodity = findCommodity(dataset, options.commodity);
@@ -200,20 +230,7 @@ export async function searchSupply(dataset, navigation, profiles, options = {}, 
       }
     }
   }
-  const selected = [], signatures = new Set();
-  function pick(route, label) {
-    if (!route || signatures.has(signature(route))) return;
-    signatures.add(signature(route)); selected.push({ ...route, label });
-  }
-  pick(baseline, 'FAST SUPPLY');
-  if (baseline) {
-    const efficient = routes.filter(route => route.seconds <= maxSeconds + 0.01
-      && route.unitsPerHour >= baseline.unitsPerHour / (1 + extraPercent / 100) - 0.01);
-    const earning = efficient.sort((a, b) => b.hourlyProfit - a.hourlyProfit || supplySort(a, b))[0];
-    if (earning?.hourlyProfit > baseline.hourlyProfit + 0.01) pick(earning, 'MORE PROFIT · LIMITED DETOUR');
-    const quick = [...direct].sort((a, b) => a.seconds - b.seconds || supplySort(a, b))[0];
-    if (quick && quick.seconds < baseline.seconds - 1) pick(quick, 'QUICKEST RETURN');
-  }
+  const selected = rankSupplyRoutes(routes, extraPercent);
   return { commodity: { id: commodity.id, name: commodity.name }, origin: rhw.id,
     results: selected.slice(0, 3).map(route => {
       const { navigator, bases: _state, ...data } = route;
