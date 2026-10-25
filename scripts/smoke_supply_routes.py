@@ -59,9 +59,11 @@ def main():
             raise RuntimeError('Supply market must not load before the feature is opened')
         base.ev(cdp, "(()=>{const b=document.querySelector('.production-card [data-supply-commodity=\"Ablative Armor Plating\"]');const card=b.closest('.production-card');if(card.classList.contains('production-card-collapsed'))card.querySelector('.production-card-toggle').click();if(!b.getClientRects().length)throw Error('Supply trigger is not visible');b.focus();b.click();return true})()")
         wait_for(cdp, "document.querySelectorAll('#rhwSupplyDialog .supply-result').length>=2")
-        facts = base.ev(cdp, "(()=>({target:document.getElementById('supplyCommodity').value,text:document.getElementById('supplyResults').innerText,count:document.querySelectorAll('.supply-result').length,choices:document.querySelectorAll('[data-production-alternative]').length,open:document.getElementById('rhwSupplyDialog').open}))()")
+        facts = base.ev(cdp, "(()=>({target:document.getElementById('supplyCommodity').value,text:document.getElementById('supplyResults').innerText,first:document.querySelector('.supply-result')?.innerText,reason:document.querySelector('.supply-recommendation-reason')?.innerText,count:document.querySelectorAll('.supply-result').length,choices:document.querySelectorAll('[data-production-alternative]').length,open:document.getElementById('rhwSupplyDialog').open}))()")
         if not facts['open'] or facts['target'] != 'Ablative Armor Plating' or facts['count'] > 3 or facts['choices'] != 0 or 'Waterloo Station' not in facts['text'] or 'Oder Shipyard' not in facts['text'] or '2,500' not in facts['text']:
             raise RuntimeError(f'Supply context/worker result failed: {facts}')
+        if 'RECOMMENDED' not in facts['first'] or 'Waterloo Station' not in facts['first'] or 'WHY THIS ROUTE' not in (facts['reason'] or '') or 'more per hour' not in facts['reason']:
+            raise RuntimeError(f'Worthwhile backhaul must be recommended first and explained: {facts}')
         for width, height in [(360, 800), (390, 844), (1440, 1000)]:
             cdp.call('Emulation.setDeviceMetricsOverride', {'width': width, 'height': height, 'deviceScaleFactor': 1, 'mobile': width < 760})
             fit = base.ev(cdp, "(()=>{const d=document.getElementById('rhwSupplyDialog'),r=d.getBoundingClientRect();return {overflow:d.scrollWidth>d.clientWidth+1,left:r.left,right:r.right,width:innerWidth,button:document.getElementById('supplySearch').getBoundingClientRect().height};})()")
