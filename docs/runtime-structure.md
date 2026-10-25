@@ -73,9 +73,12 @@ named price profiles remain persistent.
 
 `js/calculator/model.js` also owns validated input-choice maps and explicit
 RHW purchase-quote imports. Quote provenance shares the session-only price
-boundary; input preferences are retained in Calculator state. Each import uses
-only incoming BASE BUYS fields, preserves entered prices, and captures the
-original telemetry timestamp. Price refreshes require an explicit import action.
+boundary; input preferences are retained in Calculator state. Imports value
+Reactor Systems and Superstructure Systems at RHW's BASE SELLS quotation;
+other inputs use BASE BUYS. Missing prices never fall back to the opposite
+quotation direction. The captured source includes this direction and original
+telemetry timestamp. Entered prices are preserved; refreshes require an
+explicit import action.
 
 The Shipyard's hull registry in `js/command/config.js` contains identities and
 recipe IDs, not a separate set of component quantities. `shipyard-model.js`

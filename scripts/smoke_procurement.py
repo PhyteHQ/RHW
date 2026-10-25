@@ -29,6 +29,8 @@ def main() -> int:
             {'name': 'Promethene', 'quantity': 10000, 'price': 999},
             {'name': 'Scrap Metal', 'quantity': 0, 'sell_price': 2},
             {'name': 'Iron', 'quantity': 1500, 'sell_price': 4},
+            {'name': 'Superstructure Systems', 'quantity': 1000, 'sell_price': 1, 'price_to_buy_from_base': 62000},
+            {'name': 'Reactor Systems', 'quantity': 1000, 'price_to_sell_to_base': 1, 'price': 48000},
             {'name': 'Unassigned Shield', 'quantity': 1, 'price': 12345},
         ]
         payload = [{'name': 'Resolution Heavy Works', 'nickname': 'resolution heavy works',
@@ -94,6 +96,17 @@ def main() -> int:
         })()""")
         if 'CACHED' not in changed['cached'] or changed['chosen'] != 'commodity_scrap_metal' or changed['material'] != changed['chosen']:
             raise RuntimeError(f"Cached quote or Calculator-to-Production selection failed: {changed}")
+        ship_value = base.ev(cdp, """(()=>{
+          RHWV4.navigate('command','shipyard');
+          document.querySelector('[data-shipyard-select="dunkirk"]').click();
+          document.querySelector('[data-shipyard-calculate]').click();
+          document.getElementById('opsLoadRhwPrices').click();
+          return {prices:RHWV4.state.calculator.materialPrices,
+            supers:document.querySelector('[data-material-price-source="commodity_ship_part_superstructure"]').textContent,
+            reactors:document.querySelector('[data-material-price-source="commodity_ship_part_reactor"]').textContent};
+        })()""")
+        if ship_value['prices'].get('commodity_ship_part_superstructure') != 62000 or ship_value['prices'].get('commodity_ship_part_reactor') != 48000 or 'RHW SELLS' not in ship_value['supers'] or 'RHW SELLS' not in ship_value['reactors']:
+            raise RuntimeError(f"Shipyard inputs must use RHW's sale value for Supers and Reactors: {ship_value}")
         inventory = base.ev(cdp, """(async()=>{
           RHWV4.navigate('command','inventory');document.getElementById('inventoryManifestTab').click();
           const search=document.getElementById('search');search.value='Unassigned';search.dispatchEvent(new Event('input',{bubbles:true}));
@@ -102,7 +115,7 @@ def main() -> int:
         })()""")
         if inventory['rows'] != 1 or 'Unassigned Shield' not in inventory['text'] or 'OTHER' not in inventory['text']:
             raise RuntimeError(f"Complete inventory search failed: {inventory}")
-        print('Procurement browser checks passed: real controls, price direction/zeros/provenance, both input bridges, complete inventory and 360/390/1440px layouts.')
+        print('Procurement browser checks passed: real controls, price direction/zeros/provenance, Supers/Reactors at RHW sale value, both input bridges, complete inventory and 360/390/1440px layouts.')
     finally:
         if cdp:
             cdp.close()
