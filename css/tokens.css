@@ -1,13 +1,13 @@
 /* Shared literal palette. Component tokens may reference these constants. */
 :root {
   --palette-gold: #f0c56b;
-  --palette-canvas: #090b0b;
-  --palette-canvas-deep: #070909;
-  --palette-text: #f1f3ec;
-  --palette-text-soft: #dce1dc;
-  --palette-muted: #afb9b3;
-  --palette-line: #303935;
-  --palette-line-bright: #526058;
+  --palette-canvas: #090a0c;
+  --palette-canvas-deep: #060709;
+  --palette-text: #eeeef0;
+  --palette-text-soft: #d9dade;
+  --palette-muted: #adaeb7;
+  --palette-line: #303138;
+  --palette-line-bright: #4b4d57;
   --palette-positive: #83d5ab;
   --palette-info: #7da7ea;
   --palette-warning: #edb255;

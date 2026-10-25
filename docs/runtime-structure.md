@@ -108,8 +108,11 @@ boards continue to use their configured role scope.
 
 ## Supply routes
 
-`js/command/supply-routes.js` owns context buttons and the lazy dialog entry. It
-uses named lifecycle hooks and does not replace Production, Shipyard or Logistics
+`js/command/supply-routes.js` owns compact, labelled route icons beside commodity
+names and the lazy dialog entry. Their SVGs are decorative; the buttons carry
+the accessible commodity-specific action and hover hint. `css/supply.css` owns
+their responsive touch targets and the charcoal/steel/gold supply dialog. The
+bridge uses named lifecycle hooks and does not replace Production, Shipyard or Logistics
 methods. The actual dialog lives in `js/supply/ui.mjs`. Its module worker runs
 `planner.mjs`; the UI only receives numeric verified quotes and formats them.
 The dialog suspends editable controls during a run and cancels work on close.
