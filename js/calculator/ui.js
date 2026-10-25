@@ -570,13 +570,18 @@
     const recipe = core.recipe(selection.recipeId) || core.recipesFor(selection.productId)[0];
     const product = core.product(selection.productId);
     if (!recipe) return;
+    const requestedSearch = selection.productName || recipeDisplayName(recipe) || product?.name || '';
+    // A shortcut already identifies the exact recipe. A display label with
+    // different quotes/hyphens must not turn it into an empty text search.
+    const search = matchingRecipes(requestedSearch).some(entry => entry.id === recipe.id)
+      ? requestedSearch : recipeDisplayName(recipe) || recipe.id;
     saveState({
       productId: selection.productId,
       recipeId: recipe.id,
       quantity: Math.max(1, Math.floor(num(selection.quantity, 1))),
       affiliationId: selection.affiliationId || app.config.operations.defaultAffiliation,
       altSelections: { ...currentState().altSelections, ...core.normalizeAlternatives(recipe, selection.altSelections || currentState().altSelections) },
-      search: selection.productName || recipeDisplayName(recipe) || product?.name || ''
+      search
     });
     app.navigate('operations', 'calculator'); renderCalculator();
   }

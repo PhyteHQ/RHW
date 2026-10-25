@@ -159,7 +159,9 @@ ctx.__RHW_RECIPE_CATALOG__ = JSON.parse(zlib.gunzipSync(Buffer.from(ctx.__RHW_RE
 
   for (const recipeId of ['ship_assembly_dsy_br_battleship', 'ship_assembly_dsy_br_carrier', 'ship_assembly_medium_miner']) {
     const recipe = core.recipe(recipeId);
-    app.operations.openSelection({ recipeId, productId: recipe.outputs[0].id });
+    const hull = evaluate('DASHBOARD_CONFIG.capitalShipyard.hulls').find(entry => entry.recipeId === recipeId);
+    app.operations.openSelection({ recipeId, productId: recipe.outputs[0].id, productName: hull.name });
+    assert.equal(core.state.currentPlan.rootRecipe.id, recipeId, 'The actual Shipyard display name must still open its exact recipe');
     app.operations.loadRhwPrices();
     const shipCalc = app.state.calculator;
     const componentIds = core.materialRows(core.state.currentPlan).map(row => row.id);
