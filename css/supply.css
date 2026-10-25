@@ -35,6 +35,10 @@
 #supplyResults[data-stale="true"] { opacity: .6; }
 .supply-result { margin-top: 18px;border: 1px solid #56604e;background: #161d18;scroll-margin-top: 150px; }
 .supply-result.supply-recommended { border-top: 3px solid #cdb36f; }
+.supply-result.supply-express { border-top: 3px solid #c88f5b; }
+.supply-express-note { margin: 0 16px 16px;padding: 12px;border-left: 2px solid #c88f5b;background: #302018;color: #f0d3b7;font: 14px/1.6 var(--font-main); }
+.supply-express-note strong { display: block;margin-bottom: 4px;color: #f3ba8c;font-size: 12px;letter-spacing: .04em; }
+.supply-target-price { margin: 12px 16px;color: #d5d6bf;font: 13px/1.6 var(--font-main); }
 .supply-result>header { display: flex;justify-content: space-between;gap: 16px;padding: 16px; }
 .supply-result h3 { margin: 4px 0 0;color: #f0e3b8;font: 600 25px/1.3 var(--font-main); }
 .supply-result>header>span { align-self: center;color: #bbc2b5;font: 13px/1.4 var(--font-main); }

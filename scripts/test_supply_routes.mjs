@@ -26,6 +26,9 @@ assert.equal(quote.delivered, 2500, 'A 5k hold carries 2,500 units at two volume
 assert.equal(quote.profit, 125000);
 assert.equal(quote.capitalNeeded, 250000);
 assert.equal(quote.rhwPayout, 375000);
+assert.equal(quote.delivery.cost, 250000);
+assert.equal(quote.delivery.margin, 125000);
+assert.equal(quote.delivery.loss, 0);
 const limited = structuredClone(rhw); limited.cash = 1500;
 assert.equal(quoteSupply([{ source: 'rhw', target: 'oder', good: null }, target], [limited, oder], ship).delivered, 10, 'RHW cash limits delivery');
 limited.cash = 1e8; limited.space = 10;
@@ -74,10 +77,10 @@ assert.equal(blocked.results.length, 0, 'Known docking denial excludes the suppl
 // for $221,023 extra profit and $387,996 more per hour. This must rank first.
 const screenshotFast = { ship, extraStop: false, seconds: 1745, delivered: 5000,
   unitsPerHour: 10318, profit: 593977, hourlyProfit: 1225696, capitalNeeded: 993800,
-  legs: [{ source: 'rhw', target: 'kaiserslautern', good: 'niobium' }, { source: 'kaiserslautern', target: 'rhw', good: 'ablative' }], quantities: [4969, 5000] };
+  legs: [{ source: 'rhw', target: 'kaiserslautern', good: 'niobium' }, { source: 'kaiserslautern', target: 'rhw', good: 'ablative', buy: 39, sell: 125 }], quantities: [4969, 5000] };
 const screenshotTrade = { ship, extraStop: true, seconds: 1818, delivered: 5000,
   unitsPerHour: 9900, profit: 815000, hourlyProfit: 1613692, capitalNeeded: 270000,
-  legs: [{ source: 'rhw', target: 'waterloo', good: null }, { source: 'waterloo', target: 'oder', good: 'alloy' }, { source: 'oder', target: 'rhw', good: 'ablative' }], quantities: [0, 5000, 5000] };
+  legs: [{ source: 'rhw', target: 'waterloo', good: null }, { source: 'waterloo', target: 'oder', good: 'alloy' }, { source: 'oder', target: 'rhw', good: 'ablative', buy: 39, sell: 125 }], quantities: [0, 5000, 5000] };
 const ranked = rankSupplyRoutes([screenshotFast, screenshotTrade], 20);
 assert.equal(ranked[0].profit, 815000);
 assert.equal(ranked[0].recommendation.kind, 'profit-within-limit');
@@ -88,10 +91,63 @@ assert.equal(rankSupplyRoutes([screenshotFast, { ...screenshotTrade, seconds: 22
 assert.equal(rankSupplyRoutes([screenshotFast, { ...screenshotTrade, delivered: 1000, unitsPerHour: 1980 }], 20)[0].profit, 593977, 'High profit cannot replace the required supply throughput');
 assert.equal(rankSupplyRoutes([screenshotFast, screenshotTrade], 0).length, 1, 'Direct-only excludes trading detours');
 assert.equal(rankSupplyRoutes([screenshotFast, { ...screenshotTrade, profit: 600000, hourlyProfit: 1188119 }], 20)[0].profit, 593977, 'More per run without more $/hour is not enough');
-const lossFast = { ...screenshotFast, profit: -1000, hourlyProfit: -2063 };
-const lossSlow = { ...screenshotTrade, profit: -1000, hourlyProfit: -1980 };
+const lossFast = { ...screenshotFast, profit: -1000, hourlyProfit: -2063, legs: screenshotFast.legs.map((leg, i) => i === 1 ? { ...leg, buy: 130 } : leg) };
+const lossSlow = { ...screenshotTrade, profit: -1000, hourlyProfit: -1980, legs: screenshotTrade.legs.map((leg, i) => i === 2 ? { ...leg, buy: 130 } : leg) };
 assert.equal(rankSupplyRoutes([lossFast, lossSlow], 20)[0].seconds, 1745, 'Stretching an unchanged loss over more time is not a benefit');
+assert.ok(!rankSupplyRoutes([lossFast, lossSlow], 20)[0].recommendation, 'Loss-only delivery is an explicit express option, not a normal recommendation');
 assert.equal(new Set(ranked.map(route => JSON.stringify(route.legs))).size, ranked.length);
+
+// Reproduce the second screenshot through the actual transaction optimizer:
+// 91 Reactors at 10,500 -> 15,000 finance a 180 -> 125 Ablatives delivery.
+const pilgrim = { ...ship, id: 'pilgrim', name: 'Pilgrim', cargo: 4300, cruise: 415, dock: 'large', dockType: 3 };
+const reactors = { id: 'reactor', name: 'Reactor Systems', buy: 10500, sell: 1, volume: 1, originalVolume: 1, stock: 91, min: 0, max: 1000 };
+const ownerBase = { ...structuredClone(rhw), offers: [{ ...plating, buy: 100, sell: 125, volume: 1, originalVolume: 1, stock: 0, min: 0, max: 20000 }, reactors] };
+const corporate = { ...structuredClone(rhw), id: 'corporate', name: 'Corporate Shipping Airways', offers: [
+  { ...plating, buy: 180, sell: 1, volume: 1, originalVolume: 1, stock: 10000, min: 0, max: 20000 },
+  { ...reactors, buy: 20000, sell: 15000, stock: 0 }
+] };
+const corporateQuote = quoteSupply([makeLeg(ownerBase, corporate, 'reactor', pilgrim), makeLeg(corporate, ownerBase, 'ablative', pilgrim)], [ownerBase, corporate], pilgrim);
+assert.deepEqual(corporateQuote.quantities, [91, 4300]);
+assert.equal(corporateQuote.profit, 173000, 'Whole-run hauler profit remains correctly positive');
+assert.equal(corporateQuote.capitalNeeded, 955500);
+assert.equal(corporateQuote.delivery.cost, 774000);
+assert.equal(corporateQuote.delivery.payout, 537500);
+assert.equal(corporateQuote.delivery.loss, 236500, 'Show the inbound loss despite the profitable export');
+const corporateRun = { ...corporateQuote, ship: pilgrim, extraStop: false, seconds: 908, unitsPerHour: 17054, hourlyProfit: 686120 };
+const normalAndExpress = rankSupplyRoutes([corporateRun, screenshotFast, screenshotTrade], 20);
+assert.equal(normalAndExpress[0].profit, 815000, 'The near expensive POB must not exclude the longer ordinary circuit');
+assert.equal(normalAndExpress[1].profit, 593977);
+assert.match(normalAndExpress[2].label, /^EXPRESS OPTION/);
+assert.equal(normalAndExpress[2].delivery.loss, 236500);
+assert.ok(!normalAndExpress[2].recommendation);
+assert.equal(rankSupplyRoutes([{ ...corporateRun, profit: 2000000, hourlyProfit: 8000000 }, screenshotFast, screenshotTrade], 20)[0].profit, 815000, 'Even a huge outbound gain cannot disguise loss-making procurement');
+const onlyExpress = rankSupplyRoutes([corporateRun], 20);
+assert.match(onlyExpress[0].label, /^EXPRESS ONLY/);
+assert.ok(!onlyExpress[0].recommendation);
+
+// Full search with a very close loss-making POB: keep the NPC backhaul's time
+// allowance and surface the POB as a separate, faster express option.
+const nearPob = { ...structuredClone(corporate), pos: [25000, 0, 0], offers: [
+  { ...plating, buy: 180, sell: 1, stock: 10000, min: 0, max: 20000 }, { ...reactors, sell: 15000, stock: 0 }
+] };
+const supplyOwner = structuredClone(rhw); supplyOwner.offers.push(structuredClone(reactors));
+const network = { ...dataset, bases: [supplyOwner, waterloo, oder, nearPob] };
+const nearNav = structuredClone(navigation);
+nearNav.nodes.push({ id: 'corporate', system: 'br01', pos: nearPob.pos, kind: 'base', allows: ['medium', 'large', 'berth'] });
+nearNav.baseNodes.corporate = 'corporate';
+nearNav.links.push({ from: 'rhw', to: 'corporate', kind: 'lane', speed: 2500 }, { from: 'corporate', to: 'rhw', kind: 'lane', speed: 2500 });
+const withPobs = await searchSupply(network, nearNav, [ship], { commodity: 'ablative', extraPercent: 20 });
+assert.ok(withPobs.results[0].stops.includes('waterloo'));
+assert.ok(withPobs.results[0].recommendation);
+assert.equal(withPobs.stats.benchmarkSeconds, fast.seconds, 'Loss-making POB prices cannot shorten the normal time benchmark');
+assert.ok(withPobs.results.some(route => route.stops.includes('corporate') && route.delivery.loss > 0 && !route.recommendation));
+const withoutPobs = await searchSupply(network, nearNav, [ship], { commodity: 'ablative', extraPercent: 20, includePobs: false });
+assert.ok(withoutPobs.results.every(route => !route.stops.includes('corporate')));
+const affordableNetwork = structuredClone(network);
+affordableNetwork.bases.find(base => base.id === 'corporate').offers[0].buy = 100;
+const affordablePob = await searchSupply(affordableNetwork, nearNav, [ship], { commodity: 'ablative', extraPercent: 20 });
+assert.ok(affordablePob.results[0].stops.includes('corporate'), 'POBs priced within RHW payout remain valid normal recommendations');
+assert.equal(affordablePob.results[0].delivery.loss, 0);
 
 const access = dockingAccess([oder], [{ nickname: 'oder', faction_nickname: 'owner' }], [], [
   { nickname: 'dsy_license_fc_c_grp', rephacks: [{ faction_nickname: 'owner', reputation: 1, rep_type: 3 }] },

@@ -123,13 +123,20 @@ and `assets/navigation.json.gz` share that source. No Corsair policy is imported
 Supply quotes solve delivery quantity first, fix it, then optimize profit. The
 shared transaction simulator verifies the resulting cargo, pilot cash, POB cash,
 space, reserve and stock-limit changes. A zero-quantity optional trade becomes an
-honest empty leg. Target goods cannot be exported on earlier legs. Direct supply
-ranks units/hour to define the time/throughput window. Within that window,
-`rankSupplyRoutes` recommends the best positive hauler $/hour first, retaining
-the fast-supply baseline as an alternative. Loss-only routes retain that baseline.
-Optional side trades have at most one extra stop. The recommended result carries
-numeric comparison data so the UI explains the tradeoff explicitly. Candidate caps and time limits are exposed in result
-status, and no more than three distinct recommendations are rendered.
+honest empty leg. Target goods cannot be exported on earlier legs. The verified
+quote also separates the final material purchase cost, RHW payout, delivery
+margin and loss from whole-run hauler profit.
+
+The fastest direct quote whose target purchase does not exceed RHW payout sets
+the normal time/throughput window. Supplier shortlisting reserves ordinary
+sources separately from express POB offers. A nearer loss-making POB therefore
+cannot shrink this window and hide the normal NPC circuit. Within the normal
+window, `rankSupplyRoutes` recommends the best positive whole-run $/hour. A
+profitable export cannot reclassify a loss-making material purchase as normal.
+A faster express option can occupy one of the three result slots, with its loss
+clearly displayed. Express-only results receive no recommendation metadata or
+gold recommendation border. Candidate caps/time limits remain visible, and
+optional side trades still have at most one extra stop.
 
 The runtime manifest's `modules` entries are copied to dist and hashed into the
 same release/offline shell as the bundles, including the compressed navigation

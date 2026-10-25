@@ -18,6 +18,13 @@ export function findCommodity(dataset, name) {
     || dataset.bases.flatMap(base => base.offers).find(item => item.id === name || normalize(item.name) === target) || null;
 }
 
+function deliveryEconomics(route) {
+  const leg = route.legs?.at(-1), amount = route.delivered;
+  if (!leg?.good || !finite(leg.buy) || !finite(leg.sell) || !finite(amount) || amount <= 0) return null;
+  const cost = amount * leg.buy, payout = amount * leg.sell, margin = payout - cost;
+  return { buyPerUnit: leg.buy, rhwPerUnit: leg.sell, cost, payout, margin, loss: Math.max(0, -margin) };
+}
+
 // Every constraint applies in transaction order, including changes to RHW's
 // cash/space from an outbound sale. Target delivery is fixed before profit is
 // optimized, so a lucrative side trade cannot replace the requested cargo.
@@ -95,6 +102,7 @@ export function quoteSupply(legs, bases, profile, { capital = null, quantity = n
   const checked = simulate(actualLegs, quantities, bases, { capital: budget, cargo: profile.cargo });
   if (!checked || quantities[targetIndex] !== amount) return null;
   return { ...checked, legs: actualLegs, delivered: amount,
+    delivery: deliveryEconomics({ legs: actualLegs, delivered: amount }),
     purchaseCost: checked.events.filter(event => event.kind === 'buy').reduce((sum, event) => sum + event.quantity * event.price, 0),
     rhwPayout: amount * legs[targetIndex].sell };
 }
@@ -119,34 +127,58 @@ function bestTrades(source, target, good, profile, limit = 3) {
 }
 const signature = route => JSON.stringify([route.ship.id, route.legs.map((leg, i) => [leg.source, leg.target, leg.good, route.quantities[i]])]);
 const supplySort = (a, b) => b.unitsPerHour - a.unitsPerHour || a.seconds - b.seconds || b.hourlyProfit - a.hourlyProfit;
-
-// Delivery speed defines the acceptable window. Within that window the best
-// positive $/hour is the recommendation, not a permanently second-class option.
-export function rankSupplyRoutes(routes, extraPercent = 20) {
+const normalDelivery = route => route.delivery && route.delivery.margin >= -1e-6;
+function fastSupplyBaseline(routes) {
   const direct = routes.filter(route => !route.extraStop).sort(supplySort);
-  const baseline = direct[0];
-  if (!baseline) return [];
-  const allowance = Math.min(50, Math.max(0, Number(extraPercent) || 0));
-  const efficient = routes.filter(route => (!route.extraStop || allowance > 0)
+  return direct.find(normalDelivery) || direct[0] || null;
+}
+function bestEarning(routes, baseline, allowance) {
+  return routes.filter(route => (!route.extraStop || allowance > 0)
     && route.seconds <= baseline.seconds * (1 + allowance / 100) + 0.01
-    && route.unitsPerHour >= baseline.unitsPerHour / (1 + allowance / 100) - 0.01);
-  const earning = efficient.filter(route => route.profit > 0).sort((a, b) => b.hourlyProfit - a.hourlyProfit
-    || supplySort(a, b) || a.capitalNeeded - b.capitalNeeded)[0];
-  const recommended = earning?.hourlyProfit > baseline.hourlyProfit + 0.01 ? earning : baseline;
+    && route.unitsPerHour >= baseline.unitsPerHour / (1 + allowance / 100) - 0.01
+    && route.profit > 0).sort((a, b) => b.hourlyProfit - a.hourlyProfit
+      || supplySort(a, b) || a.capitalNeeded - b.capitalNeeded)[0];
+}
+
+// Normal procurement never loses money on the requested material itself. A
+// profitable export must not disguise an expensive inbound purchase. Express
+// quotes remain available, but cannot tighten the normal supply time window.
+export function rankSupplyRoutes(routes, extraPercent = 20) {
+  const quoted = routes.map(route => ({ ...route, delivery: deliveryEconomics(route) }));
+  const normal = quoted.filter(normalDelivery);
+  const direct = normal.filter(route => !route.extraStop).sort(supplySort);
+  const baseline = direct[0] || [...normal].sort(supplySort)[0];
+  const allowance = Math.min(50, Math.max(0, Number(extraPercent) || 0));
   const selected = [], signatures = new Set();
   function pick(route, label, recommendation) {
     if (!route || signatures.has(signature(route))) return;
     signatures.add(signature(route)); selected.push({ ...route, label, ...(recommendation ? { recommendation } : {}) });
   }
-  pick(recommended, recommended === baseline ? 'RECOMMENDED · FAST SUPPLY' : 'RECOMMENDED · BEST $/H WITHIN LIMIT', {
-    kind: recommended === baseline ? 'fast-supply' : 'profit-within-limit',
-    fastDelivered: baseline.delivered,
-    profitDelta: recommended.profit - baseline.profit,
-    hourlyProfitDelta: recommended.hourlyProfit - baseline.hourlyProfit
-  });
-  if (recommended !== baseline) pick(baseline, 'FAST SUPPLY');
-  const quick = [...direct].sort((a, b) => a.seconds - b.seconds || supplySort(a, b))[0];
-  if (quick && quick.seconds < baseline.seconds - 1) pick(quick, 'QUICKEST RETURN');
+  if (baseline) {
+    const earning = bestEarning(normal, baseline, allowance);
+    const recommended = earning?.hourlyProfit > baseline.hourlyProfit + 0.01 ? earning : baseline;
+    pick(recommended, recommended === baseline ? 'RECOMMENDED · NORMAL SUPPLY' : 'RECOMMENDED · BEST $/H WITHIN LIMIT', {
+      kind: recommended === baseline ? 'fast-supply' : 'profit-within-limit',
+      fastDelivered: baseline.delivered,
+      profitDelta: recommended.profit - baseline.profit,
+      hourlyProfitDelta: recommended.hourlyProfit - baseline.hourlyProfit
+    });
+    if (recommended !== baseline) pick(baseline, 'FAST SUPPLY');
+  }
+  const express = quoted.filter(route => route.delivery?.loss > 1e-6
+    && (!route.extraStop || allowance > 0)
+    && (!baseline || route.seconds < baseline.seconds - 1 || route.unitsPerHour > baseline.unitsPerHour + 0.01))
+    .sort(supplySort);
+  if (express.length) {
+    const fastExpress = express.find(route => !route.extraStop) || express[0];
+    const earningExpress = bestEarning(express, fastExpress, allowance);
+    const bestExpress = earningExpress?.hourlyProfit > fastExpress.hourlyProfit + 0.01 ? earningExpress : fastExpress;
+    pick(bestExpress, baseline ? 'EXPRESS OPTION · DELIVERY LOSS' : 'EXPRESS ONLY · DELIVERY LOSS');
+  }
+  if (baseline) {
+    const quick = [...direct].sort((a, b) => a.seconds - b.seconds || supplySort(a, b))[0];
+    if (quick && quick.seconds < baseline.seconds - 1) pick(quick, 'QUICKEST RETURN');
+  }
   return selected.slice(0, 3);
 }
 
@@ -193,7 +225,16 @@ export async function searchSupply(dataset, navigation, profiles, options = {}, 
       return amount > 0 ? [{ base, leg, rank: amount / Math.max(1, 2 * out + 3 * settings.dock) }] : [];
     }).sort((a, b) => b.rank - a.rank || a.leg.buy - b.leg.buy);
     if (suppliers.length > 36) pruned = true;
-    const selected = suppliers.slice(0, 36);
+    // Preserve ordinary sources even when many nearby POBs quote a material
+    // above RHW's payout. Reserve some comparisons for express alternatives.
+    const ordinary = suppliers.filter(row => row.leg.margin >= -1e-6);
+    const express = suppliers.filter(row => row.leg.margin < -1e-6);
+    const selected = ordinary.slice(0, 28).concat(express.slice(0, 8));
+    const retained = new Set(selected);
+    for (const supplier of ordinary.concat(express)) {
+      if (selected.length >= 36) break;
+      if (!retained.has(supplier)) { selected.push(supplier); retained.add(supplier); }
+    }
     contexts.push({ profile, navigator, selected });
     for (const supplier of selected) {
       if (!withinBudget()) { timedOut = true; break; }
@@ -203,7 +244,7 @@ export async function searchSupply(dataset, navigation, profiles, options = {}, 
       if (searchedSources % 4 === 0) { progress({ phase: 'direct', checked, sources: searchedSources }); await pause(); }
     }
   }
-  const direct = routes.filter(route => !route.extraStop).sort(supplySort), baseline = direct[0];
+  const baseline = fastSupplyBaseline(routes);
   const extraPercent = Math.min(50, Math.max(0, Number(options.extraPercent) || 0));
   const maxSeconds = baseline ? baseline.seconds * (1 + extraPercent / 100) : 0;
   if (baseline && extraPercent > 0) for (const { profile, navigator, selected } of contexts) {
@@ -238,5 +279,7 @@ export async function searchSupply(dataset, navigation, profiles, options = {}, 
         legs: data.legs.map(leg => ({ ...leg, from: byId.get(leg.source)?.name, to: byId.get(leg.target)?.name,
           fromSystem: byId.get(leg.source)?.systemName, toSystem: byId.get(leg.target)?.systemName,
           flight: navigator.route(leg.source, leg.target, true) })) };
-    }), stats: { checked, sources: searchedSources, ships: contexts.length, pruned, timedOut, canceled: canceled(), extraPercent } };
+    }), stats: { checked, sources: searchedSources, ships: contexts.length, pruned, timedOut, canceled: canceled(), extraPercent,
+      benchmarkSeconds: baseline?.seconds ?? null,
+      expressOnly: selected.length > 0 && !selected.some(route => route.recommendation) } };
 }
