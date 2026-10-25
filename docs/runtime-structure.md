@@ -71,6 +71,12 @@ selects affiliation outputs without temporarily mutating shared catalog data.
 Session-only material prices are enforced at the single storage write boundary;
 named price profiles remain persistent.
 
+`js/calculator/model.js` also owns validated input-choice maps and explicit
+RHW purchase-quote imports. Quote provenance shares the session-only price
+boundary; input preferences are retained in Calculator state. Each import uses
+only incoming BASE BUYS fields, preserves entered prices, and captures the
+original telemetry timestamp. Price refreshes require an explicit import action.
+
 The Shipyard's hull registry in `js/command/config.js` contains identities and
 recipe IDs, not a separate set of component quantities. `shipyard-model.js`
 uses the Calculator's direct material plan with RHW's BMM affiliation for each
@@ -87,6 +93,13 @@ by the Calculator. The registry contains no duplicate recipe quantities. The
 `catalog:loaded` hook at order 30 invalidates these batches after semantics
 normalization (10), before the shared Command render (40). Missing recipes or an
 unavailable catalog leave material coverage unknown.
+
+Production and the BMM Calculator share per-recipe input choices. Changes
+invalidate the derived batch before rendering, and the Production shortcut
+passes those exact choices to costing. Capacity uses the selected input's
+reported quantity, never a pooled quantity for alternative commodities. The
+full inventory independently reads all reported positions; operational warning
+boards continue to use their configured role scope.
 
 ## Rendering and background work
 

@@ -57,6 +57,9 @@ jobs:
       - name: Validate audit regressions
         run: node scripts/test_audit_regressions.js
 
+      - name: Validate procurement prices, input choices and full inventory
+        run: node scripts/test_procurement_inputs.js
+
       - name: Validate Price Check provenance and backup
         run: node scripts/test_price_check.js
 
@@ -84,6 +87,10 @@ jobs:
         run: |
           python3 scripts/build_app_assets.py --check --dist
           RHW_SMOKE_SITE=dist python3 scripts/smoke_interface_foundation.py
+
+      - name: Procurement interaction and responsive controls
+        if: ${{ !cancelled() }}
+        run: python3 scripts/smoke_procurement.py
 
       - name: Save interface checks and screenshots
         if: always()

@@ -53,6 +53,8 @@
       search: typeof base.search === 'string' ? base.search : '',
       marginPercent: clampMargin(base.marginPercent),
       comparisonOpen: base.comparisonOpen === true,
+      altSelections: base.altSelections && typeof base.altSelections === 'object' ? { ...base.altSelections } : {},
+      materialPriceSources: base.materialPriceSources && typeof base.materialPriceSources === 'object' ? { ...base.materialPriceSources } : {},
       materialPrices: base.materialPrices && typeof base.materialPrices === 'object' ? { ...base.materialPrices } : {}
     };
   }
@@ -61,7 +63,7 @@
     const current = currentState();
     const changedRecipe = patch.recipeId && patch.recipeId !== current.recipeId;
     const reset = changedRecipe && !keepComparison;
-    app.state.calculator = { ...current, ...(reset ? { materialPrices: {}, affiliationId: app.config.operations.defaultAffiliation, comparisonOpen: false } : {}), ...patch, ...(reset ? { materialPrices: {}, comparisonOpen: false } : {}) };
+    app.state.calculator = { ...current, ...(reset ? { materialPrices: {}, materialPriceSources: {}, affiliationId: app.config.operations.defaultAffiliation, comparisonOpen: false } : {}), ...patch, ...(reset ? { materialPrices: {}, materialPriceSources: {}, comparisonOpen: false } : {}) };
     app.store.set(app.config.storageKeys.calculatorState, app.state.calculator);
     app.requestUiUpdate?.();
   }
@@ -182,6 +184,7 @@
     if (!recipe) return { calc, matches, recipe: null };
     if (recipe.id !== raw.recipeId) {
       calc.materialPrices = {};
+      calc.materialPriceSources = {};
       calc.affiliationId = app.config.operations.defaultAffiliation;
     }
     const output = primaryOutput(recipe);
@@ -195,7 +198,7 @@
   }
 
   function buildQuote(calc) {
-    return core.buildPlan({ productId: calc.productId, recipeId: calc.recipeId, quantity: calc.quantity, affiliationId: calc.affiliationId, useInventory: false, recursive: false, routingPolicy: 'first', altSelections: {} });
+    return core.buildPlan({ productId: calc.productId, recipeId: calc.recipeId, quantity: calc.quantity, affiliationId: calc.affiliationId, useInventory: false, recursive: false, routingPolicy: 'first', altSelections: calc.altSelections });
   }
 
   function materialRows(plan) {
@@ -248,7 +251,7 @@
         return `<label><span>${esc(row.name)}</span><div class="ops-price-input-wrap"><input class="ops-price-input" data-material-price="${esc(row.id)}" aria-label="${esc(row.name)} price per unit" type="number" inputmode="decimal" min="0" step="any" value="${price === null ? '' : esc(String(price))}"><span>$</span></div></label>`;
       }).join('')}</div></div>` : ''}
       <div id="opsComparisonResults">${comparisonResultsMarkup(comparison, calc)}</div>
-      <p class="ops-comparison-note">Required catalysts and byproducts remain in each variant’s Recipe Notes. Alternative inputs use the same default option as the calculator.</p>
+      <p class="ops-comparison-note">Required catalysts and byproducts remain in each variant’s Recipe Notes. Each variant uses its selected inputs; recipes without a selection use their first input option. Change inputs in the calculator to compare another material choice.</p>
     </section>`;
   }
 
@@ -266,18 +269,76 @@
   }
 
   function storedPrice(prices, id) {
-    if (!Object.prototype.hasOwnProperty.call(prices, id)) return null;
-    const raw = prices[id];
-    if (raw === '' || raw === null || raw === undefined) return null;
-    const value = Number(raw);
-    return Number.isFinite(value) && value >= 0 ? value : null;
+    return core.unitPrice(prices, id);
+  }
+
+  function priceSourceLabel(calc, id) {
+    const value = storedPrice(calc.materialPrices, id);
+    if (value === null) return 'PRICE NOT ENTERED';
+    const source = calc.materialPriceSources[id];
+    const timestamp = Date.parse(source?.fetchedAt || '');
+    if (source?.kind !== 'rhw' || source.price !== value || !Number.isFinite(timestamp)) return 'ENTERED PRICE';
+    const snapshot = core.rhwPriceSnapshot();
+    const cached = !snapshot.available || snapshot.stale || navigator.onLine === false
+      || source.fetchedAt !== snapshot.fetchedAt || Date.now() - timestamp >= 600000;
+    return `RHW BUYS · ${cached ? 'CACHED' : 'LIVE'} · ${new Date(timestamp).toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}`;
+  }
+
+  function rhwPriceControlsMarkup() {
+    const snapshot = core.rhwPriceSnapshot();
+    return `<div class="ops-rhw-prices"><button type="button" id="opsLoadRhwPrices"${snapshot.available ? '' : ' disabled'}>${snapshot.stale ? 'LOAD CACHED RHW PRICES' : 'LOAD RHW PRICES'}</button><p>Uses RHW’s BASE BUYS quotations: payments to suppliers. Fills empty prices and refreshes earlier RHW imports; entered prices stay.</p><small id="opsRhwPriceStatus" role="status"></small></div>`;
+  }
+
+  function updateRhwPriceControls() {
+    const button = document.getElementById('opsLoadRhwPrices');
+    if (!button) return;
+    const snapshot = core.rhwPriceSnapshot();
+    const cached = snapshot.stale || navigator.onLine === false;
+    button.disabled = !snapshot.available;
+    button.textContent = cached ? 'LOAD CACHED RHW PRICES' : 'LOAD RHW PRICES';
+    const status = document.getElementById('opsRhwPriceStatus');
+    if (status) status.textContent = !snapshot.available ? 'NO VERIFIED RHW INVENTORY AVAILABLE'
+      : `${cached ? 'CACHED' : 'LIVE'} RHW QUOTATIONS · ${snapshot.fetchedAt ? new Date(snapshot.fetchedAt).toLocaleString('en-GB') : 'TIME UNKNOWN'}`;
+    const calc = currentState();
+    document.querySelectorAll('[data-material-price-source]').forEach(node => {
+      node.textContent = priceSourceLabel(calc, node.dataset.materialPriceSource);
+    });
+  }
+
+  function alternativeInputsMarkup(recipe, calc) {
+    const groups = core.alternativeGroups(recipe, calc.altSelections);
+    if (!groups.length) return '';
+    const factor = core.factorFor(recipe, calc.affiliationId);
+    return `<div class="ops-input-choices"><p>CHOOSE ONE MATERIAL PER INPUT · quantities and costs follow this selection.</p>${groups.map(group => `<label class="comms-field"><span>INPUT ${group.index + 1}</span><select data-ops-alternative="${group.index}" aria-label="Recipe input ${group.index + 1}">${group.options.map(option => {
+      const required = Math.ceil(Number(option.qty) * factor - 1e-9);
+      const entered = storedPrice(calc.materialPrices, option.id);
+      const live = core.rhwQuote(option)?.price ?? null;
+      const price = entered ?? live;
+      const label = `${option.name} · ${fmt(required)} / cycle${price === null ? ' · price unknown' : ` · ${preciseMoney(required * price)} / cycle (${entered === null ? 'RHW buys' : 'entered price'})`}`;
+      return `<option value="${esc(option.id)}"${option.id === group.selected.id ? ' selected' : ''}>${esc(label)}</option>`;
+    }).join('')}</select></label>`).join('')}</div>`;
+  }
+
+  function loadRhwPrices() {
+    const calc = currentState();
+    const recipe = core.recipe(calc.recipeId);
+    if (!recipe || !core.rhwPriceSnapshot().available) return false;
+    const recipes = calc.comparisonOpen ? core.compareRecipes(calc).entries.filter(entry => entry.authorized).map(entry => entry.recipe) : [recipe];
+    // Include alternatives so switching inputs keeps their imported quotations.
+    const materials = recipes.flatMap(entry => (entry.inputs || []).flatMap(group => group.options || []));
+    const result = core.importRhwPrices(calc, materials);
+    saveState({ materialPrices: result.materialPrices, materialPriceSources: result.materialPriceSources });
+    renderCalculator();
+    app.notify?.(`${result.imported} RHW PRICES LOADED · ${result.preserved} ENTERED PRICES KEPT · ${result.missing} UNAVAILABLE`, result.missing ? 'warn' : undefined);
+    document.getElementById('opsLoadRhwPrices')?.focus({ preventScroll: true });
+    return result;
   }
 
   function materialsMarkup(rows, calc) {
     if (!rows.length) return '<div class="ops-empty good">THIS RECIPE HAS NO CONSUMED MATERIAL INPUTS</div>';
     return `<div class="ops-material-table-wrap"><table class="ops-material-table"><thead><tr><th>MATERIAL</th><th>REQUIRED</th><th>PRICE / UNIT</th><th>LINE COST</th></tr></thead><tbody>${rows.map(row => {
       const price = storedPrice(calc.materialPrices, row.id);
-      return `<tr class="ops-material-row" data-material-id="${esc(row.id)}" data-required="${row.required}"><td><strong>${esc(row.name)}</strong></td><td>${fmt(row.required)}</td><td><div class="ops-price-input-wrap"><input class="ops-price-input" aria-label="${esc(row.name)} price per unit" data-material-price="${esc(row.id)}" type="number" inputmode="decimal" min="0" step="1" value="${price === null ? '' : esc(String(price))}" placeholder=""><span>$</span></div></td><td data-line-cost>${money(price === null ? null : row.required * price)}</td></tr>`;
+      return `<tr class="ops-material-row" data-material-id="${esc(row.id)}" data-required="${row.required}"><td><strong>${esc(row.name)}</strong></td><td>${fmt(row.required)}</td><td><div class="ops-price-input-wrap"><input class="ops-price-input" aria-label="${esc(row.name)} price per unit" data-material-price="${esc(row.id)}" type="number" inputmode="decimal" min="0" step="any" value="${price === null ? '' : esc(String(price))}" placeholder=""><span>$</span></div><small class="ops-material-price-source" data-material-price-source="${esc(row.id)}">${esc(priceSourceLabel(calc, row.id))}</small></td><td data-line-cost>${money(price === null ? null : row.required * price)}</td></tr>`;
     }).join('')}</tbody></table></div>`;
   }
 
@@ -374,11 +435,12 @@
         <div class="ops-mobile-decision" aria-label="Current quote summary"><div><small>RECOMMENDED SALE</small><strong id="opsMobileSellUnit">${money(pricing.sellPerUnit)}</strong></div><div><small>COST / ITEM</small><strong id="opsMobileUnitCost">${money(pricing.unitCost)}</strong></div><div><small>TOTAL PROFIT</small><strong id="opsMobileProfit">${money(pricing.profit)}</strong></div></div>
         <nav class="ops-mobile-jumps" aria-label="Calculator sections"><button type="button" data-ops-jump="opsMaterialPanel">ENTER MATERIAL PRICES</button><button type="button" data-ops-jump="opsQuotePanel">VIEW FULL QUOTE</button></nav>
       </section>
-      <section class="ops-panel ops-cost-panel" id="opsMaterialPanel"><div class="ops-panel-head"><div><span>02</span><strong>MATERIAL COST</strong></div><small>ENTER YOUR UNIT PRICES</small></div>${materialsMarkup(rows, calc)}${plan.recipeFeeTotal ? `<div class="ops-recipe-fee"><div><small>FIXED RECIPE FEE · INCLUDED IN QUOTE</small><strong>${money(plan.recipeFeePerCycle)} / CYCLE × ${fmt(plan.cycles)}</strong></div><b>${money(plan.recipeFeeTotal)}</b></div>` : ''}<div class="ops-price-memory">Prices apply to this calculation. Save a price profile to reuse them.</div>${notesMarkup(plan)}<button class="ops-mobile-quote-jump" type="button" data-ops-jump="opsQuotePanel">VIEW UPDATED QUOTE</button></section>
+      <section class="ops-panel ops-cost-panel" id="opsMaterialPanel"><div class="ops-panel-head"><div><span>02</span><strong>MATERIAL COST</strong></div><small>ENTER YOUR UNIT PRICES</small></div>${rhwPriceControlsMarkup()}${alternativeInputsMarkup(recipe, calc)}${materialsMarkup(rows, calc)}${plan.recipeFeeTotal ? `<div class="ops-recipe-fee"><div><small>FIXED RECIPE FEE · INCLUDED IN QUOTE</small><strong>${money(plan.recipeFeePerCycle)} / CYCLE × ${fmt(plan.cycles)}</strong></div><b>${money(plan.recipeFeeTotal)}</b></div>` : ''}<div class="ops-price-memory">Prices apply to this calculation. Save a price profile to reuse them.</div>${notesMarkup(plan)}<button class="ops-mobile-quote-jump" type="button" data-ops-jump="opsQuotePanel">VIEW UPDATED QUOTE</button></section>
       <section class="ops-panel ops-quote-panel" id="opsQuotePanel"><div class="ops-panel-head"><div><span>03</span><strong>PRICE CALCULATION</strong></div><small>COST → MARGIN → SELL PRICE</small></div>${quoteMarkup(pricing, calc, rows, plan.actualOutput)}</section>
       ${comparisonMarkup(comparison, calc, rows)}
     </div>`;
     bindCalculator(plan, rows);
+    updateRhwPriceControls();
     app.rendered?.('calculator');
     if (focusSearch) {
       const search = document.getElementById('opsRecipeSearch');
@@ -424,10 +486,23 @@
     }
     const comparison = document.getElementById('opsComparisonResults');
     if (comparison) comparison.innerHTML = comparisonResultsMarkup(core.compareRecipes(calc), calc);
+    updateRhwPriceControls();
     app.rendered?.('pricing');
   }
 
   function bindCalculator(plan, rows) {
+    document.getElementById('opsLoadRhwPrices')?.addEventListener('click', loadRhwPrices);
+    document.querySelectorAll('[data-ops-alternative]').forEach(select => select.addEventListener('change', event => {
+      const calc = currentState();
+      const recipe = core.recipe(calc.recipeId);
+      const index = Number(event.target.dataset.opsAlternative);
+      const group = core.alternativeGroups(recipe).find(entry => entry.index === index);
+      if (!group?.options.some(option => option.id === event.target.value)) return;
+      saveState({ altSelections: { ...calc.altSelections, [group.key]: event.target.value } });
+      if (calc.affiliationId === app.config.operations.defaultAffiliation) app.production?.selectAlternative(recipe.id, index, event.target.value);
+      renderCalculator();
+      [...document.querySelectorAll('[data-ops-alternative]')].find(node => Number(node.dataset.opsAlternative) === index)?.focus({ preventScroll: true });
+    }));
     document.getElementById('opsCompareToggle')?.addEventListener('click', () => {
       const open = !currentState().comparisonOpen;
       saveState({ comparisonOpen: open });
@@ -472,7 +547,8 @@
     document.querySelectorAll('[data-material-price]').forEach(input => input.addEventListener('input', event => {
       const calc = currentState(); const prices = { ...calc.materialPrices }; const key = event.target.dataset.materialPrice;
       if (event.target.value === '') delete prices[key]; else prices[key] = Math.max(0, num(event.target.value));
-      saveState({ materialPrices: prices }); updatePricing(plan, rows);
+      const sources = { ...calc.materialPriceSources }; delete sources[key];
+      saveState({ materialPrices: prices, materialPriceSources: sources }); updatePricing(plan, rows);
     }));
     document.getElementById('opsMargin')?.addEventListener('input', event => {
       if (event.target.value === '') return;
@@ -499,6 +575,7 @@
       recipeId: recipe.id,
       quantity: Math.max(1, Math.floor(num(selection.quantity, 1))),
       affiliationId: selection.affiliationId || app.config.operations.defaultAffiliation,
+      altSelections: { ...currentState().altSelections, ...core.normalizeAlternatives(recipe, selection.altSelections || currentState().altSelections) },
       search: selection.productName || recipeDisplayName(recipe) || product?.name || ''
     });
     app.navigate('operations', 'calculator'); renderCalculator();
@@ -550,5 +627,8 @@
     app.lifecycle.emit('calculator:ready');
   }
 
-  app.operations = { init, activate, openTarget, openSelection, renderCalculator, matchingRecipes, useComparisonVariant, nodes: NODES, recipeAliases: RECIPE_ALIASES };
+  window.addEventListener?.('rhw:telemetry', updateRhwPriceControls);
+  window.addEventListener?.('online', updateRhwPriceControls);
+  window.addEventListener?.('offline', updateRhwPriceControls);
+  app.operations = { init, activate, openTarget, openSelection, renderCalculator, matchingRecipes, useComparisonVariant, loadRhwPrices, nodes: NODES, recipeAliases: RECIPE_ALIASES };
 })();

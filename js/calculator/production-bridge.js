@@ -19,6 +19,7 @@
   function clearSessionPrices() {
     if (!app.state.calculator || typeof app.state.calculator !== 'object') return;
     app.state.calculator.materialPrices = {};
+    app.state.calculator.materialPriceSources = {};
   }
 
   function resetAffiliationToDefault() {
@@ -33,6 +34,7 @@
     if (!stored || typeof stored !== 'object') return;
     const clean = { ...stored, affiliationId: DEFAULT_IFF };
     delete clean.materialPrices;
+    delete clean.materialPriceSources;
     app.store.set(CALC_KEY, clean);
   }
 
@@ -96,7 +98,9 @@
       quantity: Math.max(1, Math.floor(Number(quantity) || 1)),
       search: recipeDisplayName(recipe),
       affiliationId: DEFAULT_IFF,
-      materialPrices: {}
+      materialPrices: {},
+      materialPriceSources: {},
+      altSelections: { ...(current.altSelections || {}), ...(app.production?.selectionsFor(recipe.id) || {}) }
     };
     app.store.set(CALC_KEY, app.state.calculator);
     return true;

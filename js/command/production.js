@@ -55,7 +55,7 @@ function stateForRole(item, role) {
 
 function operationalState(item) {
   const roles = assetRoles(item);
-  if (!roles.length) return stockState(item);
+  if (!roles.length) return firstFiniteApiStockValue(item, ['quantity', 'amount', 'stock']) !== null && apiStockBoundary(item)?.valid ? stockState(item) : 'waiting';
   return strictestState(roles.map(role => stateForRole(item, role)));
 }
 
@@ -133,6 +133,7 @@ function rebuildItemCaches() {
 function operationalItems() { return operationalItemsCache; }
 
 function roleLabel(role) {
+  if (role === 'other') return 'OTHER';
   if (role === 'maintenance') return 'FACILITY';
   if (role === 'export') return 'EXPORT';
   if (role === 'shipyard') return 'SHIPYARD';
@@ -148,7 +149,7 @@ function statusLabel(state, role) {
 }
 
 function rolePill(role) {
-  let cls = 'buy';
+  let cls = role === 'other' ? 'other' : 'buy';
   if (role === 'export') cls = 'both';
   if (role === 'maintenance') cls = 'sell';
   if (role === 'shipyard') cls = 'shipyard-pill';
@@ -159,7 +160,7 @@ function rolePill(role) {
 
 function rolePillsFor(item) {
   const roles = assetRoles(item);
-  if (!roles.length) return rolePill('procurement');
+  if (!roles.length) return rolePill('other');
   return `<span class="role-pill-stack">${roles.map(role => rolePill(role)).join('')}</span>`;
 }
 
@@ -211,39 +212,27 @@ function updateSortArrows() {
 
 function analyzeRecipe(recipe) {
   const productItem = findCommodity(recipe.product);
-  const productStock = productItem ? quantity(productItem) : 0;
+  const productStock = firstFiniteApiStockValue(productItem, ['quantity', 'amount', 'stock']);
 
   const ingredientData = recipe.ingredients.map(pair => {
     const originalName = pair[0];
     const required = pair[1];
 
-    let stock = 0;
-    let displayNameStr = displayRecipeName(originalName);
-    let extraHtml = '';
-
-    if (keyFromName(originalName) === 'gold') {
-      const stdGold = stockFor('Gold');
-      const wcGold = stockFor('Wildcat Gold');
-      stock = stdGold + wcGold;
-
-      displayNameStr = 'Gold / Wildcat Gold';
-      extraHtml = `<span style="display:block; font-size:9.5px; opacity:0.8; margin-top:3px; letter-spacing:0.05em; font-family:var(--font-tech);"><span style="color:var(--gold);">STD: ${number(stdGold)}</span> // <span style="color:#ce93d8;">WC: ${number(wcGold)}</span></span>`;
-    } else {
-      stock = stockFor(originalName);
-    }
-
-    const cycles = required > 0 ? Math.floor(stock / required) : 0;
-    const currentCycleGap = Math.max(0, required - stock);
-    return { name: originalName, displayName: displayNameStr, extraHtml, required, stock, cycles, currentCycleGap };
+    const item = findCommodity(originalName);
+    const stock = firstFiniteApiStockValue(item, ['quantity', 'amount', 'stock']);
+    const cycles = stock === null ? null : required > 0 ? Math.floor(stock / required) : 0;
+    const currentCycleGap = stock === null ? null : Math.max(0, required - stock);
+    return { name: originalName, displayName: displayRecipeName(originalName), extraHtml: '', required, stock, cycles, currentCycleGap };
   });
 
-  const possibleCycles = ingredientData.length ? Math.min(...ingredientData.map(i => i.cycles)) : 0;
-  const possibleOutput = possibleCycles * recipe.output;
+  const known = ingredientData.every(ingredient => ingredient.stock !== null);
+  const possibleCycles = known && ingredientData.length ? Math.min(...ingredientData.map(i => i.cycles)) : null;
+  const possibleOutput = possibleCycles === null ? null : possibleCycles * recipe.output;
   ingredientData.forEach(ingredient => {
-    ingredient.nextCycleGap = Math.max(0, ((possibleCycles + 1) * ingredient.required) - ingredient.stock);
+    ingredient.nextCycleGap = possibleCycles === null ? null : Math.max(0, ((possibleCycles + 1) * ingredient.required) - ingredient.stock);
     ingredient.nextGapRatio = ingredient.required > 0 ? ingredient.nextCycleGap / ingredient.required : 0;
   });
-  const bottleneck = ingredientData.length ? ingredientData.reduce((lowest, current) => {
+  const bottleneck = known && ingredientData.length ? ingredientData.reduce((lowest, current) => {
     if (current.cycles < lowest.cycles) return current;
     if (current.cycles > lowest.cycles) return lowest;
     if (current.nextGapRatio > lowest.nextGapRatio) return current;
@@ -251,7 +240,7 @@ function analyzeRecipe(recipe) {
     return current.nextCycleGap > lowest.nextCycleGap ? current : lowest;
   }) : null;
   const nextCycleGap = bottleneck ? bottleneck.nextCycleGap : 0;
-  const cardState = possibleCycles <= 0 ? 'critical' : possibleCycles < 10 ? 'low' : 'ok';
+  const cardState = possibleCycles === null ? 'waiting' : possibleCycles <= 0 ? 'critical' : possibleCycles < 10 ? 'low' : 'ok';
 
   return { recipe, productItem, productStock, ingredientData, possibleCycles, possibleOutput, bottleneck, nextCycleGap, cardState };
 }
@@ -321,6 +310,15 @@ function ensureProductionModuleTools() {
   }
   if (els.productionGrid.dataset.cardDetailsBound !== 'true') {
     els.productionGrid.dataset.cardDetailsBound = 'true';
+    els.productionGrid.addEventListener('change', event => {
+      const select = event.target.closest('[data-production-alternative]');
+      if (!select) return;
+      const { productionRecipe, productionAlternative } = select.dataset;
+      if (window.RHWV4?.production?.selectAlternative(productionRecipe, productionAlternative, select.value)) {
+        [...els.productionGrid.querySelectorAll('[data-production-alternative]')]
+          .find(node => node.dataset.productionRecipe === productionRecipe && node.dataset.productionAlternative === productionAlternative)?.focus({ preventScroll: true });
+      }
+    });
     els.productionGrid.addEventListener('click', event => {
       const button = event.target.closest('.production-card-toggle');
       if (!button) return;
@@ -367,7 +365,7 @@ function renderProductionModules() {
               </li>`;
     }).join('');
 
-    const bottleneckDisplay = analysis.bottleneck ? (keyFromName(analysis.bottleneck.name) === 'gold' ? 'GOLD / WILDCAT GOLD' : escapeHTML(analysis.bottleneck.name).toUpperCase()) : '';
+    const bottleneckDisplay = analysis.bottleneck ? escapeHTML(analysis.bottleneck.name).toUpperCase() : '';
     const nextGapText = analysis.bottleneck
       ? `<div class="next-gap ${analysis.cardState}">NEXT +1 CYCLE: <strong>${bottleneckDisplay} +${number(analysis.nextCycleGap)}</strong></div>`
       : '';
@@ -379,6 +377,8 @@ function renderProductionModules() {
     const prerequisitesText = recipe.prerequisites?.length
       ? `<div class="byproduct-strip production-prerequisites"><span>REQUIRED · NOT CONSUMED</span>${recipe.prerequisites.map(([name, qty]) => `<span class="byproduct-tag">${number(qty)} ${escapeHTML(name)}</span>`).join('')}</div>`
       : '';
+
+    const alternatives = recipe.alternatives?.length ? `<div class="production-input-choices">${recipe.alternatives.map(group => `<label><span>INPUT CHOICE</span><select data-production-recipe="${escapeHTML(recipe.recipeId)}" data-production-alternative="${group.index}" aria-label="${escapeHTML(recipe.product)} input ${group.index + 1}">${group.options.map(option => `<option value="${escapeHTML(option.id)}"${option.id === group.selected.id ? ' selected' : ''}>${escapeHTML(option.name)}</option>`).join('')}</select></label>`).join('')}</div>` : '';
 
     const productKey = normalize(displayRecipeName(recipe.product));
     const mobileCollapsed = window.matchMedia?.('(max-width: 760px)').matches && !productionExpandedModules.has(productKey);
@@ -398,6 +398,8 @@ function renderProductionModules() {
                 <div class="production-stat"><small>EST. YIELD</small><strong>${number(analysis.possibleOutput)}</strong></div>
               </div>
               ${nextGapText}
+              ${analysis.possibleCycles === null ? '<div class="production-stock-note">INPUT STOCK UNKNOWN · SELECTED MATERIALS ONLY</div>' : ''}
+              ${alternatives}
               <button type="button" class="production-card-toggle" aria-expanded="${mobileCollapsed ? 'false' : 'true'}"><span>${mobileCollapsed ? 'SHOW MATERIALS' : 'HIDE MATERIALS'}</span></button>
               <div class="recipe-column-head" aria-hidden="true">
                 <span>Material</span><span>Required / Cycle</span><span>Current Stock</span>

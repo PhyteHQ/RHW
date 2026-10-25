@@ -70,7 +70,7 @@
   function productionAnalysis() {
     try {
       if (typeof window.productionRecipes !== 'function' || typeof window.analyzeRecipe !== 'function') return [];
-      return window.productionRecipes().map(recipe => window.analyzeRecipe(recipe)).sort((a, b) => a.possibleCycles - b.possibleCycles);
+      return window.productionRecipes().map(recipe => window.analyzeRecipe(recipe)).sort((a, b) => (a.possibleCycles ?? Infinity) - (b.possibleCycles ?? Infinity));
     } catch { return []; }
   }
 
@@ -182,9 +182,10 @@
 
     const production = productionAnalysis();
     const weakest = production[0];
-    write('v40OverviewProduction', weakest ? `MIN ${app.util.number(weakest.possibleCycles)} CYCLES` : 'RECIPE DATA UNKNOWN');
+    const incompleteProduction = production.some(entry => entry.possibleCycles === null);
+    write('v40OverviewProduction', incompleteProduction ? 'CAPACITY UNKNOWN' : weakest ? `MIN ${app.util.number(weakest.possibleCycles)} CYCLES` : 'RECIPE DATA UNKNOWN');
     write('v40OverviewProductionMeta', weakest?.bottleneck ? `${String(weakest.recipe.product).toUpperCase()} // ${String(weakest.bottleneck.displayName || weakest.bottleneck.name).toUpperCase()}` : 'AWAITING PRODUCTION RECIPE DATA');
-    setOverviewState('v40OverviewProduction', !weakest ? 'waiting' : weakest.cardState === 'critical' ? 'critical' : (weakest.cardState === 'low' ? 'low' : 'ok'));
+    setOverviewState('v40OverviewProduction', !weakest || incompleteProduction ? 'waiting' : weakest.cardState === 'critical' ? 'critical' : (weakest.cardState === 'low' ? 'low' : 'ok'));
 
     write('v40OverviewLogistics', document.getElementById('supplierLinkText')?.textContent?.trim() || 'SAT-LINK ONLINE');
     write('v40OverviewLogisticsMeta', 'SHIP COMPONENTS + INDUSTRIAL MATERIALS · ALL KNOWN POBS');
