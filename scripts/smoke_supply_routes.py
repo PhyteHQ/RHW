@@ -36,6 +36,10 @@ def main():
         goods[1].update(nickname='ablative', quantity=0, volume=2, original_volume=2)
         pob = {'nickname': 'rhw', 'name': 'Resolution Heavy Works', 'system_nickname': 'br01', 'system_name': 'New London',
                'base_pos': [0, 0, 0], 'money': 100000000, 'cargospace': 1000000, 'health': 24000000, 'shop_items': goods}
+        express_pob = {'nickname': 'corporate', 'name': 'Corporate Shipping Airways', 'system_nickname': 'br01', 'system_name': 'New London',
+                       'base_pos': [25000, 0, 0], 'money': 10000000, 'cargospace': 1000000,
+                       'shop_items': [{'nickname': 'ablative', 'name': 'Ablative Armor Plating', 'category': 'commodity', 'quantity': 10000,
+                                       'min_stock': 0, 'max_stock': 20000, 'price': 180, 'sell_price': 1, 'volume': 2, 'original_volume': 2}]}
         def market(base_id, name, pos, buy, sell, volume):
             return {'base_nickname': base_id, 'base_name': name, 'system_nick': 'br01', 'system_name': 'New London',
                     'base_pos': pos, 'base_sells': True, 'price_base_sells_for': buy, 'price_base_buys_for': sell, 'volume': volume}
@@ -45,12 +49,12 @@ def main():
             {'nickname': 'alloy', 'name': 'Super Alloy', 'volume': 1,
              'market_goods': [market('waterloo', 'Waterloo Station', [150000, 0, 0], 10, 10, 1), market('oder', 'Oder Shipyard', [300000, 0, 0], 100, 50, 1)]}
         ]
-        nav = {'schema': 1, 'nodes': [{'id': name, 'system': 'br01', 'pos': [pos, 0, 0], 'kind': 'base', 'allows': ['medium', 'large', 'berth']} for name, pos in [('rhw', 0), ('waterloo', 150000), ('oder', 300000)]],
-               'baseNodes': {'rhw': 'rhw', 'waterloo': 'waterloo', 'oder': 'oder'},
-               'links': [{'from': a, 'to': b, 'kind': 'lane', 'speed': 2500} for a, b in [('rhw', 'waterloo'), ('waterloo', 'rhw'), ('waterloo', 'oder'), ('oder', 'waterloo')]]}
+        nav = {'schema': 1, 'nodes': [{'id': name, 'system': 'br01', 'pos': [pos, 0, 0], 'kind': 'base', 'allows': ['medium', 'large', 'berth']} for name, pos in [('rhw', 0), ('waterloo', 150000), ('oder', 300000), ('corporate', 25000)]],
+               'baseNodes': {'rhw': 'rhw', 'waterloo': 'waterloo', 'oder': 'oder', 'corporate': 'corporate'},
+               'links': [{'from': a, 'to': b, 'kind': 'lane', 'speed': 2500} for a, b in [('rhw', 'waterloo'), ('waterloo', 'rhw'), ('waterloo', 'oder'), ('oder', 'waterloo'), ('rhw', 'corporate'), ('corporate', 'rhw')]]}
         ships = [{'nickname': 'dsy_advanced_train', 'name': 'Advanced Train', 'hold_size': 5000, 'cruise_speed': 350, 'dock_type': 2},
                  {'nickname': 'pilgrim_liner', 'name': 'Pilgrim Liner', 'hold_size': 4300, 'cruise_speed': 415, 'dock_type': 3}]
-        fixture = {'pobs': [pob], 'commodities': commodities, 'ships': ships, 'npc_bases': [], 'factions': [], 'tractors': []}
+        fixture = {'pobs': [pob, express_pob], 'commodities': commodities, 'ships': ships, 'npc_bases': [], 'factions': [], 'tractors': []}
         script = "<script>window.supplyFixture=" + json.dumps(fixture) + ";window.supplyNav=" + json.dumps(nav) + ";window.supplyRequests=[];const originalFetch=window.fetch;window.fetch=(url,options)=>{const u=String(url);if(u.includes('/api/')){const key=u.split('/api/')[1].split('?')[0];supplyRequests.push(key);if(window.supplyOffline)return Promise.reject(Error('Fixture offline'));return Promise.resolve(new Response(JSON.stringify(supplyFixture[key]||[]),{status:200}));}if(u.includes('/assets/navigation.json.gz'))return Promise.resolve(new Response(JSON.stringify(supplyNav),{status:200}));return originalFetch(url,options);};</script>"
         markup = base.document('command/production').replace('<head>', '<head>' + script, 1)
         base.load_document(cdp, target['id'], markup, origin)
@@ -64,6 +68,9 @@ def main():
             raise RuntimeError(f'Supply context/worker result failed: {facts}')
         if 'RECOMMENDED' not in facts['first'] or 'Waterloo Station' not in facts['first'] or 'WHY THIS ROUTE' not in (facts['reason'] or '') or 'more per hour' not in facts['reason']:
             raise RuntimeError(f'Worthwhile backhaul must be recommended first and explained: {facts}')
+        express = base.ev(cdp, "(()=>({text:document.querySelector('.supply-express')?.innerText,recommended:document.querySelector('.supply-express')?.classList.contains('supply-recommended')}))()")
+        if express['recommended'] or 'Corporate Shipping Airways' not in (express['text'] or '') or 'MATERIAL DELIVERY LOSS' not in express['text'] or '-$75,000' not in express['text']:
+            raise RuntimeError(f'Costly POB must be a clearly marked express alternative: {express}')
         for width, height in [(360, 800), (390, 844), (1440, 1000)]:
             cdp.call('Emulation.setDeviceMetricsOverride', {'width': width, 'height': height, 'deviceScaleFactor': 1, 'mobile': width < 760})
             fit = base.ev(cdp, "(()=>{const d=document.getElementById('rhwSupplyDialog'),r=d.getBoundingClientRect();return {overflow:d.scrollWidth>d.clientWidth+1,left:r.left,right:r.right,width:innerWidth,button:document.getElementById('supplySearch').getBoundingClientRect().height};})()")
@@ -74,6 +81,10 @@ def main():
             out.mkdir(parents=True, exist_ok=True)
             shot = cdp.call('Page.captureScreenshot', {'format': 'png'})
             (out / f'supply-route-{width}.png').write_bytes(base64.b64decode(shot['data']))
+        base.ev(cdp, "(()=>{document.getElementById('supplyPobs').checked=false;document.getElementById('supplyPobs').dispatchEvent(new Event('change',{bubbles:true}));document.getElementById('supplySearch').click();return true})()")
+        wait_for(cdp, "!document.getElementById('supplySearch').disabled && document.getElementById('supplyResults').dataset.stale==='false'")
+        if base.ev(cdp, "!!document.querySelector('.supply-express') || document.getElementById('supplyResults').innerText.includes('Corporate Shipping Airways')"):
+            raise RuntimeError('POB OFF must remove the express POB while preserving normal NPC supply')
         base.ev(cdp, "(()=>{document.getElementById('supplyExtra').value='0';document.getElementById('supplyExtra').dispatchEvent(new Event('change',{bubbles:true}));document.getElementById('supplySearch').click();return true})()")
         wait_for(cdp, "!document.getElementById('supplySearch').disabled && document.getElementById('supplyResults').dataset.stale==='false'")
         if base.ev(cdp, "document.getElementById('supplyResults').innerText.includes('Waterloo Station')"):
@@ -91,7 +102,7 @@ def main():
         wait_for(cdp, "document.getElementById('rhwSupplyDialog').open && !document.getElementById('supplySearch').disabled && document.querySelectorAll('.supply-result').length>0")
         base.ev(cdp, "document.getElementById('supplyClose').click()")
         wait_for(cdp, "!document.getElementById('rhwSupplyDialog').open && document.activeElement.dataset.supplyCommodity==='Ablative Armor Plating'", 3)
-        print('Supply browser passed: real Production button, lazy load, module worker, Waterloo/Oder backhaul, ship/volume data, no recipe selectors, direct-only control, cache provenance, focus and 360/390/1440px dialog.')
+        print('Supply browser passed: real Production button, worker, normal NPC recommendation with POB ON, visible express loss, POB OFF, direct-only control, cache provenance, focus and 360/390/1440px dialog.')
     finally:
         if cdp:
             cdp.close()
