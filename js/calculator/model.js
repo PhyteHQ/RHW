@@ -70,11 +70,18 @@
     try {
       const item = typeof findCommodity === 'function' ? findCommodity(material.name || material.id) : null;
       if (!item || item.missing) return null;
-      // BASE BUYS is the payment to a supplier. A generic `price` field is a
-      // sale quotation and must never silently stand in for this cost basis.
-      for (const key of ['price_to_sell_to_base', 'sell_price', 'price_sell']) {
+      // RHW's own Reactor and Superstructure Systems are valued at their sale
+      // quotation whenever consumed by another recipe. Their incoming buy
+      // quote (often $1) is not their component value or manufacturing cost.
+      const saleValue = ['commodity_ship_part_reactor', 'commodity_ship_part_superstructure'].includes(material.id)
+        || ['reactor systems', 'superstructure systems'].includes(String(material.name || '').trim().toLowerCase().replace(/\s+/g, ' '));
+      const basis = saleValue ? 'base-sells' : 'base-buys';
+      const fields = saleValue ? ['price_to_buy_from_base', 'buy_price', 'price_buy', 'price']
+        : ['price_to_sell_to_base', 'sell_price', 'price_sell'];
+      // Keep the quotation direction strict: no fallback to the opposite side.
+      for (const key of fields) {
         const price = unitPrice(item, key);
-        if (price !== null) return { price, fetchedAt: snapshot.fetchedAt, stale: snapshot.stale };
+        if (price !== null) return { price, basis, fetchedAt: snapshot.fetchedAt, stale: snapshot.stale };
       }
     } catch {}
     return null;
@@ -90,7 +97,7 @@
       const quote = rhwQuote(material);
       if (!quote) { missing++; continue; }
       materialPrices[material.id] = quote.price;
-      materialPriceSources[material.id] = { kind: 'rhw', price: quote.price, fetchedAt: quote.fetchedAt };
+      materialPriceSources[material.id] = { kind: 'rhw', basis: quote.basis, price: quote.price, fetchedAt: quote.fetchedAt };
       imported++;
     }
     return { materialPrices, materialPriceSources, imported, preserved, missing };

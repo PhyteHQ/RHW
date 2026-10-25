@@ -58,6 +58,9 @@ ctx.__RHW_RECIPE_CATALOG__ = JSON.parse(zlib.gunzipSync(Buffer.from(ctx.__RHW_RE
     { name: 'Hull Panels', quantity: 10000, sell_price: 10 },
     { name: 'Ablative Armor Plating', quantity: 10000, sell_price: 10 },
     { name: 'Super Alloy', quantity: 10000, sell_price: 10 },
+    { name: 'Superstructure Systems', quantity: 1000, sell_price: 1, price_to_buy_from_base: 62000 },
+    { name: 'Reactor Systems', quantity: 1000, price_to_sell_to_base: 1, price: 48000 },
+    { name: 'Avionics Systems', quantity: 1000, sell_price: 23, price: 999 },
     { name: 'Unassigned <Shield>', quantity: 1, price: 12345 }
   ];
   ctx.items = goods.map(item => ({ ...item })); ctx.rebuildItemCaches();
@@ -65,6 +68,28 @@ ctx.__RHW_RECIPE_CATALOG__ = JSON.parse(zlib.gunzipSync(Buffer.from(ctx.__RHW_RE
   assert.equal(core.rhwQuote(material('ore', 'Gold Ore')).price, 4.25, 'Use the incoming purchase quote, not the base sale price');
   assert.equal(core.rhwQuote(material('fuel', 'H-Fuel')).price, 0, 'An explicitly reported zero remains a valid price');
   assert.equal(core.rhwQuote(material('fuel', 'Promethene')), null, 'Never substitute a generic asking price');
+  const supers = material('commodity_ship_part_superstructure', 'Superstructure Systems');
+  const reactors = material('commodity_ship_part_reactor', 'Reactor Systems');
+  assert.equal(core.rhwQuote(supers).price, 62000, 'Supers use RHW sale value, not the $1 incoming quote');
+  assert.equal(core.rhwQuote(reactors).price, 48000, 'Reactors use RHW sale value, not the $1 incoming quote');
+  assert.equal(core.rhwQuote(supers).basis, 'base-sells');
+  assert.equal(core.rhwQuote(reactors).basis, 'base-sells');
+  assert.equal(core.rhwQuote(material('commodity_ship_part_avionics', 'Avionics Systems')).price, 23, 'Other components retain supplier purchase quotations');
+  for (const field of ['price_to_buy_from_base', 'buy_price', 'price_buy', 'price']) {
+    const item = ctx.findCommodity('Superstructure Systems');
+    for (const key of ['price_to_buy_from_base', 'buy_price', 'price_buy', 'price']) delete item[key];
+    item[field] = 62000;
+    assert.equal(core.rhwQuote(supers).price, 62000, `Sale quote alias ${field}`);
+  }
+  const superItem = ctx.findCommodity('Superstructure Systems');
+  delete superItem.price;
+  assert.equal(core.rhwQuote(supers), null, 'Missing sale value must not fall back to the incoming $1 quote');
+  superItem.price_to_buy_from_base = 62000;
+  const oldImport = core.importRhwPrices({ materialPrices: { [supers.id]: 1 },
+    materialPriceSources: { [supers.id]: { kind: 'rhw', price: 1 } } }, [supers, reactors]);
+  assert.equal(oldImport.materialPrices[supers.id], 62000, 'An explicit reload corrects a previous wrong-direction RHW import');
+  assert.equal(oldImport.materialPriceSources[supers.id].basis, 'base-sells');
+  assert.equal(core.importRhwPrices({ materialPrices: { [supers.id]: 0 } }, [supers]).materialPrices[supers.id], 0, 'Deliberate entered prices still take precedence');
   for (const value of [true, false, [], {}, '', '  ', null, undefined, -1, Infinity, 'broken']) {
     assert.equal(core.unitPrice({ value }, 'value'), null, `Invalid price ${String(value)}`);
   }
@@ -132,6 +157,22 @@ ctx.__RHW_RECIPE_CATALOG__ = JSON.parse(zlib.gunzipSync(Buffer.from(ctx.__RHW_RE
   assert.equal(core.state.currentPlan.directRequirements.find(entry => entry.groupIndex === 2).item.id, 'commodity_scrap_metal');
   assert.equal(app.production.selectionsFor(alloyId)[`${alloyId}:2`], 'commodity_scrap_metal', 'Calculator choices update BMM Production');
 
+  for (const recipeId of ['ship_assembly_dsy_br_battleship', 'ship_assembly_dsy_br_carrier', 'ship_assembly_medium_miner']) {
+    const recipe = core.recipe(recipeId);
+    app.operations.openSelection({ recipeId, productId: recipe.outputs[0].id });
+    app.operations.loadRhwPrices();
+    const shipCalc = app.state.calculator;
+    const componentIds = core.materialRows(core.state.currentPlan).map(row => row.id);
+    for (const [input, expected] of [[supers, 62000], [reactors, 48000]]) {
+      assert.ok(componentIds.includes(input.id), `${recipeId} covers both RHW-produced component inputs`);
+      assert.equal(shipCalc.materialPrices[input.id], expected, `Sale-valued component in ${recipeId}`);
+      assert.equal(shipCalc.materialPriceSources[input.id].basis, 'base-sells');
+    }
+    assert.match(mount.innerHTML, /RHW SELLS · CACHED/);
+    assert.equal(shipCalc.materialPrices.commodity_ship_part_avionics, 23);
+  }
+
+  console.log('RHW component sale-value regression passed: Supers/Reactors, $1 incoming quotes, all three ships, sale aliases, no opposite-side fallback, provenance and manual overrides.');
   ctx.els.search.value = 'Unassigned'; ctx.renderManifest();
   assert.match(ctx.els.itemsBody.innerHTML, /Unassigned &lt;Shield>/);
   assert.match(ctx.els.itemsBody.innerHTML, /OTHER/);

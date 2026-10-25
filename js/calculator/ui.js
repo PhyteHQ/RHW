@@ -281,12 +281,12 @@
     const snapshot = core.rhwPriceSnapshot();
     const cached = !snapshot.available || snapshot.stale || navigator.onLine === false
       || source.fetchedAt !== snapshot.fetchedAt || Date.now() - timestamp >= 600000;
-    return `RHW BUYS · ${cached ? 'CACHED' : 'LIVE'} · ${new Date(timestamp).toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}`;
+    return `RHW ${source.basis === 'base-sells' ? 'SELLS' : 'BUYS'} · ${cached ? 'CACHED' : 'LIVE'} · ${new Date(timestamp).toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}`;
   }
 
   function rhwPriceControlsMarkup() {
     const snapshot = core.rhwPriceSnapshot();
-    return `<div class="ops-rhw-prices"><button type="button" id="opsLoadRhwPrices"${snapshot.available ? '' : ' disabled'}>${snapshot.stale ? 'LOAD CACHED RHW PRICES' : 'LOAD RHW PRICES'}</button><p>Uses RHW’s BASE BUYS quotations: payments to suppliers. Fills empty prices and refreshes earlier RHW imports; entered prices stay.</p><small id="opsRhwPriceStatus" role="status"></small></div>`;
+    return `<div class="ops-rhw-prices"><button type="button" id="opsLoadRhwPrices"${snapshot.available ? '' : ' disabled'}>${snapshot.stale ? 'LOAD CACHED RHW PRICES' : 'LOAD RHW PRICES'}</button><p>Uses RHW’s sale prices for Reactor Systems and Superstructure Systems, and BASE BUYS for other materials. Fills empty prices and refreshes earlier RHW imports; entered prices stay.</p><small id="opsRhwPriceStatus" role="status"></small></div>`;
   }
 
   function updateRhwPriceControls() {
@@ -312,9 +312,9 @@
     return `<div class="ops-input-choices"><p>CHOOSE ONE MATERIAL PER INPUT · quantities and costs follow this selection.</p>${groups.map(group => `<label class="comms-field"><span>INPUT ${group.index + 1}</span><select data-ops-alternative="${group.index}" aria-label="Recipe input ${group.index + 1}">${group.options.map(option => {
       const required = Math.ceil(Number(option.qty) * factor - 1e-9);
       const entered = storedPrice(calc.materialPrices, option.id);
-      const live = core.rhwQuote(option)?.price ?? null;
-      const price = entered ?? live;
-      const label = `${option.name} · ${fmt(required)} / cycle${price === null ? ' · price unknown' : ` · ${preciseMoney(required * price)} / cycle (${entered === null ? 'RHW buys' : 'entered price'})`}`;
+      const quote = core.rhwQuote(option);
+      const price = entered ?? quote?.price ?? null;
+      const label = `${option.name} · ${fmt(required)} / cycle${price === null ? ' · price unknown' : ` · ${preciseMoney(required * price)} / cycle (${entered === null ? quote?.basis === 'base-sells' ? 'RHW sells' : 'RHW buys' : 'entered price'})`}`;
       return `<option value="${esc(option.id)}"${option.id === group.selected.id ? ' selected' : ''}>${esc(label)}</option>`;
     }).join('')}</select></label>`).join('')}</div>`;
   }
