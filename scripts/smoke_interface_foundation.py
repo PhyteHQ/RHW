@@ -197,7 +197,7 @@ def main():
                 if width <= 760 and workspace == 'pricecheck':
                     # A phone must show the result at the start of each compact
                     # card, including unknown prices and the longest route names.
-                    assert len(result['priceCards']) == 12, result
+                    assert len(result['priceCards']) == 10, result
                     for card in result['priceCards']:
                         assert card['height'] <= 300 and card['differenceTop'] <= 20, (width, card)
                         assert card['pricesAligned'] and card['inputHeight'] >= 44 and not card['clipped'], (width, card)

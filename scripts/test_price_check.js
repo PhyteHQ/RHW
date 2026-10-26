@@ -94,12 +94,7 @@ assert.equal(api.effectiveRow(route).payout, null);
 assert.match(api.rowMarkup(api.effectiveRow(route)), /RHW DATA UNAVAILABLE/);
 telemetry.available = true;
 
-const copper = api.routes.find(r => r.key === 'copper');
-ctx.allBases.push({ name: 'Copperland', nickname: 'copperland', shop_items: [{ name: 'Copper', price: 80, sell_price: 60 }] });
-assert.equal(api.effectiveRow(copper).sourcePrice, 80);
-ctx.allBases.length = 0;
-assert.equal(api.effectiveRow(copper).sourcePrice, null, 'A missing POB is not an NPC cache quote');
-
+// Saved prices from retired list entries remain compatible with old backups.
 api.importOverrides({ 'hull-panels': 125, copper: 0 });
 assert.equal(saved.get('prices').copper, 0);
 assert.equal(api.state.overrides['hull-panels'], 125);

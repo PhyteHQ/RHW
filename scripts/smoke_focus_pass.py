@@ -81,7 +81,7 @@ def main() -> int:
                 raise RuntimeError(f"Price Check shell failed: {primary}")
 
             # PRICE CHECK is a first-class route and intentionally contains only
-            # the 12 fixed NPC procurement routes supplied by RHW operations.
+            # the 10 fixed NPC procurement routes supplied by RHW operations.
             base.ev(cdp, "(()=>{document.querySelector('.app-tabs [data-workspace=\"pricecheck\"]')?.click();return true;})()")
             settle(.2)
             price = base.ev(cdp, f"""(()=>{{{VISIBLE_HELPER}return{{
@@ -96,7 +96,7 @@ def main() -> int:
             }};}})()""")
             if price.get("workspace") != "pricecheck" or price.get("hash") != "#pricecheck/routes" or not price.get("panel"):
                 raise RuntimeError(f"Price Check route failed: {price}")
-            if price.get("rows") != 12 or price.get("routeCount") != 12 or price.get("context") or price.get("buildQueue") or "PRICE CHECK" not in price.get("active", ""):
+            if price.get("rows") != 10 or price.get("routeCount") != 10 or price.get("context") or price.get("buildQueue") or "PRICE CHECK" not in price.get("active", ""):
                 raise RuntimeError(f"Price Check scope/UI failed: {price}")
 
             # Deterministic math test: positive is green, negative is red and zero
@@ -106,11 +106,10 @@ def main() -> int:
               window.__priceCheckSmokeOriginal={originalFind,originalPrice};
               window.findCommodity=name=>({name,missing:false,sell_price:100});
               window.telemetrySnapshot=()=>({available:true,stale:false,fetchedAt:new Date().toISOString(),label:'LIVE STOCK'});
-              allBases.push({name:'Copperland',nickname:'copperland',system:'Coronado',shop_items:[{name:'Copper',price:80,sell_price:60}]});
               window.priceSell=item=>100;
               const now=new Date().toISOString();
               RHWV4.pricecheck.state.marketCache={fetchedAt:now,routes:{
-                'copper':{sourceName:'Copperland',system:'Coronado',livePrice:80,found:true,sold:true},
+                'mox':{sourceName:'Belvedere Refinery',system:'New London',livePrice:80,found:true,sold:true},
                 'hull-panels':{sourceName:'Portsmouth Shipyard',system:'Cambridge',livePrice:120,found:true,sold:true},
                 'industrial-materials':{sourceName:'Planet New London',system:'New London',livePrice:100,found:true,sold:true}
               }};
@@ -118,8 +117,8 @@ def main() -> int:
               RHWV4.pricecheck.render();
               const tone=key=>document.querySelector(`[data-route-key="${key}"] .pricecheck-difference`)?.className||'';
               const text=key=>document.querySelector(`[data-route-key="${key}"] .pricecheck-difference strong`)?.textContent||'';
-              return{positive:tone('copper'),negative:tone('hull-panels'),neutral:tone('industrial-materials'),
-                positiveText:text('copper'),negativeText:text('hull-panels'),neutralText:text('industrial-materials'),
+              return{positive:tone('mox'),negative:tone('hull-panels'),neutral:tone('industrial-materials'),
+                positiveText:text('mox'),negativeText:text('hull-panels'),neutralText:text('industrial-materials'),
                 yellow:document.querySelectorAll('.pricecheck-difference.low,.pricecheck-difference.warn').length};
             })()""")
             if "positive" not in math_state.get("positive", "") or "negative" not in math_state.get("negative", "") or "neutral" not in math_state.get("neutral", ""):
@@ -130,14 +129,14 @@ def main() -> int:
             # Manual source-price override must recalculate immediately and reset
             # cleanly back to the live Darkstat price.
             override = base.ev(cdp, """(()=>{
-              const input=document.querySelector('[data-pricecheck-override="copper"]');
+              const input=document.querySelector('[data-pricecheck-override="mox"]');
               input.value='150';input.dispatchEvent(new Event('input',{bubbles:true}));
-              const after=document.querySelector('[data-route-key="copper"] .pricecheck-difference');
+              const after=document.querySelector('[data-route-key="mox"] .pricecheck-difference');
               const afterText=after?.querySelector('strong')?.textContent||'';
               const afterTone=after?.className||'';
-              document.querySelector('[data-pricecheck-reset="copper"]')?.click();
-              const reset=document.querySelector('[data-route-key="copper"] .pricecheck-difference');
-              return{after:afterTone,afterText,reset:reset?.className||'',resetText:reset?.querySelector('strong')?.textContent||'',saved:RHWV4.pricecheck.state.overrides.copper};
+              document.querySelector('[data-pricecheck-reset="mox"]')?.click();
+              const reset=document.querySelector('[data-route-key="mox"] .pricecheck-difference');
+              return{after:afterTone,afterText,reset:reset?.className||'',resetText:reset?.querySelector('strong')?.textContent||'',saved:RHWV4.pricecheck.state.overrides.mox};
             })()""")
             if "negative" not in override.get("after", "") or override.get("afterText") != "-$50" or "positive" not in override.get("reset", "") or override.get("resetText") != "+$20" or override.get("saved") is not None:
                 raise RuntimeError(f"Price Check manual override failed: {override}")
@@ -188,7 +187,7 @@ def main() -> int:
                     crestHeight:document.querySelector('.command-header .crest')?.getBoundingClientRect().height||0,
                     rowCount:document.querySelectorAll('#priceCheckRows .pricecheck-row').length}};
                 }})()""")
-                if geometry.get("overflow", 0) > 2 or geometry.get("tabs") != 4 or geometry.get("rowCount") != 12:
+                if geometry.get("overflow", 0) > 2 or geometry.get("tabs") != 4 or geometry.get("rowCount") != 10:
                     raise RuntimeError(f"Price Check geometry at {width}px failed: {geometry}")
                 if width < 760 and any(height < 43.5 for height in geometry.get("touch", [])):
                     raise RuntimeError(f"Primary touch targets at {width}px failed: {geometry}")
@@ -202,7 +201,7 @@ def main() -> int:
             if runtime_failures:
                 raise RuntimeError(f"Runtime failures: {runtime_failures}")
 
-            print("Focus Pass + Price Check smoke passed: 4 daily tabs, 12 fixed routes, sign-only colors, overrides, mobile fit")
+            print("Focus Pass + Price Check smoke passed: 4 daily tabs, 10 fixed routes, sign-only colors, overrides, mobile fit")
             return 0
         finally:
             try:
