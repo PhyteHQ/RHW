@@ -10,6 +10,11 @@ class Clock extends Date {
   static now() { return now; }
 }
 const saved = new Map();
+saved.set('rhw-webapp-v4:price-check-sources', { resolvedAt: now,
+  sources: { hydrocarbons: { nickname: 'br01_07_base', name: 'Kensington Shipping Platform' } } });
+saved.set('rhw-webapp-v4:price-check-market-cache', { fetchedAt: new Date(now).toISOString(),
+  routes: { hydrocarbons: { sourceNickname: 'br01_07_base', livePrice: 22, found: true, sold: true } } });
+saved.set('prices', { hydrocarbons: 0 });
 const telemetry = { available: true, stale: false, fetchedAt: new Date(now).toISOString() };
 let payout = { sell_price: 500, price: 900 };
 const app = {
@@ -29,20 +34,32 @@ app.lifecycle = ctx.createRhwLifecycle();
 vm.runInContext(fs.readFileSync(path.join(__dirname, '../js/core/refresh.js'), 'utf8'), ctx);
 vm.runInContext(fs.readFileSync(path.join(__dirname, '../js/price-check/workspace.js'), 'utf8'), ctx);
 const api = app.pricecheck;
+assert.equal(api.routes.length, 11);
+assert.equal(api.state.sourceCache.sources, undefined, 'A pre-upgrade station cache is invalidated');
+assert.equal(api.state.marketCache.routes, undefined, 'A pre-upgrade price cache is invalidated');
+const hydroRoute = api.routes.find(r => r.key === 'hydrocarbons');
+assert.equal(api.effectiveRow(hydroRoute).sourcePrice, null, 'Neither the old station nor a saved override supplies a price');
+assert.match(api.rowMarkup(api.effectiveRow(hydroRoute)), /Thames Outpost/);
+for (const key of ['mox', 'hydrocarbons', 'mining-machinery']) {
+  assert.equal(api.routes.find(r => r.key === key).sourceNickname, 'br01_06_base');
+}
+assert.equal(api.routes.find(r => r.key === 'super-alloy').sourceNickname, 'br01_04_base');
 const route = api.routes.find(r => r.key === 'hull-panels');
-const source = { name: 'Portsmouth Shipyard', nickname: 'portsmouth', system_name: 'Cambridge',
+const source = { name: 'Portsmouth Shipyard', nickname: 'br01_02_base', system_name: 'Cambridge',
   market_goods: [{ name: 'Hull Panels', nickname: 'hull', base_sells: true, price_base_sells_for: 200 }] };
 
 api.snapshotRoutes([source], { resolve: true });
 let row = api.effectiveRow(route);
 assert.equal(row.difference, 300);
 assert.ok(row.fresh, 'A verified row remains fresh even when other routes are missing');
-assert.match(api.rowMarkup(row), /LIVE \$200/);
+assert.match(api.rowMarkup(row), /pricecheck-source-price">\$200/);
+assert.match(api.rowMarkup(row), /LIVE ·/);
+assert.doesNotMatch(api.rowMarkup(row), /<input|pricecheck-reset|MANUAL ACTIVE/);
 ctx.navigator.onLine = false;
 row = api.effectiveRow(route);
 assert.equal(row.difference, 300, 'An offline cached comparison remains usable');
 assert.equal(row.fresh, false, 'Losing the network immediately changes source provenance');
-assert.match(api.rowMarkup(row), /CACHED \$200/);
+assert.match(api.rowMarkup(row), /CACHED ·/);
 assert.match(api.rowMarkup(row), /FROM CACHED PRICES/);
 ctx.navigator.onLine = true;
 assert.equal(api.effectiveRow(route).fresh, true, 'A still-recent snapshot can be used when back online');
@@ -50,9 +67,9 @@ api.state.lastError = 'offline';
 row = api.effectiveRow(route);
 assert.equal(row.difference, 300, 'Cached comparison remains usable with explicit provenance');
 assert.ok(!row.fresh);
-assert.match(api.rowMarkup(row), /CACHED \$200/);
+assert.match(api.rowMarkup(row), /CACHED ·/);
 assert.match(api.rowMarkup(row), /FROM CACHED PRICES/);
-assert.doesNotMatch(api.rowMarkup(row), /LIVE \$200/);
+assert.doesNotMatch(api.rowMarkup(row), /LIVE ·/);
 api.state.lastError = '';
 
 api.snapshotRoutes([], { resolve: true });
@@ -75,15 +92,33 @@ for (let i = 0; i < 72; i++) {
 assert.equal(api.state.sourceCache.resolvedAt, resolvedAt, 'Market refreshes do not renew source-resolution time');
 assert.ok(retry, 'Missing sources are retried after six hours of normal refreshes');
 
-assert.equal(api.resolveSource(route, [{ ...source, name: '' }]), null, 'Blank names are never matches');
-assert.equal(api.resolveSource(route, [source, { ...source, nickname: 'other-port' }]), null, 'Ambiguous sources remain unresolved');
-assert.equal(api.resolveSource(route, [source]).nickname, 'portsmouth');
+assert.equal(api.resolveSource(route, [{ ...source, nickname: 'other-port' }]), null, 'An identical station name cannot replace the configured ID');
+assert.equal(api.resolveSource(route, [source, { ...source }]), null, 'Duplicate configured IDs remain unresolved');
+assert.equal(api.resolveSource(route, [source]).nickname, 'br01_02_base');
+const thames = { name: 'Thames Outpost', nickname: 'br01_06_base', system_name: 'New London', market_goods: [
+  { name: 'Hydrocarbons', base_sells: true, price_base_sells_for: 22 },
+  { name: 'MOX', base_sells: true, price_base_sells_for: 17 },
+  { name: 'Mining Machinery', base_sells: true, price_base_sells_for: 7 }
+] };
+const wrongSource = { ...thames, nickname: 'br01_07_base', name: 'Kensington Shipping Platform' };
+api.snapshotRoutes([wrongSource], { resolve: true });
+assert.equal(api.effectiveRow(hydroRoute).sourcePrice, null, 'An old source selling the same good is not a fallback');
+api.snapshotRoutes([thames, wrongSource]);
+assert.equal(api.effectiveRow(hydroRoute).sourcePrice, 22);
+assert.equal(api.effectiveRow(api.routes.find(r => r.key === 'mining-machinery')).sourcePrice, 7);
+assert.ok(saved.get('rhw-webapp-v4:price-check-sources').sourceRevision);
+assert.equal(saved.get('rhw-webapp-v4:price-check-sources').sourceRevision, saved.get('rhw-webapp-v4:price-check-market-cache').sourceRevision);
+api.state.marketCache.routes.hydrocarbons = { sourceNickname: 'br01_07_base', sourceName: 'Kensington', livePrice: 1, found: true, sold: true };
+assert.equal(api.effectiveRow(hydroRoute).sourcePrice, null, 'A mismatched cached quote cannot be relabelled as Thames');
 
+api.snapshotRoutes([source], { resolve: true });
 api.state.overrides[route.key] = 0;
-assert.equal(api.effectiveRow(route).difference, 500, 'Zero is a valid deliberate manual price');
-api.state.overrides[route.key] = 500;
+assert.equal(api.effectiveRow(route).difference, 300, 'Archived zero overrides never replace NPC prices');
+api.state.overrides[route.key] = 9999999;
+assert.equal(api.effectiveRow(route).difference, 300, 'Archived overrides never replace NPC prices');
+payout = { sell_price: 200 };
 assert.equal(api.effectiveRow(route).tone, 'neutral');
-api.state.overrides[route.key] = 600;
+payout = { sell_price: 100 };
 assert.equal(api.effectiveRow(route).tone, 'negative');
 delete api.state.overrides[route.key];
 payout = { price: 900 };
@@ -98,6 +133,7 @@ telemetry.available = true;
 api.importOverrides({ 'hull-panels': 125, copper: 0 });
 assert.equal(saved.get('prices').copper, 0);
 assert.equal(api.state.overrides['hull-panels'], 125);
+assert.equal(api.effectiveRow(route).sourcePrice, 200, 'Importing an old backup cannot reactivate manual pricing');
 for (const raw of [{ copper: -1 }, { copper: '100' }, { copper: true }, { copper: Infinity }, { unknown: 1 }, []]) {
   assert.throws(() => api.normalizeOverrides(raw));
 }
@@ -105,7 +141,7 @@ const before = api.state.overrides;
 app.store.set = () => false;
 assert.throws(() => api.importOverrides({ copper: 80 }), /COULD NOT BE SAVED/);
 assert.equal(api.state.overrides, before, 'Failed import preserves current overrides');
-console.log('Price Check passed: provenance, partial/empty data, six-hour retries, source identity, price direction, sign colors and import validation');
+console.log('Price Check passed: fixed station IDs, cache migration, read-only NPC quotes, provenance, missing data, price direction and archived overrides');
 
 // Round-trip the new section through the actual storage module.
 app.store.set = (key, value) => { saved.set(key, value); return true; };

@@ -12,7 +12,7 @@
     Object.freeze({ key: 'drafts', label: 'NAMED DRAFTS', detail: 'Saved Forum transmissions', mode: 'MERGE', selected: true }),
     Object.freeze({ key: 'senders', label: 'LOCAL SENDERS', detail: 'Custom identity profiles', mode: 'MERGE', selected: true }),
     Object.freeze({ key: 'priceProfiles', label: 'PRICE PROFILES', detail: 'Saved calculator prices', mode: 'MERGE', selected: true }),
-    Object.freeze({ key: 'priceCheckOverrides', label: 'PRICE CHECK', detail: 'Manual source prices', mode: 'MERGE', selected: true }),
+    Object.freeze({ key: 'priceCheckOverrides', label: 'ARCHIVED PRICE CHECK', detail: 'Old manual prices; not used for NPC comparisons', mode: 'MERGE', selected: false }),
     Object.freeze({ key: 'productionOrders', label: 'LEGACY DATA', detail: 'Archived order data from earlier versions', mode: 'MERGE', selected: false }),
     Object.freeze({ key: 'current', label: 'CURRENT MESSAGE', detail: 'Autosaved Forum composer', mode: 'REPLACE', selected: false }),
     Object.freeze({ key: 'shipyardPlanner', label: 'ARCHIVED SHIPYARD PLAN', detail: 'Saved planner data from earlier versions', mode: 'REPLACE', selected: false }),

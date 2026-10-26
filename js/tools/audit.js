@@ -180,7 +180,7 @@
     const failures = app.pricecheck?.selfTest?.() || ['module'];
     return failures.length
       ? makeResult('pricecheck', 'PRICE CHECK', 'danger', 'INCOMPLETE', 'Fixed-route controls or data contracts are unavailable.')
-      : makeResult('pricecheck', 'PRICE CHECK', 'good', 'READY', 'Fixed routes, manual prices and data provenance are available.');
+      : makeResult('pricecheck', 'PRICE CHECK', 'good', 'READY', 'Fixed sources, automatic NPC prices and data provenance are available.');
   }
 
   function catalogTruth() {
