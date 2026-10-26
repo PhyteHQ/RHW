@@ -22,11 +22,9 @@
      PoB-system goods are intentionally excluded and remain owned by the
      Production/Network Scan workflows. */
   const ROUTES = Object.freeze([
-    Object.freeze({ key: 'copper', commodity: 'Copper', source: 'Copperland', system: 'Coronado', sourceType: 'pob', sourceNickname: 'copperland', aliases: ['Copperland'] }),
     Object.freeze({ key: 'hull-panels', commodity: 'Hull Panels', source: 'Portsmouth Shipyard', system: 'Cambridge', aliases: ['Portsmouth Shipyard'] }),
     Object.freeze({ key: 'industrial-materials', commodity: 'Industrial Materials', source: 'Planet New London', system: 'New London', aliases: ['Planet New London', 'New London'] }),
     Object.freeze({ key: 'mox', commodity: 'MOX', source: 'Belvedere Refinery', system: 'New London', aliases: ['Belvedere Refinery'] }),
-    Object.freeze({ key: 'niobium', commodity: 'Niobium', source: 'Java Station', system: 'IMG', aliases: ['Java Station'] }),
     Object.freeze({ key: 'titanium', commodity: 'Titanium', source: 'Kensington Shipping Platform', system: 'New London', aliases: ['Kensington Shipping Platform'] }),
     Object.freeze({ key: 'energy-field-equipment', commodity: 'Energy Field Equipment', source: 'Planet Cambridge', system: 'Cambridge', aliases: ['Planet Cambridge', 'Cambridge'] }),
     Object.freeze({ key: 'super-alloy', commodity: 'Super Alloy', source: 'Durham Outpost', system: 'Leeds', aliases: ['Durham Outpost'] }),
@@ -35,6 +33,8 @@
     Object.freeze({ key: 'hydrocarbons', commodity: 'Hydrocarbons', source: 'Kensington Shipping Platform', system: 'New London', aliases: ['Kensington Shipping Platform'] }),
     Object.freeze({ key: 'consumer-goods', commodity: 'Consumer Goods', source: 'New London', system: 'New London', aliases: ['Planet New London', 'New London'] })
   ]);
+  // Keep valid saved prices portable without restoring retired list entries.
+  const LEGACY_OVERRIDE_KEYS = Object.freeze(['copper', 'niobium']);
 
   const state = {
     initialized: false,
@@ -527,7 +527,7 @@
     if (!raw || typeof raw !== 'object' || Array.isArray(raw)) throw new Error('INVALID PRICE CHECK OVERRIDES');
     const result = {};
     for (const [key, value] of Object.entries(raw)) {
-      if (!ROUTES.some(route => route.key === key)) throw new Error('UNKNOWN PRICE CHECK ROUTE');
+      if (!ROUTES.some(route => route.key === key) && !LEGACY_OVERRIDE_KEYS.includes(key)) throw new Error('UNKNOWN PRICE CHECK ROUTE');
       if (typeof value !== 'number' || finite(value) === null) throw new Error('INVALID SOURCE PRICE');
       result[key] = value;
     }
@@ -572,10 +572,7 @@
     const failures = [];
     if (!document.querySelector('.app-tabs [data-workspace="pricecheck"]')) failures.push('tab');
     if (!document.getElementById('workspacePricecheck')) failures.push('workspace');
-    if (ROUTES.length !== 12) failures.push('route-count');
-    const copperRoute = ROUTES.find(route => route.key === 'copper');
-    if (copperRoute?.sourceType !== 'pob' || copperRoute?.sourceNickname !== 'copperland') failures.push('copper-source');
-    if (finite(pobGoodFor({ shop_items: [{ name: 'Copper', price: 100, sell_price: 80 }] }, 'Copper')?.price) !== 100) failures.push('copper-pob-buy-from-base-price');
+    if (ROUTES.length !== 10) failures.push('route-count');
     if (document.querySelector('#rhwFocusToolsPanel [data-rhw-tool="build-queue"]')) failures.push('obsolete-build-queue');
     return failures;
   }
