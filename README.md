@@ -9,7 +9,7 @@ The app is split into four visible workspaces:
 
 - **COMMAND** — Inventory, Shipyard, Production and Logistics.
 - **CALCULATOR** — recipe-first manufacturing calculator, backed by Discovery's public game configuration.
-- **PRICE CHECK** — eleven fixed procurement routes, automatic NPC prices and RHW payout comparison.
+- **PRICE CHECK** — eleven fixed procurement routes grouped by source, with commodities alphabetized within each source, automatic NPC prices and RHW payout comparison.
 - **FORUM** — forum transmission composer. Drafts, sender profiles and system checks are available through **TOOLS**.
 
 `CALCULATOR / ITEM CALCULATOR` contains the validated current catalog of **290 recipes / 251 build targets**. It supports recipe search, distinct recipe-variant labels, output quantity, BMM-default IFF handling, affiliation-dependent outputs, manual material prices for the current calculation, fixed recipe fees where defined, batch build cost, cost per unit, target profit margin, recommended sale price, revenue and profit. Optional **PRICE PROFILES** can be saved explicitly in the browser and loaded on demand; they are never applied automatically.

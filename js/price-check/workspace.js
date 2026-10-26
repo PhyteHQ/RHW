@@ -34,6 +34,8 @@
     Object.freeze({ key: 'consumer-goods', commodity: 'Consumer Goods', source: 'Planet New London', sourceNickname: 'br01_01_base', system: 'New London' }),
     Object.freeze({ key: 'mining-machinery', commodity: 'Mining Machinery', source: 'Thames Outpost', sourceNickname: 'br01_06_base', system: 'New London' })
   ]);
+  const DISPLAY_ROUTES = Object.freeze([...ROUTES].sort((a, b) =>
+    a.source.localeCompare(b.source, 'en') || a.commodity.localeCompare(b.commodity, 'en')));
   // A different source must never inherit the old station's price or identity.
   const SOURCE_REVISION = ROUTES.map(route => `${route.key}:${route.sourceNickname}`).join('|');
   const storedSources = app.store.get(STORAGE.sources, {}) || {};
@@ -468,7 +470,7 @@
     const refresh = document.getElementById('priceCheckRefresh');
     if (!grid || !rowsNode || !note) return;
 
-    const rows = ROUTES.map(effectiveRow);
+    const rows = DISPLAY_ROUTES.map(effectiveRow);
     const status = statusMarkup(rows);
     if (grid.innerHTML !== status) grid.innerHTML = status;
     rows.forEach(row => {
@@ -553,7 +555,7 @@
   }
 
   app.pricecheck = {
-    routes: ROUTES,
+    routes: DISPLAY_ROUTES,
     state,
     init,
     activate,
