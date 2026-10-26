@@ -129,7 +129,7 @@ def main() -> int:
             # Retained old overrides must not replace automatic NPC prices, and
             # the comparison must offer no manual price editor.
             override = base.ev(cdp, """(()=>{
-              RHWV4.pricecheck.importOverrides({mox:150});
+              RHWV4.pricecheck.state.overrides.mox=150;RHWV4.pricecheck.render();
               const row=document.querySelector('[data-route-key="mox"]');
               return{editors:document.querySelectorAll('#priceCheckRows input,#priceCheckRows [data-pricecheck-reset]').length,
                 text:row.querySelector('.pricecheck-difference strong').textContent,
