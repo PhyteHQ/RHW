@@ -22,9 +22,9 @@ jobs:
           const api = 'https://darkstat.dd84ai.com/api/';
           const calls = [
             ['pobs', null],
-            ['commodities', {include_market_goods:true, filter_to_useful:true}],
+            ['commodities', {include_market_goods:false, filter_to_useful:true}],
             ['ships', {}],
-            ['npc_bases', {}],
+            ['npc_bases', {include_market_goods:true,filter_to_useful:true,filter_market_good_category:['commodity']}],
             ['factions', {include_reputations:false,include_bribes:false,filter_to_useful:false}],
             ['tractors', {include_rephacks:true,filter_nicknames:['dsy_license_br_m_grp']}]
           ];
