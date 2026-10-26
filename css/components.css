@@ -796,19 +796,13 @@ body[data-workspace="pricecheck"] .app-tabs [data-workspace="pricecheck"].active
 
 .pricecheck-source strong { font-size:11px;color:#d3d4d0; }
 
-.pricecheck-price-editor { display:grid;grid-template-columns:minmax(90px,130px) auto;align-items:center;gap:6px; }
+.pricecheck-price-quote { display:grid;gap:3px; }
 
-.pricecheck-price-input { width:100%;min-height:40px;padding:7px 8px;border:1px solid rgba(255,255,255,.12);border-radius:4px;background:#0b0b0b;color:#e0ded6;font:12px var(--font-tech);box-shadow:none; }
-
-.pricecheck-price-input:focus { outline:2px solid rgba(120,173,138,.45);outline-offset:1px;border-color:rgba(120,173,138,.45); }
+.pricecheck-source-price { color:#d8d6cf;font:12px var(--font-tech); }
 
 .pricecheck-live { grid-column:1/-1;color:#939393;font-size:9px;line-height:1.35; }
 
 .pricecheck-live b { color:#b8bbb9;font-weight:700; }
-
-.pricecheck-live.manual { color:#d1b868; }
-
-.pricecheck-reset { min-height:40px;padding:6px 8px;border:1px solid rgba(211,183,102,.24);border-radius:4px;background:rgba(211,183,102,.045);color:#cfbd7c;font:9px var(--font-tech);clip-path:none;box-shadow:none; }
 
 .pricecheck-payout strong { display:block;color:#d8d6cf;font-size:12px; }
 
@@ -859,8 +853,7 @@ html.rhw-pricecheck-enabled .app-tabs [data-workspace="pricecheck"] span { font-
 .pricecheck-item-cell .pricecheck-mobile-label, .pricecheck-source-cell .pricecheck-mobile-label, .pricecheck-commodity small, .pricecheck-source-id, .pricecheck-payout .pricecheck-current { display:none; }
 .pricecheck-difference .pricecheck-mobile-label { font-size:11px; }
 .pricecheck-difference strong { min-width:0;max-width:100%;padding:6px 10px;font-size:17px;line-height:1.25; }
-.pricecheck-price-editor { grid-template-columns:minmax(0,1fr) auto; }
-.pricecheck-price-input { font-size:16px; }
+.pricecheck-source-price { font-size:13px; }
 .pricecheck-payout strong { font-size:13px; }
 }
 

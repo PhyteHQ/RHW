@@ -33,14 +33,14 @@ DATA[0]['shop_items'] += [
     {'name': 'Modular Miner', 'nickname': 'medium_miner_package', 'quantity': 2, 'max_stock': 5, 'min_stock': 0, 'price': 18000000},
 ]
 
-NPC_DATA = [{'name': name, 'nickname': f'test-source-{i}', 'system_name': system,
+NPC_DATA = [{'name': name, 'nickname': nickname, 'system_name': system,
              'market_goods': [{'name': commodity, 'base_sells': True, 'price_base_sells_for': 80}
                               for commodity in ('Hull Panels', 'Industrial Materials', 'MOX', 'Niobium', 'Titanium',
                                                 'Energy Field Equipment', 'Super Alloy', 'Ablative Armor Plating',
-                                                'Food Rations', 'Hydrocarbons', 'Consumer Goods')]}
-            for i, (name, system) in enumerate((('Portsmouth Shipyard', 'Cambridge'), ('Planet New London', 'New London'),
-                ('Belvedere Refinery', 'New London'), ('Java Station', 'IMG'), ('Kensington Shipping Platform', 'New London'),
-                ('Planet Cambridge', 'Cambridge'), ('Durham Outpost', 'Leeds'), ('Oder Shipyard', 'New Berlin')))]
+                                                'Food Rations', 'Hydrocarbons', 'Consumer Goods', 'Mining Machinery')]}
+            for name, nickname, system in (('Portsmouth Shipyard', 'br01_02_base', 'Cambridge'), ('Planet New London', 'br01_01_base', 'New London'),
+                ('Thames Outpost', 'br01_06_base', 'New London'), ('Kensington Shipping Platform', 'br01_07_base', 'New London'),
+                ('Planet Cambridge', 'br03_01_base', 'Cambridge'), ('Waterloo Station', 'br01_04_base', 'New London'), ('Oder Shipyard', 'rh01_02_base', 'New Berlin'))]
 
 
 class QuietHandler(http.server.SimpleHTTPRequestHandler):
@@ -145,10 +145,10 @@ def main():
                     priceLabelSizes:[...document.querySelectorAll('#opsMaterialPanel td:nth-child(3)')].filter(visible).map(e=>parseFloat(getComputedStyle(e,'::before').fontSize)),
                     priceCards:[...document.querySelectorAll('.pricecheck-row')].filter(visible).map(e=>{
                       const box=e.getBoundingClientRect(),diff=e.querySelector('.pricecheck-difference').getBoundingClientRect();
-                      const input=e.querySelector('input'),source=e.querySelector('.pricecheck-price-cell').getBoundingClientRect();
+                      const source=e.querySelector('.pricecheck-price-cell').getBoundingClientRect();
                       const payout=e.querySelector('.pricecheck-payout-cell').getBoundingClientRect();
                       return {key:e.dataset.routeKey,height:box.height,differenceTop:diff.top-box.top,
-                        pricesAligned:Math.abs(source.top-payout.top)<=1,inputHeight:input.getBoundingClientRect().height,
+                        pricesAligned:Math.abs(source.top-payout.top)<=1,readOnly:!e.querySelector('input'),
                         clipped:e.scrollWidth>e.clientWidth+1};
                     }),
                     inventoryStyled:[...document.querySelectorAll('#inventoryStatusPanel .alert-list')].every(e=>getComputedStyle(e).listStyleType==='none')&&[...document.querySelectorAll('#inventoryStatusPanel .alert-title')].every(e=>getComputedStyle(e).display==='flex'),
@@ -197,10 +197,10 @@ def main():
                 if width <= 760 and workspace == 'pricecheck':
                     # A phone must show the result at the start of each compact
                     # card, including unknown prices and the longest route names.
-                    assert len(result['priceCards']) == 10, result
+                    assert len(result['priceCards']) == 11, result
                     for card in result['priceCards']:
                         assert card['height'] <= 300 and card['differenceTop'] <= 20, (width, card)
-                        assert card['pricesAligned'] and card['inputHeight'] >= 44 and not card['clipped'], (width, card)
+                        assert card['pricesAligned'] and card['readOnly'] and not card['clipped'], (width, card)
                     if width == 390:
                         capture_card(cdp, '[data-route-key="industrial-materials"]', '390-pricecheck-compact-cards')
                 report.append({'width': width, 'route': route, **result})
@@ -336,37 +336,38 @@ def main():
           archive:typeof RHWV4.legacyArchive.prepareImport==='function',scripts:[...document.scripts].map(s=>s.src)};})()""")
         assert retired['route'] == '#comms/forum' and not retired['editor'] and not retired['orders'] and retired['archive'], retired
         assert len(retired['scripts']) == 4, retired
-        # A completed market request and unrelated telemetry must keep the same
-        # input node and focus. Former whole-table rendering lost both while typing.
-        base.ev(cdp, """(()=>{RHWV4.navigate('pricecheck','routes');const e=document.querySelector('[data-pricecheck-override="hull-panels"]');
-          window.__rhwFocusedPrice=e;e.focus();e.value='0';e.dispatchEvent(new Event('input',{bubbles:true}));return true;})()""")
+        # Refreshes keep keyboard focus on the control, while archived manual
+        # prices cannot change a read-only NPC comparison.
+        base.ev(cdp, """(()=>{RHWV4.navigate('pricecheck','routes');const e=document.getElementById('priceCheckRefresh');
+          window.__rhwFocusedPrice=e;e.focus();RHWV4.pricecheck.importOverrides({'hull-panels':0});return true;})()""")
         base.ev(cdp, "RHWV4.pricecheck.refresh({quiet:true}).then(()=>{RHWV4.requestUiUpdate();return true;})")
         time.sleep(.15)
-        price_focus = base.ev(cdp, """(()=>{const e=document.querySelector('[data-pricecheck-override="hull-panels"]');
-          return {same:e===window.__rhwFocusedPrice,focused:document.activeElement===e,value:e.value,
+        price_focus = base.ev(cdp, """(()=>{const e=document.getElementById('priceCheckRefresh');
+          const row=document.querySelector('[data-route-key="hull-panels"]');
+          return {same:e===window.__rhwFocusedPrice,focused:document.activeElement===e,
+            price:row.querySelector('.pricecheck-source-price').textContent,editors:document.querySelectorAll('#priceCheckRows input').length,
             stored:RHWV4.pricecheck.state.overrides['hull-panels'],live:RHWV4.pricecheck.state.marketLabel,
             emptyStyleMarkers:document.querySelectorAll('style[data-stylesheet]').length};})()""")
-        assert price_focus['same'] and price_focus['focused'] and price_focus['value'] == '0' and price_focus['stored'] == 0, price_focus
+        assert price_focus['same'] and price_focus['focused'] and price_focus['price'] == '$80' and price_focus['stored'] == 0 and price_focus['editors'] == 0, price_focus
         assert price_focus['live'] == 'NPC MARKET LIVE' and price_focus['emptyStyleMarkers'] == 0, price_focus
-        # The prominent result must change immediately while typing, including
-        # zero, losses and large amounts, and return to the live price on reset.
+        # Updated NPC quotes must handle zero, losses and large amounts without
+        # introducing editable controls or clipping a phone card.
         price_edit = base.ev(cdp, """(()=>{
-          const row=document.querySelector('[data-route-key="food-rations"]'),input=row.querySelector('input');
+          const row=document.querySelector('[data-route-key="food-rations"]');
           const states=[0,100,125,9999999].map(value=>{
-            input.focus();input.value=String(value);input.dispatchEvent(new Event('input',{bubbles:true}));
-            const diff=row.querySelector('.pricecheck-difference'),reset=row.querySelector('[data-pricecheck-reset]');
+            RHWV4.pricecheck.state.marketCache.routes['food-rations'].livePrice=value;RHWV4.pricecheck.render();
+            const diff=row.querySelector('.pricecheck-difference');
             return {text:diff.querySelector('strong').textContent,tone:diff.className,
-              focused:document.activeElement===input,clipped:row.scrollWidth>row.clientWidth+1,
-              resetHeight:reset.getBoundingClientRect().height};
+              readOnly:!row.querySelector('input'),clipped:row.scrollWidth>row.clientWidth+1};
           });
-          row.querySelector('[data-pricecheck-reset]').click();
-          return {states,reset:!row.querySelector('[data-pricecheck-reset]')&&input.value==='',
+          RHWV4.pricecheck.state.marketCache.routes['food-rations'].livePrice=80;RHWV4.pricecheck.render();
+          return {states,
             liveResult:row.querySelector('.pricecheck-difference strong').textContent};
         })()""")
         for state, (value, tone) in zip(price_edit['states'], (('+$100', 'positive'), ('$0', 'neutral'), ('-$25', 'negative'), ('-$9,999,899', 'negative'))):
             assert state['text'] == value and tone in state['tone'], state
-            assert state['focused'] and not state['clipped'] and state['resetHeight'] >= 44, state
-        assert price_edit['reset'] and price_edit['liveResult'] == '+$20', price_edit
+            assert state['readOnly'] and not state['clipped'], state
+        assert price_edit['liveResult'] == '+$20', price_edit
         base.ev(cdp, "(()=>{location.hash='#pricecheck/obsolete';return true;})()")
         time.sleep(.15)
         assert base.ev(cdp, 'location.hash') == '#pricecheck/routes', 'Price Check uses the shared canonical route model'

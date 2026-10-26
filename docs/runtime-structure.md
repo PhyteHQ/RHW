@@ -11,7 +11,7 @@ request count. Edit an owner, not a new chronological fix/PR layer.
 | `js/core/` | App shell, router, named lifecycle, primary/Tools navigation, refresh scheduling, boot and PWA |
 | `js/command/` | Inventory, Shipyard, Production, Logistics and their navigation/status surfaces |
 | `js/calculator/` | Catalog normalization, pure planning/costing, UI, labels, price profiles and Production bridge |
-| `js/price-check/` | Fixed-route pricing, provenance, overrides and refresh lifecycle |
+| `js/price-check/` | Fixed NPC sources, automatic pricing, provenance and refresh lifecycle; archived override compatibility |
 | `js/forum/` | Composer, BBCode, preview formatting and mobile views |
 | `js/data/` | Telemetry, storage, backup import/export and legacy archive compatibility |
 | `js/tools/` | Discovery status, diagnostics, audit and private device transfer |

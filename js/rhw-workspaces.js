@@ -5453,7 +5453,7 @@ window.__RHW_RECIPE_CATALOG_GZIP_BASE64__ = (window.__RHW_RECIPE_CATALOG_GZIP_BA
     Object.freeze({ key: 'drafts', label: 'NAMED DRAFTS', detail: 'Saved Forum transmissions', mode: 'MERGE', selected: true }),
     Object.freeze({ key: 'senders', label: 'LOCAL SENDERS', detail: 'Custom identity profiles', mode: 'MERGE', selected: true }),
     Object.freeze({ key: 'priceProfiles', label: 'PRICE PROFILES', detail: 'Saved calculator prices', mode: 'MERGE', selected: true }),
-    Object.freeze({ key: 'priceCheckOverrides', label: 'PRICE CHECK', detail: 'Manual source prices', mode: 'MERGE', selected: true }),
+    Object.freeze({ key: 'priceCheckOverrides', label: 'ARCHIVED PRICE CHECK', detail: 'Old manual prices; not used for NPC comparisons', mode: 'MERGE', selected: false }),
     Object.freeze({ key: 'productionOrders', label: 'LEGACY DATA', detail: 'Archived order data from earlier versions', mode: 'MERGE', selected: false }),
     Object.freeze({ key: 'current', label: 'CURRENT MESSAGE', detail: 'Autosaved Forum composer', mode: 'REPLACE', selected: false }),
     Object.freeze({ key: 'shipyardPlanner', label: 'ARCHIVED SHIPYARD PLAN', detail: 'Saved planner data from earlier versions', mode: 'REPLACE', selected: false }),
@@ -5876,7 +5876,7 @@ window.__RHW_RECIPE_CATALOG_GZIP_BASE64__ = (window.__RHW_RECIPE_CATALOG_GZIP_BA
     const failures = app.pricecheck?.selfTest?.() || ['module'];
     return failures.length
       ? makeResult('pricecheck', 'PRICE CHECK', 'danger', 'INCOMPLETE', 'Fixed-route controls or data contracts are unavailable.')
-      : makeResult('pricecheck', 'PRICE CHECK', 'good', 'READY', 'Fixed routes, manual prices and data provenance are available.');
+      : makeResult('pricecheck', 'PRICE CHECK', 'good', 'READY', 'Fixed sources, automatic NPC prices and data provenance are available.');
   }
 
   function catalogTruth() {
@@ -7337,26 +7337,31 @@ window.__RHW_RECIPE_CATALOG_GZIP_BASE64__ = (window.__RHW_RECIPE_CATALOG_GZIP_BA
      PoB-system goods are intentionally excluded and remain owned by the
      Production/Network Scan workflows. */
   const ROUTES = Object.freeze([
-    Object.freeze({ key: 'hull-panels', commodity: 'Hull Panels', source: 'Portsmouth Shipyard', system: 'Cambridge', aliases: ['Portsmouth Shipyard'] }),
-    Object.freeze({ key: 'industrial-materials', commodity: 'Industrial Materials', source: 'Planet New London', system: 'New London', aliases: ['Planet New London', 'New London'] }),
-    Object.freeze({ key: 'mox', commodity: 'MOX', source: 'Belvedere Refinery', system: 'New London', aliases: ['Belvedere Refinery'] }),
-    Object.freeze({ key: 'titanium', commodity: 'Titanium', source: 'Kensington Shipping Platform', system: 'New London', aliases: ['Kensington Shipping Platform'] }),
-    Object.freeze({ key: 'energy-field-equipment', commodity: 'Energy Field Equipment', source: 'Planet Cambridge', system: 'Cambridge', aliases: ['Planet Cambridge', 'Cambridge'] }),
-    Object.freeze({ key: 'super-alloy', commodity: 'Super Alloy', source: 'Durham Outpost', system: 'Leeds', aliases: ['Durham Outpost'] }),
-    Object.freeze({ key: 'ablative-armor-plating', commodity: 'Ablative Armor Plating', source: 'Oder Shipyard', system: 'New Berlin', aliases: ['Oder Shipyard'] }),
-    Object.freeze({ key: 'food-rations', commodity: 'Food Rations', source: 'Planet New London', system: 'New London', aliases: ['Planet New London', 'New London'] }),
-    Object.freeze({ key: 'hydrocarbons', commodity: 'Hydrocarbons', source: 'Kensington Shipping Platform', system: 'New London', aliases: ['Kensington Shipping Platform'] }),
-    Object.freeze({ key: 'consumer-goods', commodity: 'Consumer Goods', source: 'New London', system: 'New London', aliases: ['Planet New London', 'New London'] })
+    Object.freeze({ key: 'hull-panels', commodity: 'Hull Panels', source: 'Portsmouth Shipyard', sourceNickname: 'br01_02_base', system: 'Cambridge' }),
+    Object.freeze({ key: 'industrial-materials', commodity: 'Industrial Materials', source: 'Planet New London', sourceNickname: 'br01_01_base', system: 'New London' }),
+    Object.freeze({ key: 'mox', commodity: 'MOX', source: 'Thames Outpost', sourceNickname: 'br01_06_base', system: 'New London' }),
+    Object.freeze({ key: 'titanium', commodity: 'Titanium', source: 'Kensington Shipping Platform', sourceNickname: 'br01_07_base', system: 'New London' }),
+    Object.freeze({ key: 'energy-field-equipment', commodity: 'Energy Field Equipment', source: 'Planet Cambridge', sourceNickname: 'br03_01_base', system: 'Cambridge' }),
+    Object.freeze({ key: 'super-alloy', commodity: 'Super Alloy', source: 'Waterloo Station', sourceNickname: 'br01_04_base', system: 'New London' }),
+    Object.freeze({ key: 'ablative-armor-plating', commodity: 'Ablative Armor Plating', source: 'Oder Shipyard', sourceNickname: 'rh01_02_base', system: 'New Berlin' }),
+    Object.freeze({ key: 'food-rations', commodity: 'Food Rations', source: 'Planet New London', sourceNickname: 'br01_01_base', system: 'New London' }),
+    Object.freeze({ key: 'hydrocarbons', commodity: 'Hydrocarbons', source: 'Thames Outpost', sourceNickname: 'br01_06_base', system: 'New London' }),
+    Object.freeze({ key: 'consumer-goods', commodity: 'Consumer Goods', source: 'Planet New London', sourceNickname: 'br01_01_base', system: 'New London' }),
+    Object.freeze({ key: 'mining-machinery', commodity: 'Mining Machinery', source: 'Thames Outpost', sourceNickname: 'br01_06_base', system: 'New London' })
   ]);
-  // Keep valid saved prices portable without restoring retired list entries.
+  // A different source must never inherit the old station's price or identity.
+  const SOURCE_REVISION = ROUTES.map(route => `${route.key}:${route.sourceNickname}`).join('|');
+  const storedSources = app.store.get(STORAGE.sources, {}) || {};
+  const storedMarket = app.store.get(STORAGE.market, {}) || {};
+  // Keep historical manual prices portable, but never use them for NPC pricing.
   const LEGACY_OVERRIDE_KEYS = Object.freeze(['copper', 'niobium']);
 
   const state = {
     initialized: false,
     loading: false,
     overrides: app.store.get(STORAGE.overrides, {}) || {},
-    sourceCache: app.store.get(STORAGE.sources, {}) || {},
-    marketCache: app.store.get(STORAGE.market, {}) || {},
+    sourceCache: storedSources.sourceRevision === SOURCE_REVISION ? storedSources : {},
+    marketCache: storedMarket.sourceRevision === SOURCE_REVISION ? storedMarket : {},
     marketTone: 'waiting',
     marketLabel: 'AWAITING MARKET DATA',
     marketDetail: '',
@@ -7423,7 +7428,7 @@ window.__RHW_RECIPE_CATALOG_GZIP_BASE64__ = (window.__RHW_RECIPE_CATALOG_GZIP_BA
       <div class="pricecheck-status-grid" id="priceCheckStatusGrid"></div>
       <div class="pricecheck-note" id="priceCheckNote">MARKET DATA LOADS WHEN PRICE CHECK OPENS.</div>
       <div class="pricecheck-table-wrap"><table class="pricecheck-table">
-        <thead><tr><th>COMMODITY</th><th>SOURCE</th><th>SOURCE PRICE / OVERRIDE</th><th>RHW PAYS</th><th>DIFFERENCE</th></tr></thead>
+        <thead><tr><th>COMMODITY</th><th>SOURCE</th><th>NPC PRICE</th><th>RHW PAYS</th><th>DIFFERENCE</th></tr></thead>
         <tbody id="priceCheckRows"></tbody>
       </table></div>
     </div>`;
@@ -7471,29 +7476,6 @@ window.__RHW_RECIPE_CATALOG_GZIP_BASE64__ = (window.__RHW_RECIPE_CATALOG_GZIP_BA
         refreshTask.refresh({ forceResolve: true });
         return;
       }
-      const reset = event.target.closest('[data-pricecheck-reset]');
-      if (reset) {
-        const key = reset.dataset.pricecheckReset;
-        delete state.overrides[key];
-        app.store.set(STORAGE.overrides, state.overrides);
-        const input = reset.parentElement?.querySelector('[data-pricecheck-override]');
-        if (input) input.value = '';
-        render();
-      }
-    });
-    panel.addEventListener('input', event => {
-      const input = event.target.closest('[data-pricecheck-override]');
-      if (!input) return;
-      const key = input.dataset.pricecheckOverride;
-      const raw = String(input.value || '').trim();
-      if (!raw) delete state.overrides[key];
-      else {
-        const value = Number(raw);
-        if (Number.isFinite(value) && value >= 0) state.overrides[key] = value;
-      }
-      app.store.set(STORAGE.overrides, state.overrides);
-      render();
-
     });
   }
 
@@ -7551,6 +7533,10 @@ window.__RHW_RECIPE_CATALOG_GZIP_BASE64__ = (window.__RHW_RECIPE_CATALOG_GZIP_BA
   }
 
   function resolveSource(route, bases) {
+    if (route.sourceNickname) {
+      const exact = (bases || []).filter(baseEntry => baseEntry?.nickname === route.sourceNickname);
+      return exact.length === 1 ? exact[0] : null;
+    }
     let best = null;
     let bestScore = -1;
     let ambiguous = false;
@@ -7626,10 +7612,12 @@ window.__RHW_RECIPE_CATALOG_GZIP_BASE64__ = (window.__RHW_RECIPE_CATALOG_GZIP_BA
     const sources = { ...(state.sourceCache?.sources || {}) };
 
     for (const route of ROUTES.filter(route => route.sourceType !== 'pob')) {
-      let source = null;
+      let source = route.sourceNickname ? resolveSource(route, bases) : null;
       const known = sources[route.key];
-      if (known?.nickname) source = (bases || []).find(baseEntry => String(baseEntry?.nickname || '') === String(known.nickname));
-      if (!source && resolve) source = resolveSource(route, bases);
+      if (!route.sourceNickname) {
+        if (known?.nickname) source = (bases || []).find(baseEntry => String(baseEntry?.nickname || '') === String(known.nickname));
+        if (!source && resolve) source = resolveSource(route, bases);
+      }
       if (source) {
         sources[route.key] = {
           nickname: String(source.nickname || ''),
@@ -7652,9 +7640,9 @@ window.__RHW_RECIPE_CATALOG_GZIP_BASE64__ = (window.__RHW_RECIPE_CATALOG_GZIP_BA
       };
     }
 
-    state.sourceCache = { resolvedAt: resolve ? Date.now() : Number(state.sourceCache?.resolvedAt) || 0, sources };
+    state.sourceCache = { sourceRevision: SOURCE_REVISION, resolvedAt: resolve ? Date.now() : Number(state.sourceCache?.resolvedAt) || 0, sources };
     app.store.set(STORAGE.sources, state.sourceCache);
-    state.marketCache = { fetchedAt: checkedAt, routes: next };
+    state.marketCache = { sourceRevision: SOURCE_REVISION, fetchedAt: checkedAt, routes: next };
     app.store.set(STORAGE.market, state.marketCache);
   }
 
@@ -7717,6 +7705,9 @@ window.__RHW_RECIPE_CATALOG_GZIP_BASE64__ = (window.__RHW_RECIPE_CATALOG_GZIP_BA
   function effectiveRow(route) {
     const rhw = rhwSnapshot();
     let market = state.marketCache?.routes?.[route.key] || {};
+    if (route.sourceNickname && market.sourceNickname !== route.sourceNickname) {
+      market = { found: false, sold: false };
+    }
     if (route.sourceType === 'pob') {
       const source = pobSourceFor(route);
       const good = source ? pobGoodFor(source, route.commodity) : null;
@@ -7743,12 +7734,11 @@ window.__RHW_RECIPE_CATALOG_GZIP_BASE64__ = (window.__RHW_RECIPE_CATALOG_GZIP_BA
     const fresh = route.sourceType === 'pob'
       ? rhw.available && !rhw.stale
       : navigator.onLine !== false && state.receivedAt > 0 && Number.isFinite(age) && age >= 0 && age < AUTO_REFRESH_MS * 2 && !state.lastError;
-    const hasOverride = Object.prototype.hasOwnProperty.call(state.overrides, route.key) && finite(state.overrides[route.key]) !== null;
-    const sourcePrice = hasOverride ? finite(state.overrides[route.key]) : live;
+    const sourcePrice = live;
     const payout = rhw.available ? rhwPrice(route) : null;
     const difference = sourcePrice !== null && payout !== null ? payout - sourcePrice : null;
     const tone = difference === null ? 'unknown' : (difference > 0 ? 'positive' : (difference < 0 ? 'negative' : 'neutral'));
-    return { route, market, live, hasOverride, sourcePrice, payout, difference, tone, fresh, priceAt, rhw };
+    return { route, market, live, sourcePrice, payout, difference, tone, fresh, priceAt, rhw };
   }
 
   function statusMarkup(rows) {
@@ -7766,8 +7756,7 @@ window.__RHW_RECIPE_CATALOG_GZIP_BASE64__ = (window.__RHW_RECIPE_CATALOG_GZIP_BA
   }
 
   function rowMarkup(row) {
-    const { route, market, live, hasOverride, payout, difference, tone, fresh, priceAt, rhw } = row;
-    const overrideValue = hasOverride ? String(state.overrides[route.key]) : '';
+    const { route, market, live, payout, difference, tone, fresh, priceAt, rhw } = row;
     const sourceName = market.sourceName || route.source;
     const system = market.system || route.system;
     const sourceMeta = market.sourceType === 'pob'
@@ -7775,14 +7764,14 @@ window.__RHW_RECIPE_CATALOG_GZIP_BASE64__ = (window.__RHW_RECIPE_CATALOG_GZIP_BA
       : (market.sourceNickname || 'SOURCE MATCH PENDING');
     const sourceMetaClass = market.sourceType === 'pob' || market.sourceNickname ? 'pricecheck-source-id' : 'pricecheck-source-warning';
     const stamp = Number.isFinite(Date.parse(priceAt || '')) ? new Date(priceAt).toLocaleString('de-DE', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : 'TIME UNKNOWN';
-    const liveCopy = live === null ? 'SOURCE PRICE UNAVAILABLE' : `${fresh ? 'LIVE' : 'CACHED'} ${money(live)} · ${stamp}`;
+    const liveCopy = live === null ? 'SOURCE PRICE UNAVAILABLE' : `${fresh ? 'LIVE' : 'CACHED'} · ${stamp}`;
     const payoutCopy = payout === null ? 'RHW PRICE UNAVAILABLE' : money(payout);
     return `<tr class="pricecheck-row" data-route-key="${esc(route.key)}">
       <td class="pricecheck-item-cell"><span class="pricecheck-mobile-label">COMMODITY</span><span class="pricecheck-commodity"><strong>${esc(route.commodity)}</strong><small>${route.sourceType === 'pob' ? 'FIXED POB ROUTE' : 'FIXED NPC ROUTE'}</small></span></td>
       <td class="pricecheck-source-cell"><span class="pricecheck-mobile-label">SOURCE</span><span class="pricecheck-source"><strong>${esc(sourceName)}</strong><small>${esc(system)}<span class="${sourceMetaClass}"> // ${esc(sourceMeta)}</span></small></span></td>
-      <td class="pricecheck-price-cell"><span class="pricecheck-mobile-label">SOURCE PRICE</span><div class="pricecheck-price-editor"><input class="pricecheck-price-input" data-pricecheck-override="${esc(route.key)}" type="number" inputmode="decimal" min="0" step="1" value="${esc(overrideValue)}" placeholder="${live === null ? '' : esc(String(Math.round(live)))}" aria-label="${esc(route.commodity)} manual source price">${hasOverride ? `<button type="button" class="pricecheck-reset" data-pricecheck-reset="${esc(route.key)}">RESET</button>` : ''}<small class="pricecheck-live ${hasOverride ? 'manual' : ''}">${hasOverride ? `MANUAL ACTIVE // ${liveCopy}` : liveCopy}</small></div></td>
+      <td class="pricecheck-price-cell"><span class="pricecheck-mobile-label">NPC PRICE</span><div class="pricecheck-price-quote"><strong class="pricecheck-source-price">${money(live)}</strong><small class="pricecheck-live">${liveCopy}</small></div></td>
       <td class="pricecheck-payout-cell"><span class="pricecheck-mobile-label">RHW PAYS</span><span class="pricecheck-payout"><strong>${payoutCopy}</strong><small class="${rhw.available && !rhw.stale ? 'pricecheck-current' : ''}">${!rhw.available ? 'RHW DATA UNAVAILABLE' : rhw.stale ? 'RHW CACHED' : 'CURRENT RHW BUY'}</small></span></td>
-      <td class="pricecheck-difference ${tone}"><span class="pricecheck-mobile-label">DIFFERENCE</span><strong>${signedMoney(difference)}</strong>${difference !== null && ((!fresh && !hasOverride) || rhw.stale) ? '<small class="pricecheck-estimate">FROM CACHED PRICES</small>' : ''}</td>
+      <td class="pricecheck-difference ${tone}"><span class="pricecheck-mobile-label">DIFFERENCE</span><strong>${signedMoney(difference)}</strong>${difference !== null && (!fresh || rhw.stale) ? '<small class="pricecheck-estimate">FROM CACHED PRICES</small>' : ''}</td>
     </tr>`;
   }
 
@@ -7806,23 +7795,8 @@ window.__RHW_RECIPE_CATALOG_GZIP_BASE64__ = (window.__RHW_RECIPE_CATALOG_GZIP_BA
       const next = fragment.firstElementChild;
       [...next.children].forEach((cell, index) => {
         const current = existing.children[index];
-        if (index !== 2) {
-          current.className = cell.className;
-          if (current.innerHTML !== cell.innerHTML) current.innerHTML = cell.innerHTML;
-          return;
-        }
-        // Keep the real input in place, including an incomplete number being typed.
-        const input = current.querySelector('input');
-        const nextInput = cell.querySelector('input');
-        input.placeholder = nextInput.placeholder;
-        if (document.activeElement !== input && input.value !== nextInput.value) input.value = nextInput.value;
-        const live = current.querySelector('.pricecheck-live');
-        const nextLive = cell.querySelector('.pricecheck-live');
-        live.className = nextLive.className;
-        if (live.textContent !== nextLive.textContent) live.textContent = nextLive.textContent;
-        const reset = current.querySelector('[data-pricecheck-reset]');
-        if (!row.hasOverride) reset?.remove();
-        else if (!reset) live.before(cell.querySelector('[data-pricecheck-reset]'));
+        current.className = cell.className;
+        if (current.innerHTML !== cell.innerHTML) current.innerHTML = cell.innerHTML;
       });
     });
 
@@ -7887,7 +7861,8 @@ window.__RHW_RECIPE_CATALOG_GZIP_BASE64__ = (window.__RHW_RECIPE_CATALOG_GZIP_BA
     const failures = [];
     if (!document.querySelector('.app-tabs [data-workspace="pricecheck"]')) failures.push('tab');
     if (!document.getElementById('workspacePricecheck')) failures.push('workspace');
-    if (ROUTES.length !== 10) failures.push('route-count');
+    if (ROUTES.length !== 11) failures.push('route-count');
+    if (document.querySelector('#priceCheckRows input')) failures.push('editable-npc-price');
     if (document.querySelector('#rhwFocusToolsPanel [data-rhw-tool="build-queue"]')) failures.push('obsolete-build-queue');
     return failures;
   }

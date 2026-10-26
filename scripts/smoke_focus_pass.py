@@ -81,7 +81,7 @@ def main() -> int:
                 raise RuntimeError(f"Price Check shell failed: {primary}")
 
             # PRICE CHECK is a first-class route and intentionally contains only
-            # the 10 fixed NPC procurement routes supplied by RHW operations.
+            # the 11 fixed NPC procurement routes supplied by RHW operations.
             base.ev(cdp, "(()=>{document.querySelector('.app-tabs [data-workspace=\"pricecheck\"]')?.click();return true;})()")
             settle(.2)
             price = base.ev(cdp, f"""(()=>{{{VISIBLE_HELPER}return{{
@@ -96,7 +96,7 @@ def main() -> int:
             }};}})()""")
             if price.get("workspace") != "pricecheck" or price.get("hash") != "#pricecheck/routes" or not price.get("panel"):
                 raise RuntimeError(f"Price Check route failed: {price}")
-            if price.get("rows") != 10 or price.get("routeCount") != 10 or price.get("context") or price.get("buildQueue") or "PRICE CHECK" not in price.get("active", ""):
+            if price.get("rows") != 11 or price.get("routeCount") != 11 or price.get("context") or price.get("buildQueue") or "PRICE CHECK" not in price.get("active", ""):
                 raise RuntimeError(f"Price Check scope/UI failed: {price}")
 
             # Deterministic math test: positive is green, negative is red and zero
@@ -109,9 +109,9 @@ def main() -> int:
               window.priceSell=item=>100;
               const now=new Date().toISOString();
               RHWV4.pricecheck.state.marketCache={fetchedAt:now,routes:{
-                'mox':{sourceName:'Belvedere Refinery',system:'New London',livePrice:80,found:true,sold:true},
-                'hull-panels':{sourceName:'Portsmouth Shipyard',system:'Cambridge',livePrice:120,found:true,sold:true},
-                'industrial-materials':{sourceName:'Planet New London',system:'New London',livePrice:100,found:true,sold:true}
+                'mox':{sourceNickname:'br01_06_base',sourceName:'Thames Outpost',system:'New London',livePrice:80,found:true,sold:true},
+                'hull-panels':{sourceNickname:'br01_02_base',sourceName:'Portsmouth Shipyard',system:'Cambridge',livePrice:120,found:true,sold:true},
+                'industrial-materials':{sourceNickname:'br01_01_base',sourceName:'Planet New London',system:'New London',livePrice:100,found:true,sold:true}
               }};
               RHWV4.pricecheck.state.marketLabel='SMOKE MARKET';
               RHWV4.pricecheck.render();
@@ -126,20 +126,19 @@ def main() -> int:
             if math_state.get("positiveText") != "+$20" or math_state.get("negativeText") != "-$20" or math_state.get("neutralText") != "$0" or math_state.get("yellow") != 0:
                 raise RuntimeError(f"Price Check math/tiers failed: {math_state}")
 
-            # Manual source-price override must recalculate immediately and reset
-            # cleanly back to the live Darkstat price.
+            # Retained old overrides must not replace automatic NPC prices, and
+            # the comparison must offer no manual price editor.
             override = base.ev(cdp, """(()=>{
-              const input=document.querySelector('[data-pricecheck-override="mox"]');
-              input.value='150';input.dispatchEvent(new Event('input',{bubbles:true}));
-              const after=document.querySelector('[data-route-key="mox"] .pricecheck-difference');
-              const afterText=after?.querySelector('strong')?.textContent||'';
-              const afterTone=after?.className||'';
-              document.querySelector('[data-pricecheck-reset="mox"]')?.click();
-              const reset=document.querySelector('[data-route-key="mox"] .pricecheck-difference');
-              return{after:afterTone,afterText,reset:reset?.className||'',resetText:reset?.querySelector('strong')?.textContent||'',saved:RHWV4.pricecheck.state.overrides.mox};
+              RHWV4.pricecheck.importOverrides({mox:150});
+              const row=document.querySelector('[data-route-key="mox"]');
+              return{editors:document.querySelectorAll('#priceCheckRows input,#priceCheckRows [data-pricecheck-reset]').length,
+                text:row.querySelector('.pricecheck-difference strong').textContent,
+                source:row.querySelector('.pricecheck-source strong').textContent,
+                price:row.querySelector('.pricecheck-source-price').textContent,
+                mining:!!document.querySelector('[data-route-key="mining-machinery"]')};
             })()""")
-            if "negative" not in override.get("after", "") or override.get("afterText") != "-$50" or "positive" not in override.get("reset", "") or override.get("resetText") != "+$20" or override.get("saved") is not None:
-                raise RuntimeError(f"Price Check manual override failed: {override}")
+            if override.get('editors') != 0 or override.get('text') != '+$20' or override.get('source') != 'Thames Outpost' or override.get('price') != '$80' or not override.get('mining'):
+                raise RuntimeError(f"Price Check automatic NPC pricing failed: {override}")
 
             # TOOLS is now genuinely secondary and no longer exposes the obsolete
             # Production Orders / Build Queue or Newswire entries.
