@@ -1,0 +1,61 @@
+name: RHW read-only market snapshot
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/price-check-snapshot.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v6
+      - name: Read public Darkstat market and RHW position
+        shell: bash
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs/promises';
+          const api = 'https://darkstat.dd84ai.com/api/';
+          const calls = [
+            ['pobs', null],
+            ['commodities', {include_market_goods:true, filter_to_useful:true}],
+            ['ships', {}],
+            ['npc_bases', {}],
+            ['factions', {include_reputations:false,include_bribes:false,filter_to_useful:false}],
+            ['tractors', {include_rephacks:true,filter_nicknames:['dsy_license_br_m_grp']}]
+          ];
+          const snapshot = {schema:1, purpose:'Read-only RHW procurement price calculation', receivedAt:new Date().toISOString(), endpoints:{}};
+          await Promise.all(calls.map(async ([path,body])=>{
+            try {
+              const headers = {Accept:'application/json',Origin:'https://phytehq.github.io'};
+              const init = {method:'POST',headers,signal:AbortSignal.timeout(35000)};
+              if(body!==null){headers['Content-Type']='application/json';init.body=JSON.stringify(body);}
+              const response=await fetch(api+path,init);
+              if(!response.ok)throw Error('HTTP '+response.status);
+              const text=await response.text();
+              if(text.length>70000000)throw Error('Response too large');
+              let data=JSON.parse(text);
+              if(!Array.isArray(data))throw Error('Expected array');
+              const originalCount=data.length;
+              if(path==='pobs')data=data.filter(x=>String(x.name).toLowerCase()==='resolution heavy works');
+              snapshot.endpoints[path]={status:'ok',receivedAt:new Date().toISOString(),originalCount,data};
+            }catch(error){snapshot.endpoints[path]={status:'error',error:String(error)};}
+          }));
+          await fs.mkdir('artifacts/price-check-snapshot',{recursive:true});
+          await fs.writeFile('artifacts/price-check-snapshot/market-snapshot.json',JSON.stringify(snapshot));
+          console.log(JSON.stringify(Object.fromEntries(Object.entries(snapshot.endpoints).map(([key,x])=>[key,{status:x.status,count:x.data?.length,error:x.error}]))));
+          if(['pobs','commodities','ships'].some(key=>snapshot.endpoints[key]?.status!=='ok'))throw Error('Required public market feed unavailable');
+          if(snapshot.endpoints.pobs.data.length!==1)throw Error('RHW not uniquely found');
+          NODE
+      - name: Save read-only market evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rhw-price-check-market-snapshot
+          path: artifacts/price-check-snapshot
+          retention-days: 7
+          if-no-files-found: error
