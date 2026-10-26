@@ -186,7 +186,7 @@ def main() -> int:
                     crestHeight:document.querySelector('.command-header .crest')?.getBoundingClientRect().height||0,
                     rowCount:document.querySelectorAll('#priceCheckRows .pricecheck-row').length}};
                 }})()""")
-                if geometry.get("overflow", 0) > 2 or geometry.get("tabs") != 4 or geometry.get("rowCount") != 10:
+                if geometry.get("overflow", 0) > 2 or geometry.get("tabs") != 4 or geometry.get("rowCount") != 11:
                     raise RuntimeError(f"Price Check geometry at {width}px failed: {geometry}")
                 if width < 760 and any(height < 43.5 for height in geometry.get("touch", [])):
                     raise RuntimeError(f"Primary touch targets at {width}px failed: {geometry}")
@@ -200,7 +200,7 @@ def main() -> int:
             if runtime_failures:
                 raise RuntimeError(f"Runtime failures: {runtime_failures}")
 
-            print("Focus Pass + Price Check smoke passed: 4 daily tabs, 10 fixed routes, sign-only colors, overrides, mobile fit")
+            print("Focus Pass + Price Check smoke passed: 4 daily tabs, 11 fixed routes, automatic NPC prices, archived overrides ignored, mobile fit")
             return 0
         finally:
             try:
