@@ -154,6 +154,14 @@ ctx.__RHW_RECIPE_CATALOG__ = JSON.parse(zlib.gunzipSync(Buffer.from(ctx.__RHW_RE
   assert.equal(staff.analyze().resources[0].required, null);
   core.state.catalog.recipes = oldRecipes; core.state.recipesById.set(foundryRecipe.id, foundryRecipe);
   assert.equal(JSON.stringify(ctx.items), inventoryBefore, 'Planning never consumes or changes the inventory');
+  memory.set('personnel', { stock: { crew: 1800 }, modules: { foundry: { enabled: true, recipeId: foundryRecipe.id } } });
+  staff.restore();
+  assert.deepEqual(Array.from(total()), [1000, 100], 'Imported local plans restore through the same validation');
+  assert.equal(staff.analyze().resources[0].amount, 1800);
+  memory.set('selection', 'halberd'); memory.set('divisions', { civilian: 'barge' }); yard.restoreSelection();
+  assert.equal(yard.selectedHull().key, 'halberd');
+  yard.selectDivision('mining'); yard.selectDivision('civilian'); assert.equal(yard.selectedHull().key, 'barge');
+  yard.selectHull('archon');
 
   const recipe = core.recipe(archon.recipeId);
   recipe.inputs[0].options[0].qty = 181;

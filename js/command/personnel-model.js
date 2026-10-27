@@ -118,5 +118,6 @@
     return save({ ...state, stock: { ...state.stock, [key]: amount(value) } });
   }
   app.personnel = { analyze, forRecipe, needs, options, label, setModule, setStock,
+    restore: () => { state = normalize(storageKey ? app.store.get(storageKey, {}) : {}); },
     snapshot: () => JSON.parse(JSON.stringify(state)) };
 })();

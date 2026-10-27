@@ -76,4 +76,11 @@
   app.lifecycle.on('command:ready', 'personnel-planner', 65, bind);
   app.lifecycle.on('catalog:loaded', 'personnel-recipes', 45, render);
   app.onUiUpdate?.(render);
+  window.addEventListener('rhw:transfer-imported', event => {
+    if (!event.detail?.sections?.includes('preferences')) return;
+    model.restore();
+    app.shipyard?.restoreSelection();
+    render();
+    if (typeof renderShipyardControl === 'function') renderShipyardControl();
+  });
 })();

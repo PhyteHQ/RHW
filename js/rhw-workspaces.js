@@ -2874,6 +2874,14 @@ window.__RHW_RECIPE_CATALOG_GZIP_BASE64__ = (window.__RHW_RECIPE_CATALOG_GZIP_BA
     const hull = hulls.find(entry => entry.key === lastHulls[id]) || hulls[0];
     return selectHull(hull.key);
   }
+  function restoreSelection() {
+    app.state.shipyardHull = app.store.get(key, config.defaultHull);
+    const saved = divisionKey ? app.store.get(divisionKey, {}) : {};
+    for (const division of config.divisions) {
+      delete lastHulls[division.key];
+      if (typeof saved?.[division.key] === 'string') lastHulls[division.key] = saved[division.key];
+    }
+  }
 
   function openCalculator() {
     const hull = selectedHull();
@@ -2896,7 +2904,7 @@ window.__RHW_RECIPE_CATALOG_GZIP_BASE64__ = (window.__RHW_RECIPE_CATALOG_GZIP_BA
     });
   }
 
-  app.shipyard = { selectedHull, selectedDivision, selectDivision, requirements, stockRecord, analyze, selectHull, openCalculator };
+  app.shipyard = { selectedHull, selectedDivision, selectDivision, restoreSelection, requirements, stockRecord, analyze, selectHull, openCalculator };
   app.lifecycle.on('command:ready', 'shipyard-selection', 60, bind);
   app.lifecycle.on('catalog:loaded', 'shipyard-requirements', 40, () => {
     plans.clear();
@@ -3028,6 +3036,7 @@ window.__RHW_RECIPE_CATALOG_GZIP_BASE64__ = (window.__RHW_RECIPE_CATALOG_GZIP_BA
     return save({ ...state, stock: { ...state.stock, [key]: amount(value) } });
   }
   app.personnel = { analyze, forRecipe, needs, options, label, setModule, setStock,
+    restore: () => { state = normalize(storageKey ? app.store.get(storageKey, {}) : {}); },
     snapshot: () => JSON.parse(JSON.stringify(state)) };
 })();
 
@@ -3112,6 +3121,13 @@ window.__RHW_RECIPE_CATALOG_GZIP_BASE64__ = (window.__RHW_RECIPE_CATALOG_GZIP_BA
   app.lifecycle.on('command:ready', 'personnel-planner', 65, bind);
   app.lifecycle.on('catalog:loaded', 'personnel-recipes', 45, render);
   app.onUiUpdate?.(render);
+  window.addEventListener('rhw:transfer-imported', event => {
+    if (!event.detail?.sections?.includes('preferences')) return;
+    model.restore();
+    app.shipyard?.restoreSelection();
+    render();
+    if (typeof renderShipyardControl === 'function') renderShipyardControl();
+  });
 })();
 
 ;

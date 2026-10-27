@@ -90,6 +90,14 @@
     const hull = hulls.find(entry => entry.key === lastHulls[id]) || hulls[0];
     return selectHull(hull.key);
   }
+  function restoreSelection() {
+    app.state.shipyardHull = app.store.get(key, config.defaultHull);
+    const saved = divisionKey ? app.store.get(divisionKey, {}) : {};
+    for (const division of config.divisions) {
+      delete lastHulls[division.key];
+      if (typeof saved?.[division.key] === 'string') lastHulls[division.key] = saved[division.key];
+    }
+  }
 
   function openCalculator() {
     const hull = selectedHull();
@@ -112,7 +120,7 @@
     });
   }
 
-  app.shipyard = { selectedHull, selectedDivision, selectDivision, requirements, stockRecord, analyze, selectHull, openCalculator };
+  app.shipyard = { selectedHull, selectedDivision, selectDivision, restoreSelection, requirements, stockRecord, analyze, selectHull, openCalculator };
   app.lifecycle.on('command:ready', 'shipyard-selection', 60, bind);
   app.lifecycle.on('catalog:loaded', 'shipyard-requirements', 40, () => {
     plans.clear();
