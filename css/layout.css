@@ -324,6 +324,7 @@ html.rhw-focus-pass #inventoryStatusPanel .alert-list { padding-inline: 14px; }
 .shipyard-registry-heading { display:flex;justify-content:space-between;gap:12px;margin-bottom:12px;color:var(--muted);font:13px/1.5 var(--font-main); }
 .shipyard-registry-heading small { font:10px/1.5 var(--font-tech);letter-spacing:.08em; }
 .shipyard-silhouette { position:absolute;right:20px;top:30px;width:150px;max-width:44%;height:55px;fill:var(--palette-gold-muted);opacity:.12;pointer-events:none; }
+.shipyard-silhouette.shipyard-silhouette--asteroid-miner { width:96px;height:88px;top:4px; }
 .shipyard-hull-card[aria-pressed="true"] .shipyard-silhouette { opacity:.22; }
 .shipyard-crew-check { display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:16px;margin-bottom:15px;padding:14px 16px;border:1px solid var(--palette-line-bright);background:#14151a; }
 .shipyard-crew-resource { display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;min-width:0; }

@@ -1397,13 +1397,13 @@ function shipyardSilhouette(hull) {
     'civilian-cruiser': 'M10 32H53L70 23H125L148 29L190 36L148 43L125 49H70L53 40H10ZM69 13H88V59H69ZM113 19H126V53H113Z',
     halberd: 'M10 32H75L100 22H132L190 36L132 50H100L75 40H10ZM56 13H100V23H56ZM56 49H100V59H56ZM105 12H117V60H105Z'
   };
-  // Screenshot-derived outlines retain their proportions. Both miners point
-  // right; the Barge keeps the supplied side view.
+  // Screenshot-derived outlines retain their proportions. Each miner is turned
+  // 180 degrees around its viewBox center; the Barge keeps its supplied view.
   const views = { archon: '760 430 530 340', 'asteroid-miner': '0 0 280 300', barge: '670 425 920 215' };
-  const transforms = { archon: 'translate(2050 0) scale(-1 1)', 'asteroid-miner': 'translate(660 -880) rotate(90)' };
+  const transforms = { archon: 'rotate(180 1025 600) translate(2050 0) scale(-1 1)', 'asteroid-miner': 'rotate(180 140 150) translate(660 -880) rotate(90)' };
   const transform = transforms[hull.key] ? ` transform="${transforms[hull.key]}"` : '';
   const fillRule = ['archon', 'barge'].includes(hull.key) ? ' fill-rule="evenodd"' : '';
-  return `<svg class="shipyard-silhouette" viewBox="${views[hull.key] || '0 0 200 72'}" aria-hidden="true" focusable="false"><path${transform}${fillRule} d="${paths[hull.key] || paths.halberd}"/></svg>`;
+  return `<svg class="shipyard-silhouette${hull.key === 'asteroid-miner' ? ' shipyard-silhouette--asteroid-miner' : ''}" viewBox="${views[hull.key] || '0 0 200 72'}" aria-hidden="true" focusable="false"><path${transform}${fillRule} d="${paths[hull.key] || paths.halberd}"/></svg>`;
 }
 
 function shipyardCrewMarkup(analysis) {
