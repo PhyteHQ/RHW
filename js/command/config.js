@@ -67,9 +67,15 @@ const DASHBOARD_CONFIG = Object.freeze({
   ]),
   capitalShipyard: Object.freeze({
     defaultHull: 'archon',
+    divisions: Object.freeze([
+      Object.freeze({ key: 'naval', label: 'NAVAL DIVISION', short: 'NAVAL', subtitle: 'Bretonian Naval Construction' }),
+      Object.freeze({ key: 'mining', label: 'MINING DIVISION', short: 'MINING', subtitle: 'Mining & Extraction' }),
+      Object.freeze({ key: 'civilian', label: 'CIVILIAN DIVISION', short: 'CIVILIAN', subtitle: 'Civilian Shipbuilding' })
+    ]),
     hulls: Object.freeze([
       Object.freeze({
         key: 'archon',
+        division: 'mining',
         label: 'Archon',
         plural: 'Archons',
         name: 'Archon Modular Miner',
@@ -82,6 +88,7 @@ const DASHBOARD_CONFIG = Object.freeze({
       }),
       Object.freeze({
         key: 'dunkirk',
+        division: 'naval',
         label: 'Dunkirk',
         plural: 'Dunkirks',
         name: 'Dunkirk-Class Battleship',
@@ -94,6 +101,7 @@ const DASHBOARD_CONFIG = Object.freeze({
       }),
       Object.freeze({
         key: 'invincible',
+        division: 'naval',
         label: 'Invincible',
         plural: 'Invincibles',
         name: 'Invincible-Class Dreadnought',
@@ -103,7 +111,25 @@ const DASHBOARD_CONFIG = Object.freeze({
         apiCode: 'dsy_br_carrier',
         matches: ['dsy_br_carrier', 'bretonia invincible class dreadnought', 'invincible class dreadnought', 'invincible dreadnought', 'invincible'],
         sellPrice: 8500000
-      })
+      }),
+      Object.freeze({ key: 'asteroid-miner', division: 'mining', label: 'Asteroid Miner', plural: 'Asteroid Miners',
+        name: 'Asteroid Miner', subtitle: 'Mining Vessel', recipeId: 'ship_assembly_asteroid_miner',
+        productId: 'dsy_miner_package_stripped', apiCode: 'dsy_miner', matches: ['asteroid miner'], sellPrice: null }),
+      Object.freeze({ key: 'bustard', division: 'civilian', label: 'Bustard', plural: 'Bustards',
+        name: 'Bustard Civilian Light Carrier', subtitle: 'Civilian Light Carrier', recipeId: 'ship_assembly_dsy_barge',
+        productId: 'dsy_barge_package', apiCode: 'dsy_barge', matches: ['civilian carrier', 'bustard', 'bustard civilian light carrier'], sellPrice: null }),
+      Object.freeze({ key: 'barge', division: 'civilian', label: 'Barge', plural: 'Barges', name: 'Barge', subtitle: 'Cargo Barge',
+        recipeId: 'ship_assembly_dsy_cargobarge_1', productId: 'dsy_cargobarge_1_package', apiCode: 'dsy_cargobarge_1',
+        matches: ['barge', 'cargo barge'], sellPrice: null }),
+      Object.freeze({ key: 'starfliers-explorer', division: 'civilian', label: 'Starfliers Explorer', plural: 'Starfliers Explorers',
+        name: 'Starfliers Compact Explorer', subtitle: 'Compact Explorer', recipeId: 'ship_assembly_starfliers_explorer',
+        productId: 'zoner_exploration_fr_package', apiCode: 'zoner_exploration_fr', matches: ['starfliers compact explorer'], sellPrice: null }),
+      Object.freeze({ key: 'civilian-cruiser', division: 'civilian', label: 'Civilian Cruiser', plural: 'Civilian Cruisers',
+        name: 'Civilian Cruiser', subtitle: 'Civilian Cruiser', recipeId: 'ship_assembly_cv_cruiser',
+        productId: 'cv_cruiser_package', apiCode: 'cv_cruiser', matches: ['civilian cruiser'], sellPrice: null }),
+      Object.freeze({ key: 'halberd', division: 'civilian', label: 'Halberd', plural: 'Halberds',
+        name: 'Halberd Border Worlds Gunship', subtitle: 'Border Worlds Gunship', recipeId: 'ship_assembly_ex_hacker_gunship',
+        productId: 'ex_hacker_gunship_package', apiCode: 'ex_hacker_gunship', matches: ['halberd', 'halberd border worlds gunship', 'border worlds gunship'], sellPrice: null })
     ])
   }),
   exportOrder: ['Multi-Mode Focusing Chamber', 'Reactor Systems', 'Superstructure Systems', 'Gold', 'Niobium'],

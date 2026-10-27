@@ -8,6 +8,9 @@
   const key = app.config.storageKeys.shipyardSelection;
   const plans = new Map();
   app.state.shipyardHull = app.store.get(key, config.defaultHull);
+  const divisionKey = app.config.storageKeys.shipyardDivisions;
+  const savedDivisions = divisionKey ? app.store.get(divisionKey, {}) : {};
+  const lastHulls = savedDivisions && typeof savedDivisions === 'object' && !Array.isArray(savedDivisions) ? { ...savedDivisions } : {};
 
   function selectedHull() {
     return config.hulls.find(hull => hull.key === app.state.shipyardHull)
@@ -19,7 +22,8 @@
     if (plans.has(hull.key)) return plans.get(hull.key);
     try {
       const recipe = core.recipe(hull.recipeId);
-      if (!recipe || !recipe.outputs.some(output => output.id === hull.productId)) return null;
+      if (!recipe || !core.authorizedFor(recipe, app.config.operations.defaultAffiliation)
+        || !recipe.outputs.some(output => output.id === hull.productId)) return null;
       const plan = core.buildPlan({ productId: hull.productId, recipeId: hull.recipeId,
         quantity: 1, affiliationId: app.config.operations.defaultAffiliation,
         recursive: false, useInventory: false });
@@ -60,8 +64,9 @@
     const bottleneck = known ? [...materials].sort((a, b) => a.coverage - b.coverage
       || b.gap / b.required - a.gap / a.required || b.gap - a.gap)[0] : null;
     const prerequisites = needs.prerequisites.map(entry => {
-      const { stock } = stockRecord(entry, snapshot);
-      return { ...entry, stock, state: stock === null ? 'unknown' : stock >= entry.qty ? 'ok' : 'critical' };
+      const staffing = app.personnel?.forRecipe(needs.recipe).find(row => row.id === entry.id);
+      const stock = staffing ? staffing.free : stockRecord(entry, snapshot).stock;
+      return { ...entry, stock, staffing, state: stock === null ? 'unknown' : stock >= entry.qty && (!staffing || staffing.gap === 0) ? 'ok' : 'critical' };
     });
     return { hull, snapshot, recipeReady: true, recipe: needs.recipe, materials, prerequisites, buildable, nextHull, bottleneck };
   }
@@ -70,10 +75,28 @@
     const hull = config.hulls.find(entry => entry.key === hullKey);
     if (!hull) return false;
     app.state.shipyardHull = hull.key;
+    lastHulls[hull.division] = hull.key;
     app.store.set(key, hull.key);
+    if (divisionKey) app.store.set(divisionKey, lastHulls);
     window.renderAll?.();
     app.requestUiUpdate?.();
     return true;
+  }
+
+  function selectedDivision() { return config.divisions.find(entry => entry.key === selectedHull().division); }
+  function selectDivision(id) {
+    const hulls = config.hulls.filter(hull => hull.division === id);
+    if (!hulls.length) return false;
+    const hull = hulls.find(entry => entry.key === lastHulls[id]) || hulls[0];
+    return selectHull(hull.key);
+  }
+  function restoreSelection() {
+    app.state.shipyardHull = app.store.get(key, config.defaultHull);
+    const saved = divisionKey ? app.store.get(divisionKey, {}) : {};
+    for (const division of config.divisions) {
+      delete lastHulls[division.key];
+      if (typeof saved?.[division.key] === 'string') lastHulls[division.key] = saved[division.key];
+    }
   }
 
   function openCalculator() {
@@ -90,12 +113,14 @@
     mount.dataset.shipyardBound = 'true';
     mount.addEventListener('click', event => {
       const selection = event.target.closest('[data-shipyard-select]');
-      if (selection) selectHull(selection.dataset.shipyardSelect);
+      const division = event.target.closest('[data-shipyard-division]');
+      if (division) selectDivision(division.dataset.shipyardDivision);
+      else if (selection) selectHull(selection.dataset.shipyardSelect);
       else if (event.target.closest('[data-shipyard-calculate]')) openCalculator();
     });
   }
 
-  app.shipyard = { selectedHull, requirements, stockRecord, analyze, selectHull, openCalculator };
+  app.shipyard = { selectedHull, selectedDivision, selectDivision, restoreSelection, requirements, stockRecord, analyze, selectHull, openCalculator };
   app.lifecycle.on('command:ready', 'shipyard-selection', 60, bind);
   app.lifecycle.on('catalog:loaded', 'shipyard-requirements', 40, () => {
     plans.clear();

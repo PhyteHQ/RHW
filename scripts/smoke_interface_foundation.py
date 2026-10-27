@@ -21,7 +21,7 @@ STOCK = {'Basic Alloy': 19129, 'Consumer Goods': 24793, 'Food Rations': 22451,
          'Multi-Mode Focusing Chamber': 2000, 'Reactor Systems': 500,
          'Superstructure Systems': 110, 'Avionics Systems': 420, 'Interior Systems': 300,
          'Propulsion Systems': 350, 'Exotic Systems': 250,
-         'Crew': 1200, 'Archon Design Schematics': 1}
+         'Crew': 1800, 'Archon Design Schematics': 1}
 DATA = [{'name': 'Resolution Heavy Works', 'system_name': 'New London', 'money': 46385683,
          'cargospace': 63777, 'health': 24000000,
          'shop_items': [{'name': k, 'quantity': v, 'sell_price': 100, 'buy_price': 80} for k, v in STOCK.items()]},
@@ -191,8 +191,8 @@ def main():
                         touch:cards.every(c=>c.getBoundingClientRect().height>=44),
                         stockFirst:cards[0].getBoundingClientRect().top<shipyardRequirements.getBoundingClientRect().top};
                     })()""")
-                    assert yard['cards'] == 3 and yard['rows'] == 5 and yard['selected'] == 'archon' and yard['buildable'] == 0, (width, yard)
-                    assert yard['order'] == ['archon', 'dunkirk', 'invincible'], (width, yard)
+                    assert yard['cards'] == 2 and yard['rows'] == 5 and yard['selected'] == 'archon' and yard['buildable'] == 0, (width, yard)
+                    assert yard['order'] == ['archon', 'asteroid-miner'], (width, yard)
                     assert yard['compact'] and yard['fits'] and yard['touch'] and yard['stockFirst'], (width, yard)
                 if width <= 760 and workspace == 'pricecheck':
                     # A phone must show the result at the start of each compact
@@ -239,6 +239,7 @@ def main():
         shipyard = base.ev(cdp, """(()=>{
           RHWV4.navigate('command','shipyard');
           const states=['dunkirk','invincible','archon'].map(key=>{
+            document.querySelector(`[data-shipyard-division="${key==='archon'?'mining':'naval'}"]`).click();
             const button=document.querySelector(`[data-shipyard-select="${key}"]`);button.focus();button.click();
             renderAll();
             const a=RHWV4.shipyard.analyze();
@@ -256,6 +257,34 @@ def main():
             assert state['focus'] and state['prerequisites'], state
         assert shipyard['stored'] == 'archon' and shipyard['route'] == '#operations/calculator', shipyard
         assert shipyard['recipe'] == 'ship_assembly_medium_miner' and shipyard['iff'] == 'br_m_grp' and shipyard['quantity'] == 1, shipyard
+
+        # Civilian selection, staffing reservations and the mobile planner use
+        # the shipped DOM and real change events, with synthetic stock only.
+        personnel = base.ev(cdp, """(()=>{
+          const app=RHWV4;
+          app.navigate('command','shipyard');
+          document.querySelector('[data-shipyard-division="civilian"]').click();
+          const civilians=document.querySelectorAll('[data-shipyard-select]').length;
+          document.querySelector('[data-shipyard-select="halberd"]').click();
+          const crew=app.shipyard.requirements().prerequisites.find(p=>p.id==='commodity_crew').qty;
+          document.querySelector('[data-personnel-open]').click();
+          const opened=document.body.dataset.commandNode==='production'&&personnelPlanDetails.open;
+          for(const key of ['refinery','smelter','foundry','shipyard'])document.querySelector(`[data-personnel-module="${key}"]`).click();
+          const recipe=document.querySelector('[data-personnel-recipe="shipyard"]');
+          recipe.value='ship_part_reactor';recipe.dispatchEvent(new Event('change',{bubbles:true}));
+          const stock=document.querySelector('[data-personnel-stock="crew"]');stock.focus();stock.value='1400';stock.dispatchEvent(new Event('change',{bubbles:true}));
+          const totals=app.personnel.analyze().resources.map(r=>r.required);
+          const focus=document.activeElement?.dataset.personnelStock==='crew';
+          const stayedOpen=personnelPlanDetails.open;
+          const touch=[...document.querySelectorAll('#personnelPlanner select,#personnelPlanner input[type="number"],.personnel-enable')].filter(e=>!e.disabled).every(e=>e.getBoundingClientRect().height>=44);
+          const fits=document.documentElement.scrollWidth<=innerWidth+1;
+          for(const key of ['refinery','smelter','foundry','shipyard'])app.personnel.setModule(key,{enabled:false});
+          app.personnel.setStock('crew','');app.personnel.setStock('scientists','');
+          personnelPlanDetails.open=false;
+          app.shipyard.selectHull('archon');
+          return {civilians,crew,opened,totals,focus,stayedOpen,touch,fits};
+        })()""")
+        assert personnel == {'civilians':5,'crew':200,'opened':True,'totals':[1400,200],'focus':True,'stayedOpen':True,'touch':True,'fits':True}, personnel
 
         # Deliberately long names and seven-digit amounts exercise the actual
         # card boundaries, not just document overflow (cards can clip internally).

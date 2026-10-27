@@ -138,9 +138,15 @@ const DASHBOARD_CONFIG = Object.freeze({
   ]),
   capitalShipyard: Object.freeze({
     defaultHull: 'archon',
+    divisions: Object.freeze([
+      Object.freeze({ key: 'naval', label: 'NAVAL DIVISION', short: 'NAVAL', subtitle: 'Bretonian Naval Construction' }),
+      Object.freeze({ key: 'mining', label: 'MINING DIVISION', short: 'MINING', subtitle: 'Mining & Extraction' }),
+      Object.freeze({ key: 'civilian', label: 'CIVILIAN DIVISION', short: 'CIVILIAN', subtitle: 'Civilian Shipbuilding' })
+    ]),
     hulls: Object.freeze([
       Object.freeze({
         key: 'archon',
+        division: 'mining',
         label: 'Archon',
         plural: 'Archons',
         name: 'Archon Modular Miner',
@@ -153,6 +159,7 @@ const DASHBOARD_CONFIG = Object.freeze({
       }),
       Object.freeze({
         key: 'dunkirk',
+        division: 'naval',
         label: 'Dunkirk',
         plural: 'Dunkirks',
         name: 'Dunkirk-Class Battleship',
@@ -165,6 +172,7 @@ const DASHBOARD_CONFIG = Object.freeze({
       }),
       Object.freeze({
         key: 'invincible',
+        division: 'naval',
         label: 'Invincible',
         plural: 'Invincibles',
         name: 'Invincible-Class Dreadnought',
@@ -174,7 +182,25 @@ const DASHBOARD_CONFIG = Object.freeze({
         apiCode: 'dsy_br_carrier',
         matches: ['dsy_br_carrier', 'bretonia invincible class dreadnought', 'invincible class dreadnought', 'invincible dreadnought', 'invincible'],
         sellPrice: 8500000
-      })
+      }),
+      Object.freeze({ key: 'asteroid-miner', division: 'mining', label: 'Asteroid Miner', plural: 'Asteroid Miners',
+        name: 'Asteroid Miner', subtitle: 'Mining Vessel', recipeId: 'ship_assembly_asteroid_miner',
+        productId: 'dsy_miner_package_stripped', apiCode: 'dsy_miner', matches: ['asteroid miner'], sellPrice: null }),
+      Object.freeze({ key: 'bustard', division: 'civilian', label: 'Bustard', plural: 'Bustards',
+        name: 'Bustard Civilian Light Carrier', subtitle: 'Civilian Light Carrier', recipeId: 'ship_assembly_dsy_barge',
+        productId: 'dsy_barge_package', apiCode: 'dsy_barge', matches: ['civilian carrier', 'bustard', 'bustard civilian light carrier'], sellPrice: null }),
+      Object.freeze({ key: 'barge', division: 'civilian', label: 'Barge', plural: 'Barges', name: 'Barge', subtitle: 'Cargo Barge',
+        recipeId: 'ship_assembly_dsy_cargobarge_1', productId: 'dsy_cargobarge_1_package', apiCode: 'dsy_cargobarge_1',
+        matches: ['barge', 'cargo barge'], sellPrice: null }),
+      Object.freeze({ key: 'starfliers-explorer', division: 'civilian', label: 'Starfliers Explorer', plural: 'Starfliers Explorers',
+        name: 'Starfliers Compact Explorer', subtitle: 'Compact Explorer', recipeId: 'ship_assembly_starfliers_explorer',
+        productId: 'zoner_exploration_fr_package', apiCode: 'zoner_exploration_fr', matches: ['starfliers compact explorer'], sellPrice: null }),
+      Object.freeze({ key: 'civilian-cruiser', division: 'civilian', label: 'Civilian Cruiser', plural: 'Civilian Cruisers',
+        name: 'Civilian Cruiser', subtitle: 'Civilian Cruiser', recipeId: 'ship_assembly_cv_cruiser',
+        productId: 'cv_cruiser_package', apiCode: 'cv_cruiser', matches: ['civilian cruiser'], sellPrice: null }),
+      Object.freeze({ key: 'halberd', division: 'civilian', label: 'Halberd', plural: 'Halberds',
+        name: 'Halberd Border Worlds Gunship', subtitle: 'Border Worlds Gunship', recipeId: 'ship_assembly_ex_hacker_gunship',
+        productId: 'ex_hacker_gunship_package', apiCode: 'ex_hacker_gunship', matches: ['halberd', 'halberd border worlds gunship', 'border worlds gunship'], sellPrice: null })
     ])
   }),
   exportOrder: ['Multi-Mode Focusing Chamber', 'Reactor Systems', 'Superstructure Systems', 'Gold', 'Niobium'],
@@ -1357,6 +1383,34 @@ function shipyardTrafficState(value) {
   return count <= 0 ? 'critical' : (count === 1 ? 'low' : 'ok');
 }
 
+// Decorative hull schematics keep the selection recognizable without adding
+// remote image dependencies to an offline-capable ship registry.
+function shipyardSilhouette(hull) {
+  const paths = {
+    archon: 'M12 32H40L52 20H108L120 28H178L190 36L178 44H120L108 52H52L40 40H12ZM60 14H75V58H60ZM91 18H103V54H91ZM129 21H139V51H129Z',
+    'asteroid-miner': 'M15 30H59L72 21H137L152 30H184V42H152L137 51H72L59 42H15ZM53 12H66V60H53ZM105 12H118V60H105ZM148 18H160V54H148Z',
+    dunkirk: 'M10 33L38 27H73L88 18H117L139 27H164L192 36L164 45H139L117 54H88L73 45H38L10 39ZM89 9H103V63H89Z',
+    invincible: 'M10 26H64L86 14H137L162 24H187V48H162L137 58H86L64 46H10ZM26 12H130V20H26ZM26 52H130V60H26ZM76 26H156V46H76Z',
+    bustard: 'M14 24H69L82 14H144L185 29V43L144 58H82L69 48H14ZM31 11H119V20H31ZM31 52H119V61H31ZM89 27H150V45H89Z',
+    barge: 'M10 26H41V18H154L186 29V43L154 54H41V46H10ZM52 23H72V49H52ZM81 23H101V49H81ZM110 23H130V49H110ZM139 23H154V49H139Z',
+    'starfliers-explorer': 'M18 33H67L84 18H119L149 28L190 36L149 44L119 54H84L67 39H18ZM86 8H98V64H86ZM129 20H138V52H129Z',
+    'civilian-cruiser': 'M10 32H53L70 23H125L148 29L190 36L148 43L125 49H70L53 40H10ZM69 13H88V59H69ZM113 19H126V53H113Z',
+    halberd: 'M10 32H75L100 22H132L190 36L132 50H100L75 40H10ZM56 13H100V23H56ZM56 49H100V59H56ZM105 12H117V60H105Z'
+  };
+  return `<svg class="shipyard-silhouette" viewBox="0 0 200 72" aria-hidden="true" focusable="false"><path d="${paths[hull.key] || paths.halberd}"/></svg>`;
+}
+
+function shipyardCrewMarkup(analysis) {
+  if (!analysis?.recipeReady) return '';
+  const staff = window.RHWV4?.personnel?.forRecipe(analysis.recipe);
+  if (!staff) return '';
+  return `<div class="shipyard-crew-check" aria-label="Ship personnel check">${staff.filter(row => row.required > 0).map(row =>
+    `<div class="shipyard-crew-resource" data-state="${row.gap === null ? 'unknown' : row.gap > 0 ? 'short' : 'ready'}"><span><small>${row.name.toUpperCase()} / SHIP</small><strong>${number(row.required)}</strong></span>
+      <span><small>TOTAL WITH CORE &amp; PLAN</small><strong>${number(row.total)}</strong></span>
+      <span><small>${row.amount === null ? 'STOCK UNKNOWN' : `${row.source} STOCK ${number(row.amount)}`}</small><strong>${row.gap === null ? 'ENTER STOCK' : row.gap > 0 ? `${number(row.gap)} SHORT` : 'COVERED'}</strong></span></div>`
+  ).join('')}<button type="button" data-personnel-open>PERSONNEL PLANNER <span aria-hidden="true">↗</span></button></div>`;
+}
+
 function renderShipyardControl() {
   const mount = els.shipyardControl;
   if (!mount) return;
@@ -1366,9 +1420,10 @@ function renderShipyardControl() {
   const analysis = yard?.analyze();
   const snapshot = analysis?.snapshot || telemetrySnapshot();
   const selected = yard?.selectedHull() || CAPITAL_SHIPYARD.hulls.find(hull => hull.key === CAPITAL_SHIPYARD.defaultHull);
+  const division = CAPITAL_SHIPYARD.divisions.find(entry => entry.key === selected.division);
   mount.classList.toggle('stale', snapshot.stale);
 
-  const cards = CAPITAL_SHIPYARD.hulls.map(hull => {
+  const cards = CAPITAL_SHIPYARD.hulls.filter(hull => hull.division === division.key).map(hull => {
     const record = yard?.stockRecord(hull, snapshot) || { item: null, stock: null };
     const boundary = record.item ? apiStockBoundary(record.item) : null;
     const livePrice = record.item ? priceBuy(record.item) : null;
@@ -1377,7 +1432,7 @@ function renderShipyardControl() {
     const stockText = record.stock !== null && boundary?.valid ? `${stock} / ${number(boundary.max)}` : stock;
     return `<button type="button" class="shipyard-hull-card" data-shipyard-select="${hull.key}"
       aria-pressed="${selected?.key === hull.key}" aria-controls="shipyardRequirements" aria-label="${escapeHTML(hull.name)} build requirements">
-      <span class="shipyard-hull-name">${escapeHTML(hull.label)}</span>
+      ${shipyardSilhouette(hull)}<span class="shipyard-hull-name">${escapeHTML(hull.label)}</span>
       <span class="shipyard-hull-type">${escapeHTML(hull.subtitle)}</span>
       <span class="shipyard-hull-indicator" aria-hidden="true"></span>
       <span class="shipyard-hull-stock-label">${record.stock === null ? 'STOCK UNKNOWN' : boundary?.valid ? 'STOCK / MAX' : 'IN STOCK'}</span>
@@ -1398,10 +1453,10 @@ function renderShipyardControl() {
       <td data-label="MISSING" class="shipyard-material-gap">${row.gap > 0 ? `<span class="shipyard-shortage">+${number(row.gap)}</span>` : '—'}</td>
     </tr>`).join('');
     const prerequisiteRows = prerequisites.map(row => `<li class="shipyard-prerequisite ${row.state}">
-      <span><strong>${escapeHTML(row.name)}</strong><small>${number(row.qty)} required · not consumed</small></span>
-      <span class="shipyard-prerequisite-status">${row.state === 'unknown' ? 'NOT REPORTED' : row.state === 'ok' ? 'AVAILABLE' : `MISSING ${number(row.qty - row.stock)}`}</span>
+      <span><strong>${escapeHTML(row.name)}</strong><small>${number(row.qty)} required · not consumed${row.staffing ? ' · after core & planned jobs' : ''}</small></span>
+      <span class="shipyard-prerequisite-status">${row.state === 'unknown' ? 'NOT REPORTED' : row.state === 'ok' ? 'AVAILABLE' : `MISSING ${number(row.staffing?.gap ?? row.qty - row.stock)}`}</span>
     </li>`).join('');
-    details = `<div class="shipyard-decision-strip" aria-label="${escapeHTML(hull.label)} material coverage">
+    details = `${shipyardCrewMarkup(analysis)}<div class="shipyard-decision-strip" aria-label="${escapeHTML(hull.label)} material coverage">
         <div class="shipyard-decision-metric shipyard-coverage state-${state}"><small>MATERIAL FOR</small><strong>${buildable === null ? 'UNKNOWN' : `${number(buildable)} <span>${escapeHTML(buildable === 1 ? hull.label : hull.plural).toUpperCase()}</span>`}</strong></div>
         <div class="shipyard-decision-metric"><small>BOTTLENECK</small><strong>${bottleneck ? escapeHTML(bottleneck.name) : 'STOCK UNKNOWN'}</strong></div>
         <div class="shipyard-decision-metric shipyard-next-ship"><small>${nextHull === null ? 'NEXT SHIP' : `NEXT SHIP #${number(nextHull)}`}</small><strong>${bottleneck ? `+${number(bottleneck.gap)} <span>${escapeHTML(bottleneck.name)}</span>` : 'AWAITING STOCK'}</strong></div>
@@ -1424,7 +1479,12 @@ function renderShipyardControl() {
       <div class="section-freshness" data-freshness-badge hidden></div>
     </div>
     <div class="shipyard-control-grid">
-      <section class="shipyard-control-section shipyard-registry-panel" aria-label="Select a ship">
+      <div class="shipyard-divisions" role="group" aria-label="Shipyard divisions">${CAPITAL_SHIPYARD.divisions.map(entry =>
+        `<button type="button" data-shipyard-division="${entry.key}" aria-pressed="${entry.key === division.key}" aria-controls="shipyardRegistry">
+          <span class="shipyard-division-title">${escapeHTML(entry.label)}</span><span class="shipyard-division-short">${escapeHTML(entry.short)}</span>
+          <small>${escapeHTML(entry.subtitle)}</small><span class="shipyard-division-count">${CAPITAL_SHIPYARD.hulls.filter(hull => hull.division === entry.key).length} HULLS</span></button>`).join('')}</div>
+      <section class="shipyard-control-section shipyard-registry-panel" id="shipyardRegistry" aria-label="${escapeHTML(division.label)} ships">
+        <div class="shipyard-registry-heading"><span>${escapeHTML(division.subtitle)}</span><small>SELECT HULL</small></div>
         <div class="shipyard-hull-grid" role="group" aria-label="Ship inventory and selection">${cards}</div>
       </section>
       <section class="shipyard-control-section shipyard-requirements-panel" id="shipyardRequirements" aria-labelledby="shipyardRequirementsTitle">
@@ -1437,6 +1497,8 @@ function renderShipyardControl() {
     const active = document.activeElement;
     const focusSelector = mount.contains(active) ? active?.dataset?.shipyardSelect
       ? `[data-shipyard-select="${active.dataset.shipyardSelect}"]`
+      : active?.dataset?.shipyardDivision ? `[data-shipyard-division="${active.dataset.shipyardDivision}"]`
+      : active?.hasAttribute('data-personnel-open') ? '[data-personnel-open]'
       : active?.hasAttribute('data-shipyard-calculate') ? '[data-shipyard-calculate]' : null : null;
     mount.innerHTML = markup;
     mount._shipyardMarkup = markup;
