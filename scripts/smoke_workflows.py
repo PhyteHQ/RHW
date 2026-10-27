@@ -303,10 +303,12 @@ def test_pr3_decision_ui(cdp, workspace, node):
             labels:[...(strip?.querySelectorAll('small')||[])].map(x=>x.textContent.trim()),
             mobileLabels:[...document.querySelectorAll('.shipyard-material-row td')].every(x=>Boolean(x.dataset.label)),
             ships:document.querySelectorAll('[data-shipyard-select]').length,
+            division:document.querySelector('[data-shipyard-division][aria-pressed="true"]')?.dataset.shipyardDivision,
+            divisions:document.querySelectorAll('[data-shipyard-division]').length,
             plannerAbsent:!planner,stockSections:grid?.querySelectorAll('.shipyard-control-section').length||0
           };
         })()""")
-        if result.get("metrics") != 3 or result.get("labels", [])[:2] != ["MATERIAL FOR", "BOTTLENECK"] or result.get("ships") != 3 or not result.get("mobileLabels") or not result.get("plannerAbsent") or result.get("stockSections") != 2:
+        if result.get("metrics") != 3 or result.get("labels", [])[:2] != ["MATERIAL FOR", "BOTTLENECK"] or result.get("ships") != {"naval":2,"mining":2,"civilian":5}.get(result.get("division")) or result.get("divisions") != 3 or not result.get("mobileLabels") or not result.get("plannerAbsent") or result.get("stockSections") != 2:
             raise RuntimeError(f"PR3 Shipyard decision UI failed: {result}")
         print("PR3 smoke passed: Shipyard readiness strip + stock and hull registry without planner")
     elif (workspace, node) == ("command", "production"):

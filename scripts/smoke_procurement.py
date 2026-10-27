@@ -121,6 +121,7 @@ def main() -> int:
             raise RuntimeError(f"Cached quotation provenance failed: {cached}")
         ship_value = base.ev(cdp, """(()=>{
           RHWV4.navigate('command','shipyard');
+          document.querySelector('[data-shipyard-division="naval"]').click();
           document.querySelector('[data-shipyard-select="dunkirk"]').click();
           document.querySelector('[data-shipyard-calculate]').click();
           document.getElementById('opsLoadRhwPrices').click();

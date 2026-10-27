@@ -86,6 +86,8 @@ const RHW_APP_CONFIG = Object.freeze({
     commandNode: 'rhw-webapp-v4:command-node',
     inventoryView: 'rhw-webapp-v4:inventory-view',
     shipyardSelection: 'rhw-webapp-v4:shipyard-selection',
+    shipyardDivisions: 'rhw-webapp-v4:shipyard-divisions',
+    personnelPlan: 'rhw-webapp-v4:personnel-plan',
     operationsNode: 'rhw-webapp-v4:operations-node',
     calculatorState: 'rhw-webapp-v4:calculator-state',
     priceCheckOverrides: 'rhw-webapp-v4:price-check-overrides',
@@ -942,7 +944,7 @@ const RHW_APP_CONFIG = Object.freeze({
 
   const preferenceKeys = Object.freeze([
     'activeWorkspace', 'commandNode', 'inventoryView', 'operationsNode', 'commsNode', 'tickerComposer',
-    'commsMobileView', 'shipyardSelection'
+    'commsMobileView', 'shipyardSelection', 'shipyardDivisions', 'personnelPlan'
   ]);
   const transferSectionKeys = Object.freeze([
     'drafts', 'senders', 'current', 'priceProfiles', 'priceCheckOverrides', 'shipyardPlanner', 'newswireDraft', 'productionOrders', 'preferences'
@@ -2790,6 +2792,9 @@ window.__RHW_RECIPE_CATALOG_GZIP_BASE64__ = (window.__RHW_RECIPE_CATALOG_GZIP_BA
   const key = app.config.storageKeys.shipyardSelection;
   const plans = new Map();
   app.state.shipyardHull = app.store.get(key, config.defaultHull);
+  const divisionKey = app.config.storageKeys.shipyardDivisions;
+  const savedDivisions = divisionKey ? app.store.get(divisionKey, {}) : {};
+  const lastHulls = savedDivisions && typeof savedDivisions === 'object' && !Array.isArray(savedDivisions) ? { ...savedDivisions } : {};
 
   function selectedHull() {
     return config.hulls.find(hull => hull.key === app.state.shipyardHull)
@@ -2801,7 +2806,8 @@ window.__RHW_RECIPE_CATALOG_GZIP_BASE64__ = (window.__RHW_RECIPE_CATALOG_GZIP_BA
     if (plans.has(hull.key)) return plans.get(hull.key);
     try {
       const recipe = core.recipe(hull.recipeId);
-      if (!recipe || !recipe.outputs.some(output => output.id === hull.productId)) return null;
+      if (!recipe || !core.authorizedFor(recipe, app.config.operations.defaultAffiliation)
+        || !recipe.outputs.some(output => output.id === hull.productId)) return null;
       const plan = core.buildPlan({ productId: hull.productId, recipeId: hull.recipeId,
         quantity: 1, affiliationId: app.config.operations.defaultAffiliation,
         recursive: false, useInventory: false });
@@ -2842,8 +2848,9 @@ window.__RHW_RECIPE_CATALOG_GZIP_BASE64__ = (window.__RHW_RECIPE_CATALOG_GZIP_BA
     const bottleneck = known ? [...materials].sort((a, b) => a.coverage - b.coverage
       || b.gap / b.required - a.gap / a.required || b.gap - a.gap)[0] : null;
     const prerequisites = needs.prerequisites.map(entry => {
-      const { stock } = stockRecord(entry, snapshot);
-      return { ...entry, stock, state: stock === null ? 'unknown' : stock >= entry.qty ? 'ok' : 'critical' };
+      const staffing = app.personnel?.forRecipe(needs.recipe).find(row => row.id === entry.id);
+      const stock = staffing ? staffing.free : stockRecord(entry, snapshot).stock;
+      return { ...entry, stock, staffing, state: stock === null ? 'unknown' : stock >= entry.qty && (!staffing || staffing.gap === 0) ? 'ok' : 'critical' };
     });
     return { hull, snapshot, recipeReady: true, recipe: needs.recipe, materials, prerequisites, buildable, nextHull, bottleneck };
   }
@@ -2852,10 +2859,20 @@ window.__RHW_RECIPE_CATALOG_GZIP_BASE64__ = (window.__RHW_RECIPE_CATALOG_GZIP_BA
     const hull = config.hulls.find(entry => entry.key === hullKey);
     if (!hull) return false;
     app.state.shipyardHull = hull.key;
+    lastHulls[hull.division] = hull.key;
     app.store.set(key, hull.key);
+    if (divisionKey) app.store.set(divisionKey, lastHulls);
     window.renderAll?.();
     app.requestUiUpdate?.();
     return true;
+  }
+
+  function selectedDivision() { return config.divisions.find(entry => entry.key === selectedHull().division); }
+  function selectDivision(id) {
+    const hulls = config.hulls.filter(hull => hull.division === id);
+    if (!hulls.length) return false;
+    const hull = hulls.find(entry => entry.key === lastHulls[id]) || hulls[0];
+    return selectHull(hull.key);
   }
 
   function openCalculator() {
@@ -2872,18 +2889,229 @@ window.__RHW_RECIPE_CATALOG_GZIP_BASE64__ = (window.__RHW_RECIPE_CATALOG_GZIP_BA
     mount.dataset.shipyardBound = 'true';
     mount.addEventListener('click', event => {
       const selection = event.target.closest('[data-shipyard-select]');
-      if (selection) selectHull(selection.dataset.shipyardSelect);
+      const division = event.target.closest('[data-shipyard-division]');
+      if (division) selectDivision(division.dataset.shipyardDivision);
+      else if (selection) selectHull(selection.dataset.shipyardSelect);
       else if (event.target.closest('[data-shipyard-calculate]')) openCalculator();
     });
   }
 
-  app.shipyard = { selectedHull, requirements, stockRecord, analyze, selectHull, openCalculator };
+  app.shipyard = { selectedHull, selectedDivision, selectDivision, requirements, stockRecord, analyze, selectHull, openCalculator };
   app.lifecycle.on('command:ready', 'shipyard-selection', 60, bind);
   app.lifecycle.on('catalog:loaded', 'shipyard-requirements', 40, () => {
     plans.clear();
     window.renderAll?.();
     app.requestUiUpdate?.();
   });
+})();
+
+;
+
+/* SOURCE: js/command/personnel-model.js */
+/* Local staffing scenarios. Discovery reserves 200 crew/core level, then each
+   running factory reserves its recipe's catalysts for that tick. See
+   docs/personnel-planner.md for the primary server-code references. */
+(function initRhwPersonnel() {
+  'use strict';
+  const app = window.RHWV4;
+  const core = app?.operationsCore;
+  if (!core) return;
+  const storageKey = app.config.storageKeys.personnelPlan;
+  const resources = Object.freeze([
+    { key: 'crew', id: 'commodity_crew', name: 'Crew' },
+    { key: 'scientists', id: 'commodity_scientists', name: 'Scientists' }
+  ]);
+  const modules = Object.freeze([
+    { key: 'refinery', name: 'Industrial Refinery', defaultRecipe: 'recipe_gold_advanced',
+      accepts: r => /Refining$/.test(r.craftType) && !['ScrapRefining', 'ExoticRefining', 'HeavyWaterRefining'].includes(r.craftType) },
+    { key: 'smelter', name: 'Scrap Smelter', defaultRecipe: 'recipe_scrap_advanced', accepts: r => r.craftType === 'ScrapRefining' },
+    { key: 'shipyard', name: 'Modular Shipyard', defaultRecipe: 'ship_assembly_medium_miner',
+      accepts: r => r.craftType === 'ShipyardComponent' || CAPITAL_SHIPYARD.hulls.some(h => h.recipeId === r.id) },
+    { key: 'foundry', name: 'Exotic Weapons Components Foundry', defaultRecipe: 'recipe_weapon_part_focusing_chamber',
+      accepts: r => r.craftType === 'WeaponComponents' }
+  ]);
+  function amount(value) {
+    if (!['number', 'string'].includes(typeof value) || (typeof value === 'string' && !value.trim())) return null;
+    const n = Number(value);
+    return Number.isSafeInteger(n) && n >= 0 ? n : null;
+  }
+  function normalize(raw) {
+    const object = raw && typeof raw === 'object' && !Array.isArray(raw) ? raw : {};
+    return { version: 1, coreLevel: 4,
+      stock: Object.fromEntries(resources.map(r => [r.key, amount(object.stock?.[r.key])])),
+      modules: Object.fromEntries(modules.map(m => [m.key, {
+        enabled: object.modules?.[m.key]?.enabled === true,
+        recipeId: typeof object.modules?.[m.key]?.recipeId === 'string' ? object.modules[m.key].recipeId : m.defaultRecipe
+      }])) };
+  }
+  let state = normalize(storageKey ? app.store.get(storageKey, {}) : {});
+  function options(module) {
+    return (core.state.catalog?.recipes || []).filter(r => module.accepts(r)
+      && core.authorizedFor(r, app.config.operations.defaultAffiliation));
+  }
+  function label(recipe) {
+    if (!recipe) return 'RECIPE UNAVAILABLE';
+    const alias = app.operations?.recipeAliases?.[recipe.id];
+    const mode = /_(basic|advanced|bulk|efficient)$/.exec(recipe.id)?.[1];
+    return alias?.name || `${recipe.name}${mode ? ` · ${mode.toUpperCase()}` : ''}`;
+  }
+  function needs(recipe) {
+    if (!recipe || !core.authorizedFor(recipe, app.config.operations.defaultAffiliation)) return null;
+    const result = { crew: 0, scientists: 0 };
+    for (const r of resources) {
+      for (const entry of recipe.catalysts || []) if (entry.id === r.id) {
+        const n = amount(entry.qty);
+        if (n === null) return null;
+        result[r.key] += n;
+      }
+    }
+    return result;
+  }
+  function available(resource) {
+    const manual = state.stock[resource.key];
+    if (manual !== null) return { amount: manual, source: 'MANUAL', stale: false };
+    const snapshot = telemetrySnapshot();
+    if (!snapshot.available) return { amount: null, source: 'NOT REPORTED', stale: false };
+    const stock = app.shipyard?.stockRecord({ id: resource.id, name: resource.name }, snapshot)?.stock;
+    return { amount: amount(stock), source: amount(stock) === null ? 'NOT REPORTED' : snapshot.stale ? 'CACHED' : 'LIVE', stale: snapshot.stale };
+  }
+  function analyze(excludeModule = '') {
+    const required = { crew: state.coreLevel * 200, scientists: 0 };
+    let complete = true;
+    const rows = modules.map(module => {
+      const selection = state.modules[module.key];
+      const recipe = options(module).find(r => r.id === selection.recipeId);
+      const personnel = needs(recipe);
+      if (selection.enabled && module.key !== excludeModule) {
+        if (!personnel) complete = false;
+        else for (const r of resources) required[r.key] += personnel[r.key];
+      }
+      return { ...module, ...selection, recipe, personnel };
+    });
+    return { coreLevel: state.coreLevel, coreCrew: state.coreLevel * 200, complete, rows,
+      resources: resources.map(r => {
+        const stock = available(r);
+        const total = complete ? required[r.key] : null;
+        return { ...r, ...stock, required: total,
+          gap: total === null || stock.amount === null ? null : Math.max(0, total - stock.amount),
+          spare: total === null || stock.amount === null ? null : Math.max(0, stock.amount - total) };
+      }) };
+  }
+  function forRecipe(recipe, moduleKey = 'shipyard') {
+    const plan = analyze(moduleKey), personnel = needs(recipe);
+    return resources.map(r => {
+      const stock = plan.resources.find(entry => entry.key === r.key);
+      const required = personnel?.[r.key] ?? null;
+      const total = required === null || stock.required === null ? null : stock.required + required;
+      const free = stock.amount === null || stock.required === null ? null : Math.max(0, stock.amount - stock.required);
+      return { ...stock, required, reserved: stock.required, total, free,
+        gap: stock.amount === null || total === null ? null : Math.max(0, total - stock.amount) };
+    });
+  }
+  function save(next) {
+    const normalized = normalize(next);
+    if (storageKey && app.store.set(storageKey, normalized) === false) return false;
+    state = normalized;
+    app.personnelView?.render();
+    if (typeof renderShipyardControl === 'function') renderShipyardControl();
+    return true;
+  }
+  function setModule(key, changes) {
+    const module = modules.find(m => m.key === key);
+    if (!module) return false;
+    if (changes.recipeId !== undefined && !options(module).some(r => r.id === changes.recipeId)) return false;
+    return save({ ...state, modules: { ...state.modules, [key]: { ...state.modules[key], ...changes } } });
+  }
+  function setStock(key, value) {
+    if (!resources.some(r => r.key === key)) return false;
+    if (value !== '' && value !== null && amount(value) === null) return false;
+    return save({ ...state, stock: { ...state.stock, [key]: amount(value) } });
+  }
+  app.personnel = { analyze, forRecipe, needs, options, label, setModule, setStock,
+    snapshot: () => JSON.parse(JSON.stringify(state)) };
+})();
+
+;
+
+/* SOURCE: js/command/personnel.js */
+/* Staffing planner on Production; its manual scenario also informs Shipyard. */
+(function initRhwPersonnelView() {
+  'use strict';
+  const app = window.RHWV4, model = app?.personnel;
+  if (!model) return;
+  const esc = app.util.escape, fmt = app.util.number;
+  let expanded = false;
+  function render() {
+    const mount = document.getElementById('personnelPlanner');
+    if (!mount) return;
+    expanded = mount.querySelector('details')?.open ?? expanded;
+    const plan = model.analyze();
+    const focused = mount.contains(document.activeElement) ? document.activeElement : null;
+    const focusName = focused?.getAttribute('name');
+    const metrics = plan.resources.map(r => `<span class="personnel-metric"><small>${r.name.toUpperCase()} REQUIRED</small><strong>${fmt(r.required)}</strong><small>${r.amount === null ? 'STOCK UNKNOWN' : `${fmt(r.amount)} ${r.source} · ${r.gap ? `${fmt(r.gap)} SHORT` : `${fmt(r.spare)} SPARE`}`}</small></span>`).join('');
+    const rows = plan.rows.map(row => `<div class="personnel-module${row.enabled ? ' is-enabled' : ''}">
+      <label class="personnel-enable"><input type="checkbox" name="personnel-${row.key}" data-personnel-module="${row.key}" ${row.enabled ? 'checked' : ''}><span>${esc(row.name)}<small>${row.enabled ? 'PLANNED' : 'OFF'}</small></span></label>
+      <label class="personnel-recipe"><span class="sr-only">${esc(row.name)} recipe</span><select name="recipe-${row.key}" data-personnel-recipe="${row.key}" ${row.enabled ? '' : 'disabled'}>
+        ${!row.recipe ? `<option value="${esc(row.recipeId)}" selected>RECIPE UNAVAILABLE</option>` : ''}
+        ${model.options(row).map(r => `<option value="${esc(r.id)}" ${r.id === row.recipeId ? 'selected' : ''}>${esc(model.label(r))}</option>`).join('')}</select></label>
+      <span class="personnel-module-need">${row.personnel ? `${fmt(row.personnel.crew)} Crew · ${fmt(row.personnel.scientists)} Scientists` : 'RECIPE DATA UNKNOWN'}</span>
+    </div>`).join('');
+    const inputs = plan.resources.map(r => `<label>${r.name} available <small>${r.amount === null ? 'Not reported by API' : `${r.source}: ${fmt(r.amount)}`}</small>
+      <input type="number" name="stock-${r.key}" min="0" step="1" inputmode="numeric" data-personnel-stock="${r.key}" aria-label="Manual ${r.name.toLowerCase()} stock" placeholder="Use API stock" value="${model.snapshot().stock[r.key] ?? ''}"></label>`).join('');
+    const markup = `<details id="personnelPlanDetails" ${expanded ? 'open' : ''}>
+      <summary><span class="personnel-title"><span class="shipyard-eyebrow">RHW OPERATIONS · MANUAL PLAN</span><strong>PERSONNEL PLANNER</strong><small>Core ${plan.coreLevel} + planned production</small></span>${metrics}<span class="personnel-expand">${expanded ? 'CLOSE' : 'PLAN STAFF'} <span aria-hidden="true">${expanded ? '−' : '+'}</span></span></summary>
+      <div class="personnel-body"><div class="personnel-module-list"><p>Choose the recipes you want to run together. One recipe per module.</p>
+        <div class="personnel-core"><strong>Core ${plan.coreLevel}</strong><span>${fmt(plan.coreCrew)} Crew always reserved</span></div>${rows}</div>
+        <aside class="personnel-stock"><h3>AVAILABLE PERSONNEL</h3><p>Enter stock when it is not reported, or leave blank to use the API.</p>${inputs}
+          <p>Crew and scientists are retained. Each active recipe reserves its own staff, in addition to the core.</p>
+          <p>Idle modules and cargo storage add no recipe staff. Saved selections describe your plan; active jobs are not reported by the API.</p>
+        </aside></div></details>`;
+    if (mount._personnelMarkup !== markup) {
+      mount.innerHTML = markup;
+      mount._personnelMarkup = markup;
+      if (focusName) mount.querySelector(`[name="${focusName}"]`)?.focus({ preventScroll: true });
+    }
+    const details = mount.querySelector('details');
+    if (details) details.ontoggle = () => {
+      expanded = details.open;
+      const control = details.querySelector('.personnel-expand');
+      if (control) control.textContent = expanded ? 'CLOSE −' : 'PLAN STAFF +';
+    };
+  }
+  function open() {
+    expanded = true;
+    app.navigate('command', 'production');
+    const existing = document.getElementById('personnelPlanDetails');
+    if (existing) existing.open = true;
+    render();
+    const mount = document.getElementById('personnelPlanner');
+    mount?.scrollIntoView({ block: 'start', behavior: 'instant' });
+    mount?.querySelector('summary')?.focus({ preventScroll: true });
+  }
+  function bind() {
+    const mount = document.getElementById('personnelPlanner');
+    if (mount && mount.dataset.bound !== 'true') {
+      mount.dataset.bound = 'true';
+      mount.addEventListener('change', event => {
+        const target = event.target;
+        if (target.dataset.personnelModule) model.setModule(target.dataset.personnelModule, { enabled: target.checked });
+        if (target.dataset.personnelRecipe) model.setModule(target.dataset.personnelRecipe, { recipeId: target.value });
+        if (target.dataset.personnelStock) {
+          const valid = model.setStock(target.dataset.personnelStock, target.value);
+          target.setCustomValidity(valid ? '' : 'Enter a whole number of zero or more.');
+          if (!valid) target.reportValidity();
+        }
+      });
+    }
+    document.getElementById('shipyardControl')?.addEventListener('click', event => {
+      if (event.target.closest('[data-personnel-open]')) open();
+    });
+    render();
+  }
+  app.personnelView = { render, open };
+  app.lifecycle.on('command:ready', 'personnel-planner', 65, bind);
+  app.lifecycle.on('catalog:loaded', 'personnel-recipes', 45, render);
+  app.onUiUpdate?.(render);
 })();
 
 ;

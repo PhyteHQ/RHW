@@ -45,6 +45,8 @@
     "./js/calculator/model.js",
     "./js/command/production-model.js",
     "./js/command/shipyard-model.js",
+    "./js/command/personnel-model.js",
+    "./js/command/personnel.js",
     "./js/calculator/ui.js",
     "./js/core/navigation.js",
     "./js/calculator/production-bridge.js",

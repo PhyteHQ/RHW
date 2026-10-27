@@ -7,7 +7,7 @@ const path = require('node:path');
 const keys = {
   activeWorkspace: 'workspace', commandNode: 'command-node', inventoryView: 'inventory-view',
   operationsNode: 'operations-node', commsNode: 'comms-node', tickerComposer: 'ticker', shipyardSelection: 'shipyard-selection',
-  commsMobileView: 'comms-mobile-view', calculatorPriceProfiles: 'price-profiles',
+  commsMobileView: 'comms-mobile-view', calculatorPriceProfiles: 'price-profiles', personnelPlan: 'personnel-plan', shipyardDivisions: 'shipyard-divisions',
   productionOrders: 'production-orders', shipyardPlanner: 'shipyard-planner',
   commsCurrent: 'comms-current', commsDrafts: 'comms-drafts', localSenders: 'local-senders',
   newswireManagerDraft: 'newswire-draft'
@@ -69,10 +69,14 @@ memory.set(keys.newswireManagerDraft, { source: 'LOCAL NEWSWIRE' });
 memory.set(keys.productionOrders, [{ id: 'order-a', quantity: 1, updatedAt: 20 }]);
 memory.set(keys.activeWorkspace, 'command');
 memory.set(keys.shipyardSelection, 'archon');
+memory.set(keys.shipyardDivisions, { mining: 'archon', civilian: 'halberd' });
+memory.set(keys.personnelPlan, { version: 1, stock: { crew: 1200 }, modules: { refinery: { enabled: true, recipeId: 'recipe_gold_advanced' } } });
 
 const exported = app.storage.exportPayload();
 assert.equal(exported.version, 5, 'New private backups must use format V5');
 assert.equal(exported.preferences.shipyardSelection, 'archon');
+assert.equal(exported.preferences.shipyardDivisions.civilian, 'halberd');
+assert.equal(exported.preferences.personnelPlan.stock.crew, 1200);
 exported.current.subject = 'DETACHED EXPORT MUTATION';
 assert.equal(app.state.comms.subject, 'KEEP LOCAL CURRENT', 'Exported backup must be detached from live app state');
 const inspection = app.storage.inspectPayload(exported);
