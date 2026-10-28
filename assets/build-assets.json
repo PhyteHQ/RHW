@@ -1,8 +1,8 @@
 {
   "css/rhw-app.css": {
     "sources": 10,
-    "bytes": 367720,
-    "sha256": "58747be59cadd67e6c645ad70687d9aed2d8db4df4dd64229ad3a6e48afbd49c"
+    "bytes": 367795,
+    "sha256": "67d8fb3d2f2fe5b487b984c2242babbcbf947363ef23650fc28f742875d41a0b"
   },
   "js/rhw-dashboard.js": {
     "sources": 13,

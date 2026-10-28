@@ -84,6 +84,7 @@ html.rhw-focus-pass .app-workspace .rhw-supply-icon:is(:hover,:focus-visible) { 
 .supply-identity-note small { color: var(--muted);font: 12px/1.5 var(--font-main); }
 .supply-identity-note summary { cursor: pointer;min-height: 32px;padding-block: 6px;color: #c9c0ae;font: 12px/1.5 var(--font-tech); }
 .supply-identity-note p { margin: 6px 0; }
+.supply-identity-note details:not([open])>:not(summary) { display: none; }
 .supply-preferred-ids { display: grid;grid-template-columns: repeat(3,minmax(0,1fr));gap: 6px; }
 .supply-preferred-id { min-width: 0;border: 1px solid #9c80503d;background: #101114; }
 .supply-preferred-id>summary { display: flex;align-items: center;justify-content: space-between;gap: 8px;min-height: 44px;padding: 8px 10px;font: 14px/1.4 var(--font-main);list-style: none; }
