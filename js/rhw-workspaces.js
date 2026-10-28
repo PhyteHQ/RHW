@@ -8164,7 +8164,7 @@ window.__RHW_RECIPE_CATALOG_GZIP_BASE64__ = (window.__RHW_RECIPE_CATALOG_GZIP_BA
   }
   function button(name, mode = 'supply') {
     if (!commodities().some(item => keyFromName(item) === keyFromName(name))) return '';
-    const label = `${mode === 'export' ? 'Find export buyers' : 'Plan supply route'} for ${escapeHTML(name)}`;
+    const label = `${mode === 'export' ? 'Find export buyers' : 'Plan import route'} for ${escapeHTML(name)}`;
     const drawing = mode === 'export' ? '<path d="M14 4h6v6M20 4l-9 9M10 5H4v15h15v-6"/>'
       : '<circle cx="5" cy="5" r="2"/><circle cx="19" cy="19" r="2"/><path d="M7 5h9a3 3 0 0 1 0 6H8a4 4 0 0 0 0 8h9"/>';
     return `<button type="button" class="rhw-supply-button rhw-supply-icon" data-${mode}-commodity="${escapeHTML(name)}" aria-label="${label}" title="${label}"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">${drawing}</svg></button>`;
@@ -8181,7 +8181,16 @@ window.__RHW_RECIPE_CATALOG_GZIP_BASE64__ = (window.__RHW_RECIPE_CATALOG_GZIP_BA
       const names = commodities();
       const outputRoles = [...DASHBOARD_CONFIG.roles.export, ...DASHBOARD_CONFIG.roles.byproduct, ...DASHBOARD_CONFIG.roles.confiscated];
       const outputKeys = new Set(outputRoles.map(keyFromName));
-      module.open({ commodity: name, commodities: names, exportCommodities: names.filter(item => outputKeys.has(keyFromName(item))), mode, telemetry, trigger });
+      const inputRoles = [...DASHBOARD_CONFIG.roles.maintenance, ...DASHBOARD_CONFIG.roles.procurement,
+        ...DASHBOARD_CONFIG.roles.feedstock, ...DASHBOARD_CONFIG.roles.shipyard];
+      for (const recipe of app.production?.recipes() || []) {
+        recipe.ingredients.forEach(([item]) => inputRoles.push(item));
+        Object.values(recipe.inputOptions || {}).forEach(options => inputRoles.push(...options));
+      }
+      const inputKeys = new Set(inputRoles.map(keyFromName));
+      module.open({ commodity: name, commodities: names,
+        exportCommodities: names.filter(item => outputKeys.has(keyFromName(item))),
+        importCommodities: names.filter(item => inputKeys.has(keyFromName(item))), mode, telemetry, trigger });
     } catch (error) { app.notify(`TRADE DESK // ${error.message}`, 'warn'); }
   }
   document.addEventListener('click', event => {
@@ -8196,7 +8205,7 @@ window.__RHW_RECIPE_CATALOG_GZIP_BASE64__ = (window.__RHW_RECIPE_CATALOG_GZIP_BA
     if (typeof renderManifest === 'function') renderManifest();
     const panel = document.querySelector('[data-command-panel="logistics"]');
     if (!panel || panel.querySelector('.rhw-supply-launcher')) return;
-    panel.insertAdjacentHTML('afterbegin', `<div class="rhw-supply-launcher"><div><strong>RHW TRADE DESK</strong><span>Supply the base or find export buyers · compare ships, time and hauling profit</span></div><button type="button" class="rhw-supply-button" data-trade-desk>OPEN TRADE DESK</button></div>`);
+    panel.insertAdjacentHTML('afterbegin', `<div class="rhw-supply-launcher"><div><strong>RHW TRADE DESK</strong><span>Plan imports and exports · compare ships, time and hauling profit</span></div><button type="button" class="rhw-supply-button" data-trade-desk>OPEN TRADE DESK</button></div>`);
   });
   app.supplyRoutes = { button, commodities, open, telemetry };
 })();

@@ -157,13 +157,13 @@ export function rankSupplyRoutes(routes, extraPercent = 20) {
   if (baseline) {
     const earning = bestEarning(normal, baseline, allowance);
     const recommended = earning?.hourlyProfit > baseline.hourlyProfit + 0.01 ? earning : baseline;
-    pick(recommended, recommended === baseline ? 'RECOMMENDED · NORMAL SUPPLY' : 'RECOMMENDED · BEST $/H WITHIN LIMIT', {
+    pick(recommended, recommended === baseline ? 'RECOMMENDED · STANDARD IMPORT' : 'RECOMMENDED · BEST $/H WITHIN LIMIT', {
       kind: recommended === baseline ? 'fast-supply' : 'profit-within-limit',
       fastDelivered: baseline.delivered,
       profitDelta: recommended.profit - baseline.profit,
       hourlyProfitDelta: recommended.hourlyProfit - baseline.hourlyProfit
     });
-    if (recommended !== baseline) pick(baseline, 'FAST SUPPLY');
+    if (recommended !== baseline) pick(baseline, 'FAST IMPORT');
   }
   const express = quoted.filter(route => route.delivery?.loss > 1e-6
     && (!route.extraStop || allowance > 0)

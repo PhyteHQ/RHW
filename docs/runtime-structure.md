@@ -106,9 +106,9 @@ and comparisons use their original default option; old selections are discarded.
 The full inventory independently reads all reported positions; operational warning
 boards continue to use their configured role scope.
 
-## Supply routes
+## Trade Desk imports and exports
 
-The header Trade Desk opens the same lazy dialog in either supply or export
+The header Trade Desk opens the same lazy dialog in either import or export
 mode. Export Inventory and export-role manifest rows launch commodity-specific
 buyer searches. Force Uplink is always visible in the connection panel, outside
 its optional details. Additive recipe stocks use one full-name row per option;
@@ -134,8 +134,14 @@ reports pruning/time limits. Per buyer, prefer the best complete $/hour and
 retain a comparison when paid backhaul would lower that rate. The UI separates
 export revenue, export margin and return margin; empty returns have a reason.
 The return-cargo checkbox restores the direct empty-return comparison.
-`commodity-groups.mjs` partitions the selector into import and export roles,
-putting the active mode's group first while preserving the selected commodity.
+`commodity-groups.mjs` filters the selector to the active mode and groups the
+remaining goods by function: ship systems, production materials, metals/ores,
+fuels/chemicals, base supplies, recycling/byproducts and other goods. Entries
+sort alphabetically within each category. Configured import roles and actual
+production inputs allow dual-role goods in both modes; a context commodity
+cannot bypass the mode filter. Each mode remembers its own valid selection.
+Visible controls consistently say Import to RHW / Export from RHW; internal
+`supply` identifiers remain compatible with existing route and worker contracts.
 NPC markets, physical docking, BMM ID exclusions, unknown personal access,
 snapshot provenance and cancellation retain the existing supply contracts.
 

@@ -93,6 +93,10 @@ def main():
         base.ev(cdp, "(()=>{const b=document.querySelector('.production-card [data-supply-commodity=\"Ablative Armor Plating\"]');const card=b.closest('.production-card');if(card.classList.contains('production-card-collapsed'))card.querySelector('.production-card-toggle').click();if(!b.getClientRects().length)throw Error('Supply trigger is not visible');b.focus();b.click();return true})()")
         wait_for(cdp, "document.querySelectorAll('#rhwSupplyDialog .supply-result').length>=2")
         facts = base.ev(cdp, "(()=>({target:document.getElementById('supplyCommodity').value,text:document.getElementById('supplyResults').innerText,first:document.querySelector('.supply-result')?.innerText,reason:document.querySelector('.supply-recommendation-reason')?.innerText,count:document.querySelectorAll('.supply-result').length,choices:document.querySelectorAll('[data-production-alternative]').length,open:document.getElementById('rhwSupplyDialog').open}))()")
+        imported = base.ev(cdp, "(()=>({mode:supplyMode.selectedOptions[0].textContent,header:document.querySelector('.header-trade-button small').textContent,groups:[...supplyCommodity.querySelectorAll('optgroup')].map(g=>({label:g.label,names:[...g.querySelectorAll('option')].map(o=>o.value)})),names:[...supplyCommodity.options].map(o=>o.value)}))()")
+        systems = next((g['names'] for g in imported['groups'] if g['label'] == 'SHIP SYSTEMS'), [])
+        if imported['mode'] != 'IMPORT TO RHW' or imported['header'] != 'IMPORT / EXPORT' or 'Toxic Waste' in imported['names'] or 'Multi-Mode Focusing Chamber' in imported['names'] or not all(name in imported['names'] for name in ['Gold', 'Wildcat Gold', 'Ablative Armor Plating']) or systems != sorted(systems) or len(systems) != 6:
+            raise RuntimeError(f'Imports must contain only import goods with dual-role inputs and grouped systems: {imported}')
         if not facts['open'] or facts['target'] != 'Ablative Armor Plating' or facts['count'] > 3 or facts['choices'] != 0 or 'Waterloo Station' not in facts['text'] or 'Oder Shipyard' not in facts['text'] or '2,500' not in facts['text']:
             raise RuntimeError(f'Supply context/worker result failed: {facts}')
         if 'RECOMMENDED' not in facts['first'] or 'Waterloo Station' not in facts['first'] or 'WHY THIS ROUTE' not in (facts['reason'] or '') or 'more per hour' not in facts['reason']:
@@ -135,8 +139,8 @@ def main():
         wait_for(cdp, "document.querySelector('#exportList [data-export-commodity=\"Gold\"]')?.getClientRects().length>0")
         base.ev(cdp, "document.querySelector('#exportList [data-export-commodity=\"Gold\"]').click()")
         wait_for(cdp, "document.getElementById('supplyMode').value==='export' && !document.getElementById('supplySearch').disabled && document.querySelectorAll('.supply-result').length>0")
-        exported = base.ev(cdp, "(()=>({text:supplyResults.innerText,quantity:document.querySelector('.supply-metrics strong')?.textContent,buyer:document.querySelector('.supply-result h3')?.textContent,reason:document.querySelector('.supply-ship-note')?.textContent,backhaulVisible:!document.querySelector('[data-export-only]').hidden,groups:[...supplyCommodity.querySelectorAll('optgroup')].map(g=>g.label),access:document.querySelector('.supply-access-note')?.textContent,backhaul:document.querySelector('.supply-return-cargo')?.textContent}))()")
-        if exported['quantity'] != '5' or exported['buyer'] != 'Buyer Works' or 'Buyer funds' not in exported['reason'] or not exported['backhaulVisible'] or '$500' not in exported['text'] or 'owner permissions' not in exported['access'] or len(exported['groups']) != 2 or not exported['groups'][0].startswith('EXPORT') or '40 MOX' not in (exported['backhaul'] or ''):
+        exported = base.ev(cdp, "(()=>({text:supplyResults.innerText,quantity:document.querySelector('.supply-metrics strong')?.textContent,buyer:document.querySelector('.supply-result h3')?.textContent,reason:document.querySelector('.supply-ship-note')?.textContent,backhaulVisible:!document.querySelector('[data-export-only]').hidden,groups:[...supplyCommodity.querySelectorAll('optgroup')].map(g=>g.label),names:[...supplyCommodity.options].map(o=>o.value),access:document.querySelector('.supply-access-note')?.textContent,backhaul:document.querySelector('.supply-return-cargo')?.textContent}))()")
+        if exported['quantity'] != '5' or exported['buyer'] != 'Buyer Works' or 'Buyer funds' not in exported['reason'] or not exported['backhaulVisible'] or '$500' not in exported['text'] or 'owner permissions' not in exported['access'] or exported['groups'][0] != 'SHIP SYSTEMS' or 'Ablative Armor Plating' in exported['names'] or 'MOX' in exported['names'] or 'Toxic Waste' not in exported['names'] or '40 MOX' not in (exported['backhaul'] or ''):
             raise RuntimeError(f'Export quote must honor POB funds and distinguish revenue/profit/access: {exported}')
         base.ev(cdp, "(()=>{supplyBackhaul.checked=false;supplySearch.click();return true})()")
         wait_for(cdp, "!supplySearch.disabled && supplyResults.dataset.stale==='false'")
@@ -164,9 +168,13 @@ def main():
         if 'Buyer Works' in base.ev(cdp, "supplyResults.innerText"):
             raise RuntimeError('POB OFF must also exclude export buyers')
         base.ev(cdp, "(()=>{supplyMode.value='supply';supplyMode.dispatchEvent(new Event('change',{bubbles:true}));return true})()")
-        wait_for(cdp, "!supplySearch.disabled && supplySearch.textContent==='CALCULATE SUPPLY ROUTE'")
-        if not base.ev(cdp, "supplyCommodity.querySelector('optgroup').label.startsWith('IMPORT') && supplyCommodity.value==='Gold'"):
-            raise RuntimeError('Mode switching must reorder commodity groups without changing the selected good')
+        wait_for(cdp, "!supplySearch.disabled && supplySearch.textContent==='CALCULATE IMPORT ROUTE'")
+        if not base.ev(cdp, "supplyCommodity.value==='Ablative Armor Plating' && ![...supplyCommodity.options].some(o=>o.value==='Toxic Waste')"):
+            raise RuntimeError('Import mode must restore its own last selection and hide export-only goods')
+        base.ev(cdp, "(()=>{supplyMode.value='export';supplyMode.dispatchEvent(new Event('change',{bubbles:true}));return true})()")
+        wait_for(cdp, "!supplySearch.disabled && supplyCommodity.value==='Gold'")
+        if base.ev(cdp, "[...supplyCommodity.options].some(o=>o.value==='Ablative Armor Plating')"):
+            raise RuntimeError('Export mode must restore its own last selection and hide import-only goods')
         base.ev(cdp, "supplyClose.click()")
         wait_for(cdp, "!rhwSupplyDialog.open && document.activeElement.classList.contains('header-trade-button')", 3)
         print('Trade Desk browser passed: supply/express regression, export POB funds, limits and access, header launch/refresh, mode switch, POB OFF, focus and 360/390/1440px layouts.')

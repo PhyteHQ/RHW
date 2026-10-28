@@ -55,7 +55,7 @@ const fast = found.results.find(route => !route.extraStop);
 assert.ok(circuit, 'The Waterloo → Oder Super Alloy backhaul should be found');
 assert.equal(found.results[0], circuit, 'The worthwhile backhaul is recommended first within the supply window');
 assert.match(circuit.label, /^RECOMMENDED/);
-assert.equal(fast.label, 'FAST SUPPLY', 'Keep the faster supply option visible');
+assert.equal(fast.label, 'FAST IMPORT', 'Keep the faster supply option visible');
 assert.deepEqual(circuit.stops, ['rhw', 'waterloo', 'oder', 'rhw']);
 assert.equal(circuit.legs[0].good, null, 'RHW → Waterloo is an honest empty approach');
 assert.equal(circuit.legs[1].good, 'alloy');
