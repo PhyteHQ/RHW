@@ -229,9 +229,8 @@ function analyzeRecipe(recipe) {
       && stocks.every(entry => !entry.item || entry.stock !== null);
     const stock = known ? stocks.reduce((sum, entry) => sum + (entry.stock ?? 0), 0) : null;
     const extraHtml = names.length > 1 ? `<span class="recipe-stock-breakdown">${stocks.map(entry => {
-      const label = keyFromName(entry.name) === 'gold' ? 'STD' : keyFromName(entry.name) === 'wildcat gold' ? 'WC' : displayRecipeName(entry.name);
-      return `${escapeHTML(label)}: ${number(entry.item ? entry.stock : 0)}`;
-    }).join(' // ')}</span>` : '';
+      return `<span class="recipe-stock-option"><span>${escapeHTML(displayRecipeName(entry.name))}</span><strong>${number(entry.item ? entry.stock : 0)}</strong></span>`;
+    }).join('')}</span>` : '';
     const cycles = stock === null ? null : required > 0 ? Math.floor(stock / required) : 0;
     const currentCycleGap = stock === null ? null : Math.max(0, required - stock);
     return { name: originalName, displayName: names.map(displayRecipeName).join(' / '), extraHtml, required, stock, cycles, currentCycleGap };

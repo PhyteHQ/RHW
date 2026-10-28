@@ -14,7 +14,7 @@
   <link rel="icon" type="image/png" href="./assets/favicon.png" />
   <link rel="apple-touch-icon" href="./assets/apple-touch-icon.png" />
   
-  <link rel="stylesheet" href="./css/rhw-app.css?v=sha256-aabdef9fef1e370a128c">
+  <link rel="stylesheet" href="./css/rhw-app.css?v=sha256-10672d45a92427d0e752">
 </head>
 <body>
 
@@ -50,7 +50,12 @@
         </div>
       </div>
 
-      <div class="uplink-panel" id="uplinkPanel">
+      <div class="header-operations">
+        <button type="button" class="header-trade-button" data-trade-desk aria-label="Open RHW Trade Desk" aria-haspopup="dialog">
+          <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7h17m-4-4 4 4-4 4M21 17H4m4-4-4 4 4 4"/></svg>
+          <strong>TRADE DESK</strong><small>SUPPLY / EXPORT</small>
+        </button>
+        <div class="uplink-panel" id="uplinkPanel">
         <div class="uplink-header">
           <span class="live-dot" id="liveDot"></span>
           <div>
@@ -58,8 +63,9 @@
             <strong class=" uplink-value" id="liveStatus" aria-live="polite">SYNCING TELEMETRY...</strong>
           </div>
         </div>
+        <button id="headerRefreshBtn" class="uplink-button header-uplink-button" type="button"><span>FORCE UPLINK</span></button>
         <details class="uplink-details" id="uplinkDetails">
-          <summary>CONNECTION DETAILS</summary>
+          <summary aria-label="Connection details" title="Connection details"><span>CONNECTION DETAILS</span><svg class="connection-details-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 10v7M12 6.5v1"/></svg></summary>
           <div class="uplink-grid">
           <div class="uplink-stat"><small class="uplink-label">SYSTEM CLOCK</small><strong class="uplink-value header-clock" id="headerClock">[--:--:--]</strong></div>
           <div class="uplink-stat"><small class="uplink-label">LATEST SYNC</small><strong class="uplink-value" id="syncTimeVal">–</strong></div>
@@ -71,7 +77,7 @@
           </div>
           </div>
         </details>
-        <button id="headerRefreshBtn" class="uplink-button header-uplink-button" type="button"><span>FORCE UPLINK</span></button>
+        </div>
       </div>
     </div>
   </header>
@@ -138,8 +144,8 @@
 
   <footer><hr class="hrc-dark">CONNECTION <span id="footerConnection">SYNCING</span> /// GLORY TO THE QUEEN<br><div class="footer-clock" id="rpFooterTime"></div></footer>
 
-<script src="./js/build-info.js?v=sha256-aabdef9fef1e370a128c"></script>
-<script src="./js/00-bootstrap.js?v=sha256-aabdef9fef1e370a128c"></script>
-<script src="./js/rhw-dashboard.js?v=sha256-aabdef9fef1e370a128c"></script>
+<script src="./js/build-info.js?v=sha256-10672d45a92427d0e752"></script>
+<script src="./js/00-bootstrap.js?v=sha256-10672d45a92427d0e752"></script>
+<script src="./js/rhw-dashboard.js?v=sha256-10672d45a92427d0e752"></script>
 </body>
 </html>

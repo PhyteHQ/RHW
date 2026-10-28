@@ -40,6 +40,10 @@ def main():
                        'base_pos': [25000, 0, 0], 'money': 10000000, 'cargospace': 1000000,
                        'shop_items': [{'nickname': 'ablative', 'name': 'Ablative Armor Plating', 'category': 'commodity', 'quantity': 10000,
                                        'min_stock': 0, 'max_stock': 20000, 'price': 180, 'sell_price': 1, 'volume': 2, 'original_volume': 2}]}
+        export_buyer = {'nickname': 'buyer', 'name': 'Buyer Works', 'system_nickname': 'br01', 'system_name': 'New London',
+                        'base_pos': [90000, 0, 0], 'money': 1000, 'cargospace': 10000,
+                        'shop_items': [{'nickname': 'fixture_3', 'name': 'Gold', 'category': 'commodity', 'quantity': 0,
+                                        'min_stock': 0, 'max_stock': 10000, 'price': 9999, 'sell_price': 200, 'volume': 1, 'original_volume': 1}]}
         def market(base_id, name, pos, buy, sell, volume):
             return {'base_nickname': base_id, 'base_name': name, 'system_nick': 'br01', 'system_name': 'New London',
                     'base_pos': pos, 'base_sells': True, 'price_base_sells_for': buy, 'price_base_buys_for': sell, 'volume': volume}
@@ -49,12 +53,12 @@ def main():
             {'nickname': 'alloy', 'name': 'Super Alloy', 'volume': 1,
              'market_goods': [market('waterloo', 'Waterloo Station', [150000, 0, 0], 10, 10, 1), market('oder', 'Oder Shipyard', [300000, 0, 0], 100, 50, 1)]}
         ]
-        nav = {'schema': 1, 'nodes': [{'id': name, 'system': 'br01', 'pos': [pos, 0, 0], 'kind': 'base', 'allows': ['medium', 'large', 'berth']} for name, pos in [('rhw', 0), ('waterloo', 150000), ('oder', 300000), ('corporate', 25000)]],
-               'baseNodes': {'rhw': 'rhw', 'waterloo': 'waterloo', 'oder': 'oder', 'corporate': 'corporate'},
+        nav = {'schema': 1, 'nodes': [{'id': name, 'system': 'br01', 'pos': [pos, 0, 0], 'kind': 'base', 'allows': ['medium', 'large', 'berth']} for name, pos in [('rhw', 0), ('waterloo', 150000), ('oder', 300000), ('corporate', 25000), ('buyer', 90000)]],
+               'baseNodes': {'rhw': 'rhw', 'waterloo': 'waterloo', 'oder': 'oder', 'corporate': 'corporate', 'buyer': 'buyer'},
                'links': [{'from': a, 'to': b, 'kind': 'lane', 'speed': 2500} for a, b in [('rhw', 'waterloo'), ('waterloo', 'rhw'), ('waterloo', 'oder'), ('oder', 'waterloo'), ('rhw', 'corporate'), ('corporate', 'rhw')]]}
         ships = [{'nickname': 'dsy_advanced_train', 'name': 'Advanced Train', 'hold_size': 5000, 'cruise_speed': 350, 'dock_type': 2},
                  {'nickname': 'pilgrim_liner', 'name': 'Pilgrim Liner', 'hold_size': 4300, 'cruise_speed': 415, 'dock_type': 3}]
-        fixture = {'pobs': [pob, express_pob], 'commodities': commodities, 'ships': ships, 'npc_bases': [], 'factions': [], 'tractors': []}
+        fixture = {'pobs': [pob, express_pob, export_buyer], 'commodities': commodities, 'ships': ships, 'npc_bases': [], 'factions': [], 'tractors': []}
         script = "<script>window.supplyFixture=" + json.dumps(fixture) + ";window.supplyNav=" + json.dumps(nav) + ";window.supplyRequests=[];const originalFetch=window.fetch;window.fetch=(url,options)=>{const u=String(url);if(u.includes('/api/')){const key=u.split('/api/')[1].split('?')[0];supplyRequests.push(key);if(window.supplyOffline)return Promise.reject(Error('Fixture offline'));return Promise.resolve(new Response(JSON.stringify(supplyFixture[key]||[]),{status:200}));}if(u.includes('/assets/navigation.json.gz'))return Promise.resolve(new Response(JSON.stringify(supplyNav),{status:200}));return originalFetch(url,options);};</script>"
         markup = base.document('command/production').replace('<head>', '<head>' + script, 1)
         base.load_document(cdp, target['id'], markup, origin)
@@ -125,7 +129,37 @@ def main():
         wait_for(cdp, "document.getElementById('rhwSupplyDialog').open && !document.getElementById('supplySearch').disabled && document.querySelectorAll('.supply-result').length>0")
         base.ev(cdp, "document.getElementById('supplyClose').click()")
         wait_for(cdp, "!document.getElementById('rhwSupplyDialog').open && document.activeElement.dataset.supplyCommodity==='Ablative Armor Plating'", 3)
-        print('Supply browser passed: real Production button, worker, normal NPC recommendation with POB ON, visible express loss, POB OFF, direct-only control, cache provenance, focus and 360/390/1440px dialog.')
+        base.ev(cdp, "(()=>{document.getElementById('supplyPobs').checked=true;location.hash='#command/inventory';return true})()")
+        wait_for(cdp, "document.querySelector('#exportList [data-export-commodity=\"Gold\"]')?.getClientRects().length>0")
+        base.ev(cdp, "document.querySelector('#exportList [data-export-commodity=\"Gold\"]').click()")
+        wait_for(cdp, "document.getElementById('supplyMode').value==='export' && !document.getElementById('supplySearch').disabled && document.querySelectorAll('.supply-result').length>0")
+        exported = base.ev(cdp, "(()=>({text:supplyResults.innerText,quantity:document.querySelector('.supply-metrics strong')?.textContent,buyer:document.querySelector('.supply-result h3')?.textContent,reason:document.querySelector('.supply-ship-note')?.textContent,extraHidden:document.querySelector('[data-supply-only]').hidden,access:document.querySelector('.supply-access-note')?.textContent}))()")
+        if exported['quantity'] != '5' or exported['buyer'] != 'Buyer Works' or 'Buyer funds' not in exported['reason'] or not exported['extraHidden'] or '$500' not in exported['text'] or 'owner permissions' not in exported['access']:
+            raise RuntimeError(f'Export quote must honor POB funds and distinguish revenue/profit/access: {exported}')
+        for width in [360, 390, 1440]:
+            cdp.call('Emulation.setDeviceMetricsOverride', {'width':width,'height':900,'deviceScaleFactor':1,'mobile':width<760})
+            geometry = base.ev(cdp, "(()=>({overflow:rhwSupplyDialog.scrollWidth>rhwSupplyDialog.clientWidth+1,minimum:Math.min(...[...document.querySelectorAll('.supply-buyer-grid>div')].map(e=>e.getBoundingClientRect().width))}))()")
+            if geometry['overflow'] or geometry['minimum'] < 100:
+                raise RuntimeError(f'Export dialog fit failed at {width}: {geometry}')
+            base.ev(cdp, "document.querySelector('.supply-result').scrollIntoView({block:'start',behavior:'instant'})")
+            shot = cdp.call('Page.captureScreenshot', {'format':'png'})
+            (out / f'export-route-{width}.png').write_bytes(base64.b64decode(shot['data']))
+        base.ev(cdp, "supplyClose.click()")
+        wait_for(cdp, "!rhwSupplyDialog.open && document.activeElement.dataset.exportCommodity==='Gold'", 3)
+        header = base.ev(cdp, "(()=>({trade:!!document.querySelector('.header-trade-button').getClientRects().length,refresh:!!headerRefreshBtn.getClientRects().length,closed:!uplinkDetails.open}))()")
+        if not all(header.values()):
+            raise RuntimeError(f'Header actions must remain visible with connection details closed: {header}')
+        base.ev(cdp, "document.querySelector('.header-trade-button').click()")
+        wait_for(cdp, "rhwSupplyDialog.open && !supplySearch.disabled && supplyMode.value==='export'")
+        base.ev(cdp, "(()=>{supplyPobs.checked=false;supplySearch.click();return true})()")
+        wait_for(cdp, "!supplySearch.disabled && supplyResults.dataset.stale==='false'")
+        if 'Buyer Works' in base.ev(cdp, "supplyResults.innerText"):
+            raise RuntimeError('POB OFF must also exclude export buyers')
+        base.ev(cdp, "(()=>{supplyMode.value='supply';supplyMode.dispatchEvent(new Event('change',{bubbles:true}));return true})()")
+        wait_for(cdp, "!supplySearch.disabled && supplySearch.textContent==='CALCULATE SUPPLY ROUTE'")
+        base.ev(cdp, "supplyClose.click()")
+        wait_for(cdp, "!rhwSupplyDialog.open && document.activeElement.classList.contains('header-trade-button')", 3)
+        print('Trade Desk browser passed: supply/express regression, export POB funds, limits and access, header launch/refresh, mode switch, POB OFF, focus and 360/390/1440px layouts.')
     finally:
         if cdp:
             cdp.close()

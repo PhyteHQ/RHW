@@ -61,7 +61,9 @@ jobs:
         run: node scripts/test_procurement_inputs.js
 
       - name: Validate RHW supply routes
-        run: node scripts/test_supply_routes.mjs
+        run: |
+          node scripts/test_supply_routes.mjs
+          node scripts/test_export_routes.mjs
 
       - name: Validate Price Check provenance and backup
         run: node scripts/test_price_check.js

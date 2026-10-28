@@ -193,7 +193,7 @@ def main() -> int:
             uplink = base.ev(cdp, """(()=>{
               const visible=el=>!!el.getClientRects().length;
               const details=document.querySelector('.uplink-details');
-              const compact=!visible(headerRefreshBtn);
+              const compact=visible(headerRefreshBtn)&&visible(document.querySelector('.header-trade-button'));
               details.open=true;const refreshInDetails=visible(headerRefreshBtn);
               details.open=false;uplinkPanel.classList.replace('online','offline');
               const refreshOnFailure=visible(headerRefreshBtn);

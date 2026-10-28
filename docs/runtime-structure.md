@@ -108,6 +108,23 @@ boards continue to use their configured role scope.
 
 ## Supply routes
 
+The header Trade Desk opens the same lazy dialog in either supply or export
+mode. Export Inventory and export-role manifest rows launch commodity-specific
+buyer searches. Force Uplink is always visible in the connection panel, outside
+its optional details. Additive recipe stocks use one full-name row per option;
+their quantities and consumption order are unchanged.
+
+`js/supply/export-planner.mjs` quotes direct RHW → buyer → RHW runs with an empty
+return. RHW BASE SELLS is the pilot purchase cost; the destination BASE BUYS is
+the payout. Whole-unit loads respect RHW stock above its reserve, ship-specific
+volume, pilot capital, buyer purchase room, cash and original-volume storage.
+The shared transaction simulator checks every quote. Missing POB resource data
+excludes that quote. Rank positive full-round-trip $/hour first and show each
+destination once with its best ship. Loss-only markets have no recommendation;
+RHW sale receipts are explicitly revenue before manufacturing cost. NPC buyers
+remain eligible. Physical docking, BMM ID exclusions, unknown personal access,
+snapshot provenance and cancellation share the existing supply contracts.
+
 `js/command/supply-routes.js` owns compact, labelled route icons beside commodity
 names and the lazy dialog entry. Their SVGs are decorative; the buttons carry
 the accessible commodity-specific action and hover hint. `css/supply.css` owns
