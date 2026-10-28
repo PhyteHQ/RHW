@@ -65,6 +65,7 @@ jobs:
           node scripts/test_supply_routes.mjs
           node scripts/test_export_routes.mjs
           node scripts/test_export_backhaul.mjs
+          node scripts/test_identity_routes.mjs
 
       - name: Validate Price Check provenance and backup
         run: node scripts/test_price_check.js

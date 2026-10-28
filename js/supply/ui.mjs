@@ -4,6 +4,7 @@ import { FALLBACK_SHIPS, normalizeShipRegistry } from './ship-profiles.mjs';
 import { dockingAccess, BMM_ID } from './access.mjs';
 import { normalize, findRhw } from './planner.mjs';
 import { commodityGroups } from './commodity-groups.mjs';
+import { identityRegistry, parseIdentityRules, comparisonIdentities, identityShipCheck } from './identity-profiles.mjs';
 
 const API = 'https://darkstat.dd84ai.com/api/';
 const CACHE = 'rhw-supply-market-v1';
@@ -66,6 +67,7 @@ async function read(path, body, signal) {
   if (body !== undefined) { init.body = JSON.stringify(body); init.headers['Content-Type'] = 'application/json'; }
   let response = await fetch(API + path, init);
   if (response.status === 405) {
+    if (Array.isArray(body)) throw Error(`${path}: this API operation requires POST support`);
     const query = body ? '?' + new URLSearchParams(Object.entries(body).map(([key, value]) => [key, String(value)])) : '';
     response = await fetch(API + path + query, { headers: { Accept: 'application/json' }, cache: 'no-store', signal });
   }
@@ -105,7 +107,9 @@ async function prepare(force, signal) {
   const cache = await database('get').catch(() => null) || {};
   let npc = cache.npc, npcAt = cache.npcAt || 0, pobs = cache.pobs, pobAt = cache.pobAt || 0;
   let ships = cache.ships || FALLBACK_SHIPS, shipAt = cache.shipAt || 0;
+  let shipIdentityVersion = cache.shipIdentityVersion || 0, accessIdentityVersion = cache.accessIdentityVersion || 0;
   let owners = cache.owners || [], factions = cache.factions || [], tractors = cache.tractors || [];
+  let identityCards = cache.identityCards || {}, identityAt = cache.identityAt || 0;
   const tasks = [];
   if (!force && current.pobs?.length && current.receivedAt && !current.stale && now - current.receivedAt < FIVE_MINUTES) {
     pobs = current.pobs; pobAt = current.receivedAt;
@@ -113,37 +117,64 @@ async function prepare(force, signal) {
   if (force || !npc || now - npcAt > SIX_HOURS) tasks.push(read('commodities', { include_market_goods: true, filter_to_useful: true }, signal).then(data => {
     npc = normalizeDarkstat([], data); npcAt = Date.now();
   }));
-  if (force || !shipAt || now - shipAt > DAY) tasks.push(read('ships', {}, signal).then(data => {
-    ships = normalizeShipRegistry(data).map(ship => ({ ...ship, volumeClass: data.find(row => row.nickname === ship.nickname)?.ship_class ?? null }));
+  if (force || !shipIdentityVersion || !shipAt || now - shipAt > DAY) tasks.push(read('ships', { include_tech_compat: true }, signal).then(data => {
+    ships = normalizeShipRegistry(data);
+    shipIdentityVersion = 1;
     shipAt = Date.now();
   }));
-  if (force || !cache.accessAt || now - cache.accessAt > SIX_HOURS) {
+  if (force || !accessIdentityVersion || !cache.accessAt || now - cache.accessAt > SIX_HOURS) {
     tasks.push(read('npc_bases', {}, signal).then(data => { owners = data; }));
     tasks.push(read('factions', { include_reputations: false, include_bribes: false, filter_to_useful: false }, signal).then(data => { factions = data; }));
-    tasks.push(read('tractors', { include_rephacks: true, filter_nicknames: [BMM_ID] }, signal).then(data => { tractors = data; }));
+    tasks.push(read('tractors', { include_rephacks: true, filter_to_useful: true }, signal).then(data => { tractors = data; accessIdentityVersion = 1; }));
   }
   const settled = await Promise.allSettled(tasks);
   if (signal.aborted) throw Error('Search canceled');
   const failures = settled.filter(entry => entry.status === 'rejected').map(entry => entry.reason?.message || 'Market request failed');
+  if (force || !identityAt || now - identityAt > SIX_HOURS) {
+    const nicknames = identityRegistry(tractors).filter(id => tractors.some(raw => raw.nickname === id.id)).map(id => id.id);
+    if (nicknames.length) try {
+      const replies = await read('infocards', nicknames, signal);
+      if (replies.length !== nicknames.length) throw Error('ID infocard response length does not match the requested IDs');
+      identityCards = Object.fromEntries(nicknames.map((id, index) => [id, { rules: parseIdentityRules(replies[index]) }]));
+      identityAt = Date.now();
+    } catch (error) { failures.push('ID ship rules: ' + error.message); }
+    if (signal.aborted) throw Error('Search canceled');
+  }
   if (!npc || !pobs?.length) throw Error(failures.join(' · ') || 'No market snapshot available');
   const dataset = mergeMarket(npc, pobs, pobAt);
   if (!findRhw(dataset)) throw Error('RHW was not found in the market snapshot');
   const navigation = prepared?.navigation || await loadNavigation(signal);
-  const access = dockingAccess(dataset.bases, owners, factions, tractors);
+  const identities = identityRegistry(tractors, identityCards, identityAt);
+  const access = dockingAccess(dataset.bases, owners, factions, tractors, BMM_ID, pobs);
   const saved = { npc, npcAt, pobs, pobAt, ships, shipAt, owners, factions, tractors,
+    identityCards, identityAt, shipIdentityVersion, accessIdentityVersion,
     accessAt: failures.length ? cache.accessAt || 0 : now };
   await database('put', saved).catch(() => null);
-  prepared = { dataset, navigation, ships, shipAt, pobAt, npcAt, access, failures };
+  prepared = { dataset, navigation, ships, shipAt, pobAt, npcAt, access, failures, identities,
+    identityAt, owners, factions, tractors, pobs, accessByIdentity: new Map([[BMM_ID, access]]) };
   return prepared;
-}
-function preferredShips(ships) {
-  const picks = [/advanced.train|advanced_train/i, /pilgrim/i, /longhorn/i];
-  return [...new Map(picks.map(pattern => ships.find(ship => pattern.test(ship.name + ' ' + ship.nickname))).filter(Boolean).map(ship => [ship.id, ship])).values()];
 }
 function sourceMarkup() {
   if (!prepared) return 'Market data loads when you open the Trade Desk.';
   const cached = prepared.failures.length > 0 || Date.now() - prepared.pobAt >= FIVE_MINUTES || navigator.onLine === false;
-  return `${cached ? 'CACHED POB STOCK' : 'POB STOCK RECEIVED'} ${date(prepared.pobAt)} · NPC PRICES ${date(prepared.npcAt)} · ${prepared.shipAt ? 'SHIP DATA ' + date(prepared.shipAt) : 'LAST VERIFIED SHIP PROFILES'}${prepared.failures.length ? ' · SOME UPLINKS FAILED; SAVED DATA IN USE' : ''}`;
+  return `${cached ? 'CACHED POB STOCK' : 'POB STOCK RECEIVED'} ${date(prepared.pobAt)} · NPC PRICES ${date(prepared.npcAt)} · ${prepared.shipAt ? 'SHIP DATA ' + date(prepared.shipAt) : 'LAST VERIFIED SHIP PROFILES'} · ${prepared.identityAt ? 'ID RULES ' + date(prepared.identityAt) : 'ID SHIP RULES UNAVAILABLE'}${prepared.failures.length ? ' · SOME UPLINKS FAILED; SAVED DATA IN USE' : ''}`;
+}
+function selectedIdentities() {
+  const ids = prepared?.identities || identityRegistry();
+  return $('supplyIdentity').value === 'compare' ? comparisonIdentities(ids)
+    : ids.filter(id => id.id === ($('supplyIdentity').value || BMM_ID));
+}
+function accessFor(identityId = BMM_ID) {
+  if (!prepared.accessByIdentity.has(identityId)) prepared.accessByIdentity.set(identityId,
+    dockingAccess(prepared.dataset.bases, prepared.owners, prepared.factions, prepared.tractors, identityId, prepared.pobs));
+  return prepared.accessByIdentity.get(identityId);
+}
+function identityOptions() {
+  const selector = $('supplyIdentity'), selected = selector.value || BMM_ID;
+  const ids = prepared?.identities || identityRegistry();
+  selector.innerHTML = `<option value="compare"${ids.length < 2 ? ' disabled' : ''}>COMPARE · TRADING IDs</option>`
+    + ids.map(id => `<option value="${esc(id.id)}">${esc(id.name)}</option>`).join('');
+  selector.value = ids.some(id => id.id === selected) || selected === 'compare' && ids.length > 1 ? selected : BMM_ID;
 }
 function setBusy(value, message = '') {
   busy = value;
@@ -157,10 +188,13 @@ function setBusy(value, message = '') {
 function shipOptions() {
   const selector = $('supplyShip'), selected = selector.value;
   const ships = prepared?.ships || FALLBACK_SHIPS;
-  const auto = preferredShips(ships);
-  selector.innerHTML = `<option value="auto">COMPARE · ${esc(auto.map(ship => ship.name).join(' / ') || 'available haulers')}</option>`
-    + ships.map(ship => `<option value="${esc(ship.id)}">${esc(ship.name)} · ${count(ship.cargo)} hold · ${ship.cruise} m/s · ${ship.dockLabel}</option>`).join('');
-  if (selected && [...selector.options].some(option => option.value === selected)) selector.value = selected;
+  const ids = selectedIdentities();
+  selector.innerHTML = '<option value="auto">AUTO · Best permitted haulers</option>'
+    + ships.map(ship => {
+      const blocked = ids.length && ids.every(id => identityShipCheck(id, ship).state === 'blocked');
+      return `<option value="${esc(ship.id)}"${blocked ? ' disabled' : ''}>${esc(ship.name)} · ${count(ship.cargo)} hold · ${ship.cruise} m/s · ${ship.dockLabel}${blocked ? ' · ID RESTRICTED' : ''}</option>`;
+    }).join('');
+  if (selected && [...selector.options].some(option => option.value === selected && !option.disabled)) selector.value = selected;
 }
 function staleResults() {
   if (!result || busy) return;
@@ -178,17 +212,30 @@ function timePath(leg) {
   }
   return systems.length ? systems.join(' · ') : 'Within one system';
 }
+function identityMarkup(route) {
+  if (!route.identity) return '';
+  const rules = route.identity.rules, check = route.shipCheck;
+  const limit = rules.transportLimit == null ? '' : ` · Transport hull limit ${count(rules.transportLimit)}`;
+  return `<div class="supply-identity-note" data-state="${esc(check.state)}"><strong>REQUIRED ID · ${esc(route.identity.name)}</strong><span>${esc(check.reason)}${limit}</span></div>`;
+}
+function comparisonMarkup() {
+  if (!result?.stats.identityCompared) return '';
+  return `<details class="supply-identity-comparison" open><summary>ID COMPARISON · ${result.identityComparison.length} IDs CHECKED</summary><div class="supply-identity-grid">${result.identityComparison.map(row =>
+    `<section><strong>${esc(row.identity.name)}</strong>${row.ship
+      ? `<b>${money(row.hourlyProfit)} / hour</b><span>${esc(row.ship.name)} · ${count(row.ship.cargo)} hold</span><span>${esc(row.source)} · ${duration(row.seconds)} round trip · ${count(row.delivered)} units</span><small>${esc(row.reason)}</small><button type="button" data-use-identity="${esc(row.identity.id)}" data-use-ship="${esc(row.ship.id)}">USE THIS ID + SHIP</button>`
+      : `<span>${esc(row.reason)}</span><button type="button" data-use-identity="${esc(row.identity.id)}">SELECT ID</button>`}</section>`).join('')}</div><p>Keep one ID for the entire run. ID membership, RP/ZoI restrictions, personal reputation and POB permissions still apply. Comparison checks the available BMM, Junkers, Corsair, Mollys, Freelancer and Miner profiles; select any other ID for its own search.</p></details>`;
+}
 function renderResults() {
   $('supplySource').textContent = sourceMarkup();
   $('supplyResults').dataset.stale = 'false';
   if (result?.mode === 'export') { renderExports(); return; }
   if (!result?.results.length) {
-    $('supplyResults').innerHTML = '<div class="supply-empty">NO USABLE IMPORT ROUTE FOUND<p>A source needs a sale quotation, a reachable dock and known volumes. RHW needs an open purchase limit, cash and cargo space. Mined-only goods may have no market seller.</p></div>';
+    $('supplyResults').innerHTML = comparisonMarkup() + '<div class="supply-empty">NO USABLE IMPORT ROUTE FOUND<p>' + esc(result?.identityComparison?.[0]?.reason || 'A source needs a sale quotation, a reachable dock and known volumes. RHW needs an open purchase limit, cash and cargo space. Mined-only goods may have no market seller.') + '</p></div>';
     return;
   }
-  $('supplyResults').innerHTML = result.results.map(route => {
+  $('supplyResults').innerHTML = comparisonMarkup() + result.results.map(route => {
     const extra = route.extraSeconds > 1 ? `+${duration(route.extraSeconds)} vs standard import` : route.extraSeconds < -1 ? `${duration(-route.extraSeconds)} sooner` : 'No extra flight time';
-    const warnings = [...new Set(route.stops)].filter(id => id !== result.origin && prepared.access.byId[id]?.state === 'unknown');
+    const warnings = [...new Set(route.stops)].filter(id => id !== result.origin && accessFor(route.identity?.id).byId[id]?.state === 'unknown');
     const volume = route.legs.at(-1).volume;
     const comparison = route.recommendation;
     const timing = route.extraSeconds > 1 ? `about ${duration(route.extraSeconds)} longer` : route.extraSeconds < -1 ? `${duration(-route.extraSeconds)} sooner` : 'the same estimated time';
@@ -199,6 +246,7 @@ function renderResults() {
     const reason = comparison?.kind === 'profit-within-limit'
       ? `<p class="supply-recommendation-reason"><strong>WHY THIS ROUTE</strong>${money(comparison.hourlyProfitDelta)} more per hour than fast standard import, for ${timing} and ${delivery}.${comparison.profitDelta > 0 ? ` ${money(comparison.profitDelta)} more per run.` : ''}</p>` : '';
     return `<article class="supply-result${route.recommendation ? ' supply-recommended' : express ? ' supply-express' : ''}"><header><div><small>${esc(route.label)}</small><h3>${esc(route.ship.name)}</h3></div><span>${count(route.ship.cargo)} HOLD · ${route.ship.cruise} M/S</span></header>
+      ${identityMarkup(route)}
       ${expressNote}
       <div class="supply-itinerary">${route.legs.map((leg, i) => `${i === 0 ? '<span>RHW</span>' : ''}<b aria-hidden="true">→</b><span>${esc(leg.target === result.origin ? 'RHW' : leg.to)}</span>`).join('')}</div>
       <div class="supply-metrics"><div><small>DELIVER TO RHW</small><strong>${count(route.delivered)}</strong><span>${esc(result.commodity.name)}</span></div><div><small>EST. ROUND TRIP</small><strong>${duration(route.seconds)}</strong><span>${esc(extra)}</span></div><div><small>SUPPLY / HOUR</small><strong>${count(route.unitsPerHour)}</strong><span>units per hour</span></div><div><small>HAULER PROFIT</small><strong class="${route.profit < 0 ? 'supply-loss' : ''}">${money(route.profit)}</strong><span>${money(route.hourlyProfit)} / hour</span></div></div>
@@ -210,19 +258,19 @@ function renderResults() {
       <p>Estimates use trade lanes at 2,500 m/s, this ship's cruise speed, 15 s per jump, 30 s per docking operation and cruise/lane entry time. Interruptions and manual loading time may vary. Hauler profit includes buying from and selling to RHW. Company manufacturing profit is separate.</p></details></article>`;
   }).join('');
   const { stats } = result;
-  $('supplyStatus').textContent = `${stats.ships} SHIPS · ${stats.sources} SOURCE COMPARISONS · ${stats.checked} QUOTES · MAX 1 EXTRA STOP / ${stats.extraPercent}% EXTRA TIME${stats.expressOnly ? ' · NO LOSS-FREE DELIVERY FOUND; EXPRESS OPTIONS SHOWN' : ' · TIME LIMIT BASED ON STANDARD IMPORTS'}${stats.pruned || stats.timedOut ? ' · BEST FOUND WITHIN SEARCH LIMIT' : ''}`;
+  $('supplyStatus').textContent = `${stats.identities || 1} IDs · ${stats.ships} ID/SHIP PAIRS · ${stats.sources} SOURCE COMPARISONS · ${stats.checked} QUOTES · MAX 1 EXTRA STOP / ${stats.extraPercent}% EXTRA TIME${stats.expressOnly ? ' · NO LOSS-FREE DELIVERY FOUND; EXPRESS OPTIONS SHOWN' : ' · TIME LIMIT BASED ON STANDARD IMPORTS'}${stats.pruned || stats.timedOut ? ' · BEST FOUND WITHIN SEARCH LIMIT' : ''}`;
 }
 
 function renderExports() {
   if (!result.results.length) {
-    $('supplyResults').innerHTML = '<div class="supply-empty">NO USABLE EXPORT BUYER FOUND<p>RHW needs a sale quote and stock above its reserve. Buyers need a reachable dock, an open purchase quotation and known cargo volumes. POB funds, free storage and purchase limits must be reported; unknown limits are not treated as unlimited.</p></div>';
+    $('supplyResults').innerHTML = comparisonMarkup() + '<div class="supply-empty">NO USABLE EXPORT BUYER FOUND<p>' + esc(result.identityComparison?.[0]?.reason || 'RHW needs a sale quote and stock above its reserve. Buyers need a reachable dock, an open purchase quotation and known cargo volumes. POB funds, free storage and purchase limits must be reported; unknown limits are not treated as unlimited.') + '</p></div>';
     $('supplyStatus').textContent = `${result.stats.ships} SHIPS · ${result.stats.checked} QUOTES · NO VERIFIED EXPORT CAPACITY${result.stats.timedOut ? ' · SEARCH TIME LIMIT REACHED' : ''}`;
     return;
   }
-  $('supplyResults').innerHTML = result.results.map(route => {
+  $('supplyResults').innerHTML = comparisonMarkup() + result.results.map(route => {
     const buyer = route.buyer, back = route.returnTrade;
     const exportLoss = (route.outboundProfit ?? route.profit) < 0;
-    const warnings = [...new Set(route.stops)].filter(id => id !== result.origin && prepared.access.byId[id]?.state === 'unknown');
+    const warnings = [...new Set(route.stops)].filter(id => id !== result.origin && accessFor(route.identity?.id).byId[id]?.state === 'unknown');
     const limits = buyer.kind === 'pob' ? `<div class="supply-buyer-grid"><div><small>BUYER FUNDS</small><strong>${money(buyer.cash)}</strong></div><div><small>OPEN PURCHASE LIMIT</small><strong>${count(buyer.demand)} units</strong></div><div><small>FREE BUYER STORAGE</small><strong>${count(buyer.space)}</strong></div></div>` : '<p class="supply-ship-note">NPC buyer · no POB cash or storage limits</p>';
     const alternative = route.returnAlternative;
     const emptyNote = !result.stats.returnEnabled ? 'Return cargo is disabled in Export Settings.' : exportLoss ? 'A return trade does not turn a loss-making export into a recommendation.'
@@ -232,6 +280,7 @@ function renderExports() {
     const backMarkup = back ? `<section class="supply-return-cargo"><small>RETURN CARGO</small><h4>${count(back.quantity)} ${esc(back.name)} <span>+${money(back.profit)}</span></h4><p>${esc(back.from)} → ${esc(back.to)} · BUY ${money(back.buy)} / UNIT · SELL ${money(back.sell)} / UNIT</p><p>EXPORT MARGIN ${money(route.outboundProfit)} + RETURN MARGIN ${money(back.profit)} = ${money(route.profit)} PER RUN</p><p>${duration(Math.max(0, route.extraSeconds))} extra vs empty return · ${money(route.hourlyProfit - route.emptyReturn.hourlyProfit)} / hour more · Return load limited by ${esc(back.limiting.join(' / '))}</p></section>`
       : `<p class="supply-ship-note supply-return-note">EMPTY RETURN · ${emptyNote}</p>`;
     return `<article class="supply-result${route.recommendation ? ' supply-recommended' : exportLoss || route.profit <= 0 ? ' supply-express' : ''}"><header><div><small>${esc(route.label)}</small><h3>${esc(buyer.name)}</h3></div><span>${esc(route.ship.name)} · ${count(route.ship.cargo)} HOLD</span></header>
+      ${identityMarkup(route)}
       ${exportLoss || route.profit <= 0 ? '<p class="supply-express-note"><strong>NO PROFITABLE HAULER EXPORT</strong>This buyer pays at or below RHW’s sale price. The export margin is shown separately from any return trade; this is not a profitable export recommendation.</p>' : ''}
       <div class="supply-itinerary"><span>RHW</span>${route.legs.map(leg => `<b aria-hidden="true">→</b><span>${esc(leg.target === result.origin ? 'RHW' : leg.to)}${!leg.good ? ' · empty' : ''}</span>`).join('')}</div>
       <div class="supply-metrics"><div><small>SELL AT DESTINATION</small><strong>${count(route.delivered)}</strong><span>${esc(result.commodity.name)}</span></div><div><small>EST. ROUND TRIP</small><strong>${duration(route.seconds)}</strong><span>${duration(route.deliverySeconds)} until export delivery</span></div><div><small>RHW EXPORT RECEIPTS</small><strong>${money(route.rhwRevenue)}</strong><span>export revenue, before costs</span></div><div><small>HAULER PROFIT</small><strong class="${route.profit < 0 ? 'supply-loss' : ''}">${money(route.profit)}</strong><span>${money(route.hourlyProfit)} / hour</span></div></div>
@@ -244,7 +293,7 @@ function renderExports() {
       <p>Full-trip estimates include every return leg and docking stop, trade lanes at 2,500 m/s, this ship’s cruise speed, 15 s per jump and 30 s per docking operation. Hauler profit subtracts all purchases. RHW export receipts are revenue before manufacturing costs and return purchases. POB funds and stock limits can change before arrival.</p></details></article>`;
   }).join('');
   const stats = result.stats;
-  $('supplyStatus').textContent = `${stats.ships} SHIPS · ${stats.sources} BUYER COMPARISONS · ${stats.checked} EXPORT / ${stats.returnChecked} RETURN QUOTES${stats.returnEnabled ? ` · MAX ${stats.extraPercent}% RETURN DETOUR` : ' · RETURN CARGO OFF'}${stats.noProfit ? ' · NO POSITIVE EXPORT MARGIN' : ''}${stats.timedOut || stats.pruned ? ' · BEST FOUND WITHIN SEARCH LIMIT' : ''}`;
+  $('supplyStatus').textContent = `${stats.identities || 1} IDs · ${stats.ships} ID/SHIP PAIRS · ${stats.sources} BUYER COMPARISONS · ${stats.checked} EXPORT / ${stats.returnChecked} RETURN QUOTES${stats.returnEnabled ? ` · MAX ${stats.extraPercent}% RETURN DETOUR` : ' · RETURN CARGO OFF'}${stats.noProfit ? ' · NO POSITIVE EXPORT MARGIN' : ''}${stats.timedOut || stats.pruned ? ' · BEST FOUND WITHIN SEARCH LIMIT' : ''}`;
 }
 async function search(force = false) {
   const token = ++request;
@@ -257,9 +306,9 @@ async function search(force = false) {
     await prepare(force, controller.signal);
     clearTimeout(timeout);
     if (token !== request || !dialog.open) return;
-    shipOptions(); $('supplySource').textContent = sourceMarkup();
+    identityOptions(); shipOptions(); $('supplySource').textContent = sourceMarkup();
     const shipId = $('supplyShip').value;
-    const profiles = shipId === 'auto' ? preferredShips(prepared.ships) : prepared.ships.filter(ship => ship.id === shipId);
+    const profiles = prepared.ships;
     if (!profiles.length) throw Error('No usable ship profile; select another ship.');
     if (!$('supplyCommodity').value) throw Error(exporting() ? 'No export goods are configured for RHW.' : 'No import goods are configured for RHW.');
     const capital = $('supplyCapital').value.trim(), quantity = $('supplyQuantity').value.trim();
@@ -268,14 +317,17 @@ async function search(force = false) {
     worker = new Worker(new URL('./worker.mjs', import.meta.url), { type: 'module' });
     worker.onmessage = ({ data }) => {
       if (token !== request || data.id !== token) return;
-      if (data.type === 'progress') $('supplyStatus').textContent = `${data.progress.phase === 'return' ? 'CHECKING PROFITABLE RETURN CARGO' : data.progress.phase === 'export' ? 'CHECKING EXPORT BUYERS' : data.progress.phase === 'direct' ? 'CHECKING DIRECT IMPORTS' : 'CHECKING PROFITABLE APPROACHES'} · ${data.progress.checked} QUOTES`;
+      if (data.type === 'progress') $('supplyStatus').textContent = `${data.progress.identity ? data.progress.identity + ' · ' : ''}${data.progress.phase === 'identity' ? 'CHECKING ID + SHIP PROFILE' : data.progress.phase === 'return' ? 'CHECKING PROFITABLE RETURN CARGO' : data.progress.phase === 'export' ? 'CHECKING EXPORT BUYERS' : data.progress.phase === 'direct' ? 'CHECKING DIRECT IMPORTS' : 'CHECKING PROFITABLE APPROACHES'} · ${data.progress.checked} QUOTES`;
       if (data.type === 'error') { setBusy(false, data.message); worker?.terminate(); worker = null; }
       if (data.type === 'result') { result = data.result; setBusy(false); renderResults(); worker?.terminate(); worker = null; }
     };
     worker.onerror = () => { if (token === request) setBusy(false, 'Route worker unavailable. Reload RHW and try again.'); worker?.terminate(); worker = null; };
     worker.postMessage({ id: token, dataset: prepared.dataset, navigation: prepared.navigation, profiles,
+      scopes: selectedIdentities().map(identity => ({ identity, blocked: accessFor(identity.id).blocked,
+        accessReady: accessFor(identity.id).ready, approvalDocks: accessFor(identity.id).approvalDocks })),
       options: { mode: $('supplyMode').value, commodity: $('supplyCommodity').value, extraPercent: Number($('supplyExtra').value), returnCargo: $('supplyBackhaul').checked, includePobs: $('supplyPobs').checked,
-        capital: capital ? Number(capital) : null, quantity: quantity ? Number(quantity) : null, blocked: prepared.access.blocked } });
+        shipId, includeRestrictedPobs: $('supplyRestrictedPobs').checked,
+        capital: capital ? Number(capital) : null, quantity: quantity ? Number(quantity) : null } });
   } catch (error) {
     if (token === request && dialog.open) { setBusy(false, controller.signal.aborted ? 'UPLINK TIMED OUT · RETRY OR REFRESH MARKETS' : error.message); $('supplySource').textContent = sourceMarkup(); }
   } finally { clearTimeout(timeout); }
@@ -289,7 +341,7 @@ function mount() {
   dialog = document.createElement('dialog'); dialog.id = 'rhwSupplyDialog'; dialog.className = 'rhw-supply-dialog';
   dialog.setAttribute('aria-labelledby', 'supplyTitle');
   dialog.innerHTML = `<header class="supply-heading"><div><small>RHW LOGISTICS</small><h2 id="supplyTitle">RHW TRADE DESK</h2><p>Plan imports to RHW and exports from RHW. Compare ships, time and hauling profit.</p></div><button type="button" id="supplyClose" aria-label="Close Trade Desk">CLOSE</button></header>
-    <div class="supply-content"><form id="supplyForm"><div class="supply-fields supply-main-fields"><label>TRADE MODE<select id="supplyMode"><option value="supply">IMPORT</option><option value="export">EXPORT</option></select></label><label>COMMODITY<select id="supplyCommodity"></select></label><label>SHIP<select id="supplyShip"></select></label></div><details class="supply-settings"><summary id="supplySettingsTitle">IMPORT SETTINGS</summary><div class="supply-fields"><label><span id="supplyExtraLabel">MAX EXTRA TIME</span><select id="supplyExtra"><option value="0">Direct import only</option><option value="10">10% extra</option><option value="20" selected>20% extra</option><option value="35">35% extra</option><option value="50">50% extra</option></select></label><label>START CAPITAL · $<input id="supplyCapital" type="number" min="0" step="1" inputmode="numeric" placeholder="Show capital required"></label><label>DELIVERY QUANTITY<input id="supplyQuantity" type="number" min="1" step="1" inputmode="numeric" placeholder="Full hold within RHW limits"></label><label class="supply-check" data-export-only hidden><input id="supplyBackhaul" type="checkbox" checked>Find profitable return cargo</label><label class="supply-check"><input id="supplyPobs" type="checkbox" checked><span id="supplyPobsLabel">Include POB sellers</span></label></div><p id="supplySettingsCopy"></p></details><div class="supply-actions"><button type="submit" id="supplySearch">CALCULATE IMPORT ROUTE</button><button type="button" id="supplyRefresh">REFRESH MARKETS</button><button type="button" id="supplyCancel" hidden>CANCEL SEARCH</button></div></form><p id="supplySource" class="supply-source"></p><p id="supplyStatus" role="status" aria-live="polite"></p><div id="supplyResults"></div></div>`;
+    <div class="supply-content"><p class="supply-source">Keep the selected ID for the entire run. ID membership, RP/ZoI restrictions, personal reputation and POB permissions still apply. Trip profit excludes buying the ship and ID.</p><form id="supplyForm"><div class="supply-fields supply-main-fields"><label>TRADE MODE<select id="supplyMode"><option value="supply">IMPORT</option><option value="export">EXPORT</option></select></label><label>COMMODITY<select id="supplyCommodity"></select></label><label>TRADER ID<select id="supplyIdentity"><option value="dsy_license_br_m_grp">BMM ID</option></select></label><label>SHIP<select id="supplyShip"></select></label></div><details class="supply-settings"><summary id="supplySettingsTitle">IMPORT SETTINGS</summary><div class="supply-fields"><label><span id="supplyExtraLabel">MAX EXTRA TIME</span><select id="supplyExtra"><option value="0">Direct import only</option><option value="10">10% extra</option><option value="20" selected>20% extra</option><option value="35">35% extra</option><option value="50">50% extra</option></select></label><label>START CAPITAL · $<input id="supplyCapital" type="number" min="0" step="1" inputmode="numeric" placeholder="Show capital required"></label><label>DELIVERY QUANTITY<input id="supplyQuantity" type="number" min="1" step="1" inputmode="numeric" placeholder="Full hold within RHW limits"></label><label class="supply-check" data-export-only hidden><input id="supplyBackhaul" type="checkbox" checked>Find profitable return cargo</label><label class="supply-check"><input id="supplyPobs" type="checkbox" checked><span id="supplyPobsLabel">Include POB sellers</span></label><label class="supply-check"><input id="supplyRestrictedPobs" type="checkbox">Include approval-only POBs · conditional quotes</label></div><p id="supplySettingsCopy"></p></details><div class="supply-actions"><button type="submit" id="supplySearch">CALCULATE IMPORT ROUTE</button><button type="button" id="supplyRefresh">REFRESH MARKETS</button><button type="button" id="supplyCancel" hidden>CANCEL SEARCH</button></div></form><p id="supplySource" class="supply-source"></p><p id="supplyStatus" role="status" aria-live="polite"></p><div id="supplyResults"></div></div>`;
   document.body.append(dialog);
   $('supplyClose').addEventListener('click', () => dialog.close());
   dialog.addEventListener('close', () => {
@@ -312,10 +364,21 @@ function mount() {
   });
   $('supplyCancel').addEventListener('click', stop);
   $('supplyRefresh').addEventListener('click', () => search(true));
+  $('supplyResults').addEventListener('click', event => {
+    const button = event.target.closest('[data-use-identity]');
+    if (!button || busy) return;
+    $('supplyIdentity').value = button.dataset.useIdentity;
+    shipOptions();
+    const ship = button.dataset.useShip;
+    $('supplyShip').value = [...$('supplyShip').options].some(option => option.value === ship && !option.disabled) ? ship : 'auto';
+    result = null; $('supplyResults').innerHTML = ''; search();
+  });
   $('supplyForm').addEventListener('submit', event => { event.preventDefault(); search(); });
   $('supplyForm').addEventListener('change', event => {
     if (event.target.id === 'supplyMode') {
       result = null; $('supplyResults').innerHTML = ''; updateMode(selectedByMode[$('supplyMode').value]); search();
+    } else if (event.target.id === 'supplyIdentity') {
+      result = null; $('supplyResults').innerHTML = ''; shipOptions(); search();
     } else {
       if (event.target.id === 'supplyCommodity') selectedByMode[$('supplyMode').value] = $('supplyCommodity').value;
       staleResults();
@@ -327,7 +390,7 @@ export function open(next) {
   const selected = next.commodity || $('supplyCommodity').value;
   if (next.mode) $('supplyMode').value = next.mode;
   updateMode(selected);
-  shipOptions();
+  identityOptions(); shipOptions();
   if (!dialog.open) dialog.showModal();
   search();
 }

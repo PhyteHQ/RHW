@@ -22,6 +22,8 @@ self.RHW_APP_SHELL = [
   "./js/supply/export-quote.mjs",
   "./js/supply/return-planner.mjs",
   "./js/supply/commodity-groups.mjs",
+  "./js/supply/identity-profiles.mjs",
+  "./js/supply/identity-planner.mjs",
   "./js/supply/worker.mjs",
   "./js/supply/access.mjs",
   "./js/supply/ship-profiles.mjs",

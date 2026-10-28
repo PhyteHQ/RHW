@@ -108,6 +108,51 @@ boards continue to use their configured role scope.
 
 ## Trade Desk imports and exports
 
+`identity-profiles.mjs` reads allowed ship families and unqualified transport hull
+limits from live ID infocards. Regional conditions and exceptions remain
+conditional, rather than becoming global bans or assumed permission. A cargo
+limit applies to the entire hull, not the amount loaded. Automatic profiles
+require a player ship package, a permitted family, compliant hull capacity and
+full reported ship tech compatibility. Lower tech compatibility is a setup
+condition, not a legal ship-class ban. Unknown rules yield conditional manual
+quotes, never an automatic recommendation. The existing BMM favorites remain
+available as explicitly conditional fallback profiles if ID data is unavailable.
+
+`identity-planner.mjs` runs independent ID/ship scenarios through the existing
+import and export owners. One ID is retained for every trade and return stop.
+The comparison checks available BMM, Junkers, Corsair, Mollys, Freelancer and
+Miner profiles (up to six IDs); any live registry ID can also be selected for a
+dedicated search. Each ID shortlists up to six suitable haulers, including
+different mooring and volume classes. A shared search budget reports partial
+comparisons. Checked profiles set the common import benchmark; conditional
+quotes cannot silently tighten it. BMM remains visible as a comparison when an
+alternative wins. Cargo profit and start capital exclude acquiring a ship or ID.
+
+Docking uses the selected ID's reputation rules. Hostile maximum/static values
+block the affected NPC owners; neutral maxima and ignored rules cannot prove
+personal reputation. Whitelist-only POBs, unknown POB policies and hostile
+POB IFFs require owner approval and are excluded by default. The advanced
+approval-only POB option exposes them as conditional quotes, never automatic
+recommendations. Friendly IFF does not prove personal reputation or clear an
+owner blacklist. ID membership, RP/ZoI obligations, character reputation and
+POB ACLs are not inferred.
+
+The lazy market loader requests all ID rephacks, ship tech matrices and ID
+infocards. ID rules and ship/access schema upgrades have independent cache
+timestamps and migration flags. Ship metadata preserves the API `class` as the
+commodity volume class and accepts the current `techchompat_by_id` JSON spelling
+alongside the older `techcompat_by_id` spelling. Explicit NPC-only hulls without
+player ship packages are filtered out; package-bearing craft-only ships remain
+available. Physical mooring and jump cargo limits still belong to Navigator.
+
+Schema and interpretation references: Darkstat `darkapis/darkhttp/ships.go`,
+`tractors.go`, `misc_infocards.go`, `configs_export/exporter.go` and
+`configs/discovery/playercntl_rephacks/id_rephacks.go` at
+`darklab8/fl-darkstat@29850508a3b3ac9089b187f3fd9463be6988e80f`;
+ship families follow `DiscoveryGC/shipclass`'s `ShipClassTable` together with the
+actual strings in `shipclass.rc`, rather than the older explanatory C comment.
+No transport capacity is hardcoded from the historical 2018 ID forum list.
+
 The header Trade Desk opens the same lazy dialog in either import or export
 mode. Export Inventory and export-role manifest rows launch commodity-specific
 buyer searches. Force Uplink is always visible in the connection panel, outside

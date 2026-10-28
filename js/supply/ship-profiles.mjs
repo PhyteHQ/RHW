@@ -9,7 +9,6 @@ export const DOCK_CLASSES=Object.freeze({
   2:Object.freeze({label:'MID',nav:'medium'}),
   3:Object.freeze({label:'LARGE',nav:'large'})
 });
-const SKIP_NICKNAMES=new Set(['dsy_slaveliner','dsy_pi_freighter']);
 const ALIASES=Object.freeze({
   dsy_mercatante:Object.freeze({name:'Correo',terms:['Coreo','Corsair Freighter']}),
   dsy_bsgalactica:Object.freeze({name:'Essedarius',terms:['Corsair Train']}),
@@ -31,13 +30,18 @@ function makeShip(raw){
   const nickname=short(raw.nickname),cargo=reasonableInteger(raw.hold_size,1,50000),
     cruise=reasonableInteger(raw.cruise_speed,1,3000),
     dockType=reasonableInteger(raw.dock_type,1,3),dock=DOCK_CLASSES[dockType];
-  if(!nickname||!cargo||!cruise||!dock||SKIP_NICKNAMES.has(nickname.toLowerCase()))return null;
+  const playerShip=raw.ship_packages===undefined?null:Array.isArray(raw.ship_packages)&&raw.ship_packages.length>0;
+  if(!nickname||!cargo||!cruise||!dock||playerShip===false)return null;
   const apiName=short(raw.name)||nickname;
   const alias=ALIASES[nickname.toLowerCase()];
   const name=alias?.name||apiName;
   const terms=[name,apiName,nickname,raw.type,...(alias?.terms||[])];
+  const shipClass=reasonableInteger(raw.class??raw.ship_class,0,100);
+  const techCompat=Object.fromEntries(Object.entries(raw.tech_compat?.techchompat_by_id??raw.tech_compat?.techcompat_by_id??{})
+    .filter(([id,value])=>id.length<120&&typeof value==='number'&&Number.isFinite(value)&&value>=0&&value<=10));
   return Object.freeze({id:profileKey(nickname),nickname,name,apiName,type:short(raw.type)||'ship',
     cargo,cruise,dock:dock.nav,dockType,dockLabel:dock.label,
+    shipClass,volumeClass:shipClass,techCompat,playerShip,
     custom:false,source:'darkstat',
     searchKey:norm(terms.join(' '))});
 }
