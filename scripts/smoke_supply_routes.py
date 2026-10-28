@@ -74,6 +74,10 @@ def main():
                     {'nickname': junker_id, 'name': 'Junkers ID', 'rephacks': [{'faction_nickname': 'fc_m_grp', 'reputation': .3, 'rep_type': 1}, {'faction_nickname': 'br_n_grp', 'reputation': .1, 'rep_type': 1}]}]
         idcards = {bmm_id: {'infocard': [{'phrases': [{'phrase': 'Permitted ships: Fighters, Freighters, Transports, Gunboats'}]}]},
                    junker_id: {'infocard': [{'phrases': [{'phrase': 'Permitted ships: Fighters, Freighters, Transports, Gunboats'}]}, {'phrases': [{'phrase': 'Cannot use any Transports with more than 4,300 cargo.'}]}]}}
+        freelancer_id = 'fixture_freelancer_id'
+        tech['techchompat_by_id'][freelancer_id] = 1
+        tractors.append({'nickname': freelancer_id, 'name': 'Freelancer ID', 'rephacks': tractors[1]['rephacks']})
+        idcards[freelancer_id] = idcards[junker_id]
         fixture = {'pobs': [pob, express_pob, export_buyer], 'commodities': commodities, 'ships': ships,
                    'npc_bases': [{'nickname': 'trafalgar', 'faction_nickname': 'br_n_grp'}, {'nickname': 'molly', 'faction_nickname': 'fc_m_grp'}],
                    'factions': [], 'tractors': tractors, 'idcards': idcards}
@@ -193,25 +197,29 @@ def main():
             raise RuntimeError('Export mode must restore its own last selection and hide import-only goods')
         base.ev(cdp, "(()=>{supplyMode.value='supply';supplyMode.dispatchEvent(new Event('change',{bubbles:true}));return true})()")
         wait_for(cdp, "!supplySearch.disabled")
-        base.ev(cdp, "(()=>{supplyCommodity.value='Wildcat Gold';supplyCommodity.dispatchEvent(new Event('change',{bubbles:true}));supplyIdentity.value='compare';supplyIdentity.dispatchEvent(new Event('change',{bubbles:true}));return true})()")
-        wait_for(cdp, "!supplySearch.disabled && !!document.querySelector('.supply-identity-comparison')")
-        identity_result = base.ev(cdp, "(()=>({first:document.querySelector('.supply-result').innerText,comparison:document.querySelector('.supply-identity-comparison').innerText,ids:supplyIdentity.options.length}))()")
-        if 'Junkers ID' not in identity_result['first'] or 'Small Transport' not in identity_result['first'] or 'Dublin Molly Test Base' not in identity_result['first'] or 'Advanced Train' not in identity_result['comparison'] or identity_result['ids'] != 3:
-            raise RuntimeError(f'ID comparison must find the closer source with a smaller allowed ship and retain the BMM comparison: {identity_result}')
+        base.ev(cdp, "(()=>{supplyCommodity.value='Wildcat Gold';supplyCommodity.dispatchEvent(new Event('change',{bubbles:true}));supplyShip.value='auto';supplySearch.click();return true})()")
+        wait_for(cdp, "!supplySearch.disabled && !!document.querySelector('.supply-result [data-compatible-identity]')")
+        identity_result = base.ev(cdp, "(()=>({first:document.querySelector('.supply-result').innerText,compatible:[...document.querySelectorAll('.supply-result:first-child .supply-id-tags>span')].map(n=>n.dataset.compatibleIdentity),idFilter:supplyIdentity.value,goal:supplyImportGoal.value,idInAdvanced:!!supplyIdentity.closest('.supply-settings'),mainFields:document.querySelectorAll('.supply-main-fields select').length,panel:!!document.querySelector('.supply-identity-comparison')}))()")
+        if 'Small Transport' not in identity_result['first'] or 'Dublin Molly Test Base' not in identity_result['first'] or sorted(identity_result['compatible']) != sorted([junker_id, freelancer_id]) or identity_result['idFilter'] != 'all' or identity_result['goal'] != 'price' or not identity_result['idInAdvanced'] or identity_result['mainFields'] != 3 or identity_result['panel']:
+            raise RuntimeError(f'Default route-first search must recommend the closer allowed hauler and show all compatible IDs without a preceding ID panel: {identity_result}')
         for width in [360, 390, 1440]:
             cdp.call('Emulation.setDeviceMetricsOverride', {'width': width, 'height': 1000, 'deviceScaleFactor': 1, 'mobile': width < 760})
             if base.ev(cdp, "rhwSupplyDialog.scrollWidth>rhwSupplyDialog.clientWidth+1"):
-                raise RuntimeError(f'ID comparison overflows at {width}px')
-            base.ev(cdp, "document.querySelector('.supply-identity-comparison').scrollIntoView({block:'start',behavior:'instant'})")
+                raise RuntimeError(f'Route-first result overflows at {width}px')
+            base.ev(cdp, "document.querySelector('.supply-result').scrollIntoView({block:'start',behavior:'instant'})")
             shot = cdp.call('Page.captureScreenshot', {'format': 'png'})
-            (out / f'identity-comparison-{width}.png').write_bytes(base64.b64decode(shot['data']))
-        base.ev(cdp, "document.querySelector('[data-use-identity=\"dsy_license_fc_j_grp\"]').click()")
-        wait_for(cdp, "!supplySearch.disabled && supplyIdentity.value==='dsy_license_fc_j_grp' && supplyShip.value==='ship:small_transport'")
-        if not base.ev(cdp, "supplyShip.querySelector('[value=\"ship:dsy_advanced_train\"]').disabled && supplyResults.innerText.includes('Dublin Molly Test Base')"):
-            raise RuntimeError('Selecting the alternative must keep its ID and real permitted ship, and disable the illegal 5k hull')
+            (out / f'route-first-{width}.png').write_bytes(base64.b64decode(shot['data']))
+        base.ev(cdp, "(()=>{document.querySelector('.supply-settings').open=true;supplyIdentity.value='dsy_license_br_m_grp';supplyIdentity.dispatchEvent(new Event('change',{bubbles:true}));return true})()")
+        wait_for(cdp, "!supplySearch.disabled && supplyResults.innerText.includes('Trafalgar Test Base')")
+        if 'Dublin Molly Test Base' in base.ev(cdp, "supplyResults.innerText"):
+            raise RuntimeError('Optional BMM filter must exclude the incompatible supplier')
+        base.ev(cdp, "(()=>{supplyShip.value='ship:dsy_advanced_train';supplyIdentity.value='dsy_license_fc_j_grp';supplyIdentity.dispatchEvent(new Event('change',{bubbles:true}));return true})()")
+        wait_for(cdp, "!supplySearch.disabled && supplyResults.innerText.includes('Dublin Molly Test Base')")
+        if not base.ev(cdp, "supplyShip.value==='auto' && supplyShip.querySelector('[value=\"ship:dsy_advanced_train\"]').disabled"):
+            raise RuntimeError('ID restriction must reset and disable an illegal 5k hull while preserving route search')
         base.ev(cdp, "supplyClose.click()")
         wait_for(cdp, "!rhwSupplyDialog.open && document.activeElement.classList.contains('header-trade-button')", 3)
-        print('Trade Desk browser passed: import/export regressions, POB limits, ID+ship comparison, smaller permitted hauler, illegal hull disabled, mode switch, POB OFF, focus and 360/390/1440px layouts.')
+        print('Trade Desk browser passed: route-first default, compatible ID badges, cheaper-source priority, optional ID filter, illegal hull disabled, import/export and POB regressions, focus and 360/390/1440px layouts.')
     finally:
         if cdp:
             cdp.close()

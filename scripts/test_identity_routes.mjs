@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { BMM_ID, dockingAccess } from '../js/supply/access.mjs';
 import { normalizeShipRegistry } from '../js/supply/ship-profiles.mjs';
-import { parseIdentityRules, identityRegistry, identityShipCheck, autoIdentityShips, comparisonIdentities } from '../js/supply/identity-profiles.mjs';
+import { parseIdentityRules, identityRegistry, identityShipCheck, autoIdentityShips } from '../js/supply/identity-profiles.mjs';
 import { searchIdentities } from '../js/supply/identity-planner.mjs';
 
 const JUNKERS = 'dsy_license_fc_j_grp';
@@ -25,7 +25,6 @@ const regional = parseIdentityRules(card(['Permitted ships: Freighters, Transpor
 assert.equal(regional.state, 'conditional');
 assert.equal(regional.transportLimit, null, 'A regional docking condition is not a global hull limit');
 assert.equal(parseIdentityRules(card(['Permitted ships: Transports', 'Cannot use any Transports with more than 4,300 cargo, except for a special train.'])).state, 'conditional');
-assert.deepEqual(comparisonIdentities(identities).map(id => id.id), [BMM_ID, JUNKERS]);
 
 const tech_compat = { techchompat_by_id: { [BMM_ID]: 1, [JUNKERS]: 1 } };
 const ships = normalizeShipRegistry([
@@ -84,14 +83,14 @@ assert.equal(compared.results[0].ship.id, small.id, 'The nearby base needs the s
 assert.equal(compared.results[0].legs.at(-1).from, molly.name);
 assert.equal(compared.results[0].delivered, 3600);
 assert.ok(compared.results[0].recommendation);
-assert.equal(compared.identityComparison.length, 2);
-assert.equal(compared.identityComparison.find(row => row.identity.id === BMM_ID).ship.id, train.id);
+assert.equal(compared.stats.identities, 2);
+assert.deepEqual(compared.results[0].compatibleIdentities.map(row => row.identity.id), [JUNKERS]);
 assert.ok(compared.results.filter(row => row.identity.id === BMM_ID).every(row => !row.stops.includes('molly')));
 assert.ok(compared.results.every(row => row.identity.id === BMM_ID || row.ship.id !== train.id));
 assert.ok(compared.results.every(row => row.legs.every(leg => leg.flight)), 'Every leg, including return travel, is checked for the same ship');
 const forbidden = await searchIdentities(data, navigation, ships, [scopes[1]], { commodity: 'Wildcat Gold', shipId: train.id });
 assert.equal(forbidden.results.length, 0);
-assert.match(forbidden.identityComparison[0].reason, /Hull exceeds/);
+assert.match(forbidden.reason, /Hull exceeds/);
 const unverified = await searchIdentities(data, navigation, ships, [{ identity: { ...junkers, rules: parseIdentityRules(null) }, blocked: [] }],
   { commodity: 'Wildcat Gold', shipId: small.id });
 assert.ok(unverified.results.length);
@@ -124,4 +123,43 @@ assert.equal(pobCompared.results[0].legs.at(-1).from, molly.name);
 assert.ok(pobCompared.results.filter(row => row.identity.id === BMM_ID).every(row => !row.stops.includes('molly')), 'Hostile POB IFF is excluded unless owner-approval quotes are explicitly requested');
 const approvalQuote = await searchIdentities(pobData, navigation, ships, [pobScopes[0]], { commodity: 'Wildcat Gold', shipId: train.id, includeRestrictedPobs: true });
 assert.ok(approvalQuote.results.some(row => row.stops.includes('molly') && row.recommendation === null && /owner approval/.test(row.shipCheck.reason)));
-console.log('Identity routes passed: live infocard parsing, whole-hull limits, technical penalties, independent ID docking, POB whitelists, BMM vs smaller Junkers hauler, fixed identity throughout and conditional unknowns.');
+
+// Search all IDs automatically and merge equivalent routes; a profile beyond
+// the former six-ID comparison must be eligible for the winning source.
+const EXTRA = 'fixture_eighth_id';
+const extraIdentity = { ...junkers, id: EXTRA, name: 'Eighth Trader ID' };
+const expandedShips = ships.map(ship => ({ ...ship, techCompat: { ...ship.techCompat, [EXTRA]: 1 } }));
+const manyScopes = [scopes[0], ...Array.from({ length: 6 }, (_, i) => ({ ...scopes[0], identity: { ...bmm, id: 'unused_' + i } })),
+  { ...scopes[1], identity: extraIdentity }];
+const allIds = await searchIdentities(data, navigation, expandedShips, manyScopes, { commodity: 'Wildcat Gold', shipId: 'auto' });
+assert.equal(allIds.stats.identities, 8);
+assert.equal(allIds.results[0].identity.id, EXTRA);
+const duplicated = await searchIdentities(data, navigation, expandedShips, [...scopes, manyScopes.at(-1)], { commodity: 'Wildcat Gold', shipId: 'auto' });
+assert.equal(duplicated.stats.checked, compared.stats.checked, 'Another compatible ID must not repeat the navigation and market search');
+assert.deepEqual(duplicated.results[0].compatibleIdentities.filter(row => row.shipCheck.state === 'checked').map(row => row.identity.id).sort(), [JUNKERS, EXTRA].sort());
+assert.equal(new Set(duplicated.results.map(route => JSON.stringify([route.ship.id, route.stops, route.quantities]))).size, duplicated.results.length);
+const pinned = await searchIdentities(data, navigation, expandedShips, [...scopes, manyScopes.at(-1)], { commodity: 'Wildcat Gold', shipId: 'auto', identityId: BMM_ID });
+assert.ok(pinned.results.length);
+assert.ok(pinned.results.every(route => !route.stops.includes('molly') && route.identity.id === BMM_ID));
+
+// An ID that can dock at the export buyer cannot borrow another ID's access
+// to a lucrative return source. A third ID valid at both may use that tour.
+const split = structuredClone(exportData);
+split.bases[1].offers[0].buy = 1;
+split.bases[2].offers[0].buy = 149;
+split.bases[1].offers.find(offer => offer.id === 'gold').sell = 1;
+split.bases[1].pos = [8000, 0, 0]; split.bases[2].pos = [8000, 0, 0];
+const splitNav = structuredClone(navigation);
+splitNav.nodes.find(node => node.id === 'trafalgar').pos = [8000, 0, 0];
+splitNav.nodes.find(node => node.id === 'molly').pos = [8000, 0, 0];
+const splitScopes = [{ ...scopes[0], blocked: ['molly'] }, { ...scopes[1], blocked: ['trafalgar'] }];
+const completeScope = { identity: extraIdentity, accessReady: true, blocked: [] };
+const combined = await searchIdentities(split, splitNav, expandedShips, [...splitScopes, completeScope], { mode: 'export', commodity: 'Gold', shipId: small.id, extraPercent: 50 });
+assert.ok(combined.results.some(route => route.buyer.id === 'molly' && route.returnTrade?.source === 'trafalgar'), 'The mixed-access tour is economically attractive and physically reachable when one ID permits every stop');
+const splitExport = await searchIdentities(split, splitNav, ships, splitScopes, { mode: 'export', commodity: 'Gold', shipId: small.id, extraPercent: 50 });
+assert.ok(splitExport.results.every(route => !route.stops.includes('molly') || !route.stops.includes('trafalgar')));
+assert.ok(splitExport.results.every(route => route.compatibleIdentities.every(row => {
+  const scope = splitScopes.find(item => item.identity.id === row.identity.id);
+  return route.stops.every(id => !scope.blocked.includes(id));
+})));
+console.log('Identity routes passed: full-registry route search, shared compatible-ID badges, fixed-ID filter, whole-hull limits, technical penalties, per-ID docking, POB approvals and no mixing IDs across return stops.');

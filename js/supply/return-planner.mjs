@@ -80,6 +80,9 @@ export function quoteExportReturn(route, candidate, byId, profile, navigator, se
   if (exportLeg.target !== returnLeg.source) legs.push(empty(exportLeg.target, returnLeg.source));
   legs.push(returnLeg);
   if (returnLeg.target !== exportLeg.source) legs.push(empty(returnLeg.target, exportLeg.source));
+  const stops = [exportLeg.source, ...legs.map(leg => leg.target)];
+  const identityState = options.routeEligibility?.(profile, stops);
+  if (identityState === 'blocked') return null;
   const flights = legs.map(leg => navigator.route(leg.source, leg.target));
   trimRouteCache(navigator, [exportLeg.source, exportLeg.target]);
   if (flights.some(flight => !flight)) return null;
@@ -99,10 +102,10 @@ export function quoteExportReturn(route, candidate, byId, profile, navigator, se
   const checked = simulate(legs, quantities, visited, { capital: budget, cargo: profile.cargo });
   if (!checked || checked.profit <= route.profit) return null;
   const { bases: _state, ...verified } = checked;
-  return { ...route, ...verified, legs, delivered: route.delivered, seconds,
+  return { ...route, ...verified, ...(identityState ? { identityState } : {}), legs, delivered: route.delivered, seconds,
     hourlyProfit: checked.profit * 3600 / seconds, unitsPerHour: route.delivered * 3600 / seconds,
     jumps: flights.reduce((sum, flight) => sum + flight.jumps, 0),
-    stops: [exportLeg.source, ...legs.map(leg => leg.target)], outboundProfit: route.profit,
+    stops, outboundProfit: route.profit,
     returnTrade: { good: returnLeg.good, name: returnLeg.name, quantity: back.delivered,
       from: candidate.source.name, to: candidate.target.name, source: returnLeg.source, target: returnLeg.target,
       buy: returnLeg.buy, sell: returnLeg.sell, profit: back.profit,

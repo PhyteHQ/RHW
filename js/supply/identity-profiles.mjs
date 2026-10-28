@@ -71,13 +71,6 @@ export function identityRegistry(tractors = [], cards = {}, asOf = 0) {
   return [...unique.values()].sort((a, b) => a.id === BMM_ID ? -1 : b.id === BMM_ID ? 1 : a.name.localeCompare(b.name));
 }
 
-export function comparisonIdentities(identities) {
-  const patterns = [/bretonia mining|\bbmm\b/i, /junker/i, /corsair/i, /molly|mollies|mollys/i, /freelancer/i, /^(?:independent\s+)?miner(?:\s*id)?$/i];
-  const preferred = [BMM_ID, 'dsy_license_fc_j_grp', 'dsy_license_fc_c_grp', 'dsy_license_fc_m_grp'];
-  return [...new Map(patterns.map((pattern, index) => identities.find(id => id.id === preferred[index])
-    || identities.find(id => pattern.test(id.name))).filter(Boolean).map(id => [id.id, id])).values()].slice(0, 6);
-}
-
 export function shipFamily(ship) {
   if (Number.isSafeInteger(ship.shipClass)) return FAMILIES[ship.shipClass] || null;
   const type = normalize(ship.type);

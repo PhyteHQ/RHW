@@ -144,7 +144,7 @@ function bestEarning(routes, baseline, allowance) {
 // Normal procurement never loses money on the requested material itself. A
 // profitable export must not disguise an expensive inbound purchase. Express
 // quotes remain available, but cannot tighten the normal supply time window.
-export function rankSupplyRoutes(routes, extraPercent = 20) {
+export function rankSupplyRoutes(routes, extraPercent = 20, goal = 'income') {
   const quoted = routes.map(route => ({ ...route, delivery: deliveryEconomics(route) }));
   const normal = quoted.filter(normalDelivery);
   const direct = normal.filter(route => !route.extraStop).sort(supplySort);
@@ -157,14 +157,27 @@ export function rankSupplyRoutes(routes, extraPercent = 20) {
   }
   if (baseline) {
     const earning = bestEarning(normal, baseline, allowance);
-    const recommended = earning?.hourlyProfit > baseline.hourlyProfit + 0.01 ? earning : baseline;
-    pick(recommended, recommended === baseline ? 'RECOMMENDED · STANDARD IMPORT' : 'RECOMMENDED · BEST $/H WITHIN LIMIT', {
-      kind: recommended === baseline ? 'fast-supply' : 'profit-within-limit',
+    const affordable = normal.filter(route => (!route.extraStop || allowance > 0)
+      && route.seconds <= baseline.seconds * (1 + allowance / 100) + .01
+      && route.unitsPerHour >= baseline.unitsPerHour / (1 + allowance / 100) - .01)
+      .sort((a, b) => a.delivery.buyPerUnit - b.delivery.buyPerUnit || b.hourlyProfit - a.hourlyProfit || supplySort(a, b));
+    const recommended = goal === 'price' ? affordable[0] || baseline
+      : goal === 'speed' ? baseline : earning?.hourlyProfit > baseline.hourlyProfit + 0.01 ? earning : baseline;
+    pick(recommended, goal === 'price' ? 'RECOMMENDED · LOWEST BUY PRICE WITHIN LIMIT'
+      : recommended === baseline ? 'RECOMMENDED · STANDARD IMPORT' : 'RECOMMENDED · BEST $/H WITHIN LIMIT', {
+      kind: goal === 'price' ? 'lowest-price' : recommended === baseline ? 'fast-supply' : 'profit-within-limit',
       fastDelivered: baseline.delivered,
+      buyPriceDelta: baseline.delivery.buyPerUnit - recommended.delivery.buyPerUnit,
+      fastSeconds: baseline.seconds,
       profitDelta: recommended.profit - baseline.profit,
       hourlyProfitDelta: recommended.hourlyProfit - baseline.hourlyProfit
     });
     if (recommended !== baseline) pick(baseline, 'FAST IMPORT');
+    if (goal === 'price') {
+      const cheapest = [...direct].sort((a, b) => a.delivery.buyPerUnit - b.delivery.buyPerUnit || supplySort(a, b))[0];
+      if (cheapest && cheapest.delivery.buyPerUnit < recommended.delivery.buyPerUnit - 1e-6)
+        pick(cheapest, 'LOWER BUY PRICE · OUTSIDE TIME LIMIT');
+    }
   }
   const express = quoted.filter(route => route.delivery?.loss > 1e-6
     && (!route.extraStop || allowance > 0)
@@ -201,6 +214,9 @@ export async function searchSupply(dataset, navigation, profiles, options = {}, 
     quantity: finite(options.quantity) && options.quantity > 0 ? Math.floor(options.quantity) : null };
   function evaluate(legs, navigator, profile, extraStop = false) {
     checked++;
+    const stops = [legs[0].source, ...legs.map(leg => leg.target)];
+    const identityState = options.routeEligibility?.(profile, stops);
+    if (identityState === 'blocked') return null;
     const visited = [...new Set(legs.flatMap(leg => [leg.source, leg.target]))].map(id => byId.get(id));
     const travel = legs.map(leg => navigator.route(leg.source, leg.target));
     trimRouteCache(navigator, [rhw.id]);
@@ -211,15 +227,16 @@ export async function searchSupply(dataset, navigation, profiles, options = {}, 
     if (!(seconds > 0)) return null;
     const result = { ...quote, ship: profile, seconds, jumps: travel.reduce((sum, route) => sum + route.jumps, 0),
       unitsPerHour: quote.delivered * 3600 / seconds, hourlyProfit: quote.profit * 3600 / seconds,
-      extraStop, navigator, stops: [legs[0].source, ...legs.map(leg => leg.target)] };
+      extraStop, navigator, stops, ...(identityState ? { identityState } : {}) };
     routes.push(result); return result;
   }
-  for (const profile of profiles.slice(0, 6)) {
+  for (const profile of profiles.slice(0, options.profileLimit || 6)) {
     if (!withinBudget()) { timedOut = true; break; }
     const navigator = new Navigator(navigation, bases, profile, settings);
     const outward = navigator.from(rhw.id);
     if (!outward) continue;
     const suppliers = bases.filter(base => base.id !== rhw.id).flatMap(base => {
+      if (options.routeEligibility?.(profile, [rhw.id, base.id]) === 'blocked') return [];
       const leg = makeLeg(base, rhw, commodity.id, profile);
       const out = outward.times.get(navigator.baseNodes.get(base.id));
       if (!leg || !Number.isFinite(out) || !navigator.allowed(navigator.nodes.get(navigator.baseNodes.get(base.id)))) return [];
@@ -231,7 +248,9 @@ export async function searchSupply(dataset, navigation, profiles, options = {}, 
     // above RHW's payout. Reserve some comparisons for express alternatives.
     const ordinary = suppliers.filter(row => row.leg.margin >= -1e-6);
     const express = suppliers.filter(row => row.leg.margin < -1e-6);
-    const selected = ordinary.slice(0, 28).concat(express.slice(0, 8));
+    const selected = options.importGoal === 'price'
+      ? [...new Set([...ordinary.slice(0, 16), ...[...ordinary].sort((a, b) => a.leg.buy - b.leg.buy || b.rank - a.rank).slice(0, 12), ...express.slice(0, 8)])]
+      : ordinary.slice(0, 28).concat(express.slice(0, 8));
     const retained = new Set(selected);
     for (const supplier of ordinary.concat(express)) {
       if (selected.length >= 36) break;
@@ -246,7 +265,8 @@ export async function searchSupply(dataset, navigation, profiles, options = {}, 
       if (searchedSources % 4 === 0) { progress({ phase: 'direct', checked, sources: searchedSources }); await pause(); }
     }
   }
-  const baseline = fastSupplyBaseline(routes);
+  const verified = routes.filter(route => route.identityState !== 'conditional');
+  const baseline = fastSupplyBaseline(verified.length ? verified : routes);
   const extraPercent = Math.min(50, Math.max(0, Number(options.extraPercent) || 0));
   const maxSeconds = baseline ? baseline.seconds * (1 + extraPercent / 100) : 0;
   if (baseline && extraPercent > 0) for (const { profile, navigator, selected } of contexts) {
@@ -257,6 +277,7 @@ export async function searchSupply(dataset, navigation, profiles, options = {}, 
       const hops = [];
       for (const hop of bases) {
         if (hop.id === rhw.id || hop.id === supplier.base.id) continue;
+        if (options.routeEligibility?.(profile, [rhw.id, hop.id, supplier.base.id]) === 'blocked') continue;
         const out = navigator.route(rhw.id, hop.id);
         if (!out || out.seconds + inbound.seconds + 4 * settings.dock > maxSeconds) continue;
         for (const trade of bestTrades(hop, supplier.base, commodity.id, profile, 2)) hops.push({ hop, ...trade, approach: out.seconds });
@@ -274,11 +295,16 @@ export async function searchSupply(dataset, navigation, profiles, options = {}, 
       }
     }
   }
-  const selected = rankSupplyRoutes(routes, extraPercent);
+  const eligible = routes.filter(route => route.identityState !== 'conditional');
+  const selected = rankSupplyRoutes(eligible.length ? eligible : routes, extraPercent, options.importGoal);
+  if (eligible.length) {
+    const conditional = rankSupplyRoutes(routes.filter(route => route.identityState === 'conditional'), extraPercent, options.importGoal)[0];
+    if (conditional) selected.push(conditional);
+  }
   return { commodity: { id: commodity.id, name: commodity.name }, origin: rhw.id,
-    results: selected.slice(0, 3).map(route => {
+    results: selected.slice(0, 4).map(route => {
       const { navigator, bases: _state, ...data } = route;
-      return { ...data, extraSeconds: baseline ? route.seconds - baseline.seconds : 0,
+      return { ...data, extraSeconds: route.recommendation?.fastSeconds != null ? route.seconds - route.recommendation.fastSeconds : baseline ? route.seconds - baseline.seconds : 0,
         legs: data.legs.map(leg => ({ ...leg, from: byId.get(leg.source)?.name, to: byId.get(leg.target)?.name,
           fromSystem: byId.get(leg.source)?.systemName, toSystem: byId.get(leg.target)?.systemName,
           flight: navigator.route(leg.source, leg.target, true) })) };

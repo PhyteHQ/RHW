@@ -118,15 +118,24 @@ condition, not a legal ship-class ban. Unknown rules yield conditional manual
 quotes, never an automatic recommendation. The existing BMM favorites remain
 available as explicitly conditional fallback profiles if ID data is unavailable.
 
-`identity-planner.mjs` runs independent ID/ship scenarios through the existing
-import and export owners. One ID is retained for every trade and return stop.
-The comparison checks available BMM, Junkers, Corsair, Mollys, Freelancer and
-Miner profiles (up to six IDs); any live registry ID can also be selected for a
-dedicated search. Each ID shortlists up to six suitable haulers, including
-different mooring and volume classes. A shared search budget reports partial
-comparisons. Checked profiles set the common import benchmark; conditional
-quotes cannot silently tighten it. BMM remains visible as a comparison when an
-alternative wins. Cargo profit and start capital exclude acquiring a ship or ID.
+The Trade Desk searches routes first. Its default ID scope covers the entire
+loaded ID registry; a fixed-ID restriction lives in advanced settings.
+`identity-planner.mjs` shortlists up to twelve distinct haulers across all ID
+profiles and searches each hull once. Every candidate tour must have at least
+one ID valid for all its stops with that hull. A union of unrelated docking
+permissions cannot authorize a tour. Export backhaul rechecks the full tour
+before selecting a return trade. Equivalent tours are shown once with every
+compatible ID; conditional IDs are kept separate from checked profiles.
+
+Import defaults to the lowest requested-material buy price within both the
+time allowance and supply-rate allowance established by fast standard import.
+Equal prices favor whole-trip hauler $/hour. The absolute cheapest direct
+source is also visible when it is cheaper but outside those limits. Alternate
+priorities retain hauler income and supply speed. Supplier shortlists preserve
+cheap sources as well as fast sources. Export maximizes complete-trip $/hour.
+Search budgets and omitted hulls/markets are reported as limits, rather than a
+claim of exhaustive optimization. Cargo profit and start capital exclude
+acquiring a ship or ID.
 
 Docking uses the selected ID's reputation rules. Hostile maximum/static values
 block the affected NPC owners; neutral maxima and ignored rules cannot prove

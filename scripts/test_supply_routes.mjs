@@ -97,6 +97,21 @@ assert.equal(rankSupplyRoutes([lossFast, lossSlow], 20)[0].seconds, 1745, 'Stret
 assert.ok(!rankSupplyRoutes([lossFast, lossSlow], 20)[0].recommendation, 'Loss-only delivery is an explicit express option, not a normal recommendation');
 assert.equal(new Set(ranked.map(route => JSON.stringify(route.legs))).size, ranked.length);
 
+// Route-first imports minimize the target's purchase price within the time
+// and delivery-rate allowance. Export/backhaul earnings cannot replace it.
+const cheaper = { ...screenshotFast, seconds: 1800, unitsPerHour: 10000, hourlyProfit: 1000000,
+  legs: screenshotFast.legs.map((leg, i) => i === 1 ? { ...leg, source: 'cheap', buy: 30 } : { ...leg, target: 'cheap' }) };
+const priceFirst = rankSupplyRoutes([screenshotFast, screenshotTrade, cheaper], 20, 'price');
+assert.equal(priceFirst[0].delivery.buyPerUnit, 30);
+assert.equal(priceFirst[0].recommendation.kind, 'lowest-price');
+assert.equal(priceFirst[0].recommendation.buyPriceDelta, 9);
+assert.equal(rankSupplyRoutes([screenshotFast, screenshotTrade, cheaper], 20, 'income')[0].profit, 815000);
+const tooSlowCheap = { ...cheaper, seconds: 2500, unitsPerHour: 7200 };
+const priceBounded = rankSupplyRoutes([screenshotFast, tooSlowCheap], 20, 'price');
+assert.equal(priceBounded[0].delivery.buyPerUnit, 39);
+assert.ok(priceBounded.some(route => /OUTSIDE TIME LIMIT/.test(route.label) && route.delivery.buyPerUnit === 30));
+assert.equal(rankSupplyRoutes([screenshotFast, screenshotTrade, cheaper], 20, 'speed')[0].seconds, screenshotFast.seconds);
+
 // Reproduce the second screenshot through the actual transaction optimizer:
 // 91 Reactors at 10,500 -> 15,000 finance a 180 -> 125 Ablatives delivery.
 const pilgrim = { ...ship, id: 'pilgrim', name: 'Pilgrim', cargo: 4300, cruise: 415, dock: 'large', dockType: 3 };
