@@ -7,7 +7,8 @@
       "DATA/SHIPS/shiparch.ini",
       "DATA/EQUIPMENT/engine_equip.ini"
     ],
-    "note": "Minimal public ship API records. The lane flags and Barge charge time below are exact patch-file fields; the market in the test is synthetic."
+    "note": "Minimal public ship API records. The lane flags and Barge charge time below are exact patch-file fields; the market in the test is synthetic.",
+    "techVerification": "https://github.com/PhyteHQ/RHW/actions/runs/40716803521"
   },
   "ships": [
     {
@@ -156,6 +157,27 @@
         "techchompat_by_id": {
           "dsy_license_br_m_grp": 1,
           "dsy_license_co_os_grp": 1,
+          "dsy_license_fc_j_grp": 1
+        }
+      }
+    },
+    {
+      "nickname": "dsy_gallic_train_adv",
+      "name": "Gallic Advanced Train",
+      "class": 7,
+      "type": "transport",
+      "hold_size": 5000,
+      "cruise_speed": 350,
+      "dock_type": 2,
+      "ship_packages": [
+        {
+          "nickname": "dsy_gallic_train_adv_package"
+        }
+      ],
+      "tech_compat": {
+        "techchompat_by_id": {
+          "dsy_license_br_m_grp": 0.1,
+          "dsy_license_co_os_grp": 0.1,
           "dsy_license_fc_j_grp": 1
         }
       }

@@ -90,6 +90,7 @@ def main():
         idcards[neutral_id] = {'infocard': [{'phrases': [{'phrase': 'Allowed ships: Fighters, Freighters, Transports, Gunboats'}]}, {'phrases': [{'phrase': 'This ID can only be given by an Admin and may not be transferred or replaced without Admin permission.'}]}]}
         fixture = {'pobs': [pob, express_pob, export_buyer], 'commodities': commodities, 'ships': ships,
                    'flightTestShip': next(row for row in captured_ids['ships'] if row['nickname'] == 'dsy_cargobarge_1'),
+                   'techTestShip': next(row for row in json.loads((Path(__file__).resolve().parent / 'fixtures/hauler-flight-2026-10-28.json').read_text())['ships'] if row['nickname'] == 'dsy_gallic_train_adv'),
                    'npc_bases': [{'nickname': 'trafalgar', 'faction_nick': 'br_n_grp'}, {'nickname': 'molly', 'faction_nick': 'fc_m_grp'}, {'nickname': 'waterloo', 'faction_nick': 'br_n_grp'}, {'nickname': 'oder', 'faction_nick': 'br_n_grp'}],
                    'factions': [], 'tractors': tractors, 'idcards': idcards}
         script = "<script>window.supplyFixture=" + json.dumps(fixture) + ";window.supplyNav=" + json.dumps(nav) + ";window.supplyRequests=[];const originalFetch=window.fetch;window.fetch=(url,options)=>{const u=String(url);if(u.includes('/api/')){const key=u.split('/api/')[1].split('?')[0];supplyRequests.push(key);if(window.supplyOffline)return Promise.reject(Error('Fixture offline'));const response=key==='infocards'?JSON.parse(options.body).map(id=>supplyFixture.idcards[id]||{error:'missing'}):supplyFixture[key]||[];return Promise.resolve(new Response(JSON.stringify(response),{status:200}));}if(u.includes('/assets/navigation.json.gz'))return Promise.resolve(new Response(JSON.stringify(supplyNav),{status:200}));return originalFetch(url,options);};</script>"
@@ -255,9 +256,18 @@ def main():
             base.ev(cdp, "document.querySelector('.supply-result').scrollIntoView({block:'start',behavior:'instant'})")
             shot = cdp.call('Page.captureScreenshot', {'format': 'png'})
             (out / f'barge-flight-{width}.png').write_bytes(base64.b64decode(shot['data']))
+        base.ev(cdp, "(()=>{supplyFixture.ships.push(supplyFixture.techTestShip);supplyIdentity.value='dsy_license_co_os_grp';supplyUnverified.checked=true;supplyRefresh.click();return true})()")
+        wait_for(cdp, "!supplySearch.disabled && !!supplyShip.querySelector('[value=\"ship:dsy_gallic_train_adv\"]')")
+        tech_option = base.ev(cdp, "(()=>{const option=supplyShip.querySelector('[value=\"ship:dsy_gallic_train_adv\"]');return {disabled:option.disabled,text:option.textContent,unverified:supplyUnverified.checked}})()")
+        if not tech_option['disabled'] or 'TECH INCOMPATIBLE' not in tech_option['text'] or not tech_option['unverified']:
+            raise RuntimeError(f'Known 10% Spa tech must disable the Gallic Advanced Train even with unverified rules enabled: {tech_option}')
+        base.ev(cdp, "(()=>{supplyShip.value='ship:dsy_gallic_train_adv';supplySearch.click();return true})()")
+        wait_for(cdp, "!supplySearch.disabled && supplyResults.dataset.stale==='false'")
+        if not base.ev(cdp, "supplyShip.value==='auto' && ![...document.querySelectorAll('.supply-result h3')].some(n=>n.textContent==='Gallic Advanced Train')"):
+            raise RuntimeError('A restored/programmatic partial-tech selection must reset to Auto without quoting that hull')
         base.ev(cdp, "supplyClose.click()")
         wait_for(cdp, "!rhwSupplyDialog.open && document.activeElement.classList.contains('header-trade-button')", 3)
-        print('Trade Desk browser passed: route-first default, compatible ID badges, cheaper-source priority, optional ID filter, illegal hull disabled, import/export and POB regressions, focus and 360/390/1440px layouts.')
+        print('Trade Desk browser passed: route-first default, compatible ID badges, cheaper-source priority, optional ID filter, illegal/partial-tech hulls disabled, import/export and POB regressions, focus and 360/390/1440px layouts.')
     finally:
         if cdp:
             cdp.close()

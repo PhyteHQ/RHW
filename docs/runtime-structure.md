@@ -117,8 +117,13 @@ A normal acquisition source must be reported outside virtual/staff markets.
 Admin, Neutral, unassigned and generic placeholder IDs are excluded. A cargo
 limit applies to the entire hull, not the amount loaded. Automatic profiles
 require a player ship package, a permitted family, compliant hull capacity and
-full reported ship tech compatibility. Lower tech compatibility is a setup
-condition, not a legal ship-class ban. Unknown rules yield conditional manual
+full reported ship tech compatibility. A known score below 100% makes that
+ship/ID combination ineligible for this planner, including manual and optional
+unverified/owner-approval quotes. It is shown as UNAVAILABLE with the reported
+percentage; the ship selector disables it as TECH INCOMPATIBLE. This planning
+rule is separate from RP ship-class bans. It is checked before unknown policy
+or docking metadata so missing data cannot downgrade it to a conditional quote.
+Unknown rules yield conditional manual
 quotes only after the explicit unverified-rules opt-in, never an automatic
 recommendation. Conditional IDs are not appended to every checked route.
 

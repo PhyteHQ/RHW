@@ -192,8 +192,10 @@ function shipOptions() {
   const ids = selectedIdentities();
   selector.innerHTML = '<option value="auto">AUTO · Best permitted haulers</option>'
     + ships.map(ship => {
-      const blocked = ids.length && ids.every(id => identityShipCheck(id, ship).state === 'blocked');
-      return `<option value="${esc(ship.id)}"${blocked ? ' disabled' : ''}>${esc(ship.name)} · ${count(ship.cargo)} hold · ${ship.cruise} m/s · ${ship.dockLabel}${shipFlightRules(ship).tradeLanes ? '' : ' · NO TRADE LANES'}${blocked ? ' · ID RESTRICTED' : ''}</option>`;
+      const checks = ids.map(id => identityShipCheck(id, ship));
+      const blocked = checks.length && checks.every(check => check.state === 'blocked');
+      const restriction = checks.every(check => check.code === 'tech-incompatible') ? 'TECH INCOMPATIBLE' : 'ID RESTRICTED';
+      return `<option value="${esc(ship.id)}"${blocked ? ' disabled' : ''}>${esc(ship.name)} · ${count(ship.cargo)} hold · ${ship.cruise} m/s · ${ship.dockLabel}${shipFlightRules(ship).tradeLanes ? '' : ' · NO TRADE LANES'}${blocked ? ' · ' + restriction : ''}</option>`;
     }).join('');
   if (selected && [...selector.options].some(option => option.value === selected && !option.disabled)) selector.value = selected;
 }

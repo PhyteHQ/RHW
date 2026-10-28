@@ -44,7 +44,14 @@ assert.equal(identityShipCheck(junkers, small).state, 'checked');
 assert.equal(identityShipCheck(bmm, train).state, 'checked');
 assert.ok(!autoIdentityShips(ships, junkers).some(ship => ship.id === train.id));
 assert.equal(identityShipCheck({ ...junkers, rules: parseIdentityRules(null) }, small).state, 'conditional');
-assert.equal(identityShipCheck(junkers, { ...small, techCompat: { [JUNKERS]: .75 } }).state, 'conditional', 'A technical penalty is not a legal ship-class ban');
+assert.equal(identityShipCheck(junkers, { ...small, techCompat: { [JUNKERS]: .75 } }).state, 'blocked', 'A reported technical penalty is ineligible for trade planning');
+for (const tech of [0, .1, .75, .999, .999999999]) {
+  const result = identityShipCheck(junkers, { ...small, techCompat: { [JUNKERS]: tech } });
+  assert.equal(result.state, 'blocked');
+  assert.equal(result.code, 'tech-incompatible');
+}
+assert.equal(identityShipCheck({ ...junkers, rules: parseIdentityRules(null) }, { ...small, techCompat: { [JUNKERS]: .1 } }).state,
+  'blocked', 'Unknown ID rules cannot downgrade a known technical mismatch to a conditional quote');
 assert.equal(identityShipCheck(junkers, { ...small, techCompat: {} }).state, 'conditional');
 assert.equal(identityShipCheck(junkers, { ...small, playerShip: null }).state, 'conditional');
 assert.equal(identityShipCheck(junkers, { ...small, playerShip: false }).state, 'blocked');
@@ -84,6 +91,21 @@ const data = { schema: 1, asOf: new Date().toISOString(), bases };
 const scopeWith = (identity, access) => ({ identity, blocked: access.blocked, accessReady: access.ready, unverifiedDocks: access.unverifiedDocks, approvalDocks: access.approvalDocks });
 const scopes = [scopeWith(bmm, bmmAccess), scopeWith(junkers, junkerAccess)];
 const compared = await searchIdentities(data, navigation, ships, scopes, { commodity: 'Wildcat Gold', extraPercent: 20, shipId: 'auto' });
+// Controlled matrix: one hull works with Junkers but has only 10% tech under
+// BMM. Opting into unverified rules and owner approvals must not revive BMM.
+const partialTechShip = { ...small, techCompat: { [BMM_ID]: .1, [JUNKERS]: 1 } };
+const techOptions = { commodity: 'Wildcat Gold', shipId: partialTechShip.id, includeUnverified: true, includeRestrictedPobs: true };
+const mismatched = await searchIdentities(data, navigation, [partialTechShip], scopes, techOptions);
+assert.ok(mismatched.results.length && mismatched.results.every(route => route.identity.id === JUNKERS));
+assert.ok(mismatched.results.every(route => route.compatibleIdentities.every(row => row.identity.id !== BMM_ID)));
+assert.ok(mismatched.results.every(route => route.preferredIdentities[0].shipCheck.state === 'blocked'));
+assert.match(mismatched.results[0].preferredIdentities[0].shipCheck.reason, /10%.*100%/);
+const blockedTech = await searchIdentities(data, navigation, [partialTechShip], scopes, { ...techOptions, identityId: BMM_ID });
+assert.equal(blockedTech.results.length, 0);
+assert.match(blockedTech.reason, /10%.*100%/);
+const blockedUnknown = await searchIdentities(data, navigation, [partialTechShip], [{ ...scopes[0], accessReady: false,
+  identity: { ...bmm, rules: parseIdentityRules(null) } }], { ...techOptions, identityId: BMM_ID });
+assert.equal(blockedUnknown.results.length, 0, 'Neither missing docking metadata nor unknown rules can bypass a known tech mismatch');
 assert.equal(compared.results[0].identity.id, JUNKERS);
 assert.equal(compared.results[0].ship.id, small.id, 'The nearby base needs the smaller permitted and physically dockable hauler');
 assert.equal(compared.results[0].legs.at(-1).from, molly.name);
@@ -113,6 +135,13 @@ exportData.bases[0].offers.push(exportedGold);
 exportData.bases[1].offers.push({ ...exportedGold, sell: 150 });
 exportData.bases[2].offers.push({ ...exportedGold, sell: 200 });
 const exported = await searchIdentities(exportData, navigation, ships, scopes, { mode: 'export', commodity: 'Gold', extraPercent: 20, shipId: 'auto' });
+const partialExport = await searchIdentities(exportData, navigation, [partialTechShip], scopes, {
+  ...techOptions, mode: 'export', commodity: 'Gold' });
+assert.ok(partialExport.results.length && partialExport.results.every(route => route.identity.id === JUNKERS));
+assert.ok(partialExport.results.every(route => route.compatibleIdentities.every(row => row.identity.id !== BMM_ID)));
+const blockedExport = await searchIdentities(exportData, navigation, [partialTechShip], scopes, {
+  ...techOptions, mode: 'export', commodity: 'Gold', identityId: BMM_ID });
+assert.equal(blockedExport.results.length, 0, 'Exports cannot revive a known partial-tech ID either');
 assert.equal(exported.results[0].identity.id, JUNKERS);
 assert.equal(exported.results[0].buyer.id, 'molly');
 assert.equal(exported.results[0].returnTrade.good, 'wcg', 'Import-only Wildcat Gold remains valid as inbound return cargo');

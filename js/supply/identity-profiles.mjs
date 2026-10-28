@@ -150,6 +150,13 @@ export function identityShipCheck(identity, ship) {
   if (!exception && family === 'transports' && rules?.transportLimit != null && ship.cargo > rules.transportLimit)
     return { state: 'blocked', reason: `Hull exceeds this ID’s ${rules.transportLimit.toLocaleString('en-GB')} transport cargo limit`, family, tech };
   if (ship.playerShip === false) return { state: 'blocked', reason: 'No player ship package is reported for this hull', family, tech };
+  // A reported technical mismatch is known, not an unverified policy. Never
+  // offer it through the optional unknown-rules/owner-approval quote paths.
+  if (tech !== null && tech < 1) {
+    const percent = Number((tech * 100).toFixed(4));
+    return { state: 'blocked', code: 'tech-incompatible',
+      reason: `${percent >= 100 ? '<100' : percent}% ship tech compatibility; 100% is required for trade routes`, family, tech };
+  }
   if (!rules || rules.state === 'unknown' || !family)
     return { state: 'conditional', reason: 'ID ship rules or ship class need checking', family, tech };
   if (!Number.isSafeInteger(ship.shipClass)) return { state: 'conditional', reason: 'Exact ship class is not reported; check the ID hull limit', family, tech };
@@ -162,7 +169,6 @@ export function identityShipCheck(identity, ship) {
   if (identity?.playerAvailable !== true) return { state: 'conditional', reason: 'A normal player acquisition source for this ID is not reported', family, tech };
   if (ship.playerShip == null) return { state: 'conditional', reason: 'Player ship availability is not reported', family, tech };
   if (tech === null) return { state: 'conditional', reason: 'Ship tech compatibility is not reported', family, tech };
-  if (tech < .999) return { state: 'conditional', reason: `${Math.round(tech * 100)}% ship tech compatibility; check the power setup`, family, tech };
   return { state: 'checked', reason: 'Published ID ship rules and full ship tech compatibility checked', family, tech };
 }
 
