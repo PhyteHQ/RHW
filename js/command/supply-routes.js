@@ -38,7 +38,7 @@
       modulePromise ||= import(new URL('./js/supply/ui.mjs', document.baseURI).href).catch(error => { modulePromise = null; throw error; });
       const module = await modulePromise;
       const names = commodities();
-      const outputRoles = [...DASHBOARD_CONFIG.roles.export, ...DASHBOARD_CONFIG.roles.byproduct, ...DASHBOARD_CONFIG.roles.confiscated];
+      const outputRoles = [...DASHBOARD_CONFIG.roles.export, ...DASHBOARD_CONFIG.roles.byproduct];
       const outputKeys = new Set(outputRoles.map(keyFromName));
       const inputRoles = [...DASHBOARD_CONFIG.roles.maintenance, ...DASHBOARD_CONFIG.roles.procurement,
         ...DASHBOARD_CONFIG.roles.feedstock, ...DASHBOARD_CONFIG.roles.shipyard, ...DASHBOARD_CONFIG.materialsScan];
