@@ -187,6 +187,10 @@ export function rankSupplyRoutes(routes, extraPercent = 20, goal = 'income') {
     const fastExpress = express.find(route => !route.extraStop) || express[0];
     const earningExpress = bestEarning(express, fastExpress, allowance);
     const bestExpress = earningExpress?.hourlyProfit > fastExpress.hourlyProfit + 0.01 ? earningExpress : fastExpress;
+    if (!baseline && goal === 'price') {
+      const cheapestExpress = [...express.filter(route => !route.extraStop)].sort((a, b) => a.delivery.buyPerUnit - b.delivery.buyPerUnit || supplySort(a, b))[0];
+      pick(cheapestExpress, 'LOWEST BUY PRICE · DELIVERY LOSS');
+    }
     pick(bestExpress, baseline ? 'EXPRESS OPTION · DELIVERY LOSS' : 'EXPRESS ONLY · DELIVERY LOSS');
   }
   if (baseline) {

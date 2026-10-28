@@ -24,18 +24,38 @@ export function infocardLines(response) {
     .filter(Boolean);
 }
 
+const CLASS_WORDS = {
+  fighters: [/\bfighters?\b/i, [0, 1, 3, 4, 5]], freighters: [/\bfreighters?\b/i, [2]],
+  transports: [/\b(?:transports?|trains?|liners?)\b/i, [6, 7, 8, 9, 10]],
+  gunboats: [/\bgunboats?\b/i, [11]], frigates: [/\bfrigates?\b/i, [12]],
+  cruisers: [/\bcruisers?\b/i, [13]], battlecruisers: [/\bbattlecruisers?\b/i, [15]],
+  battleships: [/\bbattleships?\b/i, [16, 18]], carriers: [/\bcarriers?\b/i, [17]],
+  dreadnoughts: [/\bdreadnoughts?\b/i, [18]], miners: [/\b(?:miners?|mining ships?)\b/i, [14]],
+  repair: [/\brepair ships?\b/i, [19]]
+};
+const cargoAmount = text => /^(?:\d+|\d{1,3}(?:,\d{3})+|\d{1,3}(?:\.\d{3})+|\d{1,3}(?: \d{3})+)$/.test(text.trim())
+  && Number(text.replace(/[, .]/g, '')) > 0 && Number(text.replace(/[, .]/g, '')) <= 1000000 ? Number(text.replace(/[, .]/g, '')) : null;
 export function parseIdentityRules(response) {
-  const original = infocardLines(response);
-  const lines = original.map((line, index) => /\b(?:permitted|allowed)\s+ships?\s*:\s*$/i.test(line)
-    ? line + ' ' + (original[index + 1] || '') : line);
-  const permitted = new Set(), conditions = [];
-  const conditionalFamilies = new Set();
-  const condition = line => {
-    conditions.push(line.slice(0, 240));
+  const original = infocardLines(response), config = original.findIndex(line => /^\[Tractor\]$/i.test(line));
+  const narrative = config < 0 ? original : original.slice(0, config);
+  const lines = narrative.map((line, index) => /\b(?:permitted|allowed)\s+ships?\s*:\s*$/i.test(line)
+    ? line + ' ' + (narrative[index + 1] || '') : line);
+  const modern = lines.some(line => /\bThis\b.{0,150}\bID\s+(?:is\s+)?used\s+by\b/i.test(line));
+  const playerRestricted = lines.some(line => /\b(?:only\s+(?:be\s+)?(?:given|issued|assigned).{0,35}\badmin|admin\s+permission|staff.only|not\s+(?:available|intended)\s+(?:for|to)\s+players)\b/i.test(line));
+  const permitted = new Set(modern ? Object.values(FAMILIES) : []), forbiddenClasses = new Set(), conditionalFamilies = new Set();
+  const exceptions = new Set(), conditionalRules = [];
+  let transportLimit = null, cargoLimit = null, hasShipList = modern, additionalConditions = 0;
+  const condition = (line, forceAll = false) => {
+    additionalConditions++;
     const related = Object.entries(familyWords).filter(([, pattern]) => pattern.test(normalize(line))).map(([family]) => family);
     for (const family of related.length ? related : ['*']) conditionalFamilies.add(family);
+    const cap = line.match(/\b(ships?|transports?)\s+with\s+(?:more than|over)\s+([\d, .]+)\s+(?:cargo|hold)/i);
+    const classPart = cap ? line.slice(0, cap.index) : line, amount = cap ? cargoAmount(cap[2]) : null;
+    const unknown = forceAll || cap && amount === null;
+    conditionalRules.push({ classes: unknown ? [] : [...new Set(Object.values(CLASS_WORDS).filter(([pattern]) => pattern.test(classPart)).flatMap(([, values]) => values))],
+      cargoAbove: unknown ? null : amount,
+      cargoFamily: cap && /^transport/i.test(cap[1]) ? 'transports' : null, families: unknown ? ['*'] : related.length ? related : ['*'] });
   };
-  let transportLimit = null, hasShipList = false;
   for (const line of lines) {
     const list = line.match(/\b(?:permitted|allowed)\s+(?:ship(?:\s+classes?|\s+types?)?s?)\s*:\s*(.+)/i);
     if (list) {
@@ -43,31 +63,62 @@ export function parseIdentityRules(response) {
       for (const [family, pattern] of Object.entries(familyWords)) if (pattern.test(normalize(list[1]))) permitted.add(family);
       if (/\b(?:except|excluding|unless|only|not|restricted|limited|up to)\b|[<>≤≥]/i.test(list[1])) condition(line);
     }
-    const cap = line.match(/\b(?:cannot|may not|must not)\s+(?:use|fly|operate)\s+(?:any\s+)?transports?\s+with\s+(?:more than|over)\s+([\d, .]+)\s+(?:cargo|hold)/i);
-    if (cap && !/\b(except|unless|within|outside|inside|only|when)\b/i.test(line)) {
-      const amount = Number(cap[1].replace(/[, .]/g, ''));
-      if (Number.isSafeInteger(amount) && amount > 0 && amount <= 50000) {
-        transportLimit = Math.min(transportLimit ?? Infinity, amount); continue;
+    const prohibition = line.match(/\b(?:cannot|may not|must not)\s+(?:use|fly|operate)\s+(.+)/i);
+    if (prohibition && !/\b(?:within|outside|inside|only|when|unless)\b/i.test(prohibition[1])) {
+      const body = prohibition[1], exception = body.match(/\b(?:other than|except(?:\s+for)?)\s+(.+?)\.?$/i);
+      const main = exception ? body.slice(0, exception.index) : body;
+      if (exception) for (const name of exception[1].split(/,\s*|\s+(?:and|or)\s+/i))
+        if (normalize(name)) exceptions.add(normalize(name.replace(/\.$/, '')));
+      const cap = main.match(/\b(ships?|transports?)\s+with\s+(?:more than|over)\s+([\d, .]+)\s+(?:cargo|hold)(?:\s+space)?/i);
+      const classPart = cap ? main.slice(0, cap.index) : main;
+      let understood = false;
+      if (cap) {
+        const amount = cargoAmount(cap[2]);
+        if (amount !== null) {
+          if (/^transport/i.test(cap[1])) transportLimit = Math.min(transportLimit ?? Infinity, amount);
+          else cargoLimit = Math.min(cargoLimit ?? Infinity, amount);
+          understood = true;
+        } else { condition(line, true); continue; }
       }
+      for (const [pattern, classes] of Object.values(CLASS_WORDS)) if (pattern.test(classPart)) {
+        classes.forEach(value => forbiddenClasses.add(value)); understood = true;
+      }
+      // Only a fully parsed prohibition can grant automatic class permission.
+      let leftover = classPart;
+      for (const [pattern] of Object.values(CLASS_WORDS)) leftover = leftover.replace(new RegExp(pattern.source, 'ig'), '');
+      leftover = leftover.replace(/\b(?:any|all|and|or)\b/ig, '').replace(/[\s,./-]/g, '');
+      if (understood && !leftover) continue;
+      condition(line, true); continue;
     }
     if (SHIP_WORDS.test(line) && /\b(?:cannot|may not|must not|only|unless|except|restricted|prohibited)\b/i.test(line)
       && /\b(?:use|fly|operate|dock|bring|equip|mount)\b/i.test(line)) condition(line);
     else if (SHIP_WORDS.test(line) && /\b(?:cargo|hold|capacity)\b/i.test(line) && /\d/.test(line)) condition(line);
   }
-  return { state: hasShipList && permitted.size ? conditions.length ? 'conditional' : 'known' : 'unknown',
-    permitted: [...permitted], transportLimit, additionalConditions: conditions.length, conditionalFamilies: [...conditionalFamilies],
+  return { schema: 2, state: hasShipList && permitted.size ? additionalConditions ? 'conditional' : 'known' : 'unknown',
+    permitted: [...permitted], forbiddenClasses: [...forbiddenClasses], transportLimit, cargoLimit,
+    exceptions: [...exceptions], additionalConditions, conditionalFamilies: [...conditionalFamilies], conditionalRules, playerRestricted,
     source: lines.length ? 'Darkstat ID infocard' : 'ID infocard unavailable' };
+}
+export function playerIdAvailability(raw) {
+  if (/^dsy_license_(?:neutral|staff|specop|military)$/i.test(raw?.nickname || '')) return false;
+  if (raw?.market_goods === undefined) return null;
+  if (!Array.isArray(raw.market_goods)) return false;
+  return raw.market_goods.some(quote => quote?.base_sells === true && Number(quote.price_base_sells_for) > 0
+    && !/virtual/i.test(quote.region_name || '') && quote.faction_nick !== 'fc_staff'
+    && !/\b(?:guard station|proxy base)\b/i.test(quote.base_name || ''));
 }
 
 export function identityRegistry(tractors = [], cards = {}, asOf = 0) {
   const unique = new Map();
   for (const raw of tractors) {
     if (!raw || typeof raw.nickname !== 'string' || !/license|\bid\b/i.test(raw.nickname + ' ' + raw.name)) continue;
-    if (unique.has(raw.nickname) || /unused|discontinued|not in use|admin|special operative|srp id/i.test(raw.name || '')) continue;
-    unique.set(raw.nickname, { id: raw.nickname, name: clean(raw.name || raw.nickname).slice(0, 100),
-      rules: cards[raw.nickname]?.rules || parseIdentityRules(cards[raw.nickname]), asOf });
+    if (unique.has(raw.nickname) || /unused|unassigned|discontinued|not in use|admin|special operative|srp id|^player faction id$/i.test(raw.name || '')) continue;
+    const rules = cards[raw.nickname]?.rules?.schema === 2 ? cards[raw.nickname].rules : parseIdentityRules(cards[raw.nickname]);
+    const playerAvailable = playerIdAvailability(raw);
+    if (playerAvailable === false || rules.playerRestricted) continue;
+    unique.set(raw.nickname, { id: raw.nickname, name: clean(raw.name || raw.nickname).slice(0, 100), rules, playerAvailable, asOf });
   }
-  if (!unique.has(BMM_ID)) unique.set(BMM_ID, { id: BMM_ID, name: 'BMM ID', rules: parseIdentityRules(null), asOf: 0 });
+  if (!unique.has(BMM_ID)) unique.set(BMM_ID, { id: BMM_ID, name: 'BMM ID', rules: parseIdentityRules(null), playerAvailable: null, asOf: 0 });
   return [...unique.values()].sort((a, b) => a.id === BMM_ID ? -1 : b.id === BMM_ID ? 1 : a.name.localeCompare(b.name));
 }
 
@@ -83,16 +134,26 @@ export function identityShipCheck(identity, ship) {
   const family = shipFamily(ship), rules = identity?.rules;
   const value = ship.techCompat?.[identity?.id];
   const tech = typeof value === 'number' && Number.isFinite(value) && value >= 0 ? value : null;
+  const exception = rules?.exceptions?.some(name => [ship.name, ship.apiName].some(value => normalize(value) === name));
+  if (identity?.playerAvailable === false || rules?.playerRestricted) return { state: 'blocked', reason: 'This is not a normally obtainable player ID', family, tech };
+  if (!exception && rules?.forbiddenClasses?.includes(ship.shipClass)) return { state: 'blocked', reason: 'This exact ship class is prohibited by the ID', family, tech };
+  if (!exception && rules?.cargoLimit != null && ship.cargo > rules.cargoLimit)
+    return { state: 'blocked', reason: 'Hull exceeds this ID’s ' + rules.cargoLimit.toLocaleString('en-GB') + ' cargo limit', family, tech };
   if (rules && rules.state !== 'unknown' && family && !rules.permitted?.includes(family))
     return { state: 'blocked', reason: 'This ship class is not permitted by the ID', family, tech };
-  if (family === 'transports' && rules?.transportLimit != null && ship.cargo > rules.transportLimit)
+  if (!exception && family === 'transports' && rules?.transportLimit != null && ship.cargo > rules.transportLimit)
     return { state: 'blocked', reason: `Hull exceeds this ID’s ${rules.transportLimit.toLocaleString('en-GB')} transport cargo limit`, family, tech };
   if (ship.playerShip === false) return { state: 'blocked', reason: 'No player ship package is reported for this hull', family, tech };
   if (!rules || rules.state === 'unknown' || !family)
     return { state: 'conditional', reason: 'ID ship rules or ship class need checking', family, tech };
   if (!Number.isSafeInteger(ship.shipClass)) return { state: 'conditional', reason: 'Exact ship class is not reported; check the ID hull limit', family, tech };
-  if (rules.state === 'conditional' && (!rules.conditionalFamilies?.length || rules.conditionalFamilies.includes('*') || rules.conditionalFamilies.includes(family)))
+  const affected = rules.conditionalRules?.length ? rules.conditionalRules.some(rule =>
+    rule.classes.includes(ship.shipClass) || rule.cargoAbove != null && (!rule.cargoFamily || rule.cargoFamily === family) && ship.cargo > rule.cargoAbove
+      || rule.cargoAbove == null && !rule.classes.length && (rule.families.includes('*') || rule.families.includes(family)))
+    : !rules.conditionalFamilies?.length || rules.conditionalFamilies.includes('*') || rules.conditionalFamilies.includes(family);
+  if (rules.state === 'conditional' && affected)
     return { state: 'conditional', reason: 'Additional ID ship/docking conditions need checking', family, tech };
+  if (identity?.playerAvailable !== true) return { state: 'conditional', reason: 'A normal player acquisition source for this ID is not reported', family, tech };
   if (ship.playerShip == null) return { state: 'conditional', reason: 'Player ship availability is not reported', family, tech };
   if (tech === null) return { state: 'conditional', reason: 'Ship tech compatibility is not reported', family, tech };
   if (tech < .999) return { state: 'conditional', reason: `${Math.round(tech * 100)}% ship tech compatibility; check the power setup`, family, tech };

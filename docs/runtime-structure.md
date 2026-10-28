@@ -109,17 +109,21 @@ boards continue to use their configured role scope.
 ## Trade Desk imports and exports
 
 `identity-profiles.mjs` reads allowed ship families and unqualified transport hull
-limits from live ID infocards. Regional conditions and exceptions remain
-conditional, rather than becoming global bans or assumed permission. A cargo
+limits from live ID infocards. It reads both legacy allowed-ship lists and the
+current prohibition-based ID format. Exact class bans, all-ship cargo caps,
+transport-only caps and named exceptions stay separate. Regional docking
+conditions are conditional only for the affected classes or cargo capacities.
+A normal acquisition source must be reported outside virtual/staff markets.
+Admin, Neutral, unassigned and generic placeholder IDs are excluded. A cargo
 limit applies to the entire hull, not the amount loaded. Automatic profiles
 require a player ship package, a permitted family, compliant hull capacity and
 full reported ship tech compatibility. Lower tech compatibility is a setup
 condition, not a legal ship-class ban. Unknown rules yield conditional manual
-quotes, never an automatic recommendation. The existing BMM favorites remain
-available as explicitly conditional fallback profiles if ID data is unavailable.
+quotes only after the explicit unverified-rules opt-in, never an automatic
+recommendation. Conditional IDs are not appended to every checked route.
 
-The Trade Desk searches routes first. Its default ID scope covers the entire
-loaded ID registry; a fixed-ID restriction lives in advanced settings.
+The Trade Desk searches routes first. Its default ID scope covers the normally obtainable
+player IDs in the loaded registry; a fixed-ID restriction lives in advanced settings.
 `identity-planner.mjs` shortlists up to twelve distinct haulers across all ID
 profiles and searches each hull once. Every candidate tour must have at least
 one ID valid for all its stops with that hull. A union of unrelated docking
@@ -133,13 +137,20 @@ Equal prices favor whole-trip hauler $/hour. The absolute cheapest direct
 source is also visible when it is cheaper but outside those limits. Alternate
 priorities retain hauler income and supply speed. Supplier shortlists preserve
 cheap sources as well as fast sources. Export maximizes complete-trip $/hour.
+If all NPC asks exceed RHW's payout, price priority shows the cheapest explicit
+delivery-loss quote and the faster supply alternative without recommending a
+profitable import that does not exist.
 Search budgets and omitted hulls/markets are reported as limits, rather than a
 claim of exhaustive optimization. Cargo profit and start capital exclude
 acquiring a ship or ID.
 
-Docking uses the selected ID's reputation rules. Hostile maximum/static values
-block the affected NPC owners; neutral maxima and ignored rules cannot prove
-personal reputation. Whitelist-only POBs, unknown POB policies and hostile
+Docking ports DTR's strict policy to each candidate ID. Owner nicknames and
+names are enriched from NPC/POB endpoints and market metadata with ambiguity
+checks. Maximum/static reputation at or below -0.55 blocks the affected owner;
+non-hostile maxima are likely access with personal reputation still noted.
+Missing, unchanged or ambiguous owner rules are excluded by default. RHW's own
+IFF is checked too: a hostile home IFF is not bypassed just because it is the
+start/end base. Whitelist-only POBs, unknown POB policies and hostile
 POB IFFs require owner approval and are excluded by default. The advanced
 approval-only POB option exposes them as conditional quotes, never automatic
 recommendations. Friendly IFF does not prove personal reputation or clear an
@@ -148,7 +159,8 @@ POB ACLs are not inferred.
 
 The lazy market loader requests all ID rephacks, ship tech matrices and ID
 infocards. ID rules and ship/access schema upgrades have independent cache
-timestamps and migration flags. Ship metadata preserves the API `class` as the
+timestamps and migration flags. Policy schema 2 and access schema 2 invalidate
+older compiled rules and ID snapshots without acquisition sources. Ship metadata preserves the API `class` as the
 commodity volume class and accepts the current `techchompat_by_id` JSON spelling
 alongside the older `techcompat_by_id` spelling. Explicit NPC-only hulls without
 player ship packages are filtered out; package-bearing craft-only ships remain
@@ -313,3 +325,9 @@ Crest and Forum artwork retain their original samples.
 
 Browser checks use controlled game-data fixtures, not a live-API availability
 guarantee. Screenshots and detailed results are published as CI artifacts.
+
+The dated `scripts/fixtures/player-id-routes-2026-10-28.json` captures public
+Darkstat policy excerpts, rephacks, ship metadata and the RHW/Arranmore/Trafalgar
+case. Tests reject Neutral/Admin and oversized Junker hulls, accept BMM Barge
+at Trafalgar and Junker Pilgrim at Arranmore, and reject Corsairs at hostile RHW
+IFF. Snapshot prices are regression data, not live price recommendations.
