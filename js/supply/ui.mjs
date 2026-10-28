@@ -232,7 +232,7 @@ function renderResults() {
   }
   $('supplyResults').innerHTML = result.results.map(route => {
     const extra = route.extraSeconds > 1 ? `+${duration(route.extraSeconds)} vs standard import` : route.extraSeconds < -1 ? `${duration(-route.extraSeconds)} sooner` : 'No extra flight time';
-    const warnings = [...new Set(route.stops)].filter(id => id !== result.origin && accessFor(route.identity?.id).byId[id]?.state === 'unknown');
+    const warnings = [...new Set(route.stops)].filter(id => id !== result.origin && (accessFor(route.identity?.id).byId[id]?.state === 'unknown' || prepared.dataset.bases.find(base => base.id === id)?.kind === 'pob'));
     const volume = route.legs.at(-1).volume;
     const comparison = route.recommendation;
     const timing = route.extraSeconds > 1 ? `about ${duration(route.extraSeconds)} longer` : route.extraSeconds < -1 ? `${duration(-route.extraSeconds)} sooner` : 'the same estimated time';
@@ -252,7 +252,7 @@ function renderResults() {
       ${reason}
       ${economics ? `<p class="supply-target-price">MATERIAL PURCHASE ${money(economics.cost)} · ${money(economics.buyPerUnit)} / UNIT · RHW PAYS ${money(economics.rhwPerUnit)} / UNIT</p>` : ''}
       <p class="supply-ship-note">${route.ship.dockLabel} DOCK · ${volume} cargo volume / unit · Start capital ${money(route.capitalNeeded)} · RHW pays ${money(route.rhwPayout)}</p>
-      ${warnings.length ? '<p class="supply-access-note">Personal reputation / POB access needs checking at ' + warnings.map(id => esc(prepared.dataset.bases.find(base => base.id === id)?.name || id)).join(', ') + '.</p>' : ''}
+      ${warnings.length ? '<p class="supply-access-note">Private POB owner exceptions and personal reputation may apply at ' + warnings.map(id => esc(prepared.dataset.bases.find(base => base.id === id)?.name || id)).join(', ') + '.</p>' : ''}
       <details class="supply-details"><summary>FLIGHT + TRADE STEPS</summary>${route.legs.map((leg, i) => `<section><h4>${i + 1}. ${esc(leg.from)} → ${esc(leg.to)}</h4><p>${leg.good ? `BUY ${count(route.quantities[i])} ${esc(leg.name)} · ${money(leg.buy)} each<br>SELL ${leg.target === result.origin ? 'TO RHW' : 'AT DESTINATION'} · ${money(leg.sell)} each · ${money(route.quantities[i] * leg.margin)} profit` : 'EMPTY APPROACH'}</p><small>${esc(leg.fromSystem || '')} → ${esc(leg.toSystem || '')} · ${duration(leg.flight.seconds)} flight · ${leg.flight.jumps} jumps</small><p class="supply-path">${esc(timePath(leg))}</p></section>`).join('')}
       <p>Estimates use trade lanes at 2,500 m/s, this ship's cruise speed, 15 s per jump, 30 s per docking operation and cruise/lane entry time. Interruptions and manual loading time may vary. Hauler profit includes buying from and selling to RHW. Company manufacturing profit is separate.</p></details></article>`;
   }).join('');
@@ -269,7 +269,7 @@ function renderExports() {
   $('supplyResults').innerHTML = result.results.map(route => {
     const buyer = route.buyer, back = route.returnTrade;
     const exportLoss = (route.outboundProfit ?? route.profit) < 0;
-    const warnings = [...new Set(route.stops)].filter(id => id !== result.origin && accessFor(route.identity?.id).byId[id]?.state === 'unknown');
+    const warnings = [...new Set(route.stops)].filter(id => id !== result.origin && (accessFor(route.identity?.id).byId[id]?.state === 'unknown' || prepared.dataset.bases.find(base => base.id === id)?.kind === 'pob'));
     const limits = buyer.kind === 'pob' ? `<div class="supply-buyer-grid"><div><small>BUYER FUNDS</small><strong>${money(buyer.cash)}</strong></div><div><small>OPEN PURCHASE LIMIT</small><strong>${count(buyer.demand)} units</strong></div><div><small>FREE BUYER STORAGE</small><strong>${count(buyer.space)}</strong></div></div>` : '<p class="supply-ship-note">NPC buyer · no POB cash or storage limits</p>';
     const alternative = route.returnAlternative;
     const emptyNote = !result.stats.returnEnabled ? 'Return cargo is disabled in Export Settings.' : exportLoss ? 'A return trade does not turn a loss-making export into a recommendation.'
@@ -287,7 +287,7 @@ function renderExports() {
       ${limits}
       <p class="supply-ship-note">EXPORT LOAD LIMITED BY ${esc(route.limiting.join(' / '))} · ${count(route.availableAtRhw)} units available above RHW’s reserve · Start capital ${money(route.capitalNeeded)}</p>
       ${backMarkup}
-      ${warnings.length ? `<p class="supply-access-note">Docking access is not confirmed at ${warnings.map(id => esc(prepared.dataset.bases.find(base => base.id === id)?.name || id)).join(', ')}. Check owner permissions at POBs and personal reputation at NPC bases.</p>` : ''}
+      ${warnings.length ? `<p class="supply-access-note">Personal reputation and POB owner permissions may add restrictions at ${warnings.map(id => esc(prepared.dataset.bases.find(base => base.id === id)?.name || id)).join(', ')}.</p>` : ''}
       <details class="supply-details"><summary>FLIGHT + TRADE STEPS</summary>${route.legs.map((leg, i) => `<section><h4>${i + 1}. ${esc(leg.from)} → ${esc(leg.to)}</h4><p>${leg.good ? `BUY ${count(route.quantities[i])} ${esc(leg.name)} · ${money(leg.buy)} each<br>SELL AT DESTINATION · ${money(leg.sell)} each · ${money(route.quantities[i] * leg.margin)} hauling profit` : 'EMPTY TRANSFER'}</p><small>${esc(leg.fromSystem || '')} → ${esc(leg.toSystem || '')} · ${duration(leg.flight.seconds)} flight · ${leg.flight.jumps} jumps</small><p class="supply-path">${esc(timePath(leg))}</p></section>`).join('')}
       <p>Full-trip estimates include every return leg and docking stop, trade lanes at 2,500 m/s, this ship’s cruise speed, 15 s per jump and 30 s per docking operation. Hauler profit subtracts all purchases. RHW export receipts are revenue before manufacturing costs and return purchases. POB funds and stock limits can change before arrival.</p></details></article>`;
   }).join('');
