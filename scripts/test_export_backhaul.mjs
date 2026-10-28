@@ -88,10 +88,32 @@ assert.notEqual((await searchExports(data(slowBases), navigation(slowBases), [sh
 const loss = rankExportRoutes([{ ...best, outboundProfit: -10 }]);
 assert.equal(loss[0].recommendation, null, 'Return profit never hides an export loss');
 
-const groups = commodityGroups(['MOX', 'Gold', 'Food Rations', 'gold', 'Toxic Waste'], ['Gold', 'Toxic Waste'], 'export');
-assert.match(groups[0].label, /^EXPORT/);
-assert.match(groups[1].label, /^IMPORT/);
-assert.deepEqual(groups[0].names.map(name => name.toLowerCase()), ['gold', 'toxic waste']);
-assert.deepEqual(groups[1].names, ['Food Rations', 'MOX']);
-assert.match(commodityGroups(['MOX', 'Gold'], ['Gold'], 'supply')[0].label, /^IMPORT/);
-console.log('Export backhaul passed: fixed primary load, post-sale POB funds/storage, reserves, capital, NPC home delivery, detour limits, no hidden export loss and grouped commodities.');
+const plating = { id: 'ablative', name: 'Ablative Armor Plating', buy: 100, sell: 220, volume: 2, originalVolume: 2 };
+const importingRhw = structuredClone(rhw); importingRhw.offers.push({ ...plating, stock: 0, min: 0, max: 20000 });
+const oder = { ...pickup, id: 'oder', name: 'Oder Shipyard', offers: [plating] };
+const platingBases = [importingRhw, buyer, oder];
+const npcToRhw = await searchExports(data(platingBases), navigation(platingBases), [ship], { commodity: 'chambers', extraPercent: 20 });
+assert.equal(npcToRhw.results[0].returnTrade.from, 'Oder Shipyard');
+assert.equal(npcToRhw.results[0].returnTrade.to, 'Resolution Heavy Works');
+assert.equal(npcToRhw.results[0].returnTrade.quantity, 1250, 'NPC Ablatives backhaul respects the storage freed by the export');
+assert.equal(npcToRhw.results[0].delivered, 250);
+
+const goods = ['MOX', 'Gold', 'Food Rations', 'gold', 'Toxic Waste', 'Avionics Systems', 'Reactor Systems', 'Interior Systems', 'Ablative Armor Platings', 'Gold Ore', 'Wildcat Gold', 'New Commodity'];
+const outputs = ['Gold', 'Reactor Systems', 'Toxic Waste', 'Wildcat Gold'];
+const inputs = ['Gold', 'Reactor Systems', 'Wildcat Gold'];
+const groups = commodityGroups(goods, outputs, 'export', inputs);
+assert.deepEqual(groups.flatMap(group => group.names).map(normalizeName).sort(), outputs.map(normalizeName).sort(), 'Export mode contains only export goods, each once');
+assert.equal(groups[0].label, 'SHIP SYSTEMS');
+assert.deepEqual(groups.find(group => group.label === 'METALS & ORES').names.map(normalizeName), ['gold', 'wildcat gold']);
+const imported = commodityGroups(goods, outputs, 'supply', inputs);
+const importedNames = imported.flatMap(group => group.names).map(normalizeName);
+assert.ok(!importedNames.includes('toxic waste'), 'Export-only goods do not leak into imports');
+assert.ok(['gold', 'reactor systems', 'wildcat gold'].every(name => importedNames.includes(name)), 'Dual-role recipe inputs remain importable');
+assert.deepEqual(imported[0].names, ['Avionics Systems', 'Interior Systems', 'Reactor Systems'], 'Ship systems stay together and sort alphabetically');
+assert.ok(imported.find(group => group.label === 'PRODUCTION MATERIALS').names.includes('Ablative Armor Platings'));
+assert.ok(imported.find(group => group.label === 'METALS & ORES').names.includes('Gold Ore'));
+assert.deepEqual(imported.at(-1), { label: 'OTHER GOODS', names: ['New Commodity'] });
+assert.deepEqual(commodityGroups(['MOX'], outputs, 'export'), [], 'An empty mode never falls back to unrelated goods');
+assert.deepEqual(commodityGroups(['Gold'], ['Gold'], 'supply'), [], 'Export-only selections cannot bypass the import filter');
+function normalizeName(name) { return name.toLowerCase(); }
+console.log('Export backhaul passed: fixed primary load, post-sale funds/storage, reserves, capital, NPC-to-RHW and NPC home delivery, detour limits, no hidden export loss and mode-specific commodity categories.');
