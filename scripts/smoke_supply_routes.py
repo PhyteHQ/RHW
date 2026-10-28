@@ -218,7 +218,7 @@ def main():
         base.ev(cdp, "document.querySelector('.supply-result .supply-all-identities>summary').click()")
         if not base.ev(cdp, "(()=>{const all=document.querySelector('.supply-result .supply-all-identities');return all.open&&[...all.querySelectorAll('[data-compatible-identity]')].every(n=>n.getClientRects().length>0)})()"):
             raise RuntimeError('Show all must reveal the complete counted compatible-ID list')
-        base.ev(cdp, "document.querySelector('.supply-result .supply-all-identities>summary').click();document.querySelector('.supply-result [data-preferred-identity=\"dsy_license_br_m_grp\"]>summary').click()")
+        base.ev(cdp, "(()=>{document.querySelector('.supply-result .supply-all-identities>summary').click();document.querySelector('.supply-result [data-preferred-identity=\"dsy_license_br_m_grp\"]>summary').click();return true})()")
         if 'Dublin Molly Test Base' not in base.ev(cdp, "document.querySelector('.supply-result [data-preferred-identity=\"dsy_license_br_m_grp\"] p').innerText"):
             raise RuntimeError('An unavailable favorite must explain the actual docking restriction')
         base.ev(cdp, "document.querySelector('.supply-result [data-preferred-identity=\"dsy_license_br_m_grp\"]>summary').click()")
