@@ -8178,7 +8178,10 @@ window.__RHW_RECIPE_CATALOG_GZIP_BASE64__ = (window.__RHW_RECIPE_CATALOG_GZIP_BA
     try {
       modulePromise ||= import(new URL('./js/supply/ui.mjs', document.baseURI).href).catch(error => { modulePromise = null; throw error; });
       const module = await modulePromise;
-      module.open({ commodity: name, commodities: commodities(), mode, telemetry, trigger });
+      const names = commodities();
+      const outputRoles = [...DASHBOARD_CONFIG.roles.export, ...DASHBOARD_CONFIG.roles.byproduct, ...DASHBOARD_CONFIG.roles.confiscated];
+      const outputKeys = new Set(outputRoles.map(keyFromName));
+      module.open({ commodity: name, commodities: names, exportCommodities: names.filter(item => outputKeys.has(keyFromName(item))), mode, telemetry, trigger });
     } catch (error) { app.notify(`TRADE DESK // ${error.message}`, 'warn'); }
   }
   document.addEventListener('click', event => {
