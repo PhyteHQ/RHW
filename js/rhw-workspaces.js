@@ -8182,7 +8182,7 @@ window.__RHW_RECIPE_CATALOG_GZIP_BASE64__ = (window.__RHW_RECIPE_CATALOG_GZIP_BA
       const outputRoles = [...DASHBOARD_CONFIG.roles.export, ...DASHBOARD_CONFIG.roles.byproduct, ...DASHBOARD_CONFIG.roles.confiscated];
       const outputKeys = new Set(outputRoles.map(keyFromName));
       const inputRoles = [...DASHBOARD_CONFIG.roles.maintenance, ...DASHBOARD_CONFIG.roles.procurement,
-        ...DASHBOARD_CONFIG.roles.feedstock, ...DASHBOARD_CONFIG.roles.shipyard];
+        ...DASHBOARD_CONFIG.roles.feedstock, ...DASHBOARD_CONFIG.roles.shipyard, ...DASHBOARD_CONFIG.materialsScan];
       for (const recipe of app.production?.recipes() || []) {
         recipe.ingredients.forEach(([item]) => inputRoles.push(item));
         Object.values(recipe.inputOptions || {}).forEach(options => inputRoles.push(...options));
