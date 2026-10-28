@@ -234,6 +234,8 @@ def main() -> int:
                     crest_image=geometry['crestImage']
                     if crest_image['top']<crest['top']-1 or crest_image['bottom']>crest['bottom']+1 or crest_image['height']<crest['height']-2:
                         layout_failures.append(f'Crest image must fit fully inside its header frame at {width}px: {geometry}')
+                    if header['height']>252:
+                        layout_failures.append(f'Centered crest must not push navigation below the existing desktop header at {width}px: {geometry}')
                 if width>=1200:
                     if max(c['top'] for c in cards[:3])-min(c['top'] for c in cards[:3])>2 or cards[0]['height']>=cards[1]['height'] or cards[3]['top']<max(c['bottom'] for c in cards[:3])-2:
                         layout_failures.append(f'Inventory row sizing at {width}px: {geometry}')
