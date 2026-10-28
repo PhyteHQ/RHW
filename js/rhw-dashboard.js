@@ -1168,9 +1168,8 @@ function analyzeRecipe(recipe) {
       && stocks.every(entry => !entry.item || entry.stock !== null);
     const stock = known ? stocks.reduce((sum, entry) => sum + (entry.stock ?? 0), 0) : null;
     const extraHtml = names.length > 1 ? `<span class="recipe-stock-breakdown">${stocks.map(entry => {
-      const label = keyFromName(entry.name) === 'gold' ? 'STD' : keyFromName(entry.name) === 'wildcat gold' ? 'WC' : displayRecipeName(entry.name);
-      return `${escapeHTML(label)}: ${number(entry.item ? entry.stock : 0)}`;
-    }).join(' // ')}</span>` : '';
+      return `<span class="recipe-stock-option"><span>${escapeHTML(displayRecipeName(entry.name))}</span><strong>${number(entry.item ? entry.stock : 0)}</strong></span>`;
+    }).join('')}</span>` : '';
     const cycles = stock === null ? null : required > 0 ? Math.floor(stock / required) : 0;
     const currentCycleGap = stock === null ? null : Math.max(0, required - stock);
     return { name: originalName, displayName: names.map(displayRecipeName).join(' / '), extraHtml, required, stock, cycles, currentCycleGap };
@@ -1886,7 +1885,7 @@ function renderOverviewRow({ state, role, name, item = null, detail = '', quanti
   const safeDetail = detail ? `<small class="overview-stock-detail">${escapeHTML(detail)}</small>` : '';
   const referenceMarkup = reference ? `<span class="overview-stock-reference"><span aria-hidden="true">/</span> ${number(reference.value)} <small>${escapeHTML(reference.label)}</small></span>` : '';
   return `<li class="overview-stock-row alert-${state}${extraClass ? ` ${extraClass}` : ''}">
-            <span class="overview-item-copy"><strong>${escapeHTML(name)}</strong></span>
+            <span class="overview-item-copy"><span class="rhw-supply-material"><strong>${escapeHTML(name)}</strong>${role === 'export' && typeof exportRouteButton === 'function' ? exportRouteButton(name) : ''}</span></span>
             ${statusPill(state, role)}
             <div class="overview-row-meta">
               <div class="overview-stock-value"><strong class="overview-row-qty">${number(quantityValue)}</strong>${referenceMarkup}</div>
@@ -2064,7 +2063,9 @@ function renderManifest() {
   els.itemsBody.innerHTML = visible.map(item => {
     const role = assetRole(item);
     const state = manifestState(item);
-    return `<tr><td class="asset-cell"><span class="rhw-supply-material"><strong>${escapeHTML(displayName(item))}</strong>${typeof supplyRouteButton === 'function' ? supplyRouteButton(displayName(item)) : ''}</span></td><td>${rolePillsFor(item)}</td><td>${statusPill(state, role)}</td><td class="numeric-cell">${number(firstFiniteApiStockValue(item, ['quantity', 'amount', 'stock']))}</td><td class="numeric-cell price-cell sell-price">${formatCurrency(priceSell(item))}</td><td class="numeric-cell price-cell buy-price">${formatCurrency(priceBuy(item))}</td></tr>`;
+    const routeAction = hasAssetRole(item, 'export') && typeof exportRouteButton === 'function' ? exportRouteButton(displayName(item))
+      : typeof supplyRouteButton === 'function' ? supplyRouteButton(displayName(item)) : '';
+    return `<tr><td class="asset-cell"><span class="rhw-supply-material"><strong>${escapeHTML(displayName(item))}</strong>${routeAction}</span></td><td>${rolePillsFor(item)}</td><td>${statusPill(state, role)}</td><td class="numeric-cell">${number(firstFiniteApiStockValue(item, ['quantity', 'amount', 'stock']))}</td><td class="numeric-cell price-cell sell-price">${formatCurrency(priceSell(item))}</td><td class="numeric-cell price-cell buy-price">${formatCurrency(priceBuy(item))}</td></tr>`;
   }).join('');
 }
 

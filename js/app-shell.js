@@ -18,6 +18,7 @@ self.RHW_APP_SHELL = [
   "./assets/pwa-icon-maskable-512.png",
   "./js/supply/ui.mjs",
   "./js/supply/planner.mjs",
+  "./js/supply/export-planner.mjs",
   "./js/supply/worker.mjs",
   "./js/supply/access.mjs",
   "./js/supply/ship-profiles.mjs",

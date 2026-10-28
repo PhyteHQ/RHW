@@ -8162,35 +8162,43 @@ window.__RHW_RECIPE_CATALOG_GZIP_BASE64__ = (window.__RHW_RECIPE_CATALOG_GZIP_BA
     });
     return [...unique.values()].sort((a, b) => a.localeCompare(b));
   }
-  function button(name) {
+  function button(name, mode = 'supply') {
     if (!commodities().some(item => keyFromName(item) === keyFromName(name))) return '';
-    const label = `Plan supply route for ${escapeHTML(name)}`;
-    return `<button type="button" class="rhw-supply-button rhw-supply-icon" data-supply-commodity="${escapeHTML(name)}" aria-label="${label}" title="${label}"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="5" cy="5" r="2"/><circle cx="19" cy="19" r="2"/><path d="M7 5h9a3 3 0 0 1 0 6H8a4 4 0 0 0 0 8h9"/></svg></button>`;
+    const label = `${mode === 'export' ? 'Find export buyers' : 'Plan supply route'} for ${escapeHTML(name)}`;
+    const drawing = mode === 'export' ? '<path d="M14 4h6v6M20 4l-9 9M10 5H4v15h15v-6"/>'
+      : '<circle cx="5" cy="5" r="2"/><circle cx="19" cy="19" r="2"/><path d="M7 5h9a3 3 0 0 1 0 6H8a4 4 0 0 0 0 8h9"/>';
+    return `<button type="button" class="rhw-supply-button rhw-supply-icon" data-${mode}-commodity="${escapeHTML(name)}" aria-label="${label}" title="${label}"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">${drawing}</svg></button>`;
   }
   function telemetry() {
     return { pobs: typeof allBases !== 'undefined' ? allBases : [],
       receivedAt: typeof lastLoaded !== 'undefined' && lastLoaded ? lastLoaded.getTime() : 0,
       stale: typeof dataIsStale !== 'undefined' && dataIsStale };
   }
-  async function open(name, trigger = document.activeElement) {
+  async function open(name, trigger = document.activeElement, mode) {
     try {
       modulePromise ||= import(new URL('./js/supply/ui.mjs', document.baseURI).href).catch(error => { modulePromise = null; throw error; });
       const module = await modulePromise;
-      module.open({ commodity: name, commodities: commodities(), telemetry, trigger });
-    } catch (error) { app.notify(`SUPPLY ROUTES // ${error.message}`, 'warn'); }
+      module.open({ commodity: name, commodities: commodities(), mode, telemetry, trigger });
+    } catch (error) { app.notify(`TRADE DESK // ${error.message}`, 'warn'); }
   }
   document.addEventListener('click', event => {
-    const trigger = event.target.closest('[data-supply-commodity]');
-    if (trigger) open(trigger.dataset.supplyCommodity, trigger);
+    const trigger = event.target.closest('[data-supply-commodity],[data-export-commodity],[data-trade-desk]');
+    if (!trigger) return;
+    if (trigger.hasAttribute('data-export-commodity')) open(trigger.dataset.exportCommodity, trigger, 'export');
+    else if (trigger.hasAttribute('data-supply-commodity')) open(trigger.dataset.supplyCommodity, trigger, 'supply');
+    else open(null, trigger);
   });
   app.lifecycle.on('command:ready', 'supply-route-launcher', 90, () => {
+    if (typeof renderOverview === 'function') renderOverview();
+    if (typeof renderManifest === 'function') renderManifest();
     const panel = document.querySelector('[data-command-panel="logistics"]');
     if (!panel || panel.querySelector('.rhw-supply-launcher')) return;
-    panel.insertAdjacentHTML('afterbegin', `<div class="rhw-supply-launcher"><div><strong>SUPPLY RHW</strong><span>Bring a material home · compare ships, time and hauling profit</span></div><button type="button" class="rhw-supply-button" data-supply-commodity="Ablative Armor Plating">PLAN SUPPLY ROUTE</button></div>`);
+    panel.insertAdjacentHTML('afterbegin', `<div class="rhw-supply-launcher"><div><strong>RHW TRADE DESK</strong><span>Supply the base or find export buyers · compare ships, time and hauling profit</span></div><button type="button" class="rhw-supply-button" data-trade-desk>OPEN TRADE DESK</button></div>`);
   });
   app.supplyRoutes = { button, commodities, open, telemetry };
 })();
 function supplyRouteButton(name) { return window.RHWV4?.supplyRoutes?.button(name) || ''; }
+function exportRouteButton(name) { return window.RHWV4?.supplyRoutes?.button(name, 'export') || ''; }
 
 ;
 

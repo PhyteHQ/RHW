@@ -140,7 +140,9 @@ ctx.__RHW_RECIPE_CATALOG__ = JSON.parse(zlib.gunzipSync(Buffer.from(ctx.__RHW_RE
   assert.equal(gold.required, 25, 'BMM-adjusted requirement is unchanged');
   assert.equal(ctx.analyzeRecipe(superBatch).possibleCycles, 1, '10 Gold plus 15 Wildcat Gold make one cycle');
   assert.equal(gold.displayName, 'Gold / Wildcat Gold');
-  assert.match(gold.extraHtml, /STD: 10.*WC: 15/);
+  assert.match(gold.extraHtml, /Gold<\/span><strong>10.*Wildcat Gold<\/span><strong>15/);
+  assert.equal((gold.extraHtml.match(/class="recipe-stock-option"/g) || []).length, 2, 'Each additive stock gets its own row');
+  assert.doesNotMatch(gold.extraHtml, /STD|WC:|\/\//);
   ctx.findCommodity('Gold').quantity = 0;
   ctx.findCommodity('Wildcat Gold').quantity = 24;
   assert.equal(ctx.analyzeRecipe(superBatch).possibleCycles, 0, 'A mixed pool must still meet the full requirement');

@@ -60,16 +60,17 @@ def main() -> int:
             selectors:document.querySelectorAll('[data-production-alternative]').length,
             preferences:RHWV4.store.get(RHWV4.config.storageKeys.calculatorState).altSelections};
         })()""")
-        if pooled['stock'] != 25 or pooled['cycles'] != 1 or pooled['selectors'] != 0 or pooled.get('preferences') is not None or 'Gold / Wildcat Gold' not in pooled['text'] or 'STD: 10 // WC: 15' not in pooled['text']:
+        if pooled['stock'] != 25 or pooled['cycles'] != 1 or pooled['selectors'] != 0 or pooled.get('preferences') is not None or 'Gold / Wildcat Gold' not in pooled['text'] or 'Gold10Wildcat Gold15' not in pooled['text']:
             raise RuntimeError(f"Automatic mixed-stock production coverage failed: {pooled}")
         for width, height in [(360, 800), (390, 844), (1440, 1000)]:
             cdp.call('Emulation.setDeviceMetricsOverride', {'width': width, 'height': height, 'deviceScaleFactor': 1, 'mobile': width < 760})
             fit = base.ev(cdp, """(()=>{
               document.querySelectorAll('.production-card-collapsed .production-card-toggle').forEach(button=>button.click());
               return {overflow:document.documentElement.scrollWidth>innerWidth+1,
+                stacked:[...document.querySelectorAll('.recipe-stock-breakdown')].every(group=>{const rows=[...group.children];return rows.every((row,i)=>i===0||row.getBoundingClientRect().top>=rows[i-1].getBoundingClientRect().bottom-1);}),
                 selectors:document.querySelectorAll('[data-production-alternative]').length};
             })()""")
-            if fit['overflow'] or fit['selectors'] != 0:
+            if fit['overflow'] or not fit['stacked'] or fit['selectors'] != 0:
                 raise RuntimeError(f"Pooled production inputs do not fit at {width}: {fit}")
             out = Path(__file__).resolve().parents[1] / 'artifacts/interface'
             out.mkdir(parents=True, exist_ok=True)
