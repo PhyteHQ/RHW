@@ -99,12 +99,12 @@ assert.equal(npcToRhw.results[0].returnTrade.quantity, 1250, 'NPC Ablatives back
 assert.equal(npcToRhw.results[0].delivered, 250);
 
 const goods = ['MOX', 'Gold', 'Food Rations', 'gold', 'Toxic Waste', 'Avionics Systems', 'Reactor Systems', 'Interior Systems', 'Ablative Armor Platings', 'Gold Ore', 'Wildcat Gold', 'New Commodity'];
-const outputs = ['Gold', 'Reactor Systems', 'Toxic Waste', 'Wildcat Gold'];
+const outputs = ['Gold', 'Reactor Systems', 'Toxic Waste'];
 const inputs = ['Gold', 'Reactor Systems', 'Wildcat Gold'];
 const groups = commodityGroups(goods, outputs, 'export', inputs);
 assert.deepEqual(groups.flatMap(group => group.names).map(normalizeName).sort(), outputs.map(normalizeName).sort(), 'Export mode contains only export goods, each once');
 assert.equal(groups[0].label, 'SHIP SYSTEMS');
-assert.deepEqual(groups.find(group => group.label === 'METALS & ORES').names.map(normalizeName), ['gold', 'wildcat gold']);
+assert.deepEqual(groups.find(group => group.label === 'METALS & ORES').names.map(normalizeName), ['gold']);
 const imported = commodityGroups(goods, outputs, 'supply', inputs);
 const importedNames = imported.flatMap(group => group.names).map(normalizeName);
 assert.ok(!importedNames.includes('toxic waste'), 'Export-only goods do not leak into imports');

@@ -140,7 +140,8 @@ fuels/chemicals, base supplies, recycling/byproducts and other goods. Entries
 sort alphabetically within each category. Configured import roles, material-market
 sourcing targets and actual production inputs allow dual-role goods in both modes; a context commodity
 cannot bypass the mode filter. Each mode remembers its own valid selection.
-Visible controls consistently say Import to RHW / Export from RHW; internal
+Wildcat Gold is an import and recipe input, not an export. Visible mode labels
+are simply Import / Export; internal
 `supply` identifiers remain compatible with existing route and worker contracts.
 NPC markets, physical docking, BMM ID exclusions, unknown personal access,
 snapshot provenance and cancellation retain the existing supply contracts.
