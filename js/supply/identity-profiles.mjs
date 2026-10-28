@@ -167,26 +167,8 @@ export function identityShipCheck(identity, ship) {
 }
 
 export function autoIdentityShips(ships, identity) {
-  const candidates = ships.filter(isHaulingShip)
-    .map(ship => ({ ship, check: identityShipCheck(identity, ship) })).filter(row => row.check.state === 'checked');
-  const selected = [], seen = new Set();
-  const add = ship => { if (ship && !seen.has(ship.id)) { selected.push(ship); seen.add(ship.id); } };
-  // Preserve cargo-volume classes (notably liners) and both mooring sizes.
-  for (const dock of ['medium', 'large', 'berth']) {
-    const group = candidates.filter(row => row.ship.dock === dock).map(row => row.ship);
-    add([...group].sort((a, b) => b.cargo - a.cargo || b.cruise - a.cruise)[0]);
-  }
-  const liners = candidates.map(row => row.ship).filter(ship => ship.volumeClass === 10);
-  add(liners.sort((a, b) => b.cargo - a.cargo || b.cruise - a.cruise)[0]);
-  const miners = candidates.map(row => row.ship).filter(ship => ship.volumeClass === 14);
-  add(miners.sort((a, b) => b.cargo - a.cargo || b.cruise - a.cruise)[0]);
-  for (const dock of ['medium', 'berth', 'large']) {
-    if (selected.length >= 6) break;
-    add(candidates.map(row => row.ship).filter(ship => ship.dock === dock)
-      .sort((a, b) => b.cruise - a.cruise || b.cargo - a.cargo)[0]);
-  }
-  const ranked = candidates.map(row => row.ship).sort((a, b) => b.cargo * b.cruise - a.cargo * a.cruise);
-  for (const ship of ranked) { if (selected.length >= 6) break; add(ship); }
-  return selected.slice(0, 6);
+  // Do not pick one largest hull per dock: a lane-incapable Barge must not
+  // displace an ordinary 5k transport before routes are even compared.
+  return ships.filter(ship => isHaulingShip(ship) && identityShipCheck(identity, ship).state === 'checked');
 }
 export function isHaulingShip(ship) { return HAULERS.has(shipFamily(ship)); }

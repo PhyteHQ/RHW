@@ -1,0 +1,173 @@
+{
+  "provenance": {
+    "asOf": "2026-10-28",
+    "ships": "https://github.com/PhyteHQ/RHW/actions/runs/40696091973",
+    "flightRules": "https://patch.discoverygc.com/20261023-patch.zip",
+    "files": [
+      "DATA/SHIPS/shiparch.ini",
+      "DATA/EQUIPMENT/engine_equip.ini"
+    ],
+    "note": "Minimal public ship API records. The lane flags and Barge charge time below are exact patch-file fields; the market in the test is synthetic."
+  },
+  "ships": [
+    {
+      "nickname": "dsy_advanced_train",
+      "name": "Advanced Train",
+      "class": 9,
+      "type": "transport",
+      "hold_size": 5000,
+      "cruise_speed": 350,
+      "dock_type": 2,
+      "ship_packages": [
+        {
+          "nickname": "dsy_advanced_train_package"
+        }
+      ],
+      "tech_compat": {
+        "techchompat_by_id": {
+          "dsy_license_br_m_grp": 1,
+          "dsy_license_co_os_grp": 1,
+          "dsy_license_fc_j_grp": 1
+        }
+      }
+    },
+    {
+      "nickname": "dsy_cargobarge_1",
+      "name": "Barge Type I",
+      "class": 8,
+      "type": "capital",
+      "hold_size": 30000,
+      "cruise_speed": 90,
+      "dock_type": 2,
+      "ship_packages": [
+        {
+          "nickname": "dsy_cargobarge_1_package"
+        }
+      ],
+      "tech_compat": {
+        "techchompat_by_id": {
+          "dsy_license_br_m_grp": 1,
+          "dsy_license_co_os_grp": 1,
+          "dsy_license_fc_j_grp": 1
+        }
+      }
+    },
+    {
+      "nickname": "pilgrim_liner",
+      "name": "Pilgrim Liner",
+      "class": 10,
+      "type": "capital",
+      "hold_size": 4300,
+      "cruise_speed": 415,
+      "dock_type": 3,
+      "ship_packages": [
+        {
+          "nickname": "pilgrim_liner_package"
+        }
+      ],
+      "tech_compat": {
+        "techchompat_by_id": {
+          "dsy_license_br_m_grp": 1,
+          "dsy_license_co_os_grp": 1,
+          "dsy_license_fc_j_grp": 1
+        }
+      }
+    },
+    {
+      "nickname": "zoner_exploration_fr",
+      "name": "Vector",
+      "class": 2,
+      "type": "freighter",
+      "hold_size": 650,
+      "cruise_speed": 550,
+      "dock_type": 1,
+      "ship_packages": [
+        {
+          "nickname": "zoner_exploration_fr_package"
+        }
+      ],
+      "tech_compat": {
+        "techchompat_by_id": {
+          "dsy_license_br_m_grp": 1,
+          "dsy_license_co_os_grp": 1,
+          "dsy_license_fc_j_grp": 1
+        }
+      }
+    },
+    {
+      "nickname": "dsy_miner",
+      "name": "Asteroid Miner",
+      "class": 14,
+      "type": "capital",
+      "hold_size": 5000,
+      "cruise_speed": 200,
+      "dock_type": 3,
+      "ship_packages": [
+        {
+          "nickname": "dsy_miner_package_stripped"
+        },
+        {
+          "nickname": "dsy_miner_package"
+        }
+      ],
+      "tech_compat": {
+        "techchompat_by_id": {
+          "dsy_license_br_m_grp": 1,
+          "dsy_license_co_os_grp": 1,
+          "dsy_license_fc_j_grp": 1
+        }
+      }
+    },
+    {
+      "nickname": "dsy_brliner",
+      "name": "Bretonia Cruise Liner",
+      "class": 10,
+      "type": "capital",
+      "hold_size": 3600,
+      "cruise_speed": 500,
+      "dock_type": 2,
+      "ship_packages": [
+        {
+          "nickname": "dsy_brliner_package"
+        }
+      ],
+      "tech_compat": {
+        "techchompat_by_id": {
+          "dsy_license_br_m_grp": 1,
+          "dsy_license_co_os_grp": 1,
+          "dsy_license_fc_j_grp": 0.1
+        }
+      }
+    },
+    {
+      "nickname": "newport_frigate",
+      "name": "Retrofit Explorer",
+      "class": 10,
+      "type": "capital",
+      "hold_size": 3600,
+      "cruise_speed": 500,
+      "dock_type": 3,
+      "ship_packages": [
+        {
+          "nickname": "newport_frigate_package"
+        }
+      ],
+      "tech_compat": {
+        "techchompat_by_id": {
+          "dsy_license_br_m_grp": 1,
+          "dsy_license_co_os_grp": 1,
+          "dsy_license_fc_j_grp": 1
+        }
+      }
+    }
+  ],
+  "patchFlightRules": {
+    "dsy_cargobarge_1": {
+      "can_use_tradelanes": false,
+      "cruise_charge_time": 15
+    },
+    "dsy_miner": {
+      "can_use_tradelanes": false
+    }
+  }
+}

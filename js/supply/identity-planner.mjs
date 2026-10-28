@@ -2,7 +2,34 @@
 import { searchSupply, findRhw, findCommodity } from './planner.mjs';
 import { searchExports } from './export-planner.mjs';
 import { BMM_ID } from './access.mjs';
-import { autoIdentityShips, identityShipCheck, isHaulingShip, PREFERRED_TRADER_IDS } from './identity-profiles.mjs';
+import { autoIdentityShips, identityShipCheck, PREFERRED_TRADER_IDS } from './identity-profiles.mjs';
+import { flightKey } from './navigation.mjs';
+import { volumeFor } from './core/trade.mjs';
+
+// Drop only hulls covered by a faster/larger hull with the same physical
+// access, commodity volumes and every one of their usable IDs. In particular,
+// extra cargo cannot compensate for slower cruise or inability to use lanes.
+function haulerFrontier(candidates, dataset, navigation) {
+  const volumes = new Map();
+  function volumeKey(ship) {
+    const key = ship.volumeClass ?? 'default';
+    if (!volumes.has(key)) {
+      const differences = new Set();
+      for (const base of dataset.bases) for (const item of base.offers) {
+        const value = volumeFor(item, ship), ordinary = volumeFor(item, { volumeClass: null });
+        if (value !== ordinary) differences.add(JSON.stringify([base.id, item.id, value]));
+      }
+      volumes.set(key, JSON.stringify([...differences].sort()));
+    }
+    return volumes.get(key);
+  }
+  const rows = candidates.map(row => ({ ...row, key: flightKey(navigation, { ...row.ship, cruise: 0 }) + volumeKey(row.ship) }));
+  return rows.filter(b => !rows.some(a => a !== b && a.key === b.key
+    && a.ship.cargo >= b.ship.cargo && a.ship.cruise >= b.ship.cruise
+    && [...b.ids].every(id => a.ids.has(id))
+    && (a.ship.cargo > b.ship.cargo || a.ship.cruise > b.ship.cruise || a.ids.size > b.ids.size || a.ship.id < b.ship.id)))
+    .map(row => row.ship).sort((a, b) => b.cargo * b.cruise - a.cargo * a.cruise || a.id.localeCompare(b.id));
+}
 
 const conditional = route => ({ ...route, recommendation: null,
   label: 'CHECK ID / SHIP RULES · CONDITIONAL QUOTE' });
@@ -53,7 +80,7 @@ export async function searchIdentities(dataset, navigation, ships, scopes, optio
   const requested = options.shipId && options.shipId !== 'auto' ? ships.find(ship => ship.id === options.shipId) : null;
   const profiles = [], seen = new Set();
   const add = ship => { if (ship && !seen.has(ship.id)) { profiles.push(ship); seen.add(ship.id); } };
-  let reason = '';
+  let reason = '', shipPruned = false;
   if (options.shipId && options.shipId !== 'auto') {
     if (!requested) reason = 'The selected ship is not in the current registry';
     else if (!active.length) reason = 'The selected ID is not in the current registry';
@@ -61,21 +88,25 @@ export async function searchIdentities(dataset, navigation, ships, scopes, optio
       reason = identityShipCheck(active[0].identity, requested).reason;
     else add(requested);
   } else {
-    // Round-robin ID shortlists preserve access-specific hulls without repeating
-    // the same expensive navigation search for every compatible identity.
-    const lists = active.filter(scope => !scope.denied.has(origin)
+    const homeScopes = active.filter(scope => !scope.denied.has(origin)
+      && (options.includeUnverified || scope.accessReady === true)
       && (options.includeRestrictedPobs || !scope.approval.has(origin))
-      && (options.includeUnverified || !scope.unverified.has(origin))).map(scope => autoIdentityShips(ships, scope.identity));
-    for (let index = 0; index < 6; index++) for (const list of lists) add(list[index]);
+      && (options.includeUnverified || !scope.unverified.has(origin)));
+    const candidates = new Map();
+    for (const scope of homeScopes) for (const ship of autoIdentityShips(ships, scope.identity)) {
+      if (!candidates.has(ship.id)) candidates.set(ship.id, { ship, ids: new Set() });
+      candidates.get(ship.id).ids.add(scope.identity.id);
+    }
+    const frontier = haulerFrontier([...candidates.values()], dataset, navigation);
+    shipPruned = frontier.length > 24;
+    frontier.slice(0, 24).forEach(add);
     if (!profiles.length && options.includeUnverified) {
       const bmm = active.find(scope => scope.identity.id === BMM_ID);
       if (bmm) legacyBmmShips(ships, bmm.identity).forEach(add);
     }
     if (!profiles.length) reason = 'No automatically verified hauler; select a ship to inspect a conditional quote';
   }
-  const shortlisted = profiles.slice(0, 12);
-  const eligibleHulls = ships.filter(ship => isHaulingShip(ship) && active.some(scope => identityShipCheck(scope.identity, ship).state === 'checked'));
-  const shipPruned = !requested && eligibleHulls.some(ship => !shortlisted.includes(ship));
+  const shortlisted = profiles;
   const empty = { mode: options.mode, origin, commodity: { id: findCommodity(dataset, options.commodity)?.id,
     name: findCommodity(dataset, options.commodity)?.name || options.commodity }, results: [], reason,
     stats: { checked: 0, sources: 0, ships: 0, identities: active.length, routeFirst: true, extraPercent: options.extraPercent ?? 20 } };
@@ -91,7 +122,7 @@ export async function searchIdentities(dataset, navigation, ships, scopes, optio
   };
   progress({ phase: 'profiles', checked: 0, identities: active.length, ships: shortlisted.length });
   const search = options.mode === 'export' ? searchExports : searchSupply;
-  const quoted = await search(dataset, navigation, shortlisted, { ...options, profileLimit: 12,
+  const quoted = await search(dataset, navigation, shortlisted, { ...options, profileLimit: 24,
     importGoal: options.importGoal || 'price', routeEligibility,
     blocked: [...new Set([...(options.blocked || []), ...blocked])] }, progress, canceled);
   const results = quoted.results.map(route => {

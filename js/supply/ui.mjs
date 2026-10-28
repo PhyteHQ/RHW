@@ -1,6 +1,6 @@
 import { normalizeDarkstat, validateDataset } from './core/trade.mjs';
 import { validateNavigation } from './core/navigation.mjs';
-import { FALLBACK_SHIPS, normalizeShipRegistry } from './ship-profiles.mjs';
+import { FALLBACK_SHIPS, normalizeShipRegistry, shipFlightRules } from './ship-profiles.mjs';
 import { dockingAccess, enrichBaseOwners, BMM_ID } from './access.mjs';
 import { normalize, findRhw } from './planner.mjs';
 import { commodityGroups } from './commodity-groups.mjs';
@@ -43,7 +43,7 @@ function updateMode(selected = $('supplyCommodity').value) {
   $('supplySearch').textContent = out ? 'FIND EXPORT BUYERS' : 'CALCULATE IMPORT ROUTE';
   $('supplySettingsCopy').textContent = out
     ? 'Deliver the selected export first, then look for profitable return cargo to RHW or another buyer in New London. Return cargo may use one pickup and one delivery stop within the chosen extra-time limit. Export quantities stay fixed. Every trade respects funds, stock reserves, purchase limits, storage and your capital. The best full round-trip $/hour is recommended.'
-    : 'Import priority defaults to the lowest material buy price within the time and delivery-rate limit. Equal prices favor the best whole-trip $/hour. You can also prioritize hauler income or supply speed. Standard imports buy at or below RHW’s payout; their delivery speed sets the allowance. Higher material prices appear separately as express options with a visible delivery loss. Every run starts and ends at RHW.';
+    : 'Import priority defaults to the lowest material buy price within the time and delivery-rate limit. Equal prices favor the best whole-trip $/hour. You can also prioritize hauler income or supply speed. Standard imports buy at or below RHW’s payout; their delivery speed sets the allowance. Faster-return alternatives must keep a comparable hourly delivery. Higher material prices appear separately as express options with a visible delivery loss. Every run starts and ends at RHW.';
 }
 
 async function database(action, value) {
@@ -106,7 +106,7 @@ async function prepare(force, signal) {
   if (!force && prepared && now - prepared.pobAt < FIVE_MINUTES && (!current.receivedAt || current.receivedAt <= prepared.pobAt)) return prepared;
   const cache = await database('get').catch(() => null) || {};
   let npc = cache.npc, npcAt = cache.npcAt || 0, pobs = cache.pobs, pobAt = cache.pobAt || 0;
-  let ships = cache.ships || FALLBACK_SHIPS, shipAt = cache.shipAt || 0;
+  let ships = (cache.ships || FALLBACK_SHIPS).map(ship => ({ ...ship, ...shipFlightRules(ship) })), shipAt = cache.shipAt || 0;
   let shipIdentityVersion = cache.shipIdentityVersion || 0, accessIdentityVersion = cache.accessIdentityVersion || 0;
   let owners = cache.owners || [], factions = cache.factions || [], tractors = cache.tractors || [];
   let identityCards = cache.identityPolicyVersion === 2 ? cache.identityCards || {} : {}, identityAt = cache.identityPolicyVersion === 2 ? cache.identityAt || 0 : 0;
@@ -118,9 +118,9 @@ async function prepare(force, signal) {
   if (force || !npc || now - npcAt > SIX_HOURS) tasks.push(read('commodities', { include_market_goods: true, filter_to_useful: true }, signal).then(data => {
     npc = normalizeDarkstat([], data); npc.bases = enrichBaseOwners(npc.bases, [], [], data); npcAt = Date.now();
   }));
-  if (force || !shipIdentityVersion || !shipAt || now - shipAt > DAY) tasks.push(read('ships', { include_tech_compat: true }, signal).then(data => {
+  if (force || shipIdentityVersion < 2 || !shipAt || now - shipAt > DAY) tasks.push(read('ships', { include_tech_compat: true }, signal).then(data => {
     ships = normalizeShipRegistry(data);
-    shipIdentityVersion = 1;
+    shipIdentityVersion = 2;
     shipAt = Date.now();
   }));
   if (force || accessIdentityVersion < 2 || !cache.accessAt || now - cache.accessAt > SIX_HOURS) {
@@ -193,7 +193,7 @@ function shipOptions() {
   selector.innerHTML = '<option value="auto">AUTO · Best permitted haulers</option>'
     + ships.map(ship => {
       const blocked = ids.length && ids.every(id => identityShipCheck(id, ship).state === 'blocked');
-      return `<option value="${esc(ship.id)}"${blocked ? ' disabled' : ''}>${esc(ship.name)} · ${count(ship.cargo)} hold · ${ship.cruise} m/s · ${ship.dockLabel}${blocked ? ' · ID RESTRICTED' : ''}</option>`;
+      return `<option value="${esc(ship.id)}"${blocked ? ' disabled' : ''}>${esc(ship.name)} · ${count(ship.cargo)} hold · ${ship.cruise} m/s · ${ship.dockLabel}${shipFlightRules(ship).tradeLanes ? '' : ' · NO TRADE LANES'}${blocked ? ' · ID RESTRICTED' : ''}</option>`;
     }).join('');
   if (selected && [...selector.options].some(option => option.value === selected && !option.disabled)) selector.value = selected;
 }
@@ -259,10 +259,10 @@ function renderResults() {
       <div class="supply-metrics"><div><small>DELIVER TO RHW</small><strong>${count(route.delivered)}</strong><span>${esc(result.commodity.name)}</span></div><div><small>EST. ROUND TRIP</small><strong>${duration(route.seconds)}</strong><span>${esc(extra)}</span></div><div><small>SUPPLY / HOUR</small><strong>${count(route.unitsPerHour)}</strong><span>units per hour</span></div><div><small>HAULER PROFIT</small><strong class="${route.profit < 0 ? 'supply-loss' : ''}">${money(route.profit)}</strong><span>${money(route.hourlyProfit)} / hour</span></div></div>
       ${reason}
       ${economics ? `<p class="supply-target-price">MATERIAL PURCHASE ${money(economics.cost)} · ${money(economics.buyPerUnit)} / UNIT · RHW PAYS ${money(economics.rhwPerUnit)} / UNIT</p>` : ''}
-      <p class="supply-ship-note">${route.ship.dockLabel} DOCK · ${volume} cargo volume / unit · Start capital ${money(route.capitalNeeded)} · RHW pays ${money(route.rhwPayout)}</p>
+      <p class="supply-ship-note">${route.ship.dockLabel} DOCK · ${shipFlightRules(route.ship).tradeLanes ? 'TRADE LANES' : 'NO TRADE LANES'} · ${shipFlightRules(route.ship).cruiseCharge} S CRUISE CHARGE · ${volume} cargo volume / unit · Start capital ${money(route.capitalNeeded)} · RHW pays ${money(route.rhwPayout)}</p>
       ${warnings.length ? '<p class="supply-access-note">Private POB owner exceptions and personal reputation may apply at ' + warnings.map(id => esc(prepared.dataset.bases.find(base => base.id === id)?.name || id)).join(', ') + '.</p>' : ''}
       <details class="supply-details"><summary>FLIGHT + TRADE STEPS</summary>${route.legs.map((leg, i) => `<section><h4>${i + 1}. ${esc(leg.from)} → ${esc(leg.to)}</h4><p>${leg.good ? `BUY ${count(route.quantities[i])} ${esc(leg.name)} · ${money(leg.buy)} each<br>SELL ${leg.target === result.origin ? 'TO RHW' : 'AT DESTINATION'} · ${money(leg.sell)} each · ${money(route.quantities[i] * leg.margin)} profit` : 'EMPTY APPROACH'}</p><small>${esc(leg.fromSystem || '')} → ${esc(leg.toSystem || '')} · ${duration(leg.flight.seconds)} flight · ${leg.flight.jumps} jumps</small><p class="supply-path">${esc(timePath(leg))}</p></section>`).join('')}
-      <p>Estimates use trade lanes at 2,500 m/s, this ship's cruise speed, 15 s per jump, 30 s per docking operation and cruise/lane entry time. Interruptions and manual loading time may vary. Hauler profit includes buying from and selling to RHW. Company manufacturing profit is separate.</p></details></article>`;
+      <p>Estimates use trade lanes at 2,500 m/s only when this hull can use them, this ship's cruise speed and charge time, 15 s per jump and 30 s per docking operation. Interruptions and manual loading time may vary. Hauler profit includes buying from and selling to RHW. Company manufacturing profit is separate.</p></details></article>`;
   }).join('');
   const { stats } = result;
   $('supplyStatus').textContent = `${stats.identities || 1} ID POLICIES · ${stats.ships} SHIPS · ${stats.sources} SOURCE COMPARISONS · ${stats.checked} QUOTES · MAX 1 EXTRA STOP / ${stats.extraPercent}% EXTRA TIME${stats.expressOnly ? ' · NO LOSS-FREE DELIVERY FOUND; EXPRESS OPTIONS SHOWN' : ' · TIME LIMIT BASED ON STANDARD IMPORTS'}${stats.pruned || stats.timedOut ? ' · BEST FOUND WITHIN SEARCH LIMIT' : ''}`;
@@ -294,10 +294,11 @@ function renderExports() {
       <p class="supply-target-price">BUY EXPORT FROM RHW ${money(route.leg.buy)} / UNIT · EXPORT BUYER PAYS ${money(buyer.price)} / UNIT</p>
       ${limits}
       <p class="supply-ship-note">EXPORT LOAD LIMITED BY ${esc(route.limiting.join(' / '))} · ${count(route.availableAtRhw)} units available above RHW’s reserve · Start capital ${money(route.capitalNeeded)}</p>
+      <p class="supply-ship-note">${route.ship.cruise} M/S · ${shipFlightRules(route.ship).tradeLanes ? 'TRADE LANES' : 'NO TRADE LANES'} · ${shipFlightRules(route.ship).cruiseCharge} S CRUISE CHARGE</p>
       ${backMarkup}
       ${warnings.length ? `<p class="supply-access-note">Personal reputation and POB owner permissions may add restrictions at ${warnings.map(id => esc(prepared.dataset.bases.find(base => base.id === id)?.name || id)).join(', ')}.</p>` : ''}
       <details class="supply-details"><summary>FLIGHT + TRADE STEPS</summary>${route.legs.map((leg, i) => `<section><h4>${i + 1}. ${esc(leg.from)} → ${esc(leg.to)}</h4><p>${leg.good ? `BUY ${count(route.quantities[i])} ${esc(leg.name)} · ${money(leg.buy)} each<br>SELL AT DESTINATION · ${money(leg.sell)} each · ${money(route.quantities[i] * leg.margin)} hauling profit` : 'EMPTY TRANSFER'}</p><small>${esc(leg.fromSystem || '')} → ${esc(leg.toSystem || '')} · ${duration(leg.flight.seconds)} flight · ${leg.flight.jumps} jumps</small><p class="supply-path">${esc(timePath(leg))}</p></section>`).join('')}
-      <p>Full-trip estimates include every return leg and docking stop, trade lanes at 2,500 m/s, this ship’s cruise speed, 15 s per jump and 30 s per docking operation. Hauler profit subtracts all purchases. RHW export receipts are revenue before manufacturing costs and return purchases. POB funds and stock limits can change before arrival.</p></details></article>`;
+      <p>Full-trip estimates include every return leg and docking stop, trade lanes at 2,500 m/s only when this hull can use them, this ship’s cruise speed and charge time, 15 s per jump and 30 s per docking operation. Hauler profit subtracts all purchases. RHW export receipts are revenue before manufacturing costs and return purchases. POB funds and stock limits can change before arrival.</p></details></article>`;
   }).join('');
   const stats = result.stats;
   $('supplyStatus').textContent = `${stats.identities || 1} ID POLICIES · ${stats.ships} SHIPS · ${stats.sources} BUYER COMPARISONS · ${stats.checked} EXPORT / ${stats.returnChecked} RETURN QUOTES${stats.returnEnabled ? ` · MAX ${stats.extraPercent}% RETURN DETOUR` : ' · RETURN CARGO OFF'}${stats.noProfit ? ' · NO POSITIVE EXPORT MARGIN' : ''}${stats.timedOut || stats.pruned ? ' · BEST FOUND WITHIN SEARCH LIMIT' : ''}`;
