@@ -185,6 +185,7 @@ html.rhw-focus-pass .command-header-inner { grid-template-columns: minmax(0,1fr)
 .header-trade-button small { color: #c4b48e;font: 9px/1.5 var(--font-tech);letter-spacing: .025em; }
 .header-trade-button:hover { border-color: var(--gold);background: #2a241a; }
 .header-trade-button:focus-visible { outline: 2px solid var(--gold);outline-offset: 3px; }
+.connection-details-icon { display: none; }
 html.rhw-focus-pass .header-operations .uplink-panel { grid-template-columns: minmax(0,1fr);min-width: 0; }
 html.rhw-focus-pass .header-operations .uplink-details { grid-column: 1 / -1; }
 html.rhw-focus-pass .header-operations #headerRefreshBtn { display: inline-flex;justify-content: center;grid-column: 1 / -1;width: 100%;margin: 8px 0; }
@@ -313,6 +314,18 @@ html.rhw-focus-pass .uplink-panel.online:not(:has(.uplink-details[open])) .uplin
 }
 
 @media (max-width: 760px) {
+html.rhw-focus-pass .header-operations { grid-template-columns: 44px minmax(0,1fr) 80px 44px;gap: 6px;align-items: center; }
+html.rhw-focus-pass .header-operations .header-trade-button { grid-column: 1;grid-row: 1;min-height: 44px;padding: 8px;gap: 0; }
+html.rhw-focus-pass .header-trade-button :is(strong,small) { display: none; }
+html.rhw-focus-pass .header-trade-button svg { width: 22px;height: 22px; }
+html.rhw-focus-pass .header-operations #uplinkPanel { display: contents; }
+html.rhw-focus-pass .header-operations #uplinkPanel .uplink-header { grid-column: 2;grid-row: 1;min-width: 0;margin: 0; }
+html.rhw-focus-pass .header-operations #headerRefreshBtn { grid-column: 3;grid-row: 1;margin: 0;padding: 6px;white-space: normal;font-size: 10px; }
+html.rhw-focus-pass .header-operations #uplinkDetails { grid-column: 4;grid-row: 1;border: 0;padding: 0; }
+html.rhw-focus-pass .header-operations #uplinkDetails>summary { display: flex;align-items: center;justify-content: center;width: 44px;min-height: 44px;max-width: none;padding: 8px;list-style: none;border: 1px solid var(--line); }
+html.rhw-focus-pass #uplinkDetails>summary>span { display: none; }
+html.rhw-focus-pass #uplinkDetails .connection-details-icon { display: block; }
+html.rhw-focus-pass .header-operations #uplinkDetails[open] { grid-column: 1 / -1;grid-row: 2; }
 html.rhw-focus-pass .command-brand { grid-template-columns: 76px minmax(0,1fr);gap: 0 14px; }
 html.rhw-focus-pass .crest-frame { width: 76px;min-height: 102px; }
 html.rhw-focus-pass .crest { width: 71px;height: 96px; }
