@@ -91,6 +91,8 @@ assert.equal(compared.results[0].delivered, 3600);
 assert.ok(compared.results[0].recommendation);
 assert.equal(compared.stats.identities, 2);
 assert.deepEqual(compared.results[0].compatibleIdentities.map(row => row.identity.id), [JUNKERS]);
+assert.deepEqual(compared.results[0].preferredIdentities.map(row => row.identity.id), [BMM_ID, JUNKERS, 'dsy_license_co_os_grp']);
+assert.deepEqual(compared.results[0].preferredIdentities.map(row => row.shipCheck.state), ['blocked', 'checked', 'unknown']);
 assert.ok(compared.results.filter(row => row.identity.id === BMM_ID).every(row => !row.stops.includes('molly')));
 assert.ok(compared.results.every(row => row.identity.id === BMM_ID || row.ship.id !== train.id));
 assert.ok(compared.results.every(row => row.legs.every(leg => leg.flight)), 'Every leg, including return travel, is checked for the same ship');
@@ -200,11 +202,15 @@ const bmmBarge = await searchIdentities(realData, realNav, realShips, realScopes
   commodity: 'Wildcat Gold', shipId: barge.id, identityId: BMM_ID, extraPercent: 0 });
 assert.ok(bmmBarge.results.length && bmmBarge.results.every(route => route.legs.at(-1).source === 'br01_08_base'));
 assert.ok(bmmBarge.results.every(route => route.compatibleIdentities.every(row => row.identity.id !== 'dsy_license_neutral')));
+assert.deepEqual(bmmBarge.results[0].preferredIdentities.map(row => row.shipCheck.state), ['checked', 'blocked', 'checked'], 'BMM and normal Spa can use the Trafalgar Barge route; normal Junkers cannot use its hull');
+assert.match(bmmBarge.results[0].preferredIdentities[1].shipCheck.reason, /4,300/);
 const junkerDelivery = await searchIdentities(realData, realNav, realShips, realScopes, {
   commodity: 'Wildcat Gold', shipId: liner.id, identityId: JUNKERS, extraPercent: 0 });
 assert.equal(junkerDelivery.results[0].legs.at(-1).source, 'br05_05_base');
 assert.equal(junkerDelivery.results[0].delivery.buyPerUnit, 158);
 assert.ok(junkerDelivery.results[0].compatibleIdentities.some(row => row.identity.id === realCongress.id));
+assert.deepEqual(junkerDelivery.results[0].preferredIdentities.map(row => row.shipCheck.state), ['blocked', 'checked', 'blocked'], 'Favorite statuses also check destination access with the recommended hull');
+assert.match(junkerDelivery.results[0].preferredIdentities[0].shipCheck.reason, /Arranmore/);
 assert.ok(junkerDelivery.results.every(route => route.delivery.loss > 0 && !route.recommendation), 'Captured RHW payout is below NPC asks; no profitable import may be invented');
 const corsairBarge = await searchIdentities(realData, realNav, realShips, realScopes, {
   commodity: 'Wildcat Gold', shipId: barge.id, identityId: realCorsairs.id });

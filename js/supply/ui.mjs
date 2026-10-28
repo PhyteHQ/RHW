@@ -4,7 +4,7 @@ import { FALLBACK_SHIPS, normalizeShipRegistry } from './ship-profiles.mjs';
 import { dockingAccess, enrichBaseOwners, BMM_ID } from './access.mjs';
 import { normalize, findRhw } from './planner.mjs';
 import { commodityGroups } from './commodity-groups.mjs';
-import { identityRegistry, parseIdentityRules, identityShipCheck } from './identity-profiles.mjs';
+import { identityRegistry, parseIdentityRules, identityShipCheck, PREFERRED_TRADER_IDS } from './identity-profiles.mjs';
 
 const API = 'https://darkstat.dd84ai.com/api/';
 const CACHE = 'rhw-supply-market-v1';
@@ -215,12 +215,20 @@ function timePath(leg) {
 }
 function identityMarkup(route) {
   const compatible = route.compatibleIdentities || (route.identity ? [{ identity: route.identity, shipCheck: route.shipCheck }] : []);
-  const checked = compatible.filter(row => row.shipCheck.state === 'checked');
+  const priority = id => { const index = PREFERRED_TRADER_IDS.findIndex(row => row.id === id); return index < 0 ? 99 : index; };
+  const checked = compatible.filter(row => row.shipCheck.state === 'checked')
+    .sort((a, b) => priority(a.identity.id) - priority(b.identity.id) || a.identity.name.localeCompare(b.identity.name));
   const conditional = compatible.filter(row => row.shipCheck.state !== 'checked');
+  const preferred = route.preferredIdentities || PREFERRED_TRADER_IDS.map(row => ({
+    label: row.label, identity: { id: row.id }, shipCheck: { state: 'unknown', reason: 'ID status unavailable for this route' }
+  }));
+  const states = { checked: 'AVAILABLE', blocked: 'UNAVAILABLE', conditional: 'CONDITIONAL', unknown: 'NO DATA' };
+  const favorites = preferred.map(row => '<details class="supply-preferred-id" data-preferred-identity="' + esc(row.identity.id) + '" data-state="' + esc(row.shipCheck.state) + '"><summary><span>' + esc(row.label) + '</span><b>' + (states[row.shipCheck.state] || 'NO DATA') + '</b></summary><p>' + esc(row.shipCheck.reason) + '</p></details>').join('');
   const tags = rows => rows.map(row => '<span data-compatible-identity="' + esc(row.identity.id) + '">' + esc(row.identity.name) + '</span>').join('');
-  const extra = checked.length > 6 ? '<details><summary>SHOW ALL ' + checked.length + ' COMPATIBLE IDs</summary><div class="supply-id-tags">' + tags(checked.slice(6)) + '</div></details>' : '';
+  const others = checked.some(row => priority(row.identity.id) === 99);
+  const extra = others ? '<details class="supply-all-identities"><summary>SHOW ALL ' + checked.length + ' COMPATIBLE IDs</summary><div class="supply-id-tags">' + tags(checked) + '</div></details>' : '';
   const pending = conditional.length ? '<details><summary>' + conditional.length + ' CONDITIONAL ID' + (conditional.length === 1 ? '' : 's') + ' · CHECK RULES / ACCESS</summary>' + conditional.slice(0, 8).map(row => '<p><b>' + esc(row.identity.name) + '</b> · ' + esc(row.shipCheck.reason) + '</p>').join('') + (conditional.length > 8 ? '<p>' + (conditional.length - 8) + ' more conditional profiles omitted.</p>' : '') + '</details>' : '';
-  return '<div class="supply-identity-note" data-state="' + (checked.length ? 'checked' : 'conditional') + '"><strong>' + (checked.length ? 'COMPATIBLE IDs · ' + checked.length : 'CONDITIONAL ACCESS') + '</strong><div class="supply-id-tags">' + tags(checked.slice(0, 6)) + '</div><small>For this ship and every stop, including return cargo. Personal reputation, membership and POB permissions still apply.</small>' + extra + pending + '</div>';
+  return '<div class="supply-identity-note" data-state="' + (checked.length ? 'checked' : 'conditional') + '"><strong>' + (checked.length ? 'COMPATIBLE IDs · ' + checked.length : 'CONDITIONAL ACCESS') + '</strong><div class="supply-preferred-ids">' + favorites + '</div><small>For this ship and every stop, including return cargo. Open an ID for its result. Personal reputation, membership and POB permissions still apply.</small>' + extra + pending + '</div>';
 }
 function renderResults() {
   $('supplySource').textContent = sourceMarkup();

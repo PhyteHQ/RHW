@@ -3,6 +3,12 @@
 import { normalize } from './planner.mjs';
 import { BMM_ID } from './access.mjs';
 
+export const PREFERRED_TRADER_IDS = Object.freeze([
+  Object.freeze({ id: BMM_ID, label: 'BMM' }),
+  Object.freeze({ id: 'dsy_license_fc_j_grp', label: 'Junkers' }),
+  Object.freeze({ id: 'dsy_license_co_os_grp', label: 'Orbital Spa & Cruise' })
+]);
+
 // DiscoveryGC/shipclass, ShipClassTable + shipclass.rc (not its older comments).
 const FAMILIES = { 0: 'fighters', 1: 'fighters', 2: 'freighters', 3: 'fighters',
   4: 'fighters', 5: 'fighters', 6: 'transports', 7: 'transports', 8: 'transports',

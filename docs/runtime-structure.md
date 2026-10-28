@@ -130,6 +130,11 @@ one ID valid for all its stops with that hull. A union of unrelated docking
 permissions cannot authorize a tour. Export backhaul rechecks the full tour
 before selecting a return trade. Equivalent tours are shown once with every
 compatible ID; conditional IDs are kept separate from checked profiles.
+The normal BMM, Junkers and Orbital Spa & Cruise IDs have permanent first-row
+status controls in that order. Each uses the same complete-tour assessment as
+the compatible-ID filter, including blocked hulls, NPC docks and home POB IFF.
+Missing profiles remain unknown. Other compatible IDs are initially collapsed;
+the expanded list includes every compatible ID and matches its total count.
 
 Import defaults to the lowest requested-material buy price within both the
 time allowance and supply-rate allowance established by fast standard import.

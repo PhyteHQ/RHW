@@ -2,7 +2,7 @@
 import { searchSupply, findRhw, findCommodity } from './planner.mjs';
 import { searchExports } from './export-planner.mjs';
 import { BMM_ID } from './access.mjs';
-import { autoIdentityShips, identityShipCheck, isHaulingShip } from './identity-profiles.mjs';
+import { autoIdentityShips, identityShipCheck, isHaulingShip, PREFERRED_TRADER_IDS } from './identity-profiles.mjs';
 
 const conditional = route => ({ ...route, recommendation: null,
   label: 'CHECK ID / SHIP RULES · CONDITIONAL QUOTE' });
@@ -28,6 +28,18 @@ export async function searchIdentities(dataset, navigation, ships, scopes, optio
     }));
     return checks.get(ship.id);
   }
+  function assessRoute(policy, stops) {
+    const { scope, shipCheck } = policy;
+    if (shipCheck.state === 'blocked') return { identity: scope.identity, shipCheck };
+    const denied = stops.find(id => scope.denied.has(id));
+    const approval = stops.find(id => scope.approval.has(id));
+    const unverified = stops.find(id => scope.unverified.has(id));
+    const baseName = id => dataset.bases.find(base => base.id === id)?.name || id;
+    return { identity: scope.identity, shipCheck: denied ? { ...shipCheck, state: 'blocked', reason: 'ID prevents docking at ' + baseName(denied) }
+      : approval ? { ...shipCheck, state: 'conditional', reason: 'Explicit POB owner approval is required at ' + baseName(approval) }
+      : shipCheck.state !== 'checked' ? shipCheck
+      : unverified ? { ...shipCheck, state: 'conditional', reason: 'ID docking rights are unverified at ' + baseName(unverified) } : shipCheck };
+  }
   function matches(ship, stops, restrict = false) {
     return policies(ship).flatMap(({ scope, shipCheck }) => {
       if (restrict && !active.includes(scope) || shipCheck.state === 'blocked' || stops.some(id => scope.denied.has(id))) return [];
@@ -35,9 +47,7 @@ export async function searchIdentities(dataset, navigation, ships, scopes, optio
       if (unverified && !options.includeUnverified) return [];
       const approval = stops.some(id => scope.approval.has(id));
       if (approval && !options.includeRestrictedPobs) return [];
-      return [{ identity: scope.identity, shipCheck: approval ? { ...shipCheck, state: 'conditional',
-        reason: 'This POB needs explicit owner approval; ID alone does not grant docking' }
-        : unverified ? { ...shipCheck, state: 'conditional', reason: shipCheck.state !== 'checked' ? shipCheck.reason : 'ID docking rights at a route stop are unverified' } : shipCheck }];
+      return [assessRoute({ scope, shipCheck }, stops)];
     });
   }
   const requested = options.shipId && options.shipId !== 'auto' ? ships.find(ship => ship.id === options.shipId) : null;
@@ -91,7 +101,12 @@ export async function searchIdentities(dataset, navigation, ships, scopes, optio
     const allowed = compatibleIdentities.filter(row => active.some(scope => scope.identity.id === row.identity.id));
     const primary = allowed.find(row => row.shipCheck.state === 'checked') || allowed[0];
     if (!primary) return null;
-    const decorated = { ...route, ...primary, compatibleIdentities };
+    const preferredIdentities = PREFERRED_TRADER_IDS.map(preferred => {
+      const policy = policies(route.ship).find(row => row.scope.identity.id === preferred.id);
+      return { label: preferred.label, ...(policy ? assessRoute(policy, route.stops)
+        : { identity: { id: preferred.id, name: preferred.label }, shipCheck: { state: 'unknown', reason: 'This standard ID profile is not loaded' } }) };
+    });
+    const decorated = { ...route, ...primary, compatibleIdentities, preferredIdentities };
     return primary.shipCheck.state === 'checked' ? decorated : conditional(decorated);
   }).filter(Boolean);
   return { ...quoted, results, reason: results.length ? '' : 'No usable route found within the checked ship, access and market limits. Approval-only POBs can be inspected in the advanced settings.',

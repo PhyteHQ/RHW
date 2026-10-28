@@ -78,6 +78,11 @@ def main():
         tech['techchompat_by_id'][freelancer_id] = 1
         tractors.append({'nickname': freelancer_id, 'name': 'Freelancer ID', 'rephacks': tractors[1]['rephacks']})
         idcards[freelancer_id] = idcards[junker_id]
+        spa_id = 'dsy_license_co_os_grp'
+        captured_ids = json.loads((Path(__file__).resolve().parent / 'fixtures/player-id-routes-2026-10-28.json').read_text())
+        tractors.append(next(row for row in captured_ids['tractors'] if row['nickname'] == spa_id))
+        idcards[spa_id] = captured_ids['cards'][spa_id]
+        tech['techchompat_by_id'][spa_id] = 1
         for identity in tractors:
             identity['market_goods'] = [{'base_sells': True, 'price_base_sells_for': 500, 'region_name': 'BRETONIA', 'faction_nick': 'br_n_grp', 'base_name': 'Fixture Station'}]
         neutral_id = 'dsy_license_neutral'
@@ -207,6 +212,16 @@ def main():
         identity_result = base.ev(cdp, "(()=>({first:document.querySelector('.supply-result').innerText,compatible:[...document.querySelectorAll('.supply-result:first-child .supply-id-tags>span')].map(n=>n.dataset.compatibleIdentity),idFilter:supplyIdentity.value,goal:supplyImportGoal.value,idInAdvanced:!!supplyIdentity.closest('.supply-settings'),mainFields:document.querySelectorAll('.supply-main-fields select').length,panel:!!document.querySelector('.supply-identity-comparison')}))()")
         if 'Small Transport' not in identity_result['first'] or 'Dublin Molly Test Base' not in identity_result['first'] or sorted(identity_result['compatible']) != sorted([junker_id, freelancer_id]) or identity_result['idFilter'] != 'all' or identity_result['goal'] != 'price' or not identity_result['idInAdvanced'] or identity_result['mainFields'] != 3 or identity_result['panel'] or 'Neutral ID' in identity_result['first'] or 'CONDITIONAL ID' in identity_result['first']:
             raise RuntimeError(f'Default route-first search must recommend the closer allowed hauler and show all compatible IDs without a preceding ID panel: {identity_result}')
+        preferred = base.ev(cdp, "(()=>{const card=document.querySelector('.supply-result');const all=card.querySelector('.supply-all-identities');return {ids:[...card.querySelectorAll('[data-preferred-identity]')].map(n=>({id:n.dataset.preferredIdentity,state:n.dataset.state})),closed:!!all&&!all.open,summary:all?.querySelector('summary').textContent,hidden:[...all.querySelectorAll('[data-compatible-identity]')].every(n=>!n.getClientRects().length)}})()")
+        if preferred['ids'] != [{'id': bmm_id, 'state': 'blocked'}, {'id': junker_id, 'state': 'checked'}, {'id': spa_id, 'state': 'blocked'}] or not preferred['closed'] or not preferred['hidden'] or 'SHOW ALL 2 COMPATIBLE IDs' not in preferred['summary']:
+            raise RuntimeError(f'The normal BMM, Junkers and Spa IDs must stay visible in order with route-specific states; other compatible IDs must be collapsed: {preferred}')
+        base.ev(cdp, "document.querySelector('.supply-result .supply-all-identities>summary').click()")
+        if not base.ev(cdp, "(()=>{const all=document.querySelector('.supply-result .supply-all-identities');return all.open&&[...all.querySelectorAll('[data-compatible-identity]')].every(n=>n.getClientRects().length>0)})()"):
+            raise RuntimeError('Show all must reveal the complete counted compatible-ID list')
+        base.ev(cdp, "document.querySelector('.supply-result .supply-all-identities>summary').click();document.querySelector('.supply-result [data-preferred-identity=\"dsy_license_br_m_grp\"]>summary').click()")
+        if 'Dublin Molly Test Base' not in base.ev(cdp, "document.querySelector('.supply-result [data-preferred-identity=\"dsy_license_br_m_grp\"] p').innerText"):
+            raise RuntimeError('An unavailable favorite must explain the actual docking restriction')
+        base.ev(cdp, "document.querySelector('.supply-result [data-preferred-identity=\"dsy_license_br_m_grp\"]>summary').click()")
         for width in [360, 390, 1440]:
             cdp.call('Emulation.setDeviceMetricsOverride', {'width': width, 'height': 1000, 'deviceScaleFactor': 1, 'mobile': width < 760})
             if base.ev(cdp, "rhwSupplyDialog.scrollWidth>rhwSupplyDialog.clientWidth+1"):
