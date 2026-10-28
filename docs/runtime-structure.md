@@ -137,8 +137,8 @@ The return-cargo checkbox restores the direct empty-return comparison.
 `commodity-groups.mjs` filters the selector to the active mode and groups the
 remaining goods by function: ship systems, production materials, metals/ores,
 fuels/chemicals, base supplies, recycling/byproducts and other goods. Entries
-sort alphabetically within each category. Configured import roles and actual
-production inputs allow dual-role goods in both modes; a context commodity
+sort alphabetically within each category. Configured import roles, material-market
+sourcing targets and actual production inputs allow dual-role goods in both modes; a context commodity
 cannot bypass the mode filter. Each mode remembers its own valid selection.
 Visible controls consistently say Import to RHW / Export from RHW; internal
 `supply` identifiers remain compatible with existing route and worker contracts.
