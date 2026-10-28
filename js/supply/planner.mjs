@@ -2,7 +2,7 @@
    unchanged; this search maximizes delivery before considering hauling profit. */
 import solver from './core/vendor/lp-solver.mjs';
 import { makeLeg, simulate, volumeFor, validateDataset } from './core/trade.mjs';
-import { Navigator } from './core/navigation.mjs';
+import { ShipNavigator, flightKey } from './navigation.mjs';
 import { trimRouteCache } from './return-planner.mjs';
 
 export const normalize = value => String(value ?? '').toLowerCase().replace(/platings\b/g, 'plating').replace(/[^a-z0-9]+/g, ' ').trim();
@@ -181,7 +181,8 @@ export function rankSupplyRoutes(routes, extraPercent = 20, goal = 'income') {
   }
   const express = quoted.filter(route => route.delivery?.loss > 1e-6
     && (!route.extraStop || allowance > 0)
-    && (!baseline || route.seconds < baseline.seconds - 1 || route.unitsPerHour > baseline.unitsPerHour + 0.01))
+    && (!baseline || route.seconds < baseline.seconds - 1 && route.unitsPerHour >= baseline.unitsPerHour / (1 + allowance / 100) - .01
+      || route.unitsPerHour > baseline.unitsPerHour + 0.01))
     .sort(supplySort);
   if (express.length) {
     const fastExpress = express.find(route => !route.extraStop) || express[0];
@@ -194,7 +195,8 @@ export function rankSupplyRoutes(routes, extraPercent = 20, goal = 'income') {
     pick(bestExpress, baseline ? 'EXPRESS OPTION · DELIVERY LOSS' : 'EXPRESS ONLY · DELIVERY LOSS');
   }
   if (baseline) {
-    const quick = [...direct].sort((a, b) => a.seconds - b.seconds || supplySort(a, b))[0];
+    const quick = direct.filter(route => route.unitsPerHour >= baseline.unitsPerHour / (1 + allowance / 100) - .01)
+      .sort((a, b) => a.seconds - b.seconds || supplySort(a, b))[0];
     if (quick && quick.seconds < baseline.seconds - 1) pick(quick, 'QUICKEST RETURN');
   }
   return selected.slice(0, 3);
@@ -210,7 +212,7 @@ export async function searchSupply(dataset, navigation, profiles, options = {}, 
   const blocked = new Set(options.blocked || []);
   const bases = dataset.bases.filter(base => !blocked.has(base.id) && !base.fallback && (options.includePobs !== false || base.kind !== 'pob' || base.id === rhw.id));
   if (!bases.some(base => base.id === rhw.id)) throw Error('RHW is excluded by the docking profile.');
-  const byId = new Map(bases.map(base => [base.id, base])), routes = [], contexts = [];
+  const byId = new Map(bases.map(base => [base.id, base])), routes = [], contexts = [], navigators = new Map();
   let checked = 0, searchedSources = 0, pruned = false, timedOut = false;
   const withinBudget = () => !canceled() && performance.now() - began < timeLimit;
   const settings = { dock: 30, jump: 15, lane: 10, charge: 5, ...options.timeModel };
@@ -236,7 +238,9 @@ export async function searchSupply(dataset, navigation, profiles, options = {}, 
   }
   for (const profile of profiles.slice(0, options.profileLimit || 6)) {
     if (!withinBudget()) { timedOut = true; break; }
-    const navigator = new Navigator(navigation, bases, profile, settings);
+    const key = flightKey(navigation, profile);
+    if (!navigators.has(key)) navigators.set(key, new ShipNavigator(navigation, bases, profile, settings));
+    const navigator = navigators.get(key);
     const outward = navigator.from(rhw.id);
     if (!outward) continue;
     const suppliers = bases.filter(base => base.id !== rhw.id).flatMap(base => {

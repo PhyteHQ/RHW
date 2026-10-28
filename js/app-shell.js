@@ -30,6 +30,7 @@ self.RHW_APP_SHELL = [
   "./js/supply/core/trade.mjs",
   "./js/supply/core/cargo.mjs",
   "./js/supply/core/navigation.mjs",
+  "./js/supply/navigation.mjs",
   "./js/supply/core/vendor/lp-solver.mjs",
   "./js/supply/core/vendor/LP-SOLVER-LICENSE.txt",
   "./assets/navigation.json.gz",

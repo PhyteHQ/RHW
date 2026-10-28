@@ -89,6 +89,7 @@ def main():
         tractors.append({'nickname': neutral_id, 'name': 'Neutral ID', 'market_goods': [{'base_sells': True, 'price_base_sells_for': 10000, 'region_name': 'VIRTUAL SYSTEM', 'faction_nick': 'fc_staff', 'base_name': 'Guard Station'}], 'rephacks': tractors[0]['rephacks']})
         idcards[neutral_id] = {'infocard': [{'phrases': [{'phrase': 'Allowed ships: Fighters, Freighters, Transports, Gunboats'}]}, {'phrases': [{'phrase': 'This ID can only be given by an Admin and may not be transferred or replaced without Admin permission.'}]}]}
         fixture = {'pobs': [pob, express_pob, export_buyer], 'commodities': commodities, 'ships': ships,
+                   'flightTestShip': next(row for row in captured_ids['ships'] if row['nickname'] == 'dsy_cargobarge_1'),
                    'npc_bases': [{'nickname': 'trafalgar', 'faction_nick': 'br_n_grp'}, {'nickname': 'molly', 'faction_nick': 'fc_m_grp'}, {'nickname': 'waterloo', 'faction_nick': 'br_n_grp'}, {'nickname': 'oder', 'faction_nick': 'br_n_grp'}],
                    'factions': [], 'tractors': tractors, 'idcards': idcards}
         script = "<script>window.supplyFixture=" + json.dumps(fixture) + ";window.supplyNav=" + json.dumps(nav) + ";window.supplyRequests=[];const originalFetch=window.fetch;window.fetch=(url,options)=>{const u=String(url);if(u.includes('/api/')){const key=u.split('/api/')[1].split('?')[0];supplyRequests.push(key);if(window.supplyOffline)return Promise.reject(Error('Fixture offline'));const response=key==='infocards'?JSON.parse(options.body).map(id=>supplyFixture.idcards[id]||{error:'missing'}):supplyFixture[key]||[];return Promise.resolve(new Response(JSON.stringify(response),{status:200}));}if(u.includes('/assets/navigation.json.gz'))return Promise.resolve(new Response(JSON.stringify(supplyNav),{status:200}));return originalFetch(url,options);};</script>"
@@ -237,6 +238,23 @@ def main():
         wait_for(cdp, "!supplySearch.disabled && supplyResults.innerText.includes('Dublin Molly Test Base')")
         if not base.ev(cdp, "supplyShip.value==='auto' && supplyShip.querySelector('[value=\"ship:dsy_advanced_train\"]').disabled"):
             raise RuntimeError('ID restriction must reset and disable an illegal 5k hull while preserving route search')
+        # Add the captured Barge only for this manual flight test, after the
+        # original controlled-market comparisons. It must not inherit lanes
+        # from MID docking, even after a cached ship-registry refresh.
+        base.ev(cdp, "(()=>{supplyFixture.ships.push(supplyFixture.flightTestShip);supplyIdentity.value='dsy_license_br_m_grp';supplyRefresh.click();return true})()")
+        wait_for(cdp, "!supplySearch.disabled && !!supplyShip.querySelector('[value=\"ship:dsy_cargobarge_1\"]')")
+        base.ev(cdp, "(()=>{supplyCommodity.value='Ablative Armor Plating';supplyShip.value='ship:dsy_cargobarge_1';supplyPobs.checked=false;supplyExtra.value='0';supplySearch.click();return true})()")
+        wait_for(cdp, "!supplySearch.disabled && supplyResults.dataset.stale==='false' && !!document.querySelector('.supply-result')")
+        flight = base.ev(cdp, "(()=>{const card=document.querySelector('.supply-result');return {ship:card.querySelector('h3').textContent,note:card.querySelector('.supply-ship-note').textContent,time:card.querySelector('.supply-metrics>div:nth-child(2) strong').textContent,option:supplyShip.selectedOptions[0].textContent}})()")
+        if flight['ship'] != 'Barge Type I' or 'NO TRADE LANES' not in flight['note'] or '15 S CRUISE CHARGE' not in flight['note'] or 'NO TRADE LANES' not in flight['option'] or int(flight['time'].split(':')[0]) < 100:
+            raise RuntimeError(f'Barge UI must use cruise-only flight time and explain its flight profile: {flight}')
+        for width in [390, 1440]:
+            cdp.call('Emulation.setDeviceMetricsOverride', {'width': width, 'height': 1000, 'deviceScaleFactor': 1, 'mobile': width < 760})
+            if base.ev(cdp, "rhwSupplyDialog.scrollWidth>rhwSupplyDialog.clientWidth+1"):
+                raise RuntimeError(f'Flight profile note overflows at {width}px')
+            base.ev(cdp, "document.querySelector('.supply-result').scrollIntoView({block:'start',behavior:'instant'})")
+            shot = cdp.call('Page.captureScreenshot', {'format': 'png'})
+            (out / f'barge-flight-{width}.png').write_bytes(base64.b64decode(shot['data']))
         base.ev(cdp, "supplyClose.click()")
         wait_for(cdp, "!rhwSupplyDialog.open && document.activeElement.classList.contains('header-trade-button')", 3)
         print('Trade Desk browser passed: route-first default, compatible ID badges, cheaper-source priority, optional ID filter, illegal hull disabled, import/export and POB regressions, focus and 360/390/1440px layouts.')

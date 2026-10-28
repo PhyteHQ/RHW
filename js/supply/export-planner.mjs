@@ -1,7 +1,7 @@
 /* RHW exports with optional verified return cargo. Quote only supported loads;
    keep DTR's shared market/navigation/accounting owners unchanged. */
 import { validateDataset } from './core/trade.mjs';
-import { Navigator } from './core/navigation.mjs';
+import { ShipNavigator, flightKey } from './navigation.mjs';
 import { findRhw, findCommodity } from './planner.mjs';
 import { quoteExport } from './export-quote.mjs';
 import { returnMarkets, selectReturnMarkets, quoteExportReturn, trimRouteCache } from './return-planner.mjs';
@@ -37,7 +37,7 @@ export async function searchExports(dataset, navigation, profiles, options = {},
   const bases = dataset.bases.filter(base => !blocked.has(base.id) && !base.fallback
     && (options.includePobs !== false || base.kind !== 'pob' || base.id === rhw.id));
   if (!bases.some(base => base.id === rhw.id)) throw Error('RHW is excluded by the docking profile.');
-  const byId = new Map(bases.map(base => [base.id, base])), navigators = new Map(), routes = [];
+  const byId = new Map(bases.map(base => [base.id, base])), navigators = new Map(), flights = new Map(), routes = [];
   const started = performance.now(), timeLimit = Math.min(30000, Math.max(1000, options.searchMs || 18000));
   const settings = { dock: 30, jump: 15, lane: 10, charge: 5, ...options.timeModel };
   const returnEnabled = options.returnCargo !== false;
@@ -47,7 +47,9 @@ export async function searchExports(dataset, navigation, profiles, options = {},
   for (const profile of profiles.slice(0, options.profileLimit || 6)) {
     if (canceled()) break;
     if (performance.now() - started >= directLimit) { pruned = true; break; }
-    const navigator = new Navigator(navigation, bases, profile, settings), outward = navigator.from(rhw.id);
+    const key = flightKey(navigation, profile);
+    if (!flights.has(key)) flights.set(key, new ShipNavigator(navigation, bases, profile, settings));
+    const navigator = flights.get(key), outward = navigator.from(rhw.id);
     if (!outward) continue;
     navigators.set(profile.id, navigator); ships++;
     const candidates = bases.filter(base => base.id !== rhw.id).flatMap(base => {

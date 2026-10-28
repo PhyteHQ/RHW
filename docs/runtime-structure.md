@@ -124,7 +124,7 @@ recommendation. Conditional IDs are not appended to every checked route.
 
 The Trade Desk searches routes first. Its default ID scope covers the normally obtainable
 player IDs in the loaded registry; a fixed-ID restriction lives in advanced settings.
-`identity-planner.mjs` shortlists up to twelve distinct haulers across all ID
+`identity-planner.mjs` compares up to 24 non-dominated haulers across all ID
 profiles and searches each hull once. Every candidate tour must have at least
 one ID valid for all its stops with that hull. A union of unrelated docking
 permissions cannot authorize a tour. Export backhaul rechecks the full tour
@@ -234,7 +234,17 @@ The dialog suspends editable controls during a run and cancels work on close.
 `js/supply/core/` is copied unchanged from PhyteHQ/DTR commit
 `722e34d975f52eb6c1dd2f9d6d7bdb93a7dba0d4`: `trade.mjs`, `cargo.mjs`,
 `navigation.mjs` and the LP solver with its bundled license. `ship-profiles.mjs`
-and `assets/navigation.json.gz` share that source. No Corsair policy is imported:
+and `assets/navigation.json.gz` share that source. RHW's `js/supply/navigation.mjs`
+wraps the unchanged pathfinder with hull-specific flight capabilities. The
+23 October 2026 published patch explicitly disables trade lanes for
+`dsy_cargobarge_1` and `dsy_miner`; its Barge engine charges cruise for 15 s.
+These fields are absent from the live ship endpoint, so `shipFlightRules`
+supplies the verified values, including for older cached profiles. Explicit
+future API fields take precedence. Other hulls retain the existing 5 s charge
+estimate. Both imports and exports, including every return leg, use this wrapper.
+Identical physical flight profiles share navigation caches; different docking,
+lane, charge, speed or graph cargo-limit eligibility never share a path cache.
+No Corsair policy is imported:
 `access.mjs` reads BMM ID rephacks and marks unresolved personal/POB access.
 
 Supply quotes solve delivery quantity first, fix it, then optimize profit. The
@@ -248,12 +258,27 @@ The fastest direct quote whose target purchase does not exceed RHW payout sets
 the normal time/throughput window. Supplier shortlisting reserves ordinary
 sources separately from express POB offers. A nearer loss-making POB therefore
 cannot shrink this window and hide the normal NPC circuit. Within the normal
-window, `rankSupplyRoutes` recommends the best positive whole-run $/hour. A
+window, `rankSupplyRoutes` uses the selected import priority; equal purchase
+prices and the income priority favor whole-run $/hour. A
 profitable export cannot reclassify a loss-making material purchase as normal.
 A faster express option can occupy one of the three result slots, with its loss
 clearly displayed. Express-only results receive no recommendation metadata or
 gold recommendation border. Candidate caps/time limits remain visible, and
 optional side trades still have at most one extra stop.
+
+Automatic hull selection starts with all verified haulers for usable IDs at
+RHW. A hull is removed only when another has at least its cargo and cruise
+speed, identical lane/charge/physical graph access and commodity volumes, and
+every one of its compatible IDs. This preserves ordinary 5k transports alongside
+slow Barges and Miners, faster Liners, berth-only freighters and ID-specific
+alternatives. Up to 24 remaining hulls are compared; a larger frontier or time
+limit is explicitly reported as a bounded search. A quicker-return alternative
+must meet the same relative hourly-delivery floor as the normal import window:
+at 20% allowance this is at least 1/1.2 (83.3%) of baseline supply. A tiny load
+cannot earn a result slot merely by returning a minute sooner. Explicitly small
+orders and physical/ID restrictions can still make smaller hulls appropriate.
+`test_hauler_flight.mjs` covers the user's Niobium examples using captured ship
+stats, controlled markets and the real Tau-31 navigation geometry.
 
 The runtime manifest's `modules` entries are copied to dist and hashed into the
 same release/offline shell as the bundles, including the compressed navigation

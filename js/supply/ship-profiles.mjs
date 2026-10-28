@@ -25,6 +25,18 @@ const reasonableInteger=(value,lower,upper)=>{
 };
 const profileKey=value=>'ship:'+String(value);
 const short=value=>String(value??'').trim().slice(0,100);
+// The live ships endpoint omits these two shiparch flags and engine charge.
+// Verified in https://patch.discoverygc.com/20261023-patch.zip:
+// DATA/SHIPS/shiparch.ini and DATA/EQUIPMENT/engine_equip.ini.
+// Prefer explicit live fields if the API starts publishing them.
+export function shipFlightRules(ship){
+  const nickname=String(ship.nickname||ship.id?.replace(/^ship:/,'')||'').toLowerCase();
+  const noLanes=['dsy_cargobarge_1','dsy_miner'].includes(nickname);
+  const lane=ship.can_use_tradelanes??ship.tradeLanes;
+  const charge=ship.cruise_charge_time??ship.cruiseCharge;
+  return {tradeLanes:typeof lane==='boolean'?lane:!noLanes,
+    cruiseCharge:typeof charge==='number'&&Number.isFinite(charge)&&charge>=0&&charge<=300?charge:nickname==='dsy_cargobarge_1'?15:5};
+}
 function makeShip(raw){
   if(!raw||typeof raw!=='object'||Array.isArray(raw))return null;
   const nickname=short(raw.nickname),cargo=reasonableInteger(raw.hold_size,1,50000),
@@ -41,7 +53,7 @@ function makeShip(raw){
     .filter(([id,value])=>id.length<120&&typeof value==='number'&&Number.isFinite(value)&&value>=0&&value<=10));
   return Object.freeze({id:profileKey(nickname),nickname,name,apiName,type:short(raw.type)||'ship',
     cargo,cruise,dock:dock.nav,dockType,dockLabel:dock.label,
-    shipClass,volumeClass:shipClass,techCompat,playerShip,
+    shipClass,volumeClass:shipClass,techCompat,playerShip,...shipFlightRules(raw),
     custom:false,source:'darkstat',
     searchKey:norm(terms.join(' '))});
 }
