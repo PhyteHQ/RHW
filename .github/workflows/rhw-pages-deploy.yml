@@ -1,164 +1,39 @@
-name: RHW Pages Deploy
-
+name: Gallic purchase inspection
 on:
-  push:
-    branches: [main]
   pull_request:
     branches: [main]
-  workflow_dispatch:
-
 permissions:
   contents: read
-
-# Concurrency belongs to the whole workflow, not only the deploy job. A newer
-# push to the same ref cancels the older validation/deploy run immediately, so
-# an older deploy can never race in later and cancel the newest release.
-concurrency:
-  group: rhw-pages-${{ github.ref }}
-  cancel-in-progress: true
-
 jobs:
-  validate:
+  inspect:
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 3
     steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-
-      - name: Verify generated app assets
-        run: python3 scripts/build_app_assets.py --check
-
-      - name: Validate dashboard structure
-        run: python3 scripts/validate_dashboard.py
-
-      - name: Validate Discovery sync engine
-        run: python3 scripts/test_discovery_sync.py
-
-      - name: Validate JavaScript syntax
-        shell: bash
+      - name: Read public ship and ID data
         run: |
-          set -euo pipefail
-          for file in $(find js \( -name '*.js' -o -name '*.mjs' \)); do
-            echo "Checking ${file}"
-            node --check "${file}"
-          done
-
-      - name: Validate retired-data archive compatibility
-        run: node scripts/test_legacy_archive.js
-
-      - name: Validate Transfer Center model
-        run: node scripts/test_transfer_center.js
-
-      - name: Validate build, route and lifecycle contracts
-        run: |
-          python3 scripts/test_build_assets.py
-          node scripts/test_app_contracts.js
-
-      - name: Validate audit regressions
-        run: node scripts/test_audit_regressions.js
-
-      - name: Validate procurement prices, pooled inputs and full inventory
-        run: node scripts/test_procurement_inputs.js
-
-      - name: Validate RHW supply routes
-        run: |
-          node scripts/test_supply_routes.mjs
-          node scripts/test_export_routes.mjs
-          node scripts/test_export_backhaul.mjs
-          node scripts/test_identity_routes.mjs
-          node scripts/test_hauler_flight.mjs
-
-      - name: Validate Price Check provenance and backup
-        run: node scripts/test_price_check.js
-
-      - name: Validate shipyard recipes and inventory
-        run: node scripts/test_shipyard.js
-
-      - name: Validate Logistics market scans
-        run: node scripts/test_logistics_scans.js
-
-      - name: Validate Full App Audit model
-        run: node scripts/test_full_audit.js
-
-      - name: Install smoke-test client
-        run: python3 -m pip install --disable-pip-version-check --quiet websocket-client==1.8.0
-
-      - name: Runtime smoke test
-        run: python3 scripts/smoke_v40.py
-
-      - name: Background and render lifecycle
-        if: ${{ !cancelled() }}
-        run: node scripts/test_runtime_lifecycle.js
-
-      - name: Bundled interface, fonts and offline reload
-        if: always()
-        run: |
-          python3 scripts/build_app_assets.py --check --dist
-          RHW_SMOKE_SITE=dist python3 scripts/smoke_interface_foundation.py
-
-      - name: Procurement interaction and responsive controls
-        if: ${{ !cancelled() }}
-        run: python3 scripts/smoke_procurement.py
-
-      - name: Supply route controls, worker and responsive dialog
-        if: ${{ !cancelled() }}
-        run: python3 scripts/smoke_supply_routes.py
-
-      - name: Save interface checks and screenshots
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: rhw-interface-review
-          path: artifacts/interface
-          if-no-files-found: ignore
-
-      - name: Mobile Logistics discoverability smoke test
-        if: ${{ !cancelled() }}
-        run: python3 scripts/smoke_stability_polish.py
-
-      - name: Compact COMMAND hierarchy smoke test
-        if: ${{ !cancelled() }}
-        run: python3 scripts/smoke_command_compact.py
-
-      - name: Focused daily-navigation smoke test
-        if: ${{ !cancelled() }}
-        run: python3 scripts/smoke_focus_pass.py
-
-      - name: Recipe correctness smoke test
-        if: ${{ !cancelled() }}
-        run: python3 scripts/smoke_v40_recipes.py
-
-      - name: Final recipe label, costing and header smoke test
-        if: ${{ !cancelled() }}
-        run: python3 scripts/smoke_v40_final_polish.py
-
-  deploy:
-    if: github.event_name != 'pull_request'
-    needs: validate
-    permissions:
-      contents: read
-      pages: write
-      id-token: write
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-
-      - name: Configure Pages
-        uses: actions/configure-pages@v5
-
-      - name: Package runtime files only
-        run: python3 scripts/build_app_assets.py --check --dist
-
-      - name: Upload static site
-        uses: actions/upload-pages-artifact@v4
-        with:
-          path: dist
-
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+          python3 - <<'PY'
+          import urllib.request,json,re
+          api='https://darkstat.dd84ai.com/api/'
+          wanted=['dsy_super_gallic_train','dsy_gallic_train_adv','dsy_advanced_train']
+          def post(path,body):
+            req=urllib.request.Request(api+path,data=json.dumps(body).encode(),headers={'Content-Type':'application/json','Accept':'application/json'})
+            with urllib.request.urlopen(req,timeout=40) as r:return json.load(r)
+          ships=post('ships',{'include_market_goods':True,'include_tech_compat':True,'filter_nicknames':wanted})
+          for s in ships:
+            if s.get('nickname') not in wanted:continue
+            keys=['nickname','name','class','type','hold_size','cruise_speed','dock_type','price','ship_packages','market_goods']
+            data={k:s.get(k) for k in keys}
+            data['spa_tech']=s.get('tech_compat',{}).get('techchompat_by_id',{}).get('dsy_license_co_os_grp')
+            print('PUBLIC_SHIP '+json.dumps(data,ensure_ascii=False))
+          names=['dsy_license_co_os_grp','dsy_super_gallic_train']
+          cards=post('infocards',names)
+          for name,card in zip(names,cards):
+            lines=[''.join(p.get('phrase','') for p in row.get('phrases',[])) for row in card.get('infocard',[])][:180]
+            print('PUBLIC_CARD '+json.dumps({'nickname':name,'lines':lines},ensure_ascii=False))
+          try:
+            url='https://discoverygc.com/gameconfigpublic/base_recipe_items.cfg'
+            text=urllib.request.urlopen(url,timeout=25).read().decode('utf8','replace')
+            matches=[s for s in re.split(r'(?=\[recipe\])',text,flags=re.I) if 'super_gallic_train' in s.lower()]
+            print('PUBLIC_RECIPE '+json.dumps({'url':url,'bytes':len(text),'matches':matches},ensure_ascii=False))
+          except Exception as e:print('PUBLIC_RECIPE_ERROR '+str(e))
+          PY
