@@ -210,7 +210,12 @@ def main() -> int:
                 geometry=base.ev(cdp, """(()=>{
                   const r=el=>{const x=el.getBoundingClientRect();return{top:x.top,bottom:x.bottom,left:x.left,right:x.right,height:x.height,width:x.width}};
                   const cards=[...document.querySelectorAll('#inventoryStatusPanel .alert-card')];
+                  const values=[...document.querySelectorAll('.base-telemetry-stat strong')],saved=values.map(el=>el.textContent);
+                  values.forEach(el=>el.textContent='UNAVAILABLE');
+                  const unavailable={header:r(document.querySelector('.command-header')),wrapped:values.some(el=>r(el).height>parseFloat(getComputedStyle(el).lineHeight)+1)};
+                  values.forEach((el,i)=>el.textContent=saved[i]);
                   return{overflow:document.documentElement.scrollWidth-innerWidth,cards:cards.map(r),
+                    unavailable,
                     contentOverflow:[...document.querySelectorAll('.base-telemetry-stat,.overview-row-meta,.overview-item-copy')].filter(el=>el.scrollWidth>el.clientWidth+2).map(el=>el.textContent),
                     rows:cards.map(c=>c.querySelector('ul')?.id),
                     scrollDeck:document.querySelector('.summary-grid').scrollWidth-document.querySelector('.summary-grid').clientWidth,
@@ -236,6 +241,8 @@ def main() -> int:
                         layout_failures.append(f'Crest image must fit fully inside its header frame at {width}px: {geometry}')
                     if header['height']>252:
                         layout_failures.append(f'Centered crest must not push navigation below the existing desktop header at {width}px: {geometry}')
+                    if geometry['unavailable']['header']['height']>252 or geometry['unavailable']['wrapped']:
+                        layout_failures.append(f'Unavailable telemetry must keep the desktop header at its original height at {width}px: {geometry}')
                 if width>=1200:
                     if max(c['top'] for c in cards[:3])-min(c['top'] for c in cards[:3])>2 or cards[0]['height']>=cards[1]['height'] or cards[3]['top']<max(c['bottom'] for c in cards[:3])-2:
                         layout_failures.append(f'Inventory row sizing at {width}px: {geometry}')
