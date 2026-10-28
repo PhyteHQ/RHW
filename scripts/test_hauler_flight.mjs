@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises';
 import { gunzipSync } from 'node:zlib';
 import { normalizeShipRegistry, shipFlightRules } from '../js/supply/ship-profiles.mjs';
 import { ShipNavigator, flightKey } from '../js/supply/navigation.mjs';
-import { identityRegistry } from '../js/supply/identity-profiles.mjs';
+import { identityRegistry, identityShipCheck } from '../js/supply/identity-profiles.mjs';
 import { searchIdentities } from '../js/supply/identity-planner.mjs';
 import { rankSupplyRoutes, searchSupply } from '../js/supply/planner.mjs';
 import { searchExports } from '../js/supply/export-planner.mjs';
@@ -40,6 +40,19 @@ const nav = { schema: 1, nodes: data.bases.map(base => ({ id: base.id, system: b
     { from: 'rhw', to: 'source', kind: 'lane', speed: 2500 }, { from: 'source', to: 'rhw', kind: 'lane', speed: 2500 }] };
 const identities = identityRegistry(idsFixture.tractors, idsFixture.cards).filter(id => [BMM_ID, 'dsy_license_fc_j_grp', 'dsy_license_co_os_grp'].includes(id.id));
 const scopes = identities.map(identity => ({ identity, accessReady: true, blocked: [], approvalDocks: [], unverifiedDocks: [] }));
+const spa = identities.find(identity => identity.id === 'dsy_license_co_os_grp');
+const gallicAdvanced = ships.find(ship => ship.nickname === 'dsy_gallic_train_adv');
+const spaGallic = identityShipCheck(spa, gallicAdvanced);
+assert.equal(spaGallic.tech, .1);
+assert.equal(spaGallic.state, 'blocked', 'The captured normal Spa + Gallic Advanced Train combination has only 10% tech');
+assert.equal(spaGallic.code, 'tech-incompatible');
+assert.match(spaGallic.reason, /10%.*100%/);
+for (const mode of ['supply', 'export']) {
+  const blocked = await searchIdentities(data, nav, ships, scopes, { commodity: 'Niobium', mode,
+    identityId: spa.id, shipId: gallicAdvanced.id, includeUnverified: true, includeRestrictedPobs: true });
+  assert.equal(blocked.results.length, 0, 'Known 10% tech cannot appear in import or export quotes, including opt-ins');
+  assert.match(blocked.reason, /10%.*100%/);
+}
 const trainFlight = new ShipNavigator(nav, data.bases, train).route('rhw', 'source', true);
 const bargeFlight = new ShipNavigator(nav, data.bases, barge).route('rhw', 'source', true);
 assert.ok(trainFlight.path.some(step => step.kind === 'lane'));
