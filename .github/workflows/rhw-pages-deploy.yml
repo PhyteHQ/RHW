@@ -31,7 +31,7 @@ jobs:
             lines=[''.join(p.get('phrase','') for p in row.get('phrases',[])) for row in card.get('infocard',[])][:180]
             print('PUBLIC_CARD '+json.dumps({'nickname':name,'lines':lines},ensure_ascii=False))
           try:
-            url='https://discoverygc.com/gameconfigpublic/base_recipe_items.cfg'
+            url='https://disco-api.dd84ai.com/gameconfigpublic/base_recipe_items.cfg'
             text=urllib.request.urlopen(url,timeout=25).read().decode('utf8','replace')
             matches=[s for s in re.split(r'(?=\[recipe\])',text,flags=re.I) if 'super_gallic_train' in s.lower()]
             print('PUBLIC_RECIPE '+json.dumps({'url':url,'bytes':len(text),'matches':matches},ensure_ascii=False))
