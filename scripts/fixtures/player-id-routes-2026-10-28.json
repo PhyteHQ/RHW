@@ -1,0 +1,4518 @@
+{
+  "provenance": {
+    "captured": "2026-10-28",
+    "source": "Public Darkstat POST APIs: tractors, infocards, ships, npc_bases, pobs, commodities",
+    "ci_run": "https://github.com/PhyteHQ/RHW/actions/runs/40696091973",
+    "notes": "Policy excerpts and relevant public data only. Prices and stocks are a dated regression fixture."
+  },
+  "tractors": [
+    {
+      "nickname": "dsy_license_pf_51_grp",
+      "name": ".:j:. Junker Congress ID",
+      "price": 600,
+      "name_id": 853687,
+      "info_id": 853688,
+      "market_goods": [
+        {
+          "base_nickname": "li18_04_base",
+          "base_name": "Invergordon Shipyard",
+          "region_name": "INDEPENDENT",
+          "faction_nick": "fc_j_grp",
+          "base_sells": true,
+          "price_base_sells_for": 1000
+        }
+      ],
+      "rephacks": [
+        {
+          "faction_name": "Junkers",
+          "faction_nickname": "fc_j_grp",
+          "reputation": 1,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "Friendly",
+          "faction_nickname": "fc_friendly",
+          "reputation": 0.85,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "Outcasts",
+          "faction_nickname": "fc_ou_grp",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Bundschuh",
+          "faction_nickname": "fc_b_grp",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Mollys",
+          "faction_nickname": "fc_m_grp",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Gallic Brigands",
+          "faction_nickname": "fc_brigands_grp",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Blood Dragons",
+          "faction_nickname": "fc_bd_grp",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Lane Hackers",
+          "faction_nickname": "fc_lh_grp",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Red Hessians",
+          "faction_nickname": "fc_rh_grp",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "ALG Waste Disposal",
+          "faction_nickname": "co_alg_grp",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Zoners",
+          "faction_nickname": "gd_z_grp",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Golden Chrysanthemums",
+          "faction_nickname": "fc_gc_grp",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Militants",
+          "faction_nickname": "fc_militant",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Liberty Rogues",
+          "faction_nickname": "fc_lr_grp",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "The Technocracy",
+          "faction_nickname": "fc_technocracy",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Corsairs",
+          "faction_nickname": "fc_c_grp",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "The Maquis",
+          "faction_nickname": "fc_maquis_grp",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Gaians",
+          "faction_nickname": "fc_g_grp",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "The Order",
+          "faction_nickname": "fc_or_grp",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Unioners",
+          "faction_nickname": "fc_u_grp",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "LWB",
+          "faction_nickname": "fc_lwb_grp",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Kruger Minerals",
+          "faction_nickname": "rh_m_grp",
+          "reputation": 0.3,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Rheinland Federal Police",
+          "faction_nickname": "rh_p_grp",
+          "reputation": 0.3,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Cryer Pharmaceuticals",
+          "faction_nickname": "co_hsp_grp",
+          "reputation": 0.3,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Bretonia Police",
+          "faction_nickname": "br_p_grp",
+          "reputation": 0.3,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Bretonia Armed Forces",
+          "faction_nickname": "br_n_grp",
+          "reputation": 0.3,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Unione Corse",
+          "faction_nickname": "fc_corse_grp",
+          "reputation": 0.3,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Bretonia Mining & Manufacturing ",
+          "faction_nickname": "br_m_grp",
+          "reputation": 0.3,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Independent Miners Guild",
+          "faction_nickname": "gd_im_grp",
+          "reputation": 0.3,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "The Core",
+          "faction_nickname": "fc_core",
+          "reputation": 0.3,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Crayter Republic",
+          "faction_nickname": "fc_rn_grp",
+          "reputation": 0.3,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Interspace Commerce",
+          "faction_nickname": "co_ic_grp",
+          "reputation": 0.3,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Planetform, Inc.",
+          "faction_nickname": "co_ti_grp",
+          "reputation": 0.3,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Bristol Constructions and Manufacturing",
+          "faction_nickname": "co_bcm_grp",
+          "reputation": 0.3,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Synth Foods, Inc.",
+          "faction_nickname": "co_ni_grp",
+          "reputation": 0.3,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Liberty Police, Inc.",
+          "faction_nickname": "li_p_grp",
+          "reputation": 0.3,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Deep Space Engineering",
+          "faction_nickname": "co_me_grp",
+          "reputation": 0.3,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Rheinland Military",
+          "faction_nickname": "rh_n_grp",
+          "reputation": 0.3,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Universal Shipping",
+          "faction_nickname": "co_ss_grp",
+          "reputation": 0.3,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Gateway Shipping",
+          "faction_nickname": "co_nws_grp",
+          "reputation": 0.3,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Independent Pirates",
+          "faction_nickname": "fc_pirate",
+          "reputation": 0.3,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Daumann Heavy Construction",
+          "faction_nickname": "co_khc_grp",
+          "reputation": 0.3,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Bounty Hunters Guild",
+          "faction_nickname": "gd_bh_grp",
+          "reputation": 0.3,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "MND",
+          "faction_nickname": "rh_mnd_grp",
+          "reputation": 0.3,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Imperial Shipping",
+          "faction_nickname": "co_rs_grp",
+          "reputation": 0.3,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Ageira Technologies",
+          "faction_nickname": "co_vr_grp",
+          "reputation": 0.3,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Gas Miners Guild",
+          "faction_nickname": "gd_gm_grp",
+          "reputation": 0.3,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Border World Exports",
+          "faction_nickname": "co_be_grp",
+          "reputation": 0.3,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Orbital Spa & Cruise",
+          "faction_nickname": "co_os_grp",
+          "reputation": 0.3,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Freelancers",
+          "faction_nickname": "fc_freelancer",
+          "reputation": 0,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Neutral",
+          "faction_nickname": "fc_neutral",
+          "reputation": 0,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "Sirius Coalition",
+          "faction_nickname": "fc_kn_grp",
+          "reputation": -0.3,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "Kishiro Technologies",
+          "faction_nickname": "co_kt_grp",
+          "reputation": -0.55,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Liberty Navy",
+          "faction_nickname": "li_n_grp",
+          "reputation": -0.55,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Samura Industries",
+          "faction_nickname": "co_shi_grp",
+          "reputation": -0.55,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "pf_08_grp IFF",
+          "faction_nickname": "pf_08_grp",
+          "reputation": -0.55,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "Liberty Security Force",
+          "faction_nickname": "li_lsf_grp",
+          "reputation": -0.55,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Bretonia Intelligence Service",
+          "faction_nickname": "fc_ouk_grp",
+          "reputation": -0.55,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "EFL Oil and Machinery",
+          "faction_nickname": "ga_efl_grp",
+          "reputation": -0.55,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Artificial Intelligence",
+          "faction_nickname": "fc_ai_grp",
+          "reputation": -0.55,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "IDF Shipping",
+          "faction_nickname": "ga_idf_grp",
+          "reputation": -0.55,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Unidentified",
+          "faction_nickname": "fc_staff",
+          "reputation": -0.55,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "Gallic Metal Service",
+          "faction_nickname": "ga_gms_grp",
+          "reputation": -0.55,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Bretonia Archaeological Executive",
+          "faction_nickname": "br_bae_grp",
+          "reputation": -0.6,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Gallic National Intelligence",
+          "faction_nickname": "ga_gni_grp",
+          "reputation": -0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Kusari State Police",
+          "faction_nickname": "ku_p_grp",
+          "reputation": -0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Gallic Gendarmerie",
+          "faction_nickname": "ga_p_grp",
+          "reputation": -0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Gallic Royalists",
+          "faction_nickname": "ga_roy_grp",
+          "reputation": -0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Kusari Office of Intelligence",
+          "faction_nickname": "ku_koi_grp",
+          "reputation": -0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Gallic Navy",
+          "faction_nickname": "ga_n_grp",
+          "reputation": -0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Farmers Alliance",
+          "faction_nickname": "fc_fa_grp",
+          "reputation": -0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Kusari Naval Forces",
+          "faction_nickname": "ku_n_grp",
+          "reputation": -0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Wendigo",
+          "faction_nickname": "fc_wendigo",
+          "reputation": -0.9,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Hogosha",
+          "faction_nickname": "fc_h_grp",
+          "reputation": -0.9,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Xenos",
+          "faction_nickname": "fc_x_grp",
+          "reputation": -0.9,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Detachment 16",
+          "faction_nickname": "rh_d19_grp",
+          "reputation": -0.9,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "Vagrants",
+          "faction_nickname": "fc_vagrants",
+          "reputation": -0.9,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Nomads",
+          "faction_nickname": "fc_n_grp",
+          "reputation": -0.9,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Wild",
+          "faction_nickname": "fc_wild",
+          "reputation": -0.9,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Alaska Security Forces",
+          "faction_nickname": "li_alaska_grp",
+          "reputation": -0.9,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "Unknown",
+          "faction_nickname": "fc_hostile",
+          "reputation": -1,
+          "rep_type": 3
+        }
+      ]
+    },
+    {
+      "nickname": "dsy_license_br_m_grp",
+      "name": "Bretonia Mining and Manufacturing ID",
+      "price": 500,
+      "name_id": 852585,
+      "info_id": 852586,
+      "market_goods": [
+        {
+          "base_nickname": "br07_10_base",
+          "base_name": "Redcarr Production Facility",
+          "region_name": "BRETONIA",
+          "faction_nick": "br_m_grp",
+          "base_sells": true,
+          "price_base_sells_for": 500
+        }
+      ],
+      "rephacks": [
+        {
+          "faction_name": "Bretonia Mining & Manufacturing ",
+          "faction_nickname": "br_m_grp",
+          "reputation": 1,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "Friendly",
+          "faction_nickname": "fc_friendly",
+          "reputation": 0.85,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "Planetform, Inc.",
+          "faction_nickname": "co_ti_grp",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Rheinland Military",
+          "faction_nickname": "rh_n_grp",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Synth Foods, Inc.",
+          "faction_nickname": "co_ni_grp",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Zoners",
+          "faction_nickname": "gd_z_grp",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Universal Shipping",
+          "faction_nickname": "co_ss_grp",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Gas Miners Guild",
+          "faction_nickname": "gd_gm_grp",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Border World Exports",
+          "faction_nickname": "co_be_grp",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Bristol Constructions and Manufacturing",
+          "faction_nickname": "co_bcm_grp",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Kusari State Police",
+          "faction_nickname": "ku_p_grp",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Liberty Navy",
+          "faction_nickname": "li_n_grp",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Gateway Shipping",
+          "faction_nickname": "co_nws_grp",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Interspace Commerce",
+          "faction_nickname": "co_ic_grp",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Samura Industries",
+          "faction_nickname": "co_shi_grp",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Militants",
+          "faction_nickname": "fc_militant",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "The Core",
+          "faction_nickname": "fc_core",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Bounty Hunters Guild",
+          "faction_nickname": "gd_bh_grp",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Bretonia Intelligence Service",
+          "faction_nickname": "fc_ouk_grp",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Liberty Police, Inc.",
+          "faction_nickname": "li_p_grp",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Cryer Pharmaceuticals",
+          "faction_nickname": "co_hsp_grp",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Ageira Technologies",
+          "faction_nickname": "co_vr_grp",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Deep Space Engineering",
+          "faction_nickname": "co_me_grp",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Kusari Naval Forces",
+          "faction_nickname": "ku_n_grp",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Bretonia Police",
+          "faction_nickname": "br_p_grp",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Crayter Republic",
+          "faction_nickname": "fc_rn_grp",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Kishiro Technologies",
+          "faction_nickname": "co_kt_grp",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Orbital Spa & Cruise",
+          "faction_nickname": "co_os_grp",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Rheinland Federal Police",
+          "faction_nickname": "rh_p_grp",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Liberty Security Force",
+          "faction_nickname": "li_lsf_grp",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Bretonia Armed Forces",
+          "faction_nickname": "br_n_grp",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Imperial Shipping",
+          "faction_nickname": "co_rs_grp",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Kusari Office of Intelligence",
+          "faction_nickname": "ku_koi_grp",
+          "reputation": 0.3,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "MND",
+          "faction_nickname": "rh_mnd_grp",
+          "reputation": 0.3,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "ALG Waste Disposal",
+          "faction_nickname": "co_alg_grp",
+          "reputation": 0.3,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Daumann Heavy Construction",
+          "faction_nickname": "co_khc_grp",
+          "reputation": 0.3,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Junkers",
+          "faction_nickname": "fc_j_grp",
+          "reputation": 0.3,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Neutral",
+          "faction_nickname": "fc_neutral",
+          "reputation": 0,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "Freelancers",
+          "faction_nickname": "fc_freelancer",
+          "reputation": 0,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "IDF Shipping",
+          "faction_nickname": "ga_idf_grp",
+          "reputation": -0.55,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "pf_08_grp IFF",
+          "faction_nickname": "pf_08_grp",
+          "reputation": -0.55,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "Kruger Minerals",
+          "faction_nickname": "rh_m_grp",
+          "reputation": -0.55,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Bundschuh",
+          "faction_nickname": "fc_b_grp",
+          "reputation": -0.55,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Artificial Intelligence",
+          "faction_nickname": "fc_ai_grp",
+          "reputation": -0.55,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "Unidentified",
+          "faction_nickname": "fc_staff",
+          "reputation": -0.55,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "Gallic Gendarmerie",
+          "faction_nickname": "ga_p_grp",
+          "reputation": -0.55,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Gallic Metal Service",
+          "faction_nickname": "ga_gms_grp",
+          "reputation": -0.55,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Independent Miners Guild",
+          "faction_nickname": "gd_im_grp",
+          "reputation": -0.55,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "EFL Oil and Machinery",
+          "faction_nickname": "ga_efl_grp",
+          "reputation": -0.55,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Gallic Navy",
+          "faction_nickname": "ga_n_grp",
+          "reputation": -0.55,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Gallic National Intelligence",
+          "faction_nickname": "ga_gni_grp",
+          "reputation": -0.55,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Unione Corse",
+          "faction_nickname": "fc_corse_grp",
+          "reputation": -0.55,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Bretonia Archaeological Executive",
+          "faction_nickname": "br_bae_grp",
+          "reputation": -0.6,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Outcasts",
+          "faction_nickname": "fc_ou_grp",
+          "reputation": -0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Sirius Coalition",
+          "faction_nickname": "fc_kn_grp",
+          "reputation": -0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Red Hessians",
+          "faction_nickname": "fc_rh_grp",
+          "reputation": -0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Golden Chrysanthemums",
+          "faction_nickname": "fc_gc_grp",
+          "reputation": -0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Gallic Brigands",
+          "faction_nickname": "fc_brigands_grp",
+          "reputation": -0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "The Maquis",
+          "faction_nickname": "fc_maquis_grp",
+          "reputation": -0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Unioners",
+          "faction_nickname": "fc_u_grp",
+          "reputation": -0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "The Order",
+          "faction_nickname": "fc_or_grp",
+          "reputation": -0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Blood Dragons",
+          "faction_nickname": "fc_bd_grp",
+          "reputation": -0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "The Technocracy",
+          "faction_nickname": "fc_technocracy",
+          "reputation": -0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Gaians",
+          "faction_nickname": "fc_g_grp",
+          "reputation": -0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Independent Pirates",
+          "faction_nickname": "fc_pirate",
+          "reputation": -0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Lane Hackers",
+          "faction_nickname": "fc_lh_grp",
+          "reputation": -0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Xenos",
+          "faction_nickname": "fc_x_grp",
+          "reputation": -0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Farmers Alliance",
+          "faction_nickname": "fc_fa_grp",
+          "reputation": -0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Liberty Rogues",
+          "faction_nickname": "fc_lr_grp",
+          "reputation": -0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Hogosha",
+          "faction_nickname": "fc_h_grp",
+          "reputation": -0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "LWB",
+          "faction_nickname": "fc_lwb_grp",
+          "reputation": -0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Gallic Royalists",
+          "faction_nickname": "ga_roy_grp",
+          "reputation": -0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Detachment 16",
+          "faction_nickname": "rh_d19_grp",
+          "reputation": -0.9,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "Mollys",
+          "faction_nickname": "fc_m_grp",
+          "reputation": -0.9,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Nomads",
+          "faction_nickname": "fc_n_grp",
+          "reputation": -0.9,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Vagrants",
+          "faction_nickname": "fc_vagrants",
+          "reputation": -0.9,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Wendigo",
+          "faction_nickname": "fc_wendigo",
+          "reputation": -0.9,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Alaska Security Forces",
+          "faction_nickname": "li_alaska_grp",
+          "reputation": -0.9,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "Wild",
+          "faction_nickname": "fc_wild",
+          "reputation": -0.9,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Corsairs",
+          "faction_nickname": "fc_c_grp",
+          "reputation": -0.9,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Unknown",
+          "faction_nickname": "fc_hostile",
+          "reputation": -1,
+          "rep_type": 3
+        }
+      ]
+    },
+    {
+      "nickname": "dsy_license_fc_c_grp",
+      "name": "Corsairs ID",
+      "price": 650,
+      "name_id": 852613,
+      "info_id": 852614,
+      "market_goods": [
+        {
+          "base_nickname": "ew03_01_base",
+          "base_name": "Leon Base",
+          "region_name": "OMEGA EDGE WORLDS",
+          "faction_nick": "fc_c_grp",
+          "base_sells": true,
+          "price_base_sells_for": 650
+        }
+      ],
+      "rephacks": [
+        {
+          "faction_name": "Corsairs",
+          "faction_nickname": "fc_c_grp",
+          "reputation": 1,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "Friendly",
+          "faction_nickname": "fc_friendly",
+          "reputation": 0.85,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "Unioners",
+          "faction_nickname": "fc_u_grp",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Junkers",
+          "faction_nickname": "fc_j_grp",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "The Maquis",
+          "faction_nickname": "fc_maquis_grp",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Unione Corse",
+          "faction_nickname": "fc_corse_grp",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Gallic Brigands",
+          "faction_nickname": "fc_brigands_grp",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Liberty Rogues",
+          "faction_nickname": "fc_lr_grp",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Farmers Alliance",
+          "faction_nickname": "fc_fa_grp",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Hogosha",
+          "faction_nickname": "fc_h_grp",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Gaians",
+          "faction_nickname": "fc_g_grp",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Zoners",
+          "faction_nickname": "gd_z_grp",
+          "reputation": 0.3,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Orbital Spa & Cruise",
+          "faction_nickname": "co_os_grp",
+          "reputation": 0.3,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Independent Pirates",
+          "faction_nickname": "fc_pirate",
+          "reputation": 0.3,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Cryer Pharmaceuticals",
+          "faction_nickname": "co_hsp_grp",
+          "reputation": 0.3,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Freelancers",
+          "faction_nickname": "fc_freelancer",
+          "reputation": 0,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Neutral",
+          "faction_nickname": "fc_neutral",
+          "reputation": 0,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "Gallic Royalists",
+          "faction_nickname": "ga_roy_grp",
+          "reputation": -0.3,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Artificial Intelligence",
+          "faction_nickname": "fc_ai_grp",
+          "reputation": -0.55,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "Gallic Metal Service",
+          "faction_nickname": "ga_gms_grp",
+          "reputation": -0.55,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Gallic Gendarmerie",
+          "faction_nickname": "ga_p_grp",
+          "reputation": -0.55,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Samura Industries",
+          "faction_nickname": "co_shi_grp",
+          "reputation": -0.55,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Unidentified",
+          "faction_nickname": "fc_staff",
+          "reputation": -0.55,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "pf_08_grp IFF",
+          "faction_nickname": "pf_08_grp",
+          "reputation": -0.55,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "IDF Shipping",
+          "faction_nickname": "ga_idf_grp",
+          "reputation": -0.55,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "The Order",
+          "faction_nickname": "fc_or_grp",
+          "reputation": -0.55,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "EFL Oil and Machinery",
+          "faction_nickname": "ga_efl_grp",
+          "reputation": -0.55,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Crayter Republic",
+          "faction_nickname": "fc_rn_grp",
+          "reputation": -0.55,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Gallic National Intelligence",
+          "faction_nickname": "ga_gni_grp",
+          "reputation": -0.6,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Gallic Navy",
+          "faction_nickname": "ga_n_grp",
+          "reputation": -0.6,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Bretonia Intelligence Service",
+          "faction_nickname": "fc_ouk_grp",
+          "reputation": -0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Border World Exports",
+          "faction_nickname": "co_be_grp",
+          "reputation": -0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Daumann Heavy Construction",
+          "faction_nickname": "co_khc_grp",
+          "reputation": -0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Xenos",
+          "faction_nickname": "fc_x_grp",
+          "reputation": -0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "ALG Waste Disposal",
+          "faction_nickname": "co_alg_grp",
+          "reputation": -0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Bretonia Archaeological Executive",
+          "faction_nickname": "br_bae_grp",
+          "reputation": -0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Bretonia Mining & Manufacturing ",
+          "faction_nickname": "br_m_grp",
+          "reputation": -0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Blood Dragons",
+          "faction_nickname": "fc_bd_grp",
+          "reputation": -0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Bounty Hunters Guild",
+          "faction_nickname": "gd_bh_grp",
+          "reputation": -0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Kusari State Police",
+          "faction_nickname": "ku_p_grp",
+          "reputation": -0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Ageira Technologies",
+          "faction_nickname": "co_vr_grp",
+          "reputation": -0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Interspace Commerce",
+          "faction_nickname": "co_ic_grp",
+          "reputation": -0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Universal Shipping",
+          "faction_nickname": "co_ss_grp",
+          "reputation": -0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "LWB",
+          "faction_nickname": "fc_lwb_grp",
+          "reputation": -0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Liberty Navy",
+          "faction_nickname": "li_n_grp",
+          "reputation": -0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Kruger Minerals",
+          "faction_nickname": "rh_m_grp",
+          "reputation": -0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "The Core",
+          "faction_nickname": "fc_core",
+          "reputation": -0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Gateway Shipping",
+          "faction_nickname": "co_nws_grp",
+          "reputation": -0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Liberty Police, Inc.",
+          "faction_nickname": "li_p_grp",
+          "reputation": -0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Militants",
+          "faction_nickname": "fc_militant",
+          "reputation": -0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Planetform, Inc.",
+          "faction_nickname": "co_ti_grp",
+          "reputation": -0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Kusari Naval Forces",
+          "faction_nickname": "ku_n_grp",
+          "reputation": -0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Kishiro Technologies",
+          "faction_nickname": "co_kt_grp",
+          "reputation": -0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Golden Chrysanthemums",
+          "faction_nickname": "fc_gc_grp",
+          "reputation": -0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Lane Hackers",
+          "faction_nickname": "fc_lh_grp",
+          "reputation": -0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Kusari Office of Intelligence",
+          "faction_nickname": "ku_koi_grp",
+          "reputation": -0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Deep Space Engineering",
+          "faction_nickname": "co_me_grp",
+          "reputation": -0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Synth Foods, Inc.",
+          "faction_nickname": "co_ni_grp",
+          "reputation": -0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Bristol Constructions and Manufacturing",
+          "faction_nickname": "co_bcm_grp",
+          "reputation": -0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Liberty Security Force",
+          "faction_nickname": "li_lsf_grp",
+          "reputation": -0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Bundschuh",
+          "faction_nickname": "fc_b_grp",
+          "reputation": -0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Imperial Shipping",
+          "faction_nickname": "co_rs_grp",
+          "reputation": -0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Wild",
+          "faction_nickname": "fc_wild",
+          "reputation": -0.9,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Independent Miners Guild",
+          "faction_nickname": "gd_im_grp",
+          "reputation": -0.9,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Rheinland Military",
+          "faction_nickname": "rh_n_grp",
+          "reputation": -0.9,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Red Hessians",
+          "faction_nickname": "fc_rh_grp",
+          "reputation": -0.9,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Wendigo",
+          "faction_nickname": "fc_wendigo",
+          "reputation": -0.9,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Mollys",
+          "faction_nickname": "fc_m_grp",
+          "reputation": -0.9,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Nomads",
+          "faction_nickname": "fc_n_grp",
+          "reputation": -0.9,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "The Technocracy",
+          "faction_nickname": "fc_technocracy",
+          "reputation": -0.9,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "MND",
+          "faction_nickname": "rh_mnd_grp",
+          "reputation": -0.9,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Alaska Security Forces",
+          "faction_nickname": "li_alaska_grp",
+          "reputation": -0.9,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "Gas Miners Guild",
+          "faction_nickname": "gd_gm_grp",
+          "reputation": -0.9,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Vagrants",
+          "faction_nickname": "fc_vagrants",
+          "reputation": -0.9,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Detachment 16",
+          "faction_nickname": "rh_d19_grp",
+          "reputation": -0.9,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "Outcasts",
+          "faction_nickname": "fc_ou_grp",
+          "reputation": -0.9,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Sirius Coalition",
+          "faction_nickname": "fc_kn_grp",
+          "reputation": -0.9,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Rheinland Federal Police",
+          "faction_nickname": "rh_p_grp",
+          "reputation": -0.9,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Bretonia Armed Forces",
+          "faction_nickname": "br_n_grp",
+          "reputation": -0.9,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Bretonia Police",
+          "faction_nickname": "br_p_grp",
+          "reputation": -0.9,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Unknown",
+          "faction_nickname": "fc_hostile",
+          "reputation": -1,
+          "rep_type": 3
+        }
+      ]
+    },
+    {
+      "nickname": "dsy_license_freelancer",
+      "name": "Freelancer ID",
+      "price": 5,
+      "name_id": 852657,
+      "info_id": 852658,
+      "market_goods": [
+        {
+          "base_nickname": "bw05_03_base",
+          "base_name": "Lagos Depot",
+          "region_name": "SIGMA BORDER WORLDS",
+          "faction_nick": "fc_c_grp",
+          "base_sells": true,
+          "price_base_sells_for": 5
+        }
+      ],
+      "rephacks": [
+        {
+          "faction_name": "Independent Pirates",
+          "faction_nickname": "fc_pirate",
+          "reputation": 1,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Freelancers",
+          "faction_nickname": "fc_freelancer",
+          "reputation": 1,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "The Core",
+          "faction_nickname": "fc_core",
+          "reputation": 0.9,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "The Order",
+          "faction_nickname": "fc_or_grp",
+          "reputation": 0.9,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Independent Miners Guild",
+          "faction_nickname": "gd_im_grp",
+          "reputation": 0.9,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Rheinland Federal Police",
+          "faction_nickname": "rh_p_grp",
+          "reputation": 0.9,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Gallic Gendarmerie",
+          "faction_nickname": "ga_p_grp",
+          "reputation": 0.9,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Kusari Naval Forces",
+          "faction_nickname": "ku_n_grp",
+          "reputation": 0.9,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Bretonia Armed Forces",
+          "faction_nickname": "br_n_grp",
+          "reputation": 0.9,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Lane Hackers",
+          "faction_nickname": "fc_lh_grp",
+          "reputation": 0.9,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Gallic National Intelligence",
+          "faction_nickname": "ga_gni_grp",
+          "reputation": 0.9,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Corsairs",
+          "faction_nickname": "fc_c_grp",
+          "reputation": 0.9,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Orbital Spa & Cruise",
+          "faction_nickname": "co_os_grp",
+          "reputation": 0.9,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Daumann Heavy Construction",
+          "faction_nickname": "co_khc_grp",
+          "reputation": 0.9,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Kusari State Police",
+          "faction_nickname": "ku_p_grp",
+          "reputation": 0.9,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Bounty Hunters Guild",
+          "faction_nickname": "gd_bh_grp",
+          "reputation": 0.9,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Mollys",
+          "faction_nickname": "fc_m_grp",
+          "reputation": 0.9,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Blood Dragons",
+          "faction_nickname": "fc_bd_grp",
+          "reputation": 0.9,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "MND",
+          "faction_nickname": "rh_mnd_grp",
+          "reputation": 0.9,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Kusari Office of Intelligence",
+          "faction_nickname": "ku_koi_grp",
+          "reputation": 0.9,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Rheinland Military",
+          "faction_nickname": "rh_n_grp",
+          "reputation": 0.9,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Universal Shipping",
+          "faction_nickname": "co_ss_grp",
+          "reputation": 0.9,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Bundschuh",
+          "faction_nickname": "fc_b_grp",
+          "reputation": 0.9,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Deep Space Engineering",
+          "faction_nickname": "co_me_grp",
+          "reputation": 0.9,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Gateway Shipping",
+          "faction_nickname": "co_nws_grp",
+          "reputation": 0.9,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Xenos",
+          "faction_nickname": "fc_x_grp",
+          "reputation": 0.9,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Liberty Police, Inc.",
+          "faction_nickname": "li_p_grp",
+          "reputation": 0.9,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Gaians",
+          "faction_nickname": "fc_g_grp",
+          "reputation": 0.9,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Sirius Coalition",
+          "faction_nickname": "fc_kn_grp",
+          "reputation": 0.9,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "IDF Shipping",
+          "faction_nickname": "ga_idf_grp",
+          "reputation": 0.9,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Bristol Constructions and Manufacturing",
+          "faction_nickname": "co_bcm_grp",
+          "reputation": 0.9,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Liberty Navy",
+          "faction_nickname": "li_n_grp",
+          "reputation": 0.9,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "LWB",
+          "faction_nickname": "fc_lwb_grp",
+          "reputation": 0.9,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Samura Industries",
+          "faction_nickname": "co_shi_grp",
+          "reputation": 0.9,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Militants",
+          "faction_nickname": "fc_militant",
+          "reputation": 0.9,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Hogosha",
+          "faction_nickname": "fc_h_grp",
+          "reputation": 0.9,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Gallic Navy",
+          "faction_nickname": "ga_n_grp",
+          "reputation": 0.9,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Unione Corse",
+          "faction_nickname": "fc_corse_grp",
+          "reputation": 0.9,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Cryer Pharmaceuticals",
+          "faction_nickname": "co_hsp_grp",
+          "reputation": 0.9,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Gas Miners Guild",
+          "faction_nickname": "gd_gm_grp",
+          "reputation": 0.9,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Gallic Brigands",
+          "faction_nickname": "fc_brigands_grp",
+          "reputation": 0.9,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "EFL Oil and Machinery",
+          "faction_nickname": "ga_efl_grp",
+          "reputation": 0.9,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Kishiro Technologies",
+          "faction_nickname": "co_kt_grp",
+          "reputation": 0.9,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "ALG Waste Disposal",
+          "faction_nickname": "co_alg_grp",
+          "reputation": 0.9,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Zoners",
+          "faction_nickname": "gd_z_grp",
+          "reputation": 0.9,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Bretonia Mining & Manufacturing ",
+          "faction_nickname": "br_m_grp",
+          "reputation": 0.9,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Crayter Republic",
+          "faction_nickname": "fc_rn_grp",
+          "reputation": 0.9,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Junkers",
+          "faction_nickname": "fc_j_grp",
+          "reputation": 0.9,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "The Technocracy",
+          "faction_nickname": "fc_technocracy",
+          "reputation": 0.9,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Liberty Rogues",
+          "faction_nickname": "fc_lr_grp",
+          "reputation": 0.9,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Interspace Commerce",
+          "faction_nickname": "co_ic_grp",
+          "reputation": 0.9,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Gallic Metal Service",
+          "faction_nickname": "ga_gms_grp",
+          "reputation": 0.9,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Border World Exports",
+          "faction_nickname": "co_be_grp",
+          "reputation": 0.9,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Gallic Royalists",
+          "faction_nickname": "ga_roy_grp",
+          "reputation": 0.9,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Golden Chrysanthemums",
+          "faction_nickname": "fc_gc_grp",
+          "reputation": 0.9,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Synth Foods, Inc.",
+          "faction_nickname": "co_ni_grp",
+          "reputation": 0.9,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "The Maquis",
+          "faction_nickname": "fc_maquis_grp",
+          "reputation": 0.9,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Liberty Security Force",
+          "faction_nickname": "li_lsf_grp",
+          "reputation": 0.9,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Planetform, Inc.",
+          "faction_nickname": "co_ti_grp",
+          "reputation": 0.9,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Farmers Alliance",
+          "faction_nickname": "fc_fa_grp",
+          "reputation": 0.9,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Outcasts",
+          "faction_nickname": "fc_ou_grp",
+          "reputation": 0.9,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Imperial Shipping",
+          "faction_nickname": "co_rs_grp",
+          "reputation": 0.9,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Bretonia Police",
+          "faction_nickname": "br_p_grp",
+          "reputation": 0.9,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Kruger Minerals",
+          "faction_nickname": "rh_m_grp",
+          "reputation": 0.9,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Unioners",
+          "faction_nickname": "fc_u_grp",
+          "reputation": 0.9,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Ageira Technologies",
+          "faction_nickname": "co_vr_grp",
+          "reputation": 0.9,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Bretonia Intelligence Service",
+          "faction_nickname": "fc_ouk_grp",
+          "reputation": 0.9,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Red Hessians",
+          "faction_nickname": "fc_rh_grp",
+          "reputation": 0.9,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Friendly",
+          "faction_nickname": "fc_friendly",
+          "reputation": 0.85,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "Neutral",
+          "faction_nickname": "fc_neutral",
+          "reputation": 0,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "Unidentified",
+          "faction_nickname": "fc_staff",
+          "reputation": -0.55,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "pf_08_grp IFF",
+          "faction_nickname": "pf_08_grp",
+          "reputation": -0.55,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "Artificial Intelligence",
+          "faction_nickname": "fc_ai_grp",
+          "reputation": -0.55,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "Bretonia Archaeological Executive",
+          "faction_nickname": "br_bae_grp",
+          "reputation": -0.6,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Nomads",
+          "faction_nickname": "fc_n_grp",
+          "reputation": -0.9,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Wild",
+          "faction_nickname": "fc_wild",
+          "reputation": -0.9,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Detachment 16",
+          "faction_nickname": "rh_d19_grp",
+          "reputation": -0.9,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "Vagrants",
+          "faction_nickname": "fc_vagrants",
+          "reputation": -0.9,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Alaska Security Forces",
+          "faction_nickname": "li_alaska_grp",
+          "reputation": -0.9,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "Wendigo",
+          "faction_nickname": "fc_wendigo",
+          "reputation": -0.9,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Unknown",
+          "faction_nickname": "fc_hostile",
+          "reputation": -1,
+          "rep_type": 3
+        }
+      ]
+    },
+    {
+      "nickname": "dsy_license_fc_j_grp",
+      "name": "Junkers ID",
+      "price": 500,
+      "name_id": 852621,
+      "info_id": 852622,
+      "market_goods": [
+        {
+          "base_nickname": "rh01_08_base",
+          "base_name": "Kreuzberg Depot",
+          "region_name": "RHEINLAND",
+          "faction_nick": "fc_j_grp",
+          "base_sells": true,
+          "price_base_sells_for": 500
+        }
+      ],
+      "rephacks": [
+        {
+          "faction_name": "Junkers",
+          "faction_nickname": "fc_j_grp",
+          "reputation": 1,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "Friendly",
+          "faction_nickname": "fc_friendly",
+          "reputation": 0.85,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "LWB",
+          "faction_nickname": "fc_lwb_grp",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "ALG Waste Disposal",
+          "faction_nickname": "co_alg_grp",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "The Order",
+          "faction_nickname": "fc_or_grp",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Outcasts",
+          "faction_nickname": "fc_ou_grp",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "The Technocracy",
+          "faction_nickname": "fc_technocracy",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Lane Hackers",
+          "faction_nickname": "fc_lh_grp",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Gallic Brigands",
+          "faction_nickname": "fc_brigands_grp",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Zoners",
+          "faction_nickname": "gd_z_grp",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Corsairs",
+          "faction_nickname": "fc_c_grp",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Red Hessians",
+          "faction_nickname": "fc_rh_grp",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Blood Dragons",
+          "faction_nickname": "fc_bd_grp",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Militants",
+          "faction_nickname": "fc_militant",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Mollys",
+          "faction_nickname": "fc_m_grp",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Liberty Rogues",
+          "faction_nickname": "fc_lr_grp",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "The Maquis",
+          "faction_nickname": "fc_maquis_grp",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Bundschuh",
+          "faction_nickname": "fc_b_grp",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Gaians",
+          "faction_nickname": "fc_g_grp",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Unioners",
+          "faction_nickname": "fc_u_grp",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Golden Chrysanthemums",
+          "faction_nickname": "fc_gc_grp",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Rheinland Military",
+          "faction_nickname": "rh_n_grp",
+          "reputation": 0.3,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Gateway Shipping",
+          "faction_nickname": "co_nws_grp",
+          "reputation": 0.3,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Border World Exports",
+          "faction_nickname": "co_be_grp",
+          "reputation": 0.3,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Liberty Police, Inc.",
+          "faction_nickname": "li_p_grp",
+          "reputation": 0.3,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Planetform, Inc.",
+          "faction_nickname": "co_ti_grp",
+          "reputation": 0.3,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Ageira Technologies",
+          "faction_nickname": "co_vr_grp",
+          "reputation": 0.3,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "MND",
+          "faction_nickname": "rh_mnd_grp",
+          "reputation": 0.3,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Cryer Pharmaceuticals",
+          "faction_nickname": "co_hsp_grp",
+          "reputation": 0.3,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Bounty Hunters Guild",
+          "faction_nickname": "gd_bh_grp",
+          "reputation": 0.3,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Rheinland Federal Police",
+          "faction_nickname": "rh_p_grp",
+          "reputation": 0.3,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Kruger Minerals",
+          "faction_nickname": "rh_m_grp",
+          "reputation": 0.3,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Bretonia Police",
+          "faction_nickname": "br_p_grp",
+          "reputation": 0.3,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "The Core",
+          "faction_nickname": "fc_core",
+          "reputation": 0.3,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Imperial Shipping",
+          "faction_nickname": "co_rs_grp",
+          "reputation": 0.3,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Deep Space Engineering",
+          "faction_nickname": "co_me_grp",
+          "reputation": 0.3,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Interspace Commerce",
+          "faction_nickname": "co_ic_grp",
+          "reputation": 0.3,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Independent Pirates",
+          "faction_nickname": "fc_pirate",
+          "reputation": 0.3,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Gas Miners Guild",
+          "faction_nickname": "gd_gm_grp",
+          "reputation": 0.3,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Bristol Constructions and Manufacturing",
+          "faction_nickname": "co_bcm_grp",
+          "reputation": 0.3,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Synth Foods, Inc.",
+          "faction_nickname": "co_ni_grp",
+          "reputation": 0.3,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Daumann Heavy Construction",
+          "faction_nickname": "co_khc_grp",
+          "reputation": 0.3,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Crayter Republic",
+          "faction_nickname": "fc_rn_grp",
+          "reputation": 0.3,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Orbital Spa & Cruise",
+          "faction_nickname": "co_os_grp",
+          "reputation": 0.3,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Bretonia Mining & Manufacturing ",
+          "faction_nickname": "br_m_grp",
+          "reputation": 0.3,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Universal Shipping",
+          "faction_nickname": "co_ss_grp",
+          "reputation": 0.3,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Independent Miners Guild",
+          "faction_nickname": "gd_im_grp",
+          "reputation": 0.3,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Bretonia Armed Forces",
+          "faction_nickname": "br_n_grp",
+          "reputation": 0.3,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Unione Corse",
+          "faction_nickname": "fc_corse_grp",
+          "reputation": 0.3,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Neutral",
+          "faction_nickname": "fc_neutral",
+          "reputation": 0,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "Freelancers",
+          "faction_nickname": "fc_freelancer",
+          "reputation": 0,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Sirius Coalition",
+          "faction_nickname": "fc_kn_grp",
+          "reputation": -0.3,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "Bretonia Intelligence Service",
+          "faction_nickname": "fc_ouk_grp",
+          "reputation": -0.55,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "EFL Oil and Machinery",
+          "faction_nickname": "ga_efl_grp",
+          "reputation": -0.55,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Liberty Navy",
+          "faction_nickname": "li_n_grp",
+          "reputation": -0.55,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Kishiro Technologies",
+          "faction_nickname": "co_kt_grp",
+          "reputation": -0.55,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Samura Industries",
+          "faction_nickname": "co_shi_grp",
+          "reputation": -0.55,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Artificial Intelligence",
+          "faction_nickname": "fc_ai_grp",
+          "reputation": -0.55,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "pf_08_grp IFF",
+          "faction_nickname": "pf_08_grp",
+          "reputation": -0.55,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "Unidentified",
+          "faction_nickname": "fc_staff",
+          "reputation": -0.55,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "Gallic Metal Service",
+          "faction_nickname": "ga_gms_grp",
+          "reputation": -0.55,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Liberty Security Force",
+          "faction_nickname": "li_lsf_grp",
+          "reputation": -0.55,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "IDF Shipping",
+          "faction_nickname": "ga_idf_grp",
+          "reputation": -0.55,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Bretonia Archaeological Executive",
+          "faction_nickname": "br_bae_grp",
+          "reputation": -0.6,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Gallic National Intelligence",
+          "faction_nickname": "ga_gni_grp",
+          "reputation": -0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Kusari Office of Intelligence",
+          "faction_nickname": "ku_koi_grp",
+          "reputation": -0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Farmers Alliance",
+          "faction_nickname": "fc_fa_grp",
+          "reputation": -0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Gallic Navy",
+          "faction_nickname": "ga_n_grp",
+          "reputation": -0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Kusari Naval Forces",
+          "faction_nickname": "ku_n_grp",
+          "reputation": -0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Gallic Gendarmerie",
+          "faction_nickname": "ga_p_grp",
+          "reputation": -0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Gallic Royalists",
+          "faction_nickname": "ga_roy_grp",
+          "reputation": -0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Kusari State Police",
+          "faction_nickname": "ku_p_grp",
+          "reputation": -0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Detachment 16",
+          "faction_nickname": "rh_d19_grp",
+          "reputation": -0.9,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "Wild",
+          "faction_nickname": "fc_wild",
+          "reputation": -0.9,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Xenos",
+          "faction_nickname": "fc_x_grp",
+          "reputation": -0.9,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Nomads",
+          "faction_nickname": "fc_n_grp",
+          "reputation": -0.9,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Wendigo",
+          "faction_nickname": "fc_wendigo",
+          "reputation": -0.9,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Vagrants",
+          "faction_nickname": "fc_vagrants",
+          "reputation": -0.9,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Alaska Security Forces",
+          "faction_nickname": "li_alaska_grp",
+          "reputation": -0.9,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "Hogosha",
+          "faction_nickname": "fc_h_grp",
+          "reputation": -0.9,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Unknown",
+          "faction_nickname": "fc_hostile",
+          "reputation": -1,
+          "rep_type": 3
+        }
+      ]
+    },
+    {
+      "nickname": "dsy_license_fc_m_grp",
+      "name": "Mollys ID",
+      "price": 550,
+      "name_id": 852625,
+      "info_id": 852626,
+      "market_goods": [
+        {
+          "base_nickname": "br03_05_base",
+          "base_name": "Lisburn Rock",
+          "region_name": "BRETONIA",
+          "faction_nick": "fc_m_grp",
+          "base_sells": true,
+          "price_base_sells_for": 550
+        }
+      ],
+      "rephacks": [
+        {
+          "faction_name": "Mollys",
+          "faction_nickname": "fc_m_grp",
+          "reputation": 1,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "Friendly",
+          "faction_nickname": "fc_friendly",
+          "reputation": 0.85,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "Outcasts",
+          "faction_nickname": "fc_ou_grp",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Red Hessians",
+          "faction_nickname": "fc_rh_grp",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Independent Miners Guild",
+          "faction_nickname": "gd_im_grp",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Lane Hackers",
+          "faction_nickname": "fc_lh_grp",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "The Maquis",
+          "faction_nickname": "fc_maquis_grp",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Golden Chrysanthemums",
+          "faction_nickname": "fc_gc_grp",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Militants",
+          "faction_nickname": "fc_militant",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "The Order",
+          "faction_nickname": "fc_or_grp",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Zoners",
+          "faction_nickname": "gd_z_grp",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Bundschuh",
+          "faction_nickname": "fc_b_grp",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "LWB",
+          "faction_nickname": "fc_lwb_grp",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Gallic Brigands",
+          "faction_nickname": "fc_brigands_grp",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Liberty Rogues",
+          "faction_nickname": "fc_lr_grp",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Blood Dragons",
+          "faction_nickname": "fc_bd_grp",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Sirius Coalition",
+          "faction_nickname": "fc_kn_grp",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "The Technocracy",
+          "faction_nickname": "fc_technocracy",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Junkers",
+          "faction_nickname": "fc_j_grp",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Unione Corse",
+          "faction_nickname": "fc_corse_grp",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "IDF Shipping",
+          "faction_nickname": "ga_idf_grp",
+          "reputation": 0.3,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Independent Pirates",
+          "faction_nickname": "fc_pirate",
+          "reputation": 0.3,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Gallic Navy",
+          "faction_nickname": "ga_n_grp",
+          "reputation": 0.3,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "EFL Oil and Machinery",
+          "faction_nickname": "ga_efl_grp",
+          "reputation": 0.3,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Gallic Metal Service",
+          "faction_nickname": "ga_gms_grp",
+          "reputation": 0.3,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Gallic Gendarmerie",
+          "faction_nickname": "ga_p_grp",
+          "reputation": 0.3,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Freelancers",
+          "faction_nickname": "fc_freelancer",
+          "reputation": 0,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Neutral",
+          "faction_nickname": "fc_neutral",
+          "reputation": 0,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "Unidentified",
+          "faction_nickname": "fc_staff",
+          "reputation": -0.55,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "Gallic National Intelligence",
+          "faction_nickname": "ga_gni_grp",
+          "reputation": -0.55,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "pf_08_grp IFF",
+          "faction_nickname": "pf_08_grp",
+          "reputation": -0.55,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "Xenos",
+          "faction_nickname": "fc_x_grp",
+          "reputation": -0.55,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Gaians",
+          "faction_nickname": "fc_g_grp",
+          "reputation": -0.55,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Artificial Intelligence",
+          "faction_nickname": "fc_ai_grp",
+          "reputation": -0.55,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "Rheinland Federal Police",
+          "faction_nickname": "rh_p_grp",
+          "reputation": -0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Bounty Hunters Guild",
+          "faction_nickname": "gd_bh_grp",
+          "reputation": -0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Universal Shipping",
+          "faction_nickname": "co_ss_grp",
+          "reputation": -0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Liberty Police, Inc.",
+          "faction_nickname": "li_p_grp",
+          "reputation": -0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Imperial Shipping",
+          "faction_nickname": "co_rs_grp",
+          "reputation": -0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Kishiro Technologies",
+          "faction_nickname": "co_kt_grp",
+          "reputation": -0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Unioners",
+          "faction_nickname": "fc_u_grp",
+          "reputation": -0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Gateway Shipping",
+          "faction_nickname": "co_nws_grp",
+          "reputation": -0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Kruger Minerals",
+          "faction_nickname": "rh_m_grp",
+          "reputation": -0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Gallic Royalists",
+          "faction_nickname": "ga_roy_grp",
+          "reputation": -0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Ageira Technologies",
+          "faction_nickname": "co_vr_grp",
+          "reputation": -0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Orbital Spa & Cruise",
+          "faction_nickname": "co_os_grp",
+          "reputation": -0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "ALG Waste Disposal",
+          "faction_nickname": "co_alg_grp",
+          "reputation": -0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Farmers Alliance",
+          "faction_nickname": "fc_fa_grp",
+          "reputation": -0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Deep Space Engineering",
+          "faction_nickname": "co_me_grp",
+          "reputation": -0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Daumann Heavy Construction",
+          "faction_nickname": "co_khc_grp",
+          "reputation": -0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "MND",
+          "faction_nickname": "rh_mnd_grp",
+          "reputation": -0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Interspace Commerce",
+          "faction_nickname": "co_ic_grp",
+          "reputation": -0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Border World Exports",
+          "faction_nickname": "co_be_grp",
+          "reputation": -0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Crayter Republic",
+          "faction_nickname": "fc_rn_grp",
+          "reputation": -0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Kusari Office of Intelligence",
+          "faction_nickname": "ku_koi_grp",
+          "reputation": -0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Samura Industries",
+          "faction_nickname": "co_shi_grp",
+          "reputation": -0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Rheinland Military",
+          "faction_nickname": "rh_n_grp",
+          "reputation": -0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Liberty Navy",
+          "faction_nickname": "li_n_grp",
+          "reputation": -0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "The Core",
+          "faction_nickname": "fc_core",
+          "reputation": -0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Synth Foods, Inc.",
+          "faction_nickname": "co_ni_grp",
+          "reputation": -0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Planetform, Inc.",
+          "faction_nickname": "co_ti_grp",
+          "reputation": -0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Kusari Naval Forces",
+          "faction_nickname": "ku_n_grp",
+          "reputation": -0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Gas Miners Guild",
+          "faction_nickname": "gd_gm_grp",
+          "reputation": -0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Cryer Pharmaceuticals",
+          "faction_nickname": "co_hsp_grp",
+          "reputation": -0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Hogosha",
+          "faction_nickname": "fc_h_grp",
+          "reputation": -0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Kusari State Police",
+          "faction_nickname": "ku_p_grp",
+          "reputation": -0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Liberty Security Force",
+          "faction_nickname": "li_lsf_grp",
+          "reputation": -0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Bristol Constructions and Manufacturing",
+          "faction_nickname": "co_bcm_grp",
+          "reputation": -0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Detachment 16",
+          "faction_nickname": "rh_d19_grp",
+          "reputation": -0.9,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "Bretonia Police",
+          "faction_nickname": "br_p_grp",
+          "reputation": -0.9,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Vagrants",
+          "faction_nickname": "fc_vagrants",
+          "reputation": -0.9,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Wendigo",
+          "faction_nickname": "fc_wendigo",
+          "reputation": -0.9,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Bretonia Intelligence Service",
+          "faction_nickname": "fc_ouk_grp",
+          "reputation": -0.9,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Corsairs",
+          "faction_nickname": "fc_c_grp",
+          "reputation": -0.9,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Bretonia Mining & Manufacturing ",
+          "faction_nickname": "br_m_grp",
+          "reputation": -0.9,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Bretonia Archaeological Executive",
+          "faction_nickname": "br_bae_grp",
+          "reputation": -0.9,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Wild",
+          "faction_nickname": "fc_wild",
+          "reputation": -0.9,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Alaska Security Forces",
+          "faction_nickname": "li_alaska_grp",
+          "reputation": -0.9,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "Nomads",
+          "faction_nickname": "fc_n_grp",
+          "reputation": -0.9,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Bretonia Armed Forces",
+          "faction_nickname": "br_n_grp",
+          "reputation": -0.9,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Unknown",
+          "faction_nickname": "fc_hostile",
+          "reputation": -1,
+          "rep_type": 3
+        }
+      ]
+    },
+    {
+      "nickname": "dsy_license_neutral",
+      "name": "Neutral ID",
+      "price": 10000,
+      "name_id": 852661,
+      "info_id": 852662,
+      "market_goods": [
+        {
+          "base_nickname": "iw09_03_base",
+          "base_name": "Guard Station",
+          "region_name": "VIRTUAL SYSTEM",
+          "faction_nick": "fc_staff",
+          "base_sells": true,
+          "price_base_sells_for": 10000
+        }
+      ],
+      "rephacks": [
+        {
+          "faction_name": "Neutral",
+          "faction_nickname": "fc_neutral",
+          "reputation": 1,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "Friendly",
+          "faction_nickname": "fc_friendly",
+          "reputation": 0.85,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "Sirius Coalition",
+          "faction_nickname": "fc_kn_grp",
+          "reputation": 0,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "Synth Foods, Inc.",
+          "faction_nickname": "co_ni_grp",
+          "reputation": 0,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "Liberty Police, Inc.",
+          "faction_nickname": "li_p_grp",
+          "reputation": 0,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "Cryer Pharmaceuticals",
+          "faction_nickname": "co_hsp_grp",
+          "reputation": 0,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "Universal Shipping",
+          "faction_nickname": "co_ss_grp",
+          "reputation": 0,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "Liberty Rogues",
+          "faction_nickname": "fc_lr_grp",
+          "reputation": 0,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "Orbital Spa & Cruise",
+          "faction_nickname": "co_os_grp",
+          "reputation": 0,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "Crayter Republic",
+          "faction_nickname": "fc_rn_grp",
+          "reputation": 0,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "Gallic Navy",
+          "faction_nickname": "ga_n_grp",
+          "reputation": 0,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "Junkers",
+          "faction_nickname": "fc_j_grp",
+          "reputation": 0,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "Blood Dragons",
+          "faction_nickname": "fc_bd_grp",
+          "reputation": 0,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "Gallic Metal Service",
+          "faction_nickname": "ga_gms_grp",
+          "reputation": 0,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "Kruger Minerals",
+          "faction_nickname": "rh_m_grp",
+          "reputation": 0,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "Border World Exports",
+          "faction_nickname": "co_be_grp",
+          "reputation": 0,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "Liberty Navy",
+          "faction_nickname": "li_n_grp",
+          "reputation": 0,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "Wild",
+          "faction_nickname": "fc_wild",
+          "reputation": 0,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "Kusari Office of Intelligence",
+          "faction_nickname": "ku_koi_grp",
+          "reputation": 0,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "Kusari State Police",
+          "faction_nickname": "ku_p_grp",
+          "reputation": 0,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "Kusari Naval Forces",
+          "faction_nickname": "ku_n_grp",
+          "reputation": 0,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "Golden Chrysanthemums",
+          "faction_nickname": "fc_gc_grp",
+          "reputation": 0,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "The Order",
+          "faction_nickname": "fc_or_grp",
+          "reputation": 0,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "Kishiro Technologies",
+          "faction_nickname": "co_kt_grp",
+          "reputation": 0,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "Gallic Brigands",
+          "faction_nickname": "fc_brigands_grp",
+          "reputation": 0,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "Hogosha",
+          "faction_nickname": "fc_h_grp",
+          "reputation": 0,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "Deep Space Engineering",
+          "faction_nickname": "co_me_grp",
+          "reputation": 0,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "Liberty Security Force",
+          "faction_nickname": "li_lsf_grp",
+          "reputation": 0,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "The Maquis",
+          "faction_nickname": "fc_maquis_grp",
+          "reputation": 0,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "Planetform, Inc.",
+          "faction_nickname": "co_ti_grp",
+          "reputation": 0,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "Bristol Constructions and Manufacturing",
+          "faction_nickname": "co_bcm_grp",
+          "reputation": 0,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "Bounty Hunters Guild",
+          "faction_nickname": "gd_bh_grp",
+          "reputation": 0,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "Gallic National Intelligence",
+          "faction_nickname": "ga_gni_grp",
+          "reputation": 0,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "Bretonia Mining & Manufacturing ",
+          "faction_nickname": "br_m_grp",
+          "reputation": 0,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "ALG Waste Disposal",
+          "faction_nickname": "co_alg_grp",
+          "reputation": 0,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "Bundschuh",
+          "faction_nickname": "fc_b_grp",
+          "reputation": 0,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "IDF Shipping",
+          "faction_nickname": "ga_idf_grp",
+          "reputation": 0,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "Vagrants",
+          "faction_nickname": "fc_vagrants",
+          "reputation": 0,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "Gallic Gendarmerie",
+          "faction_nickname": "ga_p_grp",
+          "reputation": 0,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "Gaians",
+          "faction_nickname": "fc_g_grp",
+          "reputation": 0,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "The Core",
+          "faction_nickname": "fc_core",
+          "reputation": 0,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "Daumann Heavy Construction",
+          "faction_nickname": "co_khc_grp",
+          "reputation": 0,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "Corsairs",
+          "faction_nickname": "fc_c_grp",
+          "reputation": 0,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "Gateway Shipping",
+          "faction_nickname": "co_nws_grp",
+          "reputation": 0,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "The Technocracy",
+          "faction_nickname": "fc_technocracy",
+          "reputation": 0,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "Detachment 16",
+          "faction_nickname": "rh_d19_grp",
+          "reputation": 0,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "Xenos",
+          "faction_nickname": "fc_x_grp",
+          "reputation": 0,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "Militants",
+          "faction_nickname": "fc_militant",
+          "reputation": 0,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "EFL Oil and Machinery",
+          "faction_nickname": "ga_efl_grp",
+          "reputation": 0,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "Wendigo",
+          "faction_nickname": "fc_wendigo",
+          "reputation": 0,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "Interspace Commerce",
+          "faction_nickname": "co_ic_grp",
+          "reputation": 0,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "Alaska Security Forces",
+          "faction_nickname": "li_alaska_grp",
+          "reputation": 0,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "Gas Miners Guild",
+          "faction_nickname": "gd_gm_grp",
+          "reputation": 0,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "Unioners",
+          "faction_nickname": "fc_u_grp",
+          "reputation": 0,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "Lane Hackers",
+          "faction_nickname": "fc_lh_grp",
+          "reputation": 0,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "Zoners",
+          "faction_nickname": "gd_z_grp",
+          "reputation": 0,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "MND",
+          "faction_nickname": "rh_mnd_grp",
+          "reputation": 0,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "Freelancers",
+          "faction_nickname": "fc_freelancer",
+          "reputation": 0,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "Bretonia Intelligence Service",
+          "faction_nickname": "fc_ouk_grp",
+          "reputation": 0,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "Mollys",
+          "faction_nickname": "fc_m_grp",
+          "reputation": 0,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "Ageira Technologies",
+          "faction_nickname": "co_vr_grp",
+          "reputation": 0,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "Bretonia Armed Forces",
+          "faction_nickname": "br_n_grp",
+          "reputation": 0,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "Artificial Intelligence",
+          "faction_nickname": "fc_ai_grp",
+          "reputation": 0,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "Bretonia Police",
+          "faction_nickname": "br_p_grp",
+          "reputation": 0,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "Farmers Alliance",
+          "faction_nickname": "fc_fa_grp",
+          "reputation": 0,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "Independent Pirates",
+          "faction_nickname": "fc_pirate",
+          "reputation": 0,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "LWB",
+          "faction_nickname": "fc_lwb_grp",
+          "reputation": 0,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "Unione Corse",
+          "faction_nickname": "fc_corse_grp",
+          "reputation": 0,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "Samura Industries",
+          "faction_nickname": "co_shi_grp",
+          "reputation": 0,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "Gallic Royalists",
+          "faction_nickname": "ga_roy_grp",
+          "reputation": 0,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "Red Hessians",
+          "faction_nickname": "fc_rh_grp",
+          "reputation": 0,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "Imperial Shipping",
+          "faction_nickname": "co_rs_grp",
+          "reputation": 0,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "Rheinland Federal Police",
+          "faction_nickname": "rh_p_grp",
+          "reputation": 0,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "Independent Miners Guild",
+          "faction_nickname": "gd_im_grp",
+          "reputation": 0,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "Rheinland Military",
+          "faction_nickname": "rh_n_grp",
+          "reputation": 0,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "Bretonia Archaeological Executive",
+          "faction_nickname": "br_bae_grp",
+          "reputation": 0,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "Nomads",
+          "faction_nickname": "fc_n_grp",
+          "reputation": 0,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "Outcasts",
+          "faction_nickname": "fc_ou_grp",
+          "reputation": 0,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "pf_08_grp IFF",
+          "faction_nickname": "pf_08_grp",
+          "reputation": -0.55,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "Unidentified",
+          "faction_nickname": "fc_staff",
+          "reputation": -0.55,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "Unknown",
+          "faction_nickname": "fc_hostile",
+          "reputation": -1,
+          "rep_type": 3
+        }
+      ]
+    },
+    {
+      "nickname": "dsy_license_gd_z_grp",
+      "name": "Zoner ID",
+      "price": 600,
+      "name_id": 852653,
+      "info_id": 852654,
+      "market_goods": [
+        {
+          "base_nickname": "bw01_02_base",
+          "base_name": "Freeport 1",
+          "region_name": "OMEGA BORDER WORLDS",
+          "faction_nick": "gd_z_grp",
+          "base_sells": true,
+          "price_base_sells_for": 600
+        }
+      ],
+      "rephacks": [
+        {
+          "faction_name": "Zoners",
+          "faction_nickname": "gd_z_grp",
+          "reputation": 1,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "Friendly",
+          "faction_nickname": "fc_friendly",
+          "reputation": 0.85,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "Liberty Rogues",
+          "faction_nickname": "fc_lr_grp",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Bounty Hunters Guild",
+          "faction_nickname": "gd_bh_grp",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Gallic Metal Service",
+          "faction_nickname": "ga_gms_grp",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Universal Shipping",
+          "faction_nickname": "co_ss_grp",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Kruger Minerals",
+          "faction_nickname": "rh_m_grp",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Samura Industries",
+          "faction_nickname": "co_shi_grp",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "The Order",
+          "faction_nickname": "fc_or_grp",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Border World Exports",
+          "faction_nickname": "co_be_grp",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Gallic Brigands",
+          "faction_nickname": "fc_brigands_grp",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Gaians",
+          "faction_nickname": "fc_g_grp",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Ageira Technologies",
+          "faction_nickname": "co_vr_grp",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Bundschuh",
+          "faction_nickname": "fc_b_grp",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Bretonia Mining & Manufacturing ",
+          "faction_nickname": "br_m_grp",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "IDF Shipping",
+          "faction_nickname": "ga_idf_grp",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Hogosha",
+          "faction_nickname": "fc_h_grp",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Sirius Coalition",
+          "faction_nickname": "fc_kn_grp",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "LWB",
+          "faction_nickname": "fc_lwb_grp",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Planetform, Inc.",
+          "faction_nickname": "co_ti_grp",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Militants",
+          "faction_nickname": "fc_militant",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Deep Space Engineering",
+          "faction_nickname": "co_me_grp",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Cryer Pharmaceuticals",
+          "faction_nickname": "co_hsp_grp",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Gas Miners Guild",
+          "faction_nickname": "gd_gm_grp",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Synth Foods, Inc.",
+          "faction_nickname": "co_ni_grp",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Gateway Shipping",
+          "faction_nickname": "co_nws_grp",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "EFL Oil and Machinery",
+          "faction_nickname": "ga_efl_grp",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "The Maquis",
+          "faction_nickname": "fc_maquis_grp",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Farmers Alliance",
+          "faction_nickname": "fc_fa_grp",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Orbital Spa & Cruise",
+          "faction_nickname": "co_os_grp",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "ALG Waste Disposal",
+          "faction_nickname": "co_alg_grp",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Daumann Heavy Construction",
+          "faction_nickname": "co_khc_grp",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Unione Corse",
+          "faction_nickname": "fc_corse_grp",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Bristol Constructions and Manufacturing",
+          "faction_nickname": "co_bcm_grp",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Xenos",
+          "faction_nickname": "fc_x_grp",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Junkers",
+          "faction_nickname": "fc_j_grp",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Blood Dragons",
+          "faction_nickname": "fc_bd_grp",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Crayter Republic",
+          "faction_nickname": "fc_rn_grp",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Red Hessians",
+          "faction_nickname": "fc_rh_grp",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Lane Hackers",
+          "faction_nickname": "fc_lh_grp",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Mollys",
+          "faction_nickname": "fc_m_grp",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "The Technocracy",
+          "faction_nickname": "fc_technocracy",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Gallic Gendarmerie",
+          "faction_nickname": "ga_p_grp",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Golden Chrysanthemums",
+          "faction_nickname": "fc_gc_grp",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Unioners",
+          "faction_nickname": "fc_u_grp",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Gallic Royalists",
+          "faction_nickname": "ga_roy_grp",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "The Core",
+          "faction_nickname": "fc_core",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Kishiro Technologies",
+          "faction_nickname": "co_kt_grp",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Interspace Commerce",
+          "faction_nickname": "co_ic_grp",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Independent Miners Guild",
+          "faction_nickname": "gd_im_grp",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Imperial Shipping",
+          "faction_nickname": "co_rs_grp",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Outcasts",
+          "faction_nickname": "fc_ou_grp",
+          "reputation": 0.7,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Corsairs",
+          "faction_nickname": "fc_c_grp",
+          "reputation": 0.3,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Independent Pirates",
+          "faction_nickname": "fc_pirate",
+          "reputation": 0.3,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Rheinland Military",
+          "faction_nickname": "rh_n_grp",
+          "reputation": 0.3,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Rheinland Federal Police",
+          "faction_nickname": "rh_p_grp",
+          "reputation": 0.3,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Neutral",
+          "faction_nickname": "fc_neutral",
+          "reputation": 0,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "Freelancers",
+          "faction_nickname": "fc_freelancer",
+          "reputation": 0,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Gallic Navy",
+          "faction_nickname": "ga_n_grp",
+          "reputation": -0.3,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Kusari State Police",
+          "faction_nickname": "ku_p_grp",
+          "reputation": -0.3,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Liberty Police, Inc.",
+          "faction_nickname": "li_p_grp",
+          "reputation": -0.3,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "Kusari Naval Forces",
+          "faction_nickname": "ku_n_grp",
+          "reputation": -0.3,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Bretonia Police",
+          "faction_nickname": "br_p_grp",
+          "reputation": -0.3,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Gallic National Intelligence",
+          "faction_nickname": "ga_gni_grp",
+          "reputation": -0.55,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Kusari Office of Intelligence",
+          "faction_nickname": "ku_koi_grp",
+          "reputation": -0.55,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Liberty Security Force",
+          "faction_nickname": "li_lsf_grp",
+          "reputation": -0.55,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "Bretonia Armed Forces",
+          "faction_nickname": "br_n_grp",
+          "reputation": -0.55,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "pf_08_grp IFF",
+          "faction_nickname": "pf_08_grp",
+          "reputation": -0.55,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "Unidentified",
+          "faction_nickname": "fc_staff",
+          "reputation": -0.55,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "MND",
+          "faction_nickname": "rh_mnd_grp",
+          "reputation": -0.55,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Bretonia Intelligence Service",
+          "faction_nickname": "fc_ouk_grp",
+          "reputation": -0.55,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Liberty Navy",
+          "faction_nickname": "li_n_grp",
+          "reputation": -0.55,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "Artificial Intelligence",
+          "faction_nickname": "fc_ai_grp",
+          "reputation": -0.55,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "Bretonia Archaeological Executive",
+          "faction_nickname": "br_bae_grp",
+          "reputation": -0.6,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Nomads",
+          "faction_nickname": "fc_n_grp",
+          "reputation": -0.9,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Wendigo",
+          "faction_nickname": "fc_wendigo",
+          "reputation": -0.9,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Vagrants",
+          "faction_nickname": "fc_vagrants",
+          "reputation": -0.9,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Detachment 16",
+          "faction_nickname": "rh_d19_grp",
+          "reputation": -0.9,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "Alaska Security Forces",
+          "faction_nickname": "li_alaska_grp",
+          "reputation": -0.9,
+          "rep_type": 3
+        },
+        {
+          "faction_name": "Wild",
+          "faction_nickname": "fc_wild",
+          "reputation": -0.9,
+          "rep_type": 0
+        },
+        {
+          "faction_name": "Unknown",
+          "faction_nickname": "fc_hostile",
+          "reputation": -1,
+          "rep_type": 3
+        }
+      ]
+    }
+  ],
+  "cards": {
+    "dsy_license_br_m_grp": {
+      "infocard": [
+        {
+          "phrases": [
+            {
+              "phrase": "This Bretonian Corporate ID is used by Bretonia Mining and Manufacturing employees, who:",
+              "link": null,
+              "bold": false
+            }
+          ]
+        },
+        {
+          "phrases": [
+            {
+              "phrase": "- Cannot use Cruisers, Battlecruisers, or Battleships.",
+              "link": null,
+              "bold": false
+            }
+          ]
+        }
+      ]
+    },
+    "dsy_license_fc_j_grp": {
+      "infocard": [
+        {
+          "phrases": [
+            {
+              "phrase": "This Independent Quasilegal ID is used by Junkers, who:",
+              "link": null,
+              "bold": false
+            }
+          ]
+        },
+        {
+          "phrases": [
+            {
+              "phrase": "- Cannot use Cruisers, Battlecruisers, Battleships, or ships with more than 4,300 cargo space.",
+              "link": null,
+              "bold": false
+            }
+          ]
+        }
+      ]
+    },
+    "dsy_license_pf_51_grp": {
+      "infocard": [
+        {
+          "phrases": [
+            {
+              "phrase": "This Independent Quasilegal official faction ID is used by junkers of the Junker Congress, who:",
+              "link": null,
+              "bold": false
+            }
+          ]
+        },
+        {
+          "phrases": [
+            {
+              "phrase": "- Cannot use Cruisers, Battlecruisers, Battleships, or ships with more than 4,300 cargo space, other than .:j:. Voerde and .:j:.Prague.",
+              "link": null,
+              "bold": false
+            }
+          ]
+        }
+      ]
+    },
+    "dsy_license_fc_c_grp": {
+      "infocard": [
+        {
+          "phrases": [
+            {
+              "phrase": "This Independent Unlawful ID is used by Corsairs, who:",
+              "link": null,
+              "bold": false
+            }
+          ]
+        }
+      ]
+    },
+    "dsy_license_fc_m_grp": {
+      "infocard": [
+        {
+          "phrases": [
+            {
+              "phrase": "This Bretonian Unlawful ID is used by members of the Mollys, who:",
+              "link": null,
+              "bold": false
+            }
+          ]
+        },
+        {
+          "phrases": [
+            {
+              "phrase": "- Cannot use Battleships, or ships with more than 4,300 cargo space.",
+              "link": null,
+              "bold": false
+            }
+          ]
+        }
+      ]
+    },
+    "dsy_license_freelancer": {
+      "infocard": [
+        {
+          "phrases": [
+            {
+              "phrase": "This Generic ID is used by Freelancers, who:",
+              "link": null,
+              "bold": false
+            }
+          ]
+        },
+        {
+          "phrases": [
+            {
+              "phrase": "- Cannot use Cruisers, Battlecruisers, Battleships, or ships with more than 3,600 cargo space.",
+              "link": null,
+              "bold": false
+            }
+          ]
+        }
+      ]
+    },
+    "dsy_license_neutral": {
+      "infocard": [
+        {
+          "phrases": [
+            {
+              "phrase": "Allowed ships: Fighters, Freighters, Transports, Gunboats, Cruisers, Battleships.",
+              "link": null,
+              "bold": false
+            }
+          ]
+        },
+        {
+          "phrases": [
+            {
+              "phrase": "This ID can only be given by an Admin and may not be transferred or replaced without Admin permission.",
+              "link": null,
+              "bold": false
+            }
+          ]
+        }
+      ]
+    },
+    "dsy_license_gd_z_grp": {
+      "infocard": [
+        {
+          "phrases": [
+            {
+              "phrase": "This Independent Quasilegal ID is used by Zoners, who:",
+              "link": null,
+              "bold": false
+            }
+          ]
+        },
+        {
+          "phrases": [
+            {
+              "phrase": "- Cannot dock Cruisers, Battlecruisers, Battleships, or ships with more than 3,600 cargo space, except in Pennsylvania.",
+              "link": null,
+              "bold": false
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "ships": [
+    {
+      "nickname": "dsy_advanced_train",
+      "name": "Advanced Train",
+      "class": 9,
+      "type": "transport",
+      "hold_size": 5000,
+      "cruise_speed": 350,
+      "dock_type": 2,
+      "ship_packages": [
+        {
+          "nickname": "dsy_advanced_train_package"
+        }
+      ],
+      "tech_compat": {
+        "techchompat_by_id": {
+          "dsy_license_br_m_grp": 1,
+          "dsy_license_fc_c_grp": 1,
+          "dsy_license_fc_j_grp": 1,
+          "dsy_license_fc_m_grp": 1,
+          "dsy_license_freelancer": 1,
+          "dsy_license_gd_z_grp": 1,
+          "dsy_license_neutral": 1,
+          "dsy_license_pf_51_grp": 1
+        },
+        "tech_cell": "sirius_tech"
+      }
+    },
+    {
+      "nickname": "dsy_cargobarge_1",
+      "name": "Barge Type I",
+      "class": 8,
+      "type": "capital",
+      "hold_size": 30000,
+      "cruise_speed": 90,
+      "dock_type": 2,
+      "ship_packages": [
+        {
+          "nickname": "dsy_cargobarge_1_package"
+        }
+      ],
+      "tech_compat": {
+        "techchompat_by_id": {
+          "dsy_license_br_m_grp": 1,
+          "dsy_license_fc_c_grp": 1,
+          "dsy_license_fc_j_grp": 1,
+          "dsy_license_fc_m_grp": 1,
+          "dsy_license_freelancer": 1,
+          "dsy_license_gd_z_grp": 1,
+          "dsy_license_neutral": 1,
+          "dsy_license_pf_51_grp": 1
+        },
+        "tech_cell": ""
+      }
+    },
+    {
+      "nickname": "dsy_corsair_transport",
+      "name": "Corsair Transport",
+      "class": 6,
+      "type": "transport",
+      "hold_size": 3600,
+      "cruise_speed": 500,
+      "dock_type": 2,
+      "ship_packages": [
+        {
+          "nickname": "dsy_corsair_transport_package"
+        }
+      ],
+      "tech_compat": {
+        "techchompat_by_id": {
+          "dsy_license_br_m_grp": 0.1,
+          "dsy_license_fc_c_grp": 1,
+          "dsy_license_fc_j_grp": 0.1,
+          "dsy_license_fc_m_grp": 0.1,
+          "dsy_license_freelancer": 0.1,
+          "dsy_license_gd_z_grp": 0.1,
+          "dsy_license_neutral": 1,
+          "dsy_license_pf_51_grp": 0.1
+        },
+        "tech_cell": "corsair_transports"
+      }
+    },
+    {
+      "nickname": "pilgrim_liner",
+      "name": "Pilgrim Liner",
+      "class": 10,
+      "type": "capital",
+      "hold_size": 4300,
+      "cruise_speed": 415,
+      "dock_type": 3,
+      "ship_packages": [
+        {
+          "nickname": "pilgrim_liner_package"
+        }
+      ],
+      "tech_compat": {
+        "techchompat_by_id": {
+          "dsy_license_br_m_grp": 1,
+          "dsy_license_fc_c_grp": 1,
+          "dsy_license_fc_j_grp": 1,
+          "dsy_license_fc_m_grp": 1,
+          "dsy_license_freelancer": 1,
+          "dsy_license_gd_z_grp": 1,
+          "dsy_license_neutral": 1,
+          "dsy_license_pf_51_grp": 1
+        },
+        "tech_cell": "sirius_tech"
+      }
+    }
+  ],
+  "pobs": [
+    {
+      "nickname": "resolution_heavy_works",
+      "name": "Resolution Heavy Works",
+      "system_nickname": "br01",
+      "system_name": "New London",
+      "base_pos": {
+        "X": -56474,
+        "Y": 0,
+        "Z": 53702
+      },
+      "money": 90212079,
+      "cargospace": 145693,
+      "defense_mode": 1,
+      "faction_nickname": "br_m_grp",
+      "faction_name": "Bretonia Mining & Manufacturing ",
+      "shop_items": [
+        {
+          "id": 3093943884,
+          "quantity": 3410,
+          "price": 115,
+          "sell_price": 115,
+          "min_stock": 30000,
+          "max_stock": 30000,
+          "nickname": "commodity_pirate_gold",
+          "name": "Wildcat Gold",
+          "category": "commodity",
+          "volume": 1,
+          "original_volume": 1,
+          "ship_class": null
+        }
+      ]
+    }
+  ],
+  "npc_bases": [
+    {
+      "name": "Arranmore Base",
+      "archetypes": [
+        "dsy_space_port_dmg02",
+        "dsy_spiketower01_snub",
+        "shipyard_dockable"
+      ],
+      "nickname": "br05_05_base",
+      "obj_nickname": "br05_05",
+      "faction_name": "Mollys",
+      "system_name": "Dublin",
+      "system_nickname": "br05",
+      "region_name": "INDEPENDENT",
+      "strid_name": 196685,
+      "infocard_id": 589866,
+      "file": "universe/systems/br05/bases/br05_05_base.ini",
+      "BGCS_base_run_by": "W02bF38",
+      "pos": {
+        "X": -29872.564453125,
+        "Y": 63.599998474121094,
+        "Z": 20104.400390625
+      },
+      "sector_coord": "C-6",
+      "is_transport_reachable": true,
+      "is_freighter_reachable": true,
+      "is_frigate_reachhable": true,
+      "IsPob": false,
+      "market_goods": null
+    },
+    {
+      "name": "Battlecruiser Santander",
+      "archetypes": [
+        "cor_battlecruiser_dockable"
+      ],
+      "nickname": "hi03_01_base",
+      "obj_nickname": "hi03_01",
+      "faction_name": "Corsairs",
+      "system_name": "Dublin",
+      "system_nickname": "br05",
+      "region_name": "INDEPENDENT",
+      "strid_name": 591913,
+      "infocard_id": 591915,
+      "file": "universe/systems/hi03/bases/hi03_01_base.ini",
+      "BGCS_base_run_by": "W02bF40",
+      "pos": {
+        "X": -25849.564453125,
+        "Y": -173.8000030517578,
+        "Z": -21760.900390625
+      },
+      "sector_coord": "C-3",
+      "is_transport_reachable": false,
+      "is_freighter_reachable": true,
+      "is_frigate_reachhable": false,
+      "IsPob": false,
+      "market_goods": null
+    },
+    {
+      "name": "Trafalgar Base",
+      "archetypes": [
+        "space_port_dmg"
+      ],
+      "nickname": "br01_08_base",
+      "obj_nickname": "br01_08",
+      "faction_name": "Junkers",
+      "system_name": "New London",
+      "system_nickname": "br01",
+      "region_name": "BRETONIA",
+      "strid_name": 196665,
+      "infocard_id": 589983,
+      "file": "universe/systems/br01/bases/br01_08_base.ini",
+      "BGCS_base_run_by": "W02bF24",
+      "pos": {
+        "X": -66202.4375,
+        "Y": 21.3023681640625,
+        "Z": -32770.15625
+      },
+      "sector_coord": "C-4",
+      "is_transport_reachable": true,
+      "is_freighter_reachable": true,
+      "is_frigate_reachhable": true,
+      "IsPob": false,
+      "market_goods": null
+    }
+  ],
+  "commodities": [
+    {
+      "nickname": "commodity_pirate_gold",
+      "name": "Wildcat Gold",
+      "volume": 1,
+      "ship_class": null,
+      "market_goods": [
+        {
+          "nickname": "commodity_pirate_gold",
+          "name": "Wildcat Gold",
+          "price_base_buys_for": 91,
+          "price_base_sells_for": 158,
+          "volume": 1,
+          "ship_class": null,
+          "base_sells": true,
+          "base_nickname": "br05_05_base",
+          "base_name": "Arranmore Base",
+          "system_name": "Dublin",
+          "system_nick": "br05",
+          "faction_name": "Mollys",
+          "faction_nick": "fc_m_grp",
+          "base_pos": {
+            "X": -30028.32421875,
+            "Y": 331.5577697753906,
+            "Z": 19527.220703125
+          }
+        },
+        {
+          "nickname": "commodity_pirate_gold",
+          "name": "Wildcat Gold",
+          "price_base_buys_for": 94,
+          "price_base_sells_for": 164,
+          "volume": 1,
+          "ship_class": null,
+          "base_sells": true,
+          "base_nickname": "hi03_01_base",
+          "base_name": "Battlecruiser Santander",
+          "system_name": "Dublin",
+          "system_nick": "br05",
+          "faction_name": "Corsairs",
+          "faction_nick": "fc_c_grp",
+          "base_pos": {
+            "X": -25849.564453125,
+            "Y": -173.8000030517578,
+            "Z": -21760.900390625
+          }
+        },
+        {
+          "nickname": "commodity_pirate_gold",
+          "name": "Wildcat Gold",
+          "price_base_buys_for": 107,
+          "price_base_sells_for": 171,
+          "volume": 1,
+          "ship_class": null,
+          "base_sells": true,
+          "base_nickname": "br01_08_base",
+          "base_name": "Trafalgar Base",
+          "system_name": "New London",
+          "system_nick": "br01",
+          "faction_name": "Junkers",
+          "faction_nick": "fc_j_grp",
+          "base_pos": {
+            "X": -66202.4375,
+            "Y": 21.3023681640625,
+            "Z": -32770.15625
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -25,9 +25,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
-      - name: Capture public ID API contract for regression investigation
-        run: python3 scripts/probe_identity_contract.py
-
       - name: Verify generated app assets
         run: python3 scripts/build_app_assets.py --check
 

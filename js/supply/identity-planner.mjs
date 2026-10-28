@@ -15,7 +15,7 @@ function legacyBmmShips(ships, identity) {
 export async function searchIdentities(dataset, navigation, ships, scopes, options = {}, progress = () => {}, canceled = () => false) {
   const origin = findRhw(dataset)?.id;
   const allScopes = [...new Map(scopes.map(scope => [scope.identity.id, {
-    ...scope, denied: new Set(scope.blocked || []), approval: new Set((scope.approvalDocks || []).filter(id => id !== origin))
+    ...scope, denied: new Set(scope.blocked || []), approval: new Set(scope.approvalDocks || []), unverified: new Set(scope.unverifiedDocks || [])
   }])).values()];
   const active = options.identityId && !['all', 'compare'].includes(options.identityId)
     ? allScopes.filter(scope => scope.identity.id === options.identityId) : allScopes;
@@ -31,10 +31,13 @@ export async function searchIdentities(dataset, navigation, ships, scopes, optio
   function matches(ship, stops, restrict = false) {
     return policies(ship).flatMap(({ scope, shipCheck }) => {
       if (restrict && !active.includes(scope) || shipCheck.state === 'blocked' || stops.some(id => scope.denied.has(id))) return [];
+      const unverified = shipCheck.state !== 'checked' || stops.some(id => scope.unverified.has(id));
+      if (unverified && !options.includeUnverified) return [];
       const approval = stops.some(id => scope.approval.has(id));
       if (approval && !options.includeRestrictedPobs) return [];
       return [{ identity: scope.identity, shipCheck: approval ? { ...shipCheck, state: 'conditional',
-        reason: 'This POB needs explicit owner approval; ID alone does not grant docking' } : shipCheck }];
+        reason: 'This POB needs explicit owner approval; ID alone does not grant docking' }
+        : unverified ? { ...shipCheck, state: 'conditional', reason: shipCheck.state !== 'checked' ? shipCheck.reason : 'ID docking rights at a route stop are unverified' } : shipCheck }];
     });
   }
   const requested = options.shipId && options.shipId !== 'auto' ? ships.find(ship => ship.id === options.shipId) : null;
@@ -50,9 +53,11 @@ export async function searchIdentities(dataset, navigation, ships, scopes, optio
   } else {
     // Round-robin ID shortlists preserve access-specific hulls without repeating
     // the same expensive navigation search for every compatible identity.
-    const lists = active.map(scope => autoIdentityShips(ships, scope.identity));
+    const lists = active.filter(scope => !scope.denied.has(origin)
+      && (options.includeRestrictedPobs || !scope.approval.has(origin))
+      && (options.includeUnverified || !scope.unverified.has(origin))).map(scope => autoIdentityShips(ships, scope.identity));
     for (let index = 0; index < 6; index++) for (const list of lists) add(list[index]);
-    if (!profiles.length) {
+    if (!profiles.length && options.includeUnverified) {
       const bmm = active.find(scope => scope.identity.id === BMM_ID);
       if (bmm) legacyBmmShips(ships, bmm.identity).forEach(add);
     }
@@ -65,8 +70,11 @@ export async function searchIdentities(dataset, navigation, ships, scopes, optio
     name: findCommodity(dataset, options.commodity)?.name || options.commodity }, results: [], reason,
     stats: { checked: 0, sources: 0, ships: 0, identities: active.length, routeFirst: true, extraPercent: options.extraPercent ?? 20 } };
   if (!shortlisted.length) return empty;
+  if (shortlisted.every(ship => !matches(ship, [origin], true).length)) return { ...empty,
+    reason: 'No checked combination of this ID, ship and docking rights at RHW. Unknown rules and POB owner approvals are excluded by default.' };
   const blocked = dataset.bases.filter(base => active.every(scope => scope.denied.has(base.id)
-    || !options.includeRestrictedPobs && scope.approval.has(base.id))).map(base => base.id);
+    || !options.includeRestrictedPobs && scope.approval.has(base.id)
+    || !options.includeUnverified && scope.unverified.has(base.id))).map(base => base.id);
   const routeEligibility = (ship, stops) => {
     const permitted = matches(ship, stops, true);
     return permitted.some(row => row.shipCheck.state === 'checked') ? 'checked' : permitted.length ? 'conditional' : 'blocked';

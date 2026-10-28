@@ -1,7 +1,7 @@
 import { normalizeDarkstat, validateDataset } from './core/trade.mjs';
 import { validateNavigation } from './core/navigation.mjs';
 import { FALLBACK_SHIPS, normalizeShipRegistry } from './ship-profiles.mjs';
-import { dockingAccess, BMM_ID } from './access.mjs';
+import { dockingAccess, enrichBaseOwners, BMM_ID } from './access.mjs';
 import { normalize, findRhw } from './planner.mjs';
 import { commodityGroups } from './commodity-groups.mjs';
 import { identityRegistry, parseIdentityRules, identityShipCheck } from './identity-profiles.mjs';
@@ -109,23 +109,24 @@ async function prepare(force, signal) {
   let ships = cache.ships || FALLBACK_SHIPS, shipAt = cache.shipAt || 0;
   let shipIdentityVersion = cache.shipIdentityVersion || 0, accessIdentityVersion = cache.accessIdentityVersion || 0;
   let owners = cache.owners || [], factions = cache.factions || [], tractors = cache.tractors || [];
-  let identityCards = cache.identityCards || {}, identityAt = cache.identityAt || 0;
+  let identityCards = cache.identityPolicyVersion === 2 ? cache.identityCards || {} : {}, identityAt = cache.identityPolicyVersion === 2 ? cache.identityAt || 0 : 0;
+  let identityPolicyVersion = cache.identityPolicyVersion || 0;
   const tasks = [];
   if (!force && current.pobs?.length && current.receivedAt && !current.stale && now - current.receivedAt < FIVE_MINUTES) {
     pobs = current.pobs; pobAt = current.receivedAt;
   } else tasks.push(read('pobs', undefined, signal).then(data => { pobs = data; pobAt = Date.now(); }));
   if (force || !npc || now - npcAt > SIX_HOURS) tasks.push(read('commodities', { include_market_goods: true, filter_to_useful: true }, signal).then(data => {
-    npc = normalizeDarkstat([], data); npcAt = Date.now();
+    npc = normalizeDarkstat([], data); npc.bases = enrichBaseOwners(npc.bases, [], [], data); npcAt = Date.now();
   }));
   if (force || !shipIdentityVersion || !shipAt || now - shipAt > DAY) tasks.push(read('ships', { include_tech_compat: true }, signal).then(data => {
     ships = normalizeShipRegistry(data);
     shipIdentityVersion = 1;
     shipAt = Date.now();
   }));
-  if (force || !accessIdentityVersion || !cache.accessAt || now - cache.accessAt > SIX_HOURS) {
+  if (force || accessIdentityVersion < 2 || !cache.accessAt || now - cache.accessAt > SIX_HOURS) {
     tasks.push(read('npc_bases', {}, signal).then(data => { owners = data; }));
     tasks.push(read('factions', { include_reputations: false, include_bribes: false, filter_to_useful: false }, signal).then(data => { factions = data; }));
-    tasks.push(read('tractors', { include_rephacks: true, filter_to_useful: true }, signal).then(data => { tractors = data; accessIdentityVersion = 1; }));
+    tasks.push(read('tractors', { include_rephacks: true, include_market_goods: true, filter_to_useful: true }, signal).then(data => { tractors = data; accessIdentityVersion = 2; }));
   }
   const settled = await Promise.allSettled(tasks);
   if (signal.aborted) throw Error('Search canceled');
@@ -136,7 +137,7 @@ async function prepare(force, signal) {
       const replies = await read('infocards', nicknames, signal);
       if (replies.length !== nicknames.length) throw Error('ID infocard response length does not match the requested IDs');
       identityCards = Object.fromEntries(nicknames.map((id, index) => [id, { rules: parseIdentityRules(replies[index]) }]));
-      identityAt = Date.now();
+      identityAt = Date.now(); identityPolicyVersion = 2;
     } catch (error) { failures.push('ID ship rules: ' + error.message); }
     if (signal.aborted) throw Error('Search canceled');
   }
@@ -147,7 +148,7 @@ async function prepare(force, signal) {
   const identities = identityRegistry(tractors, identityCards, identityAt);
   const access = dockingAccess(dataset.bases, owners, factions, tractors, BMM_ID, pobs);
   const saved = { npc, npcAt, pobs, pobAt, ships, shipAt, owners, factions, tractors,
-    identityCards, identityAt, shipIdentityVersion, accessIdentityVersion,
+    identityCards, identityAt, identityPolicyVersion, shipIdentityVersion, accessIdentityVersion,
     accessAt: failures.length ? cache.accessAt || 0 : now };
   await database('put', saved).catch(() => null);
   prepared = { dataset, navigation, ships, shipAt, pobAt, npcAt, access, failures, identities,
@@ -218,7 +219,7 @@ function identityMarkup(route) {
   const conditional = compatible.filter(row => row.shipCheck.state !== 'checked');
   const tags = rows => rows.map(row => '<span data-compatible-identity="' + esc(row.identity.id) + '">' + esc(row.identity.name) + '</span>').join('');
   const extra = checked.length > 6 ? '<details><summary>SHOW ALL ' + checked.length + ' COMPATIBLE IDs</summary><div class="supply-id-tags">' + tags(checked.slice(6)) + '</div></details>' : '';
-  const pending = conditional.length ? '<details><summary>' + conditional.length + ' CONDITIONAL ID' + (conditional.length === 1 ? '' : 's') + ' · CHECK RULES / ACCESS</summary>' + conditional.map(row => '<p><b>' + esc(row.identity.name) + '</b> · ' + esc(row.shipCheck.reason) + '</p>').join('') + '</details>' : '';
+  const pending = conditional.length ? '<details><summary>' + conditional.length + ' CONDITIONAL ID' + (conditional.length === 1 ? '' : 's') + ' · CHECK RULES / ACCESS</summary>' + conditional.slice(0, 8).map(row => '<p><b>' + esc(row.identity.name) + '</b> · ' + esc(row.shipCheck.reason) + '</p>').join('') + (conditional.length > 8 ? '<p>' + (conditional.length - 8) + ' more conditional profiles omitted.</p>' : '') + '</details>' : '';
   return '<div class="supply-identity-note" data-state="' + (checked.length ? 'checked' : 'conditional') + '"><strong>' + (checked.length ? 'COMPATIBLE IDs · ' + checked.length : 'CONDITIONAL ACCESS') + '</strong><div class="supply-id-tags">' + tags(checked.slice(0, 6)) + '</div><small>For this ship and every stop, including return cargo. Personal reputation, membership and POB permissions still apply.</small>' + extra + pending + '</div>';
 }
 function renderResults() {
@@ -322,9 +323,9 @@ async function search(force = false) {
     worker.onerror = () => { if (token === request) setBusy(false, 'Route worker unavailable. Reload RHW and try again.'); worker?.terminate(); worker = null; };
     worker.postMessage({ id: token, dataset: prepared.dataset, navigation: prepared.navigation, profiles,
       scopes: prepared.identities.map(identity => ({ identity, blocked: accessFor(identity.id).blocked,
-        accessReady: accessFor(identity.id).ready, approvalDocks: accessFor(identity.id).approvalDocks })),
+        accessReady: accessFor(identity.id).ready, approvalDocks: accessFor(identity.id).approvalDocks, unverifiedDocks: accessFor(identity.id).unverifiedDocks })),
       options: { mode: $('supplyMode').value, commodity: $('supplyCommodity').value, extraPercent: Number($('supplyExtra').value), returnCargo: $('supplyBackhaul').checked, includePobs: $('supplyPobs').checked,
-        shipId, identityId: $('supplyIdentity').value, importGoal: $('supplyImportGoal').value, includeRestrictedPobs: $('supplyRestrictedPobs').checked,
+        shipId, includeUnverified: $('supplyUnverified').checked, identityId: $('supplyIdentity').value, importGoal: $('supplyImportGoal').value, includeRestrictedPobs: $('supplyRestrictedPobs').checked,
         capital: capital ? Number(capital) : null, quantity: quantity ? Number(quantity) : null } });
   } catch (error) {
     if (token === request && dialog.open) { setBusy(false, controller.signal.aborted ? 'UPLINK TIMED OUT · RETRY OR REFRESH MARKETS' : error.message); $('supplySource').textContent = sourceMarkup(); }
@@ -339,7 +340,7 @@ function mount() {
   dialog = document.createElement('dialog'); dialog.id = 'rhwSupplyDialog'; dialog.className = 'rhw-supply-dialog';
   dialog.setAttribute('aria-labelledby', 'supplyTitle');
   dialog.innerHTML = `<header class="supply-heading"><div><small>RHW LOGISTICS</small><h2 id="supplyTitle">RHW TRADE DESK</h2><p>Plan imports to RHW and exports from RHW. Compare ships, time and hauling profit.</p></div><button type="button" id="supplyClose" aria-label="Close Trade Desk">CLOSE</button></header>
-    <div class="supply-content"><p class="supply-source">Find the best route across available IDs, then see which IDs work with the recommended ship. Keep one ID for the whole trip. Ship and ID purchase costs are excluded.</p><form id="supplyForm"><div class="supply-fields supply-main-fields"><label>TRADE MODE<select id="supplyMode"><option value="supply">IMPORT</option><option value="export">EXPORT</option></select></label><label>COMMODITY<select id="supplyCommodity"></select></label><label>SHIP<select id="supplyShip"></select></label></div><details class="supply-settings"><summary id="supplySettingsTitle">IMPORT SETTINGS</summary><div class="supply-fields"><label>LIMIT TO ID<select id="supplyIdentity"><option value="all">AUTO · All available IDs</option></select></label><label data-supply-only>IMPORT PRIORITY<select id="supplyImportGoal"><option value="price">Lowest buy price within time limit</option><option value="income">Best hauler $/hour within time limit</option><option value="speed">Fastest supply rate</option></select></label><label><span id="supplyExtraLabel">MAX EXTRA TIME</span><select id="supplyExtra"><option value="0">Direct import only</option><option value="10">10% extra</option><option value="20" selected>20% extra</option><option value="35">35% extra</option><option value="50">50% extra</option></select></label><label>START CAPITAL · $<input id="supplyCapital" type="number" min="0" step="1" inputmode="numeric" placeholder="Show capital required"></label><label>DELIVERY QUANTITY<input id="supplyQuantity" type="number" min="1" step="1" inputmode="numeric" placeholder="Full hold within RHW limits"></label><label class="supply-check" data-export-only hidden><input id="supplyBackhaul" type="checkbox" checked>Find profitable return cargo</label><label class="supply-check"><input id="supplyPobs" type="checkbox" checked><span id="supplyPobsLabel">Include POB sellers</span></label><label class="supply-check"><input id="supplyRestrictedPobs" type="checkbox">Include approval-only POBs · conditional quotes</label></div><p id="supplySettingsCopy"></p></details><div class="supply-actions"><button type="submit" id="supplySearch">CALCULATE IMPORT ROUTE</button><button type="button" id="supplyRefresh">REFRESH MARKETS</button><button type="button" id="supplyCancel" hidden>CANCEL SEARCH</button></div></form><p id="supplySource" class="supply-source"></p><p id="supplyStatus" role="status" aria-live="polite"></p><div id="supplyResults"></div></div>`;
+    <div class="supply-content"><p class="supply-source">Find the best route across available IDs, then see which IDs work with the recommended ship. Keep one ID for the whole trip. Ship and ID purchase costs are excluded.</p><form id="supplyForm"><div class="supply-fields supply-main-fields"><label>TRADE MODE<select id="supplyMode"><option value="supply">IMPORT</option><option value="export">EXPORT</option></select></label><label>COMMODITY<select id="supplyCommodity"></select></label><label>SHIP<select id="supplyShip"></select></label></div><details class="supply-settings"><summary id="supplySettingsTitle">IMPORT SETTINGS</summary><div class="supply-fields"><label>LIMIT TO ID<select id="supplyIdentity"><option value="all">AUTO · All available IDs</option></select></label><label data-supply-only>IMPORT PRIORITY<select id="supplyImportGoal"><option value="price">Lowest buy price within time limit</option><option value="income">Best hauler $/hour within time limit</option><option value="speed">Fastest supply rate</option></select></label><label><span id="supplyExtraLabel">MAX EXTRA TIME</span><select id="supplyExtra"><option value="0">Direct import only</option><option value="10">10% extra</option><option value="20" selected>20% extra</option><option value="35">35% extra</option><option value="50">50% extra</option></select></label><label>START CAPITAL · $<input id="supplyCapital" type="number" min="0" step="1" inputmode="numeric" placeholder="Show capital required"></label><label>DELIVERY QUANTITY<input id="supplyQuantity" type="number" min="1" step="1" inputmode="numeric" placeholder="Full hold within RHW limits"></label><label class="supply-check" data-export-only hidden><input id="supplyBackhaul" type="checkbox" checked>Find profitable return cargo</label><label class="supply-check"><input id="supplyPobs" type="checkbox" checked><span id="supplyPobsLabel">Include POB sellers</span></label><label class="supply-check"><input id="supplyUnverified" type="checkbox">Include unverified ID / docking rules · conditional quotes</label><label class="supply-check"><input id="supplyRestrictedPobs" type="checkbox">Include approval-only POBs · conditional quotes</label></div><p id="supplySettingsCopy"></p></details><div class="supply-actions"><button type="submit" id="supplySearch">CALCULATE IMPORT ROUTE</button><button type="button" id="supplyRefresh">REFRESH MARKETS</button><button type="button" id="supplyCancel" hidden>CANCEL SEARCH</button></div></form><p id="supplySource" class="supply-source"></p><p id="supplyStatus" role="status" aria-live="polite"></p><div id="supplyResults"></div></div>`;
   document.body.append(dialog);
   $('supplyClose').addEventListener('click', () => dialog.close());
   dialog.addEventListener('close', () => {

@@ -72,14 +72,19 @@ def main():
             ship.update(tech_compat=tech, ship_packages=[{'nickname': ship['nickname'] + '_package'}])
         tractors = [{'nickname': bmm_id, 'name': 'BMM ID', 'rephacks': [{'faction_nickname': 'fc_m_grp', 'reputation': -.7, 'rep_type': 0}, {'faction_nickname': 'br_n_grp', 'reputation': .3, 'rep_type': 1}]},
                     {'nickname': junker_id, 'name': 'Junkers ID', 'rephacks': [{'faction_nickname': 'fc_m_grp', 'reputation': .3, 'rep_type': 1}, {'faction_nickname': 'br_n_grp', 'reputation': .1, 'rep_type': 1}]}]
-        idcards = {bmm_id: {'infocard': [{'phrases': [{'phrase': 'Permitted ships: Fighters, Freighters, Transports, Gunboats'}]}]},
-                   junker_id: {'infocard': [{'phrases': [{'phrase': 'Permitted ships: Fighters, Freighters, Transports, Gunboats'}]}, {'phrases': [{'phrase': 'Cannot use any Transports with more than 4,300 cargo.'}]}]}}
+        idcards = {bmm_id: {'infocard': [{'phrases': [{'phrase': 'This Bretonian Corporate ID is used by Bretonia Mining and Manufacturing employees, who:'}]}, {'phrases': [{'phrase': '- Cannot use Cruisers, Battlecruisers, or Battleships.'}]}]},
+                   junker_id: {'infocard': [{'phrases': [{'phrase': 'This Independent Quasilegal ID is used by Junkers, who:'}]}, {'phrases': [{'phrase': '- Cannot use Cruisers, Battlecruisers, Battleships, or ships with more than 4,300 cargo space.'}]}]}}
         freelancer_id = 'fixture_freelancer_id'
         tech['techchompat_by_id'][freelancer_id] = 1
         tractors.append({'nickname': freelancer_id, 'name': 'Freelancer ID', 'rephacks': tractors[1]['rephacks']})
         idcards[freelancer_id] = idcards[junker_id]
+        for identity in tractors:
+            identity['market_goods'] = [{'base_sells': True, 'price_base_sells_for': 500, 'region_name': 'BRETONIA', 'faction_nick': 'br_n_grp', 'base_name': 'Fixture Station'}]
+        neutral_id = 'dsy_license_neutral'
+        tractors.append({'nickname': neutral_id, 'name': 'Neutral ID', 'market_goods': [{'base_sells': True, 'price_base_sells_for': 10000, 'region_name': 'VIRTUAL SYSTEM', 'faction_nick': 'fc_staff', 'base_name': 'Guard Station'}], 'rephacks': tractors[0]['rephacks']})
+        idcards[neutral_id] = {'infocard': [{'phrases': [{'phrase': 'Allowed ships: Fighters, Freighters, Transports, Gunboats'}]}, {'phrases': [{'phrase': 'This ID can only be given by an Admin and may not be transferred or replaced without Admin permission.'}]}]}
         fixture = {'pobs': [pob, express_pob, export_buyer], 'commodities': commodities, 'ships': ships,
-                   'npc_bases': [{'nickname': 'trafalgar', 'faction_nickname': 'br_n_grp'}, {'nickname': 'molly', 'faction_nickname': 'fc_m_grp'}],
+                   'npc_bases': [{'nickname': 'trafalgar', 'faction_nick': 'br_n_grp'}, {'nickname': 'molly', 'faction_nick': 'fc_m_grp'}, {'nickname': 'waterloo', 'faction_nick': 'br_n_grp'}, {'nickname': 'oder', 'faction_nick': 'br_n_grp'}],
                    'factions': [], 'tractors': tractors, 'idcards': idcards}
         script = "<script>window.supplyFixture=" + json.dumps(fixture) + ";window.supplyNav=" + json.dumps(nav) + ";window.supplyRequests=[];const originalFetch=window.fetch;window.fetch=(url,options)=>{const u=String(url);if(u.includes('/api/')){const key=u.split('/api/')[1].split('?')[0];supplyRequests.push(key);if(window.supplyOffline)return Promise.reject(Error('Fixture offline'));const response=key==='infocards'?JSON.parse(options.body).map(id=>supplyFixture.idcards[id]||{error:'missing'}):supplyFixture[key]||[];return Promise.resolve(new Response(JSON.stringify(response),{status:200}));}if(u.includes('/assets/navigation.json.gz'))return Promise.resolve(new Response(JSON.stringify(supplyNav),{status:200}));return originalFetch(url,options);};</script>"
         markup = base.document('command/production').replace('<head>', '<head>' + script, 1)
@@ -200,7 +205,7 @@ def main():
         base.ev(cdp, "(()=>{supplyCommodity.value='Wildcat Gold';supplyCommodity.dispatchEvent(new Event('change',{bubbles:true}));supplyShip.value='auto';supplySearch.click();return true})()")
         wait_for(cdp, "!supplySearch.disabled && !!document.querySelector('.supply-result [data-compatible-identity]')")
         identity_result = base.ev(cdp, "(()=>({first:document.querySelector('.supply-result').innerText,compatible:[...document.querySelectorAll('.supply-result:first-child .supply-id-tags>span')].map(n=>n.dataset.compatibleIdentity),idFilter:supplyIdentity.value,goal:supplyImportGoal.value,idInAdvanced:!!supplyIdentity.closest('.supply-settings'),mainFields:document.querySelectorAll('.supply-main-fields select').length,panel:!!document.querySelector('.supply-identity-comparison')}))()")
-        if 'Small Transport' not in identity_result['first'] or 'Dublin Molly Test Base' not in identity_result['first'] or sorted(identity_result['compatible']) != sorted([junker_id, freelancer_id]) or identity_result['idFilter'] != 'all' or identity_result['goal'] != 'price' or not identity_result['idInAdvanced'] or identity_result['mainFields'] != 3 or identity_result['panel']:
+        if 'Small Transport' not in identity_result['first'] or 'Dublin Molly Test Base' not in identity_result['first'] or sorted(identity_result['compatible']) != sorted([junker_id, freelancer_id]) or identity_result['idFilter'] != 'all' or identity_result['goal'] != 'price' or not identity_result['idInAdvanced'] or identity_result['mainFields'] != 3 or identity_result['panel'] or 'Neutral ID' in identity_result['first'] or 'CONDITIONAL ID' in identity_result['first']:
             raise RuntimeError(f'Default route-first search must recommend the closer allowed hauler and show all compatible IDs without a preceding ID panel: {identity_result}')
         for width in [360, 390, 1440]:
             cdp.call('Emulation.setDeviceMetricsOverride', {'width': width, 'height': 1000, 'deviceScaleFactor': 1, 'mobile': width < 760})
