@@ -3,6 +3,7 @@
 import solver from './core/vendor/lp-solver.mjs';
 import { makeLeg, simulate, volumeFor, validateDataset } from './core/trade.mjs';
 import { Navigator } from './core/navigation.mjs';
+import { trimRouteCache } from './return-planner.mjs';
 
 export const normalize = value => String(value ?? '').toLowerCase().replace(/platings\b/g, 'plating').replace(/[^a-z0-9]+/g, ' ').trim();
 const finite = value => typeof value === 'number' && Number.isFinite(value);
@@ -202,6 +203,7 @@ export async function searchSupply(dataset, navigation, profiles, options = {}, 
     checked++;
     const visited = [...new Set(legs.flatMap(leg => [leg.source, leg.target]))].map(id => byId.get(id));
     const travel = legs.map(leg => navigator.route(leg.source, leg.target));
+    trimRouteCache(navigator, [rhw.id]);
     if (travel.some(route => !route)) return null;
     const quote = quoteSupply(legs, visited, profile, budget);
     if (!quote || extraStop && !quote.quantities.at(-2)) return null;
@@ -264,6 +266,7 @@ export async function searchSupply(dataset, navigation, profiles, options = {}, 
       for (const candidate of hops.slice(0, 32)) {
         if (!withinBudget()) { timedOut = true; break; }
         const middle = navigator.route(candidate.hop.id, supplier.base.id);
+        trimRouteCache(navigator, [rhw.id, supplier.base.id]);
         if (!middle || candidate.approach + middle.seconds + inbound.seconds + 4 * settings.dock > maxSeconds) continue;
         const originLegs = [empty(rhw.id, candidate.hop.id), ...bestTrades(rhw, candidate.hop, commodity.id, profile, 2).map(item => item.leg)];
         for (const first of originLegs) evaluate([first, candidate.leg, supplier.leg], navigator, profile, true);

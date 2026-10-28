@@ -35,12 +35,15 @@ def main():
                   'min_stock': 0, 'max_stock': 20000, 'price': 100, 'sell_price': 150, 'volume': 1, 'original_volume': 1} for i, name in enumerate(names)]
         goods[1].update(nickname='ablative', quantity=0, volume=2, original_volume=2)
         pob = {'nickname': 'rhw', 'name': 'Resolution Heavy Works', 'system_nickname': 'br01', 'system_name': 'New London',
+               'defense_mode': 1, 'faction_nickname': 'br_n_grp',
                'base_pos': [0, 0, 0], 'money': 100000000, 'cargospace': 1000000, 'health': 24000000, 'shop_items': goods}
         express_pob = {'nickname': 'corporate', 'name': 'Corporate Shipping Airways', 'system_nickname': 'br01', 'system_name': 'New London',
+                       'defense_mode': 1, 'faction_nickname': 'br_n_grp',
                        'base_pos': [25000, 0, 0], 'money': 10000000, 'cargospace': 1000000,
                        'shop_items': [{'nickname': 'ablative', 'name': 'Ablative Armor Plating', 'category': 'commodity', 'quantity': 10000,
                                        'min_stock': 0, 'max_stock': 20000, 'price': 180, 'sell_price': 1, 'volume': 2, 'original_volume': 2}]}
         export_buyer = {'nickname': 'buyer', 'name': 'Buyer Works', 'system_nickname': 'br01', 'system_name': 'New London',
+                        'defense_mode': 1, 'faction_nickname': 'br_n_grp',
                         'base_pos': [90000, 0, 0], 'money': 1000, 'cargospace': 10000,
                         'shop_items': [{'nickname': 'fixture_3', 'name': 'Gold', 'category': 'commodity', 'quantity': 0,
                                         'min_stock': 0, 'max_stock': 10000, 'price': 9999, 'sell_price': 200, 'volume': 1, 'original_volume': 1},
@@ -53,15 +56,28 @@ def main():
             {'nickname': 'ablative', 'name': 'Ablative Armor Plating', 'volume': 2,
              'market_goods': [market('oder', 'Oder Shipyard', [300000, 0, 0], 100, 150, 2)]},
             {'nickname': 'alloy', 'name': 'Super Alloy', 'volume': 1,
-             'market_goods': [market('waterloo', 'Waterloo Station', [150000, 0, 0], 10, 10, 1), market('oder', 'Oder Shipyard', [300000, 0, 0], 100, 50, 1)]}
+             'market_goods': [market('waterloo', 'Waterloo Station', [150000, 0, 0], 10, 10, 1), market('oder', 'Oder Shipyard', [300000, 0, 0], 100, 50, 1)]},
+            {'nickname': 'fixture_4', 'name': 'Wildcat Gold', 'volume': 1,
+             'market_goods': [market('trafalgar', 'Trafalgar Test Base', [600000, 0, 0], 60, 5, 1), market('molly', 'Dublin Molly Test Base', [8000, 0, 0], 10, 5, 1)]}
         ]
-        nav = {'schema': 1, 'nodes': [{'id': name, 'system': 'br01', 'pos': [pos, 0, 0], 'kind': 'base', 'allows': ['medium', 'large', 'berth']} for name, pos in [('rhw', 0), ('waterloo', 150000), ('oder', 300000), ('corporate', 25000), ('buyer', 90000)]],
-               'baseNodes': {'rhw': 'rhw', 'waterloo': 'waterloo', 'oder': 'oder', 'corporate': 'corporate', 'buyer': 'buyer'},
-               'links': [{'from': a, 'to': b, 'kind': 'lane', 'speed': 2500} for a, b in [('rhw', 'waterloo'), ('waterloo', 'rhw'), ('waterloo', 'oder'), ('oder', 'waterloo'), ('rhw', 'corporate'), ('corporate', 'rhw')]]}
-        ships = [{'nickname': 'dsy_advanced_train', 'name': 'Advanced Train', 'hold_size': 5000, 'cruise_speed': 350, 'dock_type': 2},
-                 {'nickname': 'pilgrim_liner', 'name': 'Pilgrim Liner', 'hold_size': 4300, 'cruise_speed': 415, 'dock_type': 3}]
-        fixture = {'pobs': [pob, express_pob, export_buyer], 'commodities': commodities, 'ships': ships, 'npc_bases': [], 'factions': [], 'tractors': []}
-        script = "<script>window.supplyFixture=" + json.dumps(fixture) + ";window.supplyNav=" + json.dumps(nav) + ";window.supplyRequests=[];const originalFetch=window.fetch;window.fetch=(url,options)=>{const u=String(url);if(u.includes('/api/')){const key=u.split('/api/')[1].split('?')[0];supplyRequests.push(key);if(window.supplyOffline)return Promise.reject(Error('Fixture offline'));return Promise.resolve(new Response(JSON.stringify(supplyFixture[key]||[]),{status:200}));}if(u.includes('/assets/navigation.json.gz'))return Promise.resolve(new Response(JSON.stringify(supplyNav),{status:200}));return originalFetch(url,options);};</script>"
+        nav = {'schema': 1, 'nodes': [{'id': name, 'system': 'br01', 'pos': [pos, 0, 0], 'kind': 'base', 'allows': ['medium'] if name == 'molly' else ['medium', 'large', 'berth']} for name, pos in [('rhw', 0), ('waterloo', 150000), ('oder', 300000), ('corporate', 25000), ('buyer', 90000), ('molly', 8000), ('trafalgar', 600000)]],
+               'baseNodes': {name: name for name in ['rhw', 'waterloo', 'oder', 'corporate', 'buyer', 'molly', 'trafalgar']},
+               'links': [{'from': a, 'to': b, 'kind': 'lane', 'speed': 2500} for a, b in [('rhw', 'waterloo'), ('waterloo', 'rhw'), ('waterloo', 'oder'), ('oder', 'waterloo'), ('rhw', 'corporate'), ('corporate', 'rhw'), ('rhw', 'molly'), ('molly', 'rhw'), ('rhw', 'trafalgar'), ('trafalgar', 'rhw')]]}
+        bmm_id, junker_id = 'dsy_license_br_m_grp', 'dsy_license_fc_j_grp'
+        tech = {'techchompat_by_id': {bmm_id: 1, junker_id: 1}}
+        ships = [{'nickname': 'dsy_advanced_train', 'name': 'Advanced Train', 'class': 9, 'type': 'freighter', 'hold_size': 5000, 'cruise_speed': 350, 'dock_type': 2},
+                 {'nickname': 'pilgrim_liner', 'name': 'Pilgrim Liner', 'class': 10, 'type': 'freighter', 'hold_size': 4300, 'cruise_speed': 415, 'dock_type': 3},
+                 {'nickname': 'small_transport', 'name': 'Small Transport', 'class': 6, 'type': 'freighter', 'hold_size': 3600, 'cruise_speed': 500, 'dock_type': 2}]
+        for ship in ships:
+            ship.update(tech_compat=tech, ship_packages=[{'nickname': ship['nickname'] + '_package'}])
+        tractors = [{'nickname': bmm_id, 'name': 'BMM ID', 'rephacks': [{'faction_nickname': 'fc_m_grp', 'reputation': -.7, 'rep_type': 0}, {'faction_nickname': 'br_n_grp', 'reputation': .3, 'rep_type': 1}]},
+                    {'nickname': junker_id, 'name': 'Junkers ID', 'rephacks': [{'faction_nickname': 'fc_m_grp', 'reputation': .3, 'rep_type': 1}, {'faction_nickname': 'br_n_grp', 'reputation': .1, 'rep_type': 1}]}]
+        idcards = {bmm_id: {'infocard': [{'phrases': [{'phrase': 'Permitted ships: Fighters, Freighters, Transports, Gunboats'}]}]},
+                   junker_id: {'infocard': [{'phrases': [{'phrase': 'Permitted ships: Fighters, Freighters, Transports, Gunboats'}]}, {'phrases': [{'phrase': 'Cannot use any Transports with more than 4,300 cargo.'}]}]}}
+        fixture = {'pobs': [pob, express_pob, export_buyer], 'commodities': commodities, 'ships': ships,
+                   'npc_bases': [{'nickname': 'trafalgar', 'faction_nickname': 'br_n_grp'}, {'nickname': 'molly', 'faction_nickname': 'fc_m_grp'}],
+                   'factions': [], 'tractors': tractors, 'idcards': idcards}
+        script = "<script>window.supplyFixture=" + json.dumps(fixture) + ";window.supplyNav=" + json.dumps(nav) + ";window.supplyRequests=[];const originalFetch=window.fetch;window.fetch=(url,options)=>{const u=String(url);if(u.includes('/api/')){const key=u.split('/api/')[1].split('?')[0];supplyRequests.push(key);if(window.supplyOffline)return Promise.reject(Error('Fixture offline'));const response=key==='infocards'?JSON.parse(options.body).map(id=>supplyFixture.idcards[id]||{error:'missing'}):supplyFixture[key]||[];return Promise.resolve(new Response(JSON.stringify(response),{status:200}));}if(u.includes('/assets/navigation.json.gz'))return Promise.resolve(new Response(JSON.stringify(supplyNav),{status:200}));return originalFetch(url,options);};</script>"
         markup = base.document('command/production').replace('<head>', '<head>' + script, 1)
         base.load_document(cdp, target['id'], markup, origin)
         wait_for(cdp, "document.documentElement.dataset.v40Ready==='true' && !!document.querySelector('.production-card [data-supply-commodity=\"Ablative Armor Plating\"]')")
@@ -175,9 +191,27 @@ def main():
         wait_for(cdp, "!supplySearch.disabled && supplyCommodity.value==='Gold'")
         if base.ev(cdp, "[...supplyCommodity.options].some(o=>o.value==='Ablative Armor Plating')"):
             raise RuntimeError('Export mode must restore its own last selection and hide import-only goods')
+        base.ev(cdp, "(()=>{supplyMode.value='supply';supplyMode.dispatchEvent(new Event('change',{bubbles:true}));return true})()")
+        wait_for(cdp, "!supplySearch.disabled")
+        base.ev(cdp, "(()=>{supplyCommodity.value='Wildcat Gold';supplyCommodity.dispatchEvent(new Event('change',{bubbles:true}));supplyIdentity.value='compare';supplyIdentity.dispatchEvent(new Event('change',{bubbles:true}));return true})()")
+        wait_for(cdp, "!supplySearch.disabled && !!document.querySelector('.supply-identity-comparison')")
+        identity_result = base.ev(cdp, "(()=>({first:document.querySelector('.supply-result').innerText,comparison:document.querySelector('.supply-identity-comparison').innerText,ids:supplyIdentity.options.length}))()")
+        if 'Junkers ID' not in identity_result['first'] or 'Small Transport' not in identity_result['first'] or 'Dublin Molly Test Base' not in identity_result['first'] or 'Advanced Train' not in identity_result['comparison'] or identity_result['ids'] != 3:
+            raise RuntimeError(f'ID comparison must find the closer source with a smaller allowed ship and retain the BMM comparison: {identity_result}')
+        for width in [360, 390, 1440]:
+            cdp.call('Emulation.setDeviceMetricsOverride', {'width': width, 'height': 1000, 'deviceScaleFactor': 1, 'mobile': width < 760})
+            if base.ev(cdp, "rhwSupplyDialog.scrollWidth>rhwSupplyDialog.clientWidth+1"):
+                raise RuntimeError(f'ID comparison overflows at {width}px')
+            base.ev(cdp, "document.querySelector('.supply-identity-comparison').scrollIntoView({block:'start',behavior:'instant'})")
+            shot = cdp.call('Page.captureScreenshot', {'format': 'png'})
+            (out / f'identity-comparison-{width}.png').write_bytes(base64.b64decode(shot['data']))
+        base.ev(cdp, "document.querySelector('[data-use-identity=\"dsy_license_fc_j_grp\"]').click()")
+        wait_for(cdp, "!supplySearch.disabled && supplyIdentity.value==='dsy_license_fc_j_grp' && supplyShip.value==='ship:small_transport'")
+        if not base.ev(cdp, "supplyShip.querySelector('[value=\"ship:dsy_advanced_train\"]').disabled && supplyResults.innerText.includes('Dublin Molly Test Base')"):
+            raise RuntimeError('Selecting the alternative must keep its ID and real permitted ship, and disable the illegal 5k hull')
         base.ev(cdp, "supplyClose.click()")
         wait_for(cdp, "!rhwSupplyDialog.open && document.activeElement.classList.contains('header-trade-button')", 3)
-        print('Trade Desk browser passed: supply/express regression, export POB funds, limits and access, header launch/refresh, mode switch, POB OFF, focus and 360/390/1440px layouts.')
+        print('Trade Desk browser passed: import/export regressions, POB limits, ID+ship comparison, smaller permitted hauler, illegal hull disabled, mode switch, POB OFF, focus and 360/390/1440px layouts.')
     finally:
         if cdp:
             cdp.close()
