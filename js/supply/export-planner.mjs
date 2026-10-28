@@ -9,7 +9,8 @@ export { quoteExport } from './export-quote.mjs';
 
 const finite = value => typeof value === 'number' && Number.isFinite(value);
 const pause = () => new Promise(resolve => setTimeout(resolve, 0));
-const order = (a, b) => b.hourlyProfit - a.hourlyProfit || b.profit - a.profit || a.seconds - b.seconds;
+const order = (a, b) => Number(a.identityState === 'conditional') - Number(b.identityState === 'conditional')
+  || b.hourlyProfit - a.hourlyProfit || b.profit - a.profit || a.seconds - b.seconds;
 
 export function rankExportRoutes(routes, limit = 5) {
   const profitable = routes.filter(route => route.profit > 1e-6 && (route.outboundProfit ?? route.profit) >= -1e-6);
@@ -43,20 +44,22 @@ export async function searchExports(dataset, navigation, profiles, options = {},
   const extraPercent = Math.min(50, Math.max(0, Number(options.extraPercent ?? 20) || 0));
   const directLimit = returnEnabled ? timeLimit * .6 : timeLimit;
   let checked = 0, buyers = 0, ships = 0, timedOut = false, pruned = false, directStopped = false, returnChecked = 0;
-  for (const profile of profiles.slice(0, 6)) {
+  for (const profile of profiles.slice(0, options.profileLimit || 6)) {
     if (canceled()) break;
     if (performance.now() - started >= directLimit) { pruned = true; break; }
     const navigator = new Navigator(navigation, bases, profile, settings), outward = navigator.from(rhw.id);
     if (!outward) continue;
     navigators.set(profile.id, navigator); ships++;
     const candidates = bases.filter(base => base.id !== rhw.id).flatMap(base => {
+      const identityState = options.routeEligibility?.(profile, [rhw.id, base.id]);
+      if (identityState === 'blocked') return [];
       const quote = quoteExport(rhw, base, commodity.id, profile, options);
       const seconds = outward.times.get(navigator.baseNodes.get(base.id));
       if (!quote || !finite(seconds)) return [];
-      return [{ base, quote, estimate: quote.profit * 3600 / Math.max(1, 2 * seconds + 3 * settings.dock) }];
+      return [{ base, quote, identityState, estimate: quote.profit * 3600 / Math.max(1, 2 * seconds + 3 * settings.dock) }];
     }).sort((a, b) => b.estimate - a.estimate);
     buyers += candidates.length;
-    for (const { base, quote } of candidates) {
+    for (const { base, quote, identityState } of candidates) {
       if (canceled()) break;
       if (performance.now() - started >= directLimit) { directStopped = true; pruned = true; break; }
       checked++;
@@ -66,7 +69,7 @@ export async function searchExports(dataset, navigation, profiles, options = {},
       if (!outbound || !inbound) continue;
       const seconds = outbound.seconds + inbound.seconds + 3 * settings.dock;
       if (!(seconds > 0)) continue;
-      routes.push({ ...quote, ship: profile, seconds, deliverySeconds: outbound.seconds + 2 * settings.dock,
+      routes.push({ ...quote, ...(identityState ? { identityState } : {}), ship: profile, seconds, deliverySeconds: outbound.seconds + 2 * settings.dock,
         jumps: outbound.jumps + inbound.jumps, unitsPerHour: quote.delivered * 3600 / seconds,
         hourlyProfit: quote.profit * 3600 / seconds, stops: [rhw.id, base.id, rhw.id], outboundProfit: quote.profit,
         legs: [quote.leg, { source: base.id, target: rhw.id, good: null, name: 'Empty return', volume: 0, margin: 0 }],
@@ -91,7 +94,8 @@ export async function searchExports(dataset, navigation, profiles, options = {},
         if (performance.now() - started >= timeLimit) { timedOut = true; break; }
         returnChecked++;
         const quoted = quoteExportReturn(route, candidate, byId, route.ship, navigator, settings, { ...options, extraPercent });
-        if (quoted && (!paid || order(quoted, paid) < 0)) paid = quoted;
+        if (quoted && (route.identityState !== 'checked' || quoted.identityState !== 'conditional')
+          && (!paid || order(quoted, paid) < 0)) paid = quoted;
         if (quoted && order(quoted, best) < 0) best = quoted;
         if (returnChecked % 8 === 0) { progress({ phase: 'return', checked: checked + returnChecked }); await pause(); }
       }
