@@ -220,7 +220,7 @@ def main() -> int:
                     quantity:parseFloat(getComputedStyle(document.querySelector('.overview-row-qty')).fontSize),
                     kpi:parseFloat(getComputedStyle(document.querySelector('.base-telemetry-stat strong')).fontSize),
                     header:r(document.querySelector('.command-header')),headerInner:r(document.querySelector('.command-header-inner')),
-                    crest:r(document.querySelector('.crest-frame')),brand:r(document.querySelector('.brand-copy')),operations:r(document.querySelector('.header-operations'))};
+                    crest:r(document.querySelector('.crest-frame')),crestImage:r(document.querySelector('.crest')),brand:r(document.querySelector('.brand-copy')),operations:r(document.querySelector('.header-operations'))};
                 })()""")
                 if geometry['overflow']>2 or geometry['scrollDeck']>2 or len(geometry['cards'])!=5 or not geometry['labelsFit'] or geometry['contentOverflow']:
                     layout_failures.append(f'Inventory overflow at {width}px: {geometry}')
@@ -231,6 +231,9 @@ def main() -> int:
                     crest,header,inner,brand,operations=[geometry[k] for k in ['crest','header','headerInner','brand','operations']]
                     if abs((crest['left']+crest['right'])/2-(inner['left']+inner['right'])/2)>2 or abs(brand['left']-inner['left'])>2 or crest['top']<header['top']-1 or crest['bottom']>header['bottom']+1 or crest['height']<header['height']-8 or brand['right']>crest['left'] or crest['right']>operations['left']:
                         layout_failures.append(f'Centered crest must fill the existing header without overlapping text/actions at {width}px: {geometry}')
+                    crest_image=geometry['crestImage']
+                    if crest_image['top']<crest['top']-1 or crest_image['bottom']>crest['bottom']+1 or crest_image['height']<crest['height']-2:
+                        layout_failures.append(f'Crest image must fit fully inside its header frame at {width}px: {geometry}')
                 if width>=1200:
                     if max(c['top'] for c in cards[:3])-min(c['top'] for c in cards[:3])>2 or cards[0]['height']>=cards[1]['height'] or cards[3]['top']<max(c['bottom'] for c in cards[:3])-2:
                         layout_failures.append(f'Inventory row sizing at {width}px: {geometry}')

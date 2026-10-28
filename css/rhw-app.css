@@ -5161,7 +5161,7 @@ html.rhw-focus-pass .command-brand { display: contents; }
 html.rhw-focus-pass .brand-copy { grid-column: 1;grid-row: 1; }
 html.rhw-focus-pass .header-operations { grid-column: 3;grid-row: 1;width: min(390px,100%);justify-self: end; }
 html.rhw-focus-pass .command-header-inner .crest-frame { position: absolute;grid-column: 1 / -1;grid-row: 1;top: -22px;bottom: -22px;left: 50%;width: clamp(200px,18vw,270px);min-height: 0;transform: translateX(-50%);border: 0; }
-html.rhw-focus-pass .command-header-inner .crest { display: block;width: 100%;height: 100%;max-height: 100%;object-fit: contain; }
+html.rhw-focus-pass .command-header-inner .crest { position: absolute;inset: 0;display: block;width: 100%;height: 100%;max-height: 100%;object-fit: contain; }
 html.rhw-focus-pass .command-header-inner .crest-frame::before { width: 100%;height: 100%; }
 html.rhw-focus-pass .base-telemetry-bar { max-width: 100%; }
 html.rhw-focus-pass .base-telemetry-stat strong { font-size: clamp(18px,1.6vw,24px); }

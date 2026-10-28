@@ -31,4 +31,3 @@ export function quoteExport(source, target, commodity, profile, { capital = null
       space: target.space, storagePerUnit: leg.targetVolume, price: leg.sell },
     availableAtRhw: source.kind === 'pob' ? whole(from.stock - from.min) : null };
 }
-
