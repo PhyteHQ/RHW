@@ -43,7 +43,9 @@ def main():
         export_buyer = {'nickname': 'buyer', 'name': 'Buyer Works', 'system_nickname': 'br01', 'system_name': 'New London',
                         'base_pos': [90000, 0, 0], 'money': 1000, 'cargospace': 10000,
                         'shop_items': [{'nickname': 'fixture_3', 'name': 'Gold', 'category': 'commodity', 'quantity': 0,
-                                        'min_stock': 0, 'max_stock': 10000, 'price': 9999, 'sell_price': 200, 'volume': 1, 'original_volume': 1}]}
+                                        'min_stock': 0, 'max_stock': 10000, 'price': 9999, 'sell_price': 200, 'volume': 1, 'original_volume': 1},
+                                       {'nickname': 'fixture_6', 'name': 'MOX', 'category': 'commodity', 'quantity': 50,
+                                        'min_stock': 10, 'max_stock': 10000, 'price': 1, 'sell_price': 1, 'volume': 1, 'original_volume': 1}]}
         def market(base_id, name, pos, buy, sell, volume):
             return {'base_nickname': base_id, 'base_name': name, 'system_nick': 'br01', 'system_name': 'New London',
                     'base_pos': pos, 'base_sells': True, 'price_base_sells_for': buy, 'price_base_buys_for': sell, 'volume': volume}
@@ -133,9 +135,15 @@ def main():
         wait_for(cdp, "document.querySelector('#exportList [data-export-commodity=\"Gold\"]')?.getClientRects().length>0")
         base.ev(cdp, "document.querySelector('#exportList [data-export-commodity=\"Gold\"]').click()")
         wait_for(cdp, "document.getElementById('supplyMode').value==='export' && !document.getElementById('supplySearch').disabled && document.querySelectorAll('.supply-result').length>0")
-        exported = base.ev(cdp, "(()=>({text:supplyResults.innerText,quantity:document.querySelector('.supply-metrics strong')?.textContent,buyer:document.querySelector('.supply-result h3')?.textContent,reason:document.querySelector('.supply-ship-note')?.textContent,extraHidden:document.querySelector('[data-supply-only]').hidden,access:document.querySelector('.supply-access-note')?.textContent}))()")
-        if exported['quantity'] != '5' or exported['buyer'] != 'Buyer Works' or 'Buyer funds' not in exported['reason'] or not exported['extraHidden'] or '$500' not in exported['text'] or 'owner permissions' not in exported['access']:
+        exported = base.ev(cdp, "(()=>({text:supplyResults.innerText,quantity:document.querySelector('.supply-metrics strong')?.textContent,buyer:document.querySelector('.supply-result h3')?.textContent,reason:document.querySelector('.supply-ship-note')?.textContent,backhaulVisible:!document.querySelector('[data-export-only]').hidden,groups:[...supplyCommodity.querySelectorAll('optgroup')].map(g=>g.label),access:document.querySelector('.supply-access-note')?.textContent,backhaul:document.querySelector('.supply-return-cargo')?.textContent}))()")
+        if exported['quantity'] != '5' or exported['buyer'] != 'Buyer Works' or 'Buyer funds' not in exported['reason'] or not exported['backhaulVisible'] or '$500' not in exported['text'] or 'owner permissions' not in exported['access'] or len(exported['groups']) != 2 or not exported['groups'][0].startswith('EXPORT') or '40 MOX' not in (exported['backhaul'] or ''):
             raise RuntimeError(f'Export quote must honor POB funds and distinguish revenue/profit/access: {exported}')
+        base.ev(cdp, "(()=>{supplyBackhaul.checked=false;supplySearch.click();return true})()")
+        wait_for(cdp, "!supplySearch.disabled && supplyResults.dataset.stale==='false'")
+        if base.ev(cdp, "!!document.querySelector('.supply-return-cargo') || !supplyResults.innerText.includes('Return cargo is disabled')"):
+            raise RuntimeError('Return cargo OFF must reproduce the empty-return comparison')
+        base.ev(cdp, "(()=>{supplyBackhaul.checked=true;supplySearch.click();return true})()")
+        wait_for(cdp, "!supplySearch.disabled && !!document.querySelector('.supply-return-cargo')")
         for width in [360, 390, 1440]:
             cdp.call('Emulation.setDeviceMetricsOverride', {'width':width,'height':900,'deviceScaleFactor':1,'mobile':width<760})
             geometry = base.ev(cdp, "(()=>({overflow:rhwSupplyDialog.scrollWidth>rhwSupplyDialog.clientWidth+1,minimum:Math.min(...[...document.querySelectorAll('.supply-buyer-grid>div')].map(e=>e.getBoundingClientRect().width))}))()")
@@ -157,6 +165,8 @@ def main():
             raise RuntimeError('POB OFF must also exclude export buyers')
         base.ev(cdp, "(()=>{supplyMode.value='supply';supplyMode.dispatchEvent(new Event('change',{bubbles:true}));return true})()")
         wait_for(cdp, "!supplySearch.disabled && supplySearch.textContent==='CALCULATE SUPPLY ROUTE'")
+        if not base.ev(cdp, "supplyCommodity.querySelector('optgroup').label.startsWith('IMPORT') && supplyCommodity.value==='Gold'"):
+            raise RuntimeError('Mode switching must reorder commodity groups without changing the selected good')
         base.ev(cdp, "supplyClose.click()")
         wait_for(cdp, "!rhwSupplyDialog.open && document.activeElement.classList.contains('header-trade-button')", 3)
         print('Trade Desk browser passed: supply/express regression, export POB funds, limits and access, header launch/refresh, mode switch, POB OFF, focus and 360/390/1440px layouts.')

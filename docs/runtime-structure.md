@@ -114,16 +114,35 @@ buyer searches. Force Uplink is always visible in the connection panel, outside
 its optional details. Additive recipe stocks use one full-name row per option;
 their quantities and consumption order are unchanged.
 
-`js/supply/export-planner.mjs` quotes direct RHW → buyer → RHW runs with an empty
-return. RHW BASE SELLS is the pilot purchase cost; the destination BASE BUYS is
-the payout. Whole-unit loads respect RHW stock above its reserve, ship-specific
-volume, pilot capital, buyer purchase room, cash and original-volume storage.
-The shared transaction simulator checks every quote. Missing POB resource data
-excludes that quote. Rank positive full-round-trip $/hour first and show each
-destination once with its best ship. Loss-only markets have no recommendation;
-RHW sale receipts are explicitly revenue before manufacturing cost. NPC buyers
-remain eligible. Physical docking, BMM ID exclusions, unknown personal access,
-snapshot provenance and cancellation share the existing supply contracts.
+`js/supply/export-planner.mjs` first fixes each export load using the exact
+whole-unit accounting in `export-quote.mjs`. RHW BASE SELLS is the pilot purchase
+cost; destination BASE BUYS is the payout. Stock reserves, ship volume, pilot
+capital, buyer purchase room, cash and original-volume storage apply.
+`return-planner.mjs` then considers profitable backhaul from the export buyer or
+one pickup stop, selling to RHW or one other buyer in its home system. Extra
+flight and docking time must fit the selected allowance; zero permits direct
+backhaul at the existing stops. The outbound export quantity and delivery ETA
+never decrease or get financed by a later return trade. Post-export cash,
+storage and stocks are used, and the shared simulator verifies the entire tour.
+Unspecified capital displays the actual start investment needed for both trades;
+an entered budget is binding throughout the tour. The export commodity itself
+cannot be re-imported as backhaul. A losing export cannot gain a recommendation
+by hiding its loss behind return profit.
+
+Search reserves time for backhaul, diversifies a bounded return shortlist and
+reports pruning/time limits. Per buyer, prefer the best complete $/hour and
+retain a comparison when paid backhaul would lower that rate. The UI separates
+export revenue, export margin and return margin; empty returns have a reason.
+The return-cargo checkbox restores the direct empty-return comparison.
+`commodity-groups.mjs` partitions the selector into import and export roles,
+putting the active mode's group first while preserving the selected commodity.
+NPC markets, physical docking, BMM ID exclusions, unknown personal access,
+snapshot provenance and cancellation retain the existing supply contracts.
+
+On wide desktop headers, the wordmark occupies the left column and the crest
+is centered absolutely inside a reserved middle column. Its height follows the
+existing header bounds, so the primary navigation is not pushed down. Narrower
+layouts keep the compact crest and accessible header actions.
 
 `js/command/supply-routes.js` owns compact, labelled route icons beside commodity
 names and the lazy dialog entry. Their SVGs are decorative; the buttons carry

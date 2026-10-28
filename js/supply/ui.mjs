@@ -3,6 +3,7 @@ import { validateNavigation } from './core/navigation.mjs';
 import { FALLBACK_SHIPS, normalizeShipRegistry } from './ship-profiles.mjs';
 import { dockingAccess, BMM_ID } from './access.mjs';
 import { normalize, findRhw } from './planner.mjs';
+import { commodityGroups } from './commodity-groups.mjs';
 
 const API = 'https://darkstat.dd84ai.com/api/';
 const CACHE = 'rhw-supply-market-v1';
@@ -16,15 +17,25 @@ let dialog, context, worker, abort, request = 0, prepared = null, result = null,
 const $ = id => dialog.querySelector('#' + id);
 const exporting = () => $('supplyMode').value === 'export';
 
-function updateMode() {
+function commodityOptions(selected) {
+  const names = [...new Set([context.commodity, ...context.commodities].filter(Boolean))];
+  $('supplyCommodity').innerHTML = commodityGroups(names, context.exportCommodities, $('supplyMode').value)
+    .map(group => `<optgroup label="${esc(group.label)}">${group.names.map(name => `<option value="${esc(name)}">${esc(name)}</option>`).join('')}</optgroup>`).join('');
+  $('supplyCommodity').value = names.includes(selected) ? selected : names[0];
+}
+function updateMode(selected = $('supplyCommodity').value) {
   const out = exporting();
+  commodityOptions(selected);
   dialog.querySelectorAll('[data-supply-only]').forEach(node => { node.hidden = out; });
+  dialog.querySelectorAll('[data-export-only]').forEach(node => { node.hidden = !out; });
+  $('supplyExtraLabel').textContent = out ? 'MAX RETURN DETOUR' : 'MAX EXTRA TIME';
+  $('supplyExtra').options[0].textContent = out ? 'No extra stops' : 'Direct supply only';
   $('supplySettingsTitle').textContent = out ? 'EXPORT SETTINGS' : 'DELIVERY SETTINGS';
   $('supplyPobsLabel').textContent = out ? 'Include POB buyers' : 'Include POB sellers';
   $('supplyQuantity').placeholder = out ? 'Full hold within stock and buyer limits' : 'Full hold within RHW limits';
   $('supplySearch').textContent = out ? 'FIND EXPORT BUYERS' : 'CALCULATE SUPPLY ROUTE';
   $('supplySettingsCopy').textContent = out
-    ? 'Compare direct exports with an empty return to RHW. Available stock above RHW’s reserve, buyer funds, purchase limits, free storage, ship volume and starting capital limit each load. The best profitable round-trip $/hour is recommended; each destination appears once with its best ship.'
+    ? 'Deliver the selected export first, then look for profitable return cargo to RHW or another buyer in New London. Return cargo may use one pickup and one delivery stop within the chosen extra-time limit. Export quantities stay fixed. Every trade respects funds, stock reserves, purchase limits, storage and your capital. The best full round-trip $/hour is recommended.'
     : 'Normal supply buys the requested material at or below RHW’s payout. Its delivery speed sets the extra-time allowance; the best $/hour within that window is recommended. Higher material prices appear separately as express options with a visible delivery loss. Every run starts and ends at RHW.';
 }
 
@@ -203,21 +214,31 @@ function renderExports() {
     return;
   }
   $('supplyResults').innerHTML = result.results.map(route => {
-    const buyer = route.buyer, access = prepared.access.byId[buyer.id];
+    const buyer = route.buyer, back = route.returnTrade;
+    const exportLoss = (route.outboundProfit ?? route.profit) < 0;
+    const warnings = [...new Set(route.stops)].filter(id => id !== result.origin && prepared.access.byId[id]?.state === 'unknown');
     const limits = buyer.kind === 'pob' ? `<div class="supply-buyer-grid"><div><small>BUYER FUNDS</small><strong>${money(buyer.cash)}</strong></div><div><small>OPEN PURCHASE LIMIT</small><strong>${count(buyer.demand)} units</strong></div><div><small>FREE BUYER STORAGE</small><strong>${count(buyer.space)}</strong></div></div>` : '<p class="supply-ship-note">NPC buyer · no POB cash or storage limits</p>';
-    return `<article class="supply-result${route.recommendation ? ' supply-recommended' : route.profit <= 0 ? ' supply-express' : ''}"><header><div><small>${esc(route.label)}</small><h3>${esc(buyer.name)}</h3></div><span>${esc(route.ship.name)} · ${count(route.ship.cargo)} HOLD</span></header>
-      ${route.profit <= 0 ? '<p class="supply-express-note"><strong>NO PROFITABLE HAULER EXPORT</strong>This buyer pays at or below RHW’s sale price. The resulting hauling margin is shown; this is not a profitable recommendation.</p>' : ''}
-      <div class="supply-itinerary"><span>RHW</span><b aria-hidden="true">→</b><span>${esc(buyer.name)}</span><b aria-hidden="true">→</b><span>RHW · empty return</span></div>
-      <div class="supply-metrics"><div><small>SELL AT DESTINATION</small><strong>${count(route.delivered)}</strong><span>${esc(result.commodity.name)}</span></div><div><small>EST. ROUND TRIP</small><strong>${duration(route.seconds)}</strong><span>${duration(route.deliverySeconds)} until delivery</span></div><div><small>RHW SALE RECEIPTS</small><strong>${money(route.rhwRevenue)}</strong><span>before manufacturing costs</span></div><div><small>HAULER PROFIT</small><strong class="${route.profit < 0 ? 'supply-loss' : ''}">${money(route.profit)}</strong><span>${money(route.hourlyProfit)} / hour</span></div></div>
-      <p class="supply-target-price">BUY FROM RHW ${money(route.leg.buy)} / UNIT · BUYER PAYS ${money(buyer.price)} / UNIT</p>
+    const alternative = route.returnAlternative;
+    const emptyNote = !result.stats.returnEnabled ? 'Return cargo is disabled in Export Settings.' : exportLoss ? 'A return trade does not turn a loss-making export into a recommendation.'
+      : !route.returnChecked ? 'Return-cargo search did not reach this quote within the search limit.'
+      : alternative ? `The best paid return found (${esc(alternative.name)}) adds ${money(alternative.profit)} and ${duration(Math.max(0, alternative.extraSeconds))}, but reduces the full-trip rate to ${money(alternative.hourlyProfit)} / hour. The empty return keeps the higher $/hour.`
+      : `No profitable return found among the checked markets within ${result.stats.extraPercent}% extra time and the reported cash, stock and storage limits.`;
+    const backMarkup = back ? `<section class="supply-return-cargo"><small>RETURN CARGO</small><h4>${count(back.quantity)} ${esc(back.name)} <span>+${money(back.profit)}</span></h4><p>${esc(back.from)} → ${esc(back.to)} · BUY ${money(back.buy)} / UNIT · SELL ${money(back.sell)} / UNIT</p><p>EXPORT MARGIN ${money(route.outboundProfit)} + RETURN MARGIN ${money(back.profit)} = ${money(route.profit)} PER RUN</p><p>${duration(Math.max(0, route.extraSeconds))} extra vs empty return · ${money(route.hourlyProfit - route.emptyReturn.hourlyProfit)} / hour more · Return load limited by ${esc(back.limiting.join(' / '))}</p></section>`
+      : `<p class="supply-ship-note supply-return-note">EMPTY RETURN · ${emptyNote}</p>`;
+    return `<article class="supply-result${route.recommendation ? ' supply-recommended' : exportLoss || route.profit <= 0 ? ' supply-express' : ''}"><header><div><small>${esc(route.label)}</small><h3>${esc(buyer.name)}</h3></div><span>${esc(route.ship.name)} · ${count(route.ship.cargo)} HOLD</span></header>
+      ${exportLoss || route.profit <= 0 ? '<p class="supply-express-note"><strong>NO PROFITABLE HAULER EXPORT</strong>This buyer pays at or below RHW’s sale price. The export margin is shown separately from any return trade; this is not a profitable export recommendation.</p>' : ''}
+      <div class="supply-itinerary"><span>RHW</span>${route.legs.map(leg => `<b aria-hidden="true">→</b><span>${esc(leg.target === result.origin ? 'RHW' : leg.to)}${!leg.good ? ' · empty' : ''}</span>`).join('')}</div>
+      <div class="supply-metrics"><div><small>SELL AT DESTINATION</small><strong>${count(route.delivered)}</strong><span>${esc(result.commodity.name)}</span></div><div><small>EST. ROUND TRIP</small><strong>${duration(route.seconds)}</strong><span>${duration(route.deliverySeconds)} until export delivery</span></div><div><small>RHW EXPORT RECEIPTS</small><strong>${money(route.rhwRevenue)}</strong><span>export revenue, before costs</span></div><div><small>HAULER PROFIT</small><strong class="${route.profit < 0 ? 'supply-loss' : ''}">${money(route.profit)}</strong><span>${money(route.hourlyProfit)} / hour</span></div></div>
+      <p class="supply-target-price">BUY EXPORT FROM RHW ${money(route.leg.buy)} / UNIT · EXPORT BUYER PAYS ${money(buyer.price)} / UNIT</p>
       ${limits}
-      <p class="supply-ship-note">LOAD LIMITED BY ${esc(route.limiting.join(' / '))} · ${count(route.availableAtRhw)} units available above RHW’s reserve · Start capital ${money(route.capitalNeeded)}</p>
-      ${access?.state === 'unknown' ? '<p class="supply-access-note">' + (buyer.kind === 'pob' ? 'POB docking depends on owner permissions; access is not confirmed.' : 'Personal reputation needs checking before departure.') + '</p>' : ''}
-      <details class="supply-details"><summary>FLIGHT + TRADE STEPS</summary>${route.legs.map((leg, i) => `<section><h4>${i + 1}. ${esc(leg.from)} → ${esc(leg.to)}</h4><p>${leg.good ? `BUY ${count(route.delivered)} ${esc(result.commodity.name)} FROM RHW · ${money(leg.buy)} each<br>SELL AT DESTINATION · ${money(leg.sell)} each · ${money(route.profit)} hauling profit` : 'EMPTY RETURN TO RHW'}</p><small>${esc(leg.fromSystem || '')} → ${esc(leg.toSystem || '')} · ${duration(leg.flight.seconds)} flight · ${leg.flight.jumps} jumps</small><p class="supply-path">${esc(timePath(leg))}</p></section>`).join('')}
-      <p>Round-trip estimates include the empty return, trade lanes at 2,500 m/s, this ship’s cruise speed, 15 s per jump and 30 s per docking operation. Hauler profit subtracts RHW’s sale price. RHW receipts are revenue, before manufacturing costs. POB funds and stock limits can change before arrival.</p></details></article>`;
+      <p class="supply-ship-note">EXPORT LOAD LIMITED BY ${esc(route.limiting.join(' / '))} · ${count(route.availableAtRhw)} units available above RHW’s reserve · Start capital ${money(route.capitalNeeded)}</p>
+      ${backMarkup}
+      ${warnings.length ? `<p class="supply-access-note">Docking access is not confirmed at ${warnings.map(id => esc(prepared.dataset.bases.find(base => base.id === id)?.name || id)).join(', ')}. Check owner permissions at POBs and personal reputation at NPC bases.</p>` : ''}
+      <details class="supply-details"><summary>FLIGHT + TRADE STEPS</summary>${route.legs.map((leg, i) => `<section><h4>${i + 1}. ${esc(leg.from)} → ${esc(leg.to)}</h4><p>${leg.good ? `BUY ${count(route.quantities[i])} ${esc(leg.name)} · ${money(leg.buy)} each<br>SELL AT DESTINATION · ${money(leg.sell)} each · ${money(route.quantities[i] * leg.margin)} hauling profit` : 'EMPTY TRANSFER'}</p><small>${esc(leg.fromSystem || '')} → ${esc(leg.toSystem || '')} · ${duration(leg.flight.seconds)} flight · ${leg.flight.jumps} jumps</small><p class="supply-path">${esc(timePath(leg))}</p></section>`).join('')}
+      <p>Full-trip estimates include every return leg and docking stop, trade lanes at 2,500 m/s, this ship’s cruise speed, 15 s per jump and 30 s per docking operation. Hauler profit subtracts all purchases. RHW export receipts are revenue before manufacturing costs and return purchases. POB funds and stock limits can change before arrival.</p></details></article>`;
   }).join('');
   const stats = result.stats;
-  $('supplyStatus').textContent = `${stats.ships} SHIPS · ${stats.sources} BUYER COMPARISONS · ${stats.checked} QUOTES · DIRECT EXPORT + EMPTY RETURN${stats.noProfit ? ' · NO POSITIVE HAULER MARGIN' : ''}${stats.timedOut ? ' · BEST FOUND WITHIN SEARCH LIMIT' : ''}`;
+  $('supplyStatus').textContent = `${stats.ships} SHIPS · ${stats.sources} BUYER COMPARISONS · ${stats.checked} EXPORT / ${stats.returnChecked} RETURN QUOTES${stats.returnEnabled ? ` · MAX ${stats.extraPercent}% RETURN DETOUR` : ' · RETURN CARGO OFF'}${stats.noProfit ? ' · NO POSITIVE EXPORT MARGIN' : ''}${stats.timedOut || stats.pruned ? ' · BEST FOUND WITHIN SEARCH LIMIT' : ''}`;
 }
 async function search(force = false) {
   const token = ++request;
@@ -240,13 +261,13 @@ async function search(force = false) {
     worker = new Worker(new URL('./worker.mjs', import.meta.url), { type: 'module' });
     worker.onmessage = ({ data }) => {
       if (token !== request || data.id !== token) return;
-      if (data.type === 'progress') $('supplyStatus').textContent = `${data.progress.phase === 'export' ? 'CHECKING EXPORT BUYERS' : data.progress.phase === 'direct' ? 'CHECKING DIRECT SUPPLY' : 'CHECKING PROFITABLE APPROACHES'} · ${data.progress.checked} QUOTES`;
+      if (data.type === 'progress') $('supplyStatus').textContent = `${data.progress.phase === 'return' ? 'CHECKING PROFITABLE RETURN CARGO' : data.progress.phase === 'export' ? 'CHECKING EXPORT BUYERS' : data.progress.phase === 'direct' ? 'CHECKING DIRECT SUPPLY' : 'CHECKING PROFITABLE APPROACHES'} · ${data.progress.checked} QUOTES`;
       if (data.type === 'error') { setBusy(false, data.message); worker?.terminate(); worker = null; }
       if (data.type === 'result') { result = data.result; setBusy(false); renderResults(); worker?.terminate(); worker = null; }
     };
     worker.onerror = () => { if (token === request) setBusy(false, 'Route worker unavailable. Reload RHW and try again.'); worker?.terminate(); worker = null; };
     worker.postMessage({ id: token, dataset: prepared.dataset, navigation: prepared.navigation, profiles,
-      options: { mode: $('supplyMode').value, commodity: $('supplyCommodity').value, extraPercent: Number($('supplyExtra').value), includePobs: $('supplyPobs').checked,
+      options: { mode: $('supplyMode').value, commodity: $('supplyCommodity').value, extraPercent: Number($('supplyExtra').value), returnCargo: $('supplyBackhaul').checked, includePobs: $('supplyPobs').checked,
         capital: capital ? Number(capital) : null, quantity: quantity ? Number(quantity) : null, blocked: prepared.access.blocked } });
   } catch (error) {
     if (token === request && dialog.open) { setBusy(false, controller.signal.aborted ? 'UPLINK TIMED OUT · RETRY OR REFRESH MARKETS' : error.message); $('supplySource').textContent = sourceMarkup(); }
@@ -261,7 +282,7 @@ function mount() {
   dialog = document.createElement('dialog'); dialog.id = 'rhwSupplyDialog'; dialog.className = 'rhw-supply-dialog';
   dialog.setAttribute('aria-labelledby', 'supplyTitle');
   dialog.innerHTML = `<header class="supply-heading"><div><small>RHW LOGISTICS</small><h2 id="supplyTitle">RHW TRADE DESK</h2><p>Supply the base or find export buyers. Compare ships, time and hauling profit.</p></div><button type="button" id="supplyClose" aria-label="Close Trade Desk">CLOSE</button></header>
-    <div class="supply-content"><form id="supplyForm"><div class="supply-fields supply-main-fields"><label>TRADE MODE<select id="supplyMode"><option value="supply">SUPPLY RHW</option><option value="export">EXPORT FROM RHW</option></select></label><label>COMMODITY<select id="supplyCommodity"></select></label><label>SHIP<select id="supplyShip"></select></label></div><details class="supply-settings"><summary id="supplySettingsTitle">DELIVERY SETTINGS</summary><div class="supply-fields"><label data-supply-only>MAX EXTRA TIME<select id="supplyExtra"><option value="0">Direct supply only</option><option value="10">10% extra</option><option value="20" selected>20% extra</option><option value="35">35% extra</option><option value="50">50% extra</option></select></label><label>START CAPITAL · $<input id="supplyCapital" type="number" min="0" step="1" inputmode="numeric" placeholder="Show capital required"></label><label>DELIVERY QUANTITY<input id="supplyQuantity" type="number" min="1" step="1" inputmode="numeric" placeholder="Full hold within RHW limits"></label><label class="supply-check"><input id="supplyPobs" type="checkbox" checked><span id="supplyPobsLabel">Include POB sellers</span></label></div><p id="supplySettingsCopy"></p></details><div class="supply-actions"><button type="submit" id="supplySearch">CALCULATE SUPPLY ROUTE</button><button type="button" id="supplyRefresh">REFRESH MARKETS</button><button type="button" id="supplyCancel" hidden>CANCEL SEARCH</button></div></form><p id="supplySource" class="supply-source"></p><p id="supplyStatus" role="status" aria-live="polite"></p><div id="supplyResults"></div></div>`;
+    <div class="supply-content"><form id="supplyForm"><div class="supply-fields supply-main-fields"><label>TRADE MODE<select id="supplyMode"><option value="supply">SUPPLY RHW</option><option value="export">EXPORT FROM RHW</option></select></label><label>COMMODITY<select id="supplyCommodity"></select></label><label>SHIP<select id="supplyShip"></select></label></div><details class="supply-settings"><summary id="supplySettingsTitle">DELIVERY SETTINGS</summary><div class="supply-fields"><label><span id="supplyExtraLabel">MAX EXTRA TIME</span><select id="supplyExtra"><option value="0">Direct supply only</option><option value="10">10% extra</option><option value="20" selected>20% extra</option><option value="35">35% extra</option><option value="50">50% extra</option></select></label><label>START CAPITAL · $<input id="supplyCapital" type="number" min="0" step="1" inputmode="numeric" placeholder="Show capital required"></label><label>DELIVERY QUANTITY<input id="supplyQuantity" type="number" min="1" step="1" inputmode="numeric" placeholder="Full hold within RHW limits"></label><label class="supply-check" data-export-only hidden><input id="supplyBackhaul" type="checkbox" checked>Find profitable return cargo</label><label class="supply-check"><input id="supplyPobs" type="checkbox" checked><span id="supplyPobsLabel">Include POB sellers</span></label></div><p id="supplySettingsCopy"></p></details><div class="supply-actions"><button type="submit" id="supplySearch">CALCULATE SUPPLY ROUTE</button><button type="button" id="supplyRefresh">REFRESH MARKETS</button><button type="button" id="supplyCancel" hidden>CANCEL SEARCH</button></div></form><p id="supplySource" class="supply-source"></p><p id="supplyStatus" role="status" aria-live="polite"></p><div id="supplyResults"></div></div>`;
   document.body.append(dialog);
   $('supplyClose').addEventListener('click', () => dialog.close());
   dialog.addEventListener('close', () => {
@@ -294,11 +315,8 @@ function mount() {
 export function open(next) {
   mount(); context = next; result = null; $('supplyResults').innerHTML = '';
   const selected = next.commodity || $('supplyCommodity').value;
-  const names = [...new Set([next.commodity, ...next.commodities].filter(Boolean))];
-  $('supplyCommodity').innerHTML = names.map(name => `<option value="${esc(name)}">${esc(name)}</option>`).join('');
-  $('supplyCommodity').value = names.includes(selected) ? selected : names[0];
   if (next.mode) $('supplyMode').value = next.mode;
-  updateMode();
+  updateMode(selected);
   shipOptions();
   if (!dialog.open) dialog.showModal();
   search();
