@@ -2,6 +2,7 @@
    power-system constraint; neither replaces personal reputation or POB ACLs. */
 import { normalize } from './planner.mjs';
 import { BMM_ID } from './access.mjs';
+import { isSelectableShip } from './ship-profiles.mjs';
 
 export const PREFERRED_TRADER_IDS = Object.freeze([
   Object.freeze({ id: BMM_ID, label: 'BMM' }),
@@ -141,6 +142,7 @@ export function identityShipCheck(identity, ship) {
   const value = ship.techCompat?.[identity?.id];
   const tech = typeof value === 'number' && Number.isFinite(value) && value >= 0 ? value : null;
   const exception = rules?.exceptions?.some(name => [ship.name, ship.apiName].some(value => normalize(value) === name));
+  if (!isSelectableShip(ship)) return { state: 'blocked', code: 'model-excluded', reason: 'This model is excluded from the RHW Trade Desk', family, tech };
   if (identity?.playerAvailable === false || rules?.playerRestricted) return { state: 'blocked', reason: 'This is not a normally obtainable player ID', family, tech };
   if (!exception && rules?.forbiddenClasses?.includes(ship.shipClass)) return { state: 'blocked', reason: 'This exact ship class is prohibited by the ID', family, tech };
   if (!exception && rules?.cargoLimit != null && ship.cargo > rules.cargoLimit)

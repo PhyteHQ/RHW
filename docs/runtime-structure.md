@@ -129,6 +129,28 @@ recommendation. Conditional IDs are not appended to every checked route.
 
 The Trade Desk searches routes first. Its default ID scope covers the normally obtainable
 player IDs in the loaded registry; a fixed-ID restriction lives in advanced settings.
+The main hauler field and result headings use categories such as
+`5,000 Cargo Transport · 350 m/s`. Docking class, lane capability and cruise
+charge remain part of each category's identity. An optional specific-model
+filter lives in advanced settings. Liner/miner roles remain separate, and every
+actual hull retains its own commodity volume class and technical/ID checks.
+`hauler-categories.mjs` supplies the labels and selector groups; no fictional
+generic ship replaces the checked model used by the numerical quote.
+
+Results expose a collapsed model list. A model can share a quote only when its
+physical flight profile and every commodity volume/price on that exact tour
+match the reference model. Compatible IDs are aggregated from complete
+model-and-ID tours, with the matching model names attached to each ID. The
+three preferred IDs report a usable model for this quote, not permission for
+every model in the category. Their per-model states remain visible in the
+disclosure. A specific-model filter narrows these checks to that model.
+
+The Gallic Super Train (`dsy_super_gallic_train`) is explicitly removed from
+the Trade Desk at the owner's request after no regular purchase/build source
+was found. The registry, cached-profile loader, ID checks and both planners
+exclude it, so a saved 6,250-hold profile cannot reintroduce it. This exclusion
+is independent of its reported full tech compatibility.
+
 `identity-planner.mjs` compares up to 24 non-dominated haulers across all ID
 profiles and searches each hull once. Every candidate tour must have at least
 one ID valid for all its stops with that hull. A union of unrelated docking

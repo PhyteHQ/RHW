@@ -2,6 +2,7 @@
    keep DTR's shared market/navigation/accounting owners unchanged. */
 import { validateDataset } from './core/trade.mjs';
 import { ShipNavigator, flightKey } from './navigation.mjs';
+import { isSelectableShip } from './ship-profiles.mjs';
 import { findRhw, findCommodity } from './planner.mjs';
 import { quoteExport } from './export-quote.mjs';
 import { returnMarkets, selectReturnMarkets, quoteExportReturn, trimRouteCache } from './return-planner.mjs';
@@ -28,6 +29,7 @@ export function rankExportRoutes(routes, limit = 5) {
 }
 
 export async function searchExports(dataset, navigation, profiles, options = {}, progress = () => {}, canceled = () => false) {
+  profiles = profiles.filter(isSelectableShip);
   validateDataset(dataset);
   const rhw = findRhw(dataset), commodity = findCommodity(dataset, options.commodity);
   if (!rhw) throw Error('Resolution Heavy Works was not uniquely found in the POB feed.');

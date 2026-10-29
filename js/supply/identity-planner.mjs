@@ -4,7 +4,9 @@ import { searchExports } from './export-planner.mjs';
 import { BMM_ID } from './access.mjs';
 import { autoIdentityShips, identityShipCheck, PREFERRED_TRADER_IDS } from './identity-profiles.mjs';
 import { flightKey } from './navigation.mjs';
-import { volumeFor } from './core/trade.mjs';
+import { volumeFor, makeLeg, cargoItems } from './core/trade.mjs';
+import { isSelectableShip } from './ship-profiles.mjs';
+import { haulerCategory, matchesHauler } from './hauler-categories.mjs';
 
 // Drop only hulls covered by a faster/larger hull with the same physical
 // access, commodity volumes and every one of their usable IDs. In particular,
@@ -40,7 +42,9 @@ function legacyBmmShips(ships, identity) {
 }
 
 export async function searchIdentities(dataset, navigation, ships, scopes, options = {}, progress = () => {}, canceled = () => false) {
+  ships = ships.filter(ship => isSelectableShip(ship) && matchesHauler(ship, options.haulerId));
   const origin = findRhw(dataset)?.id;
+  const bases = new Map(dataset.bases.map(base => [base.id, base]));
   const allScopes = [...new Map(scopes.map(scope => [scope.identity.id, {
     ...scope, denied: new Set(scope.blocked || []), approval: new Set(scope.approvalDocks || []), unverified: new Set(scope.unverifiedDocks || [])
   }])).values()];
@@ -76,6 +80,14 @@ export async function searchIdentities(dataset, navigation, ships, scopes, optio
       if (approval && !options.includeRestrictedPobs) return [];
       return [assessRoute({ scope, shipCheck }, stops)];
     });
+  }
+  function quotedModel(ship, route) {
+    if (haulerCategory(ship).id !== haulerCategory(route.ship).id || flightKey(navigation, ship) !== flightKey(navigation, route.ship)) return false;
+    return route.legs.every(leg => cargoItems(leg).every(item => {
+      const equivalent = makeLeg(bases.get(leg.source), bases.get(leg.target), item.good, ship);
+      return equivalent && ['buy', 'sell', 'volume', 'sourceVolume', 'targetVolume'].every(key =>
+        Math.abs(equivalent[key] - item[key]) < 1e-6);
+    }));
   }
   const requested = options.shipId && options.shipId !== 'auto' ? ships.find(ship => ship.id === options.shipId) : null;
   const profiles = [], seen = new Set();
@@ -126,20 +138,49 @@ export async function searchIdentities(dataset, navigation, ships, scopes, optio
     importGoal: options.importGoal || 'price', routeEligibility,
     blocked: [...new Set([...(options.blocked || []), ...blocked])] }, progress, canceled);
   const results = quoted.results.map(route => {
-    const compatibleIdentities = matches(route.ship, route.stops).sort((a, b) =>
+    const directIdentities = matches(route.ship, route.stops).sort((a, b) =>
       Number(a.shipCheck.state !== 'checked') - Number(b.shipCheck.state !== 'checked')
       || Number(b.identity.id === BMM_ID) - Number(a.identity.id === BMM_ID));
-    const allowed = compatibleIdentities.filter(row => active.some(scope => scope.identity.id === row.identity.id));
+    const allowed = directIdentities.filter(row => active.some(scope => scope.identity.id === row.identity.id));
     const primary = allowed.find(row => row.shipCheck.state === 'checked') || allowed[0];
     if (!primary) return null;
+    const equivalent = requested ? [route.ship] : [route.ship, ...ships.filter(ship => ship.id !== route.ship.id && quotedModel(ship, route))];
+    const modelChoices = equivalent.map(ship => ({ ship, compatibleIdentities: matches(ship, route.stops),
+      preferredIdentities: PREFERRED_TRADER_IDS.map(preferred => {
+        const policy = policies(ship).find(row => row.scope.identity.id === preferred.id);
+        return { label: preferred.label, ...(policy ? assessRoute(policy, route.stops)
+          : { identity: { id: preferred.id, name: preferred.label }, shipCheck: { state: 'unknown', reason: 'This standard ID profile is not loaded' } }) };
+      }) })).filter(model => model.compatibleIdentities.length);
+    const combined = new Map();
+    for (const model of modelChoices) for (const row of model.compatibleIdentities) {
+      let entry = combined.get(row.identity.id);
+      if (!entry || entry.shipCheck.state !== 'checked' && row.shipCheck.state === 'checked') {
+        entry = { ...row, models: [] }; combined.set(row.identity.id, entry);
+      }
+      if (entry.shipCheck.state === row.shipCheck.state) entry.models.push({ id: model.ship.id, name: model.ship.name });
+    }
+    const compatibleIdentities = [...combined.values()];
     const preferredIdentities = PREFERRED_TRADER_IDS.map(preferred => {
-      const policy = policies(route.ship).find(row => row.scope.identity.id === preferred.id);
-      return { label: preferred.label, ...(policy ? assessRoute(policy, route.stops)
-        : { identity: { id: preferred.id, name: preferred.label }, shipCheck: { state: 'unknown', reason: 'This standard ID profile is not loaded' } }) };
+      const order = { checked: 0, conditional: 1, unknown: 2, blocked: 3 };
+      const assessments = equivalent.flatMap(ship => {
+        const policy = policies(ship).find(row => row.scope.identity.id === preferred.id);
+        return policy ? [{ ...assessRoute(policy, route.stops), ship }] : [];
+      }).sort((a, b) => order[a.shipCheck.state] - order[b.shipCheck.state]);
+      const best = assessments[0];
+      if (!best) return { label: preferred.label, identity: { id: preferred.id, name: preferred.label },
+        shipCheck: { state: 'unknown', reason: 'This standard ID profile is not loaded' } };
+      const names = assessments.filter(row => row.shipCheck.state === 'checked').map(row => row.ship.name);
+      return { label: preferred.label, identity: best.identity, shipCheck: { ...best.shipCheck,
+        reason: names.length ? `Available with ${names.join(', ')} for the entire trip.` : `${best.ship.name}: ${best.shipCheck.reason}` } };
     });
-    const decorated = { ...route, ...primary, compatibleIdentities, preferredIdentities };
+    const decorated = { ...route, ...primary, compatibleIdentities, preferredIdentities,
+      hauler: { ...haulerCategory(route.ship), selectedModel: Boolean(requested), referenceShipId: route.ship.id,
+        models: modelChoices.map(model => ({ ship: { id: model.ship.id, name: model.ship.name },
+          preferredIdentities: model.preferredIdentities.map(row => ({ label: row.label, shipCheck: row.shipCheck })) })) } };
     return primary.shipCheck.state === 'checked' ? decorated : conditional(decorated);
-  }).filter(Boolean);
+  }).filter(Boolean).filter((route, index, rows) => rows.findIndex(other => JSON.stringify([
+    other.hauler.id, other.legs.map(leg => [leg.source, leg.target, cargoItems(leg).map(item => [item.good, item.buy, item.sell, item.volume])]), other.quantities, other.seconds, other.profit]) === JSON.stringify([
+    route.hauler.id, route.legs.map(leg => [leg.source, leg.target, cargoItems(leg).map(item => [item.good, item.buy, item.sell, item.volume])]), route.quantities, route.seconds, route.profit])) === index);
   return { ...quoted, results, reason: results.length ? '' : 'No usable route found within the checked ship, access and market limits. Approval-only POBs can be inspected in the advanced settings.',
     stats: { ...quoted.stats, routeFirst: true, identities: active.length, pruned: quoted.stats.pruned || shipPruned,
       importGoal: options.importGoal || 'price',
