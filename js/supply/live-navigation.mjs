@@ -13,13 +13,14 @@ export const KNOWN_JUMP_CLOSURES = Object.freeze([
 
 const coords = value => Array.isArray(value) && value.length === 3 && value.every(Number.isFinite) ? [...value]
   : value && ['X', 'Y', 'Z'].every(key => Number.isFinite(value[key])) ? [value.X, value.Y, value.Z] : null;
+const routingKey = object => JSON.stringify([object.Kind, coords(object.Pos), object.GotoSystem ?? null]);
 
 export function currentNavigation(base, systems, receivedAt, closures = KNOWN_JUMP_CLOSURES) {
   validateNavigation(base);
   if (!Array.isArray(systems) || !systems.length || systems.length > 1000
     || !Number.isFinite(Date.parse(receivedAt))) throw Error('Current navigation feed is unavailable');
-  const objects = new Map(), jumps = new Map(), covered = new Set();
-  let count = 0;
+  const objects = new Map(), jumps = new Map(), covered = new Set(), ambiguous = new Set();
+  let count = 0, duplicates = 0;
   for (const system of systems) {
     if (typeof system?.nickname !== 'string' || !system.nickname || covered.has(system.nickname)
       || !Object.hasOwn(system, 'Jumpholes') || system.Jumpholes !== null && !Array.isArray(system.Jumpholes)
@@ -30,8 +31,18 @@ export function currentNavigation(base, systems, receivedAt, closures = KNOWN_JU
       if (typeof object?.Nickname !== 'string' || !object.Nickname || !coords(object.Pos))
         throw Error('Current navigation feed has an invalid map object');
       const id = system.nickname + ':' + object.Nickname;
-      if (index.has(id)) throw Error('Current navigation feed has duplicate map objects');
-      index.set(id, object);
+      if (!index.has(id)) index.set(id, object);
+      else {
+        duplicates++;
+        const previous = index.get(id);
+        // Rendering exports may repeat the same object. Cosmetic fields do
+        // not affect flight. Conflicting routing facts invalidate only this
+        // object, permanently for this snapshot; a later copy cannot revive it.
+        if (previous && routingKey(previous) !== routingKey(object)) {
+          index.set(id, null);
+          ambiguous.add((index === jumps ? 'jump:' : 'object:') + id);
+        }
+      }
     }
   }
   const blocked = new Set();
@@ -51,6 +62,7 @@ export function currentNavigation(base, systems, receivedAt, closures = KNOWN_JU
       const allows = jump.Kind === 2 ? (node.allows || ['berth']).filter(dock => dock === 'berth') : node.allows;
       return [{ ...node, pos: coords(jump.Pos), ...(allows ? { allows } : {}) }];
     }
+    if (objects.has(node.id) && objects.get(node.id) === null) return [];
     const object = objects.get(node.id);
     if (node.kind === 'lane' && (!object || object.Kind !== 2)) return [];
     return [{ ...node, ...(object ? { pos: coords(object.Pos) } : {}) }];
@@ -71,6 +83,7 @@ export function currentNavigation(base, systems, receivedAt, closures = KNOWN_JU
   const baseNodes = Object.fromEntries(Object.entries(base.baseNodes || {}).filter(([, id]) => byId.has(id)));
   return validateNavigation({ ...base, nodes, links, baseNodes,
     live: { receivedAt, source: 'https://darkstat.dd84ai.com/api/systems', systems: covered.size,
-      removedJumps, knownClosures: closures.map(({ name, reason, reportedAt }) => ({ name, reason, reportedAt })),
+      removedJumps, duplicateObjects: duplicates, ambiguousObjects: ambiguous.size,
+      knownClosures: closures.map(({ name, reason, reportedAt }) => ({ name, reason, reportedAt })),
       geometryBuiltAt: base.builtAt || null } });
 }
