@@ -1,166 +1,47 @@
-name: RHW Pages Deploy
-
+name: Inspect full live navigation response
 on:
-  push:
-    branches: [main]
   pull_request:
     branches: [main]
-  workflow_dispatch:
-
 permissions:
   contents: read
-
-# Concurrency belongs to the whole workflow, not only the deploy job. A newer
-# push to the same ref cancels the older validation/deploy run immediately, so
-# an older deploy can never race in later and cancel the newest release.
-concurrency:
-  group: rhw-pages-${{ github.ref }}
-  cancel-in-progress: true
-
 jobs:
-  validate:
+  inspect:
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 4
     steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-
-      - name: Verify generated app assets
-        run: python3 scripts/build_app_assets.py --check
-
-      - name: Validate dashboard structure
-        run: python3 scripts/validate_dashboard.py
-
-      - name: Validate Discovery sync engine
-        run: python3 scripts/test_discovery_sync.py
-
-      - name: Validate JavaScript syntax
-        shell: bash
+      - uses: actions/checkout@v6
+      - name: Capture full current map and reproduce failure
         run: |
-          set -euo pipefail
-          for file in $(find js \( -name '*.js' -o -name '*.mjs' \)); do
-            echo "Checking ${file}"
-            node --check "${file}"
-          done
-
-      - name: Validate retired-data archive compatibility
-        run: node scripts/test_legacy_archive.js
-
-      - name: Validate Transfer Center model
-        run: node scripts/test_transfer_center.js
-
-      - name: Validate build, route and lifecycle contracts
-        run: |
-          python3 scripts/test_build_assets.py
-          node scripts/test_app_contracts.js
-
-      - name: Validate audit regressions
-        run: node scripts/test_audit_regressions.js
-
-      - name: Validate procurement prices, pooled inputs and full inventory
-        run: node scripts/test_procurement_inputs.js
-
-      - name: Validate RHW supply routes
-        run: |
-          node scripts/test_supply_routes.mjs
-          node scripts/test_export_routes.mjs
-          node scripts/test_export_backhaul.mjs
-          node scripts/test_identity_routes.mjs
-          node scripts/test_hauler_flight.mjs
-          node scripts/test_hauler_categories.mjs
-          node scripts/test_live_navigation.mjs
-
-      - name: Validate Price Check provenance and backup
-        run: node scripts/test_price_check.js
-
-      - name: Validate shipyard recipes and inventory
-        run: node scripts/test_shipyard.js
-
-      - name: Validate Logistics market scans
-        run: node scripts/test_logistics_scans.js
-
-      - name: Validate Full App Audit model
-        run: node scripts/test_full_audit.js
-
-      - name: Install smoke-test client
-        run: python3 -m pip install --disable-pip-version-check --quiet websocket-client==1.8.0
-
-      - name: Runtime smoke test
-        run: python3 scripts/smoke_v40.py
-
-      - name: Background and render lifecycle
-        if: ${{ !cancelled() }}
-        run: node scripts/test_runtime_lifecycle.js
-
-      - name: Bundled interface, fonts and offline reload
-        if: always()
-        run: |
-          python3 scripts/build_app_assets.py --check --dist
-          RHW_SMOKE_SITE=dist python3 scripts/smoke_interface_foundation.py
-
-      - name: Procurement interaction and responsive controls
-        if: ${{ !cancelled() }}
-        run: python3 scripts/smoke_procurement.py
-
-      - name: Supply route controls, worker and responsive dialog
-        if: ${{ !cancelled() }}
-        run: python3 scripts/smoke_supply_routes.py
-
-      - name: Save interface checks and screenshots
-        if: always()
-        uses: actions/upload-artifact@v4
+          python3 - <<'PY'
+          import json,urllib.request,gzip,collections,pathlib,datetime
+          req=urllib.request.Request('https://darkstat.dd84ai.com/api/systems',data=b'{}',headers={'Content-Type':'application/json','Accept':'application/json'})
+          with urllib.request.urlopen(req,timeout=65) as response:
+              data=json.load(response)
+          out=pathlib.Path('artifacts/navigation');out.mkdir(parents=True,exist_ok=True)
+          with gzip.open(out/'systems-full.json.gz','wt') as f:json.dump(data,f)
+          report={'receivedAt':datetime.datetime.now(datetime.timezone.utc).isoformat(),'systems':len(data),'duplicateGroups':[],'invalid':[]}
+          for system in data:
+              for key in ['Objs','Jumpholes']:
+                  groups=collections.defaultdict(list)
+                  for obj in system.get(key) or []:groups[obj.get('Nickname')].append(obj)
+                  for nick,rows in groups.items():
+                      if len(rows)>1:
+                          simplified=[{k:x.get(k) for k in ['Nickname','Kind','GotoSystem','Pos']} for x in rows]
+                          report['duplicateGroups'].append({'system':system.get('nickname'),'collection':key,'nickname':nick,'rows':simplified})
+          (out/'audit.json').write_text(json.dumps(report,indent=2))
+          print('SYSTEMS',report['systems'],'DUPLICATE GROUPS',len(report['duplicateGroups']))
+          print(json.dumps(report['duplicateGroups'][:20],indent=2))
+          PY
+          node --input-type=module <<'JS'
+          import fs from 'node:fs';
+          import {gunzipSync} from 'node:zlib';
+          import {currentNavigation} from './js/supply/live-navigation.mjs';
+          const map=JSON.parse(gunzipSync(fs.readFileSync('assets/navigation.json.gz')));
+          const systems=JSON.parse(gunzipSync(fs.readFileSync('artifacts/navigation/systems-full.json.gz')));
+          try {const live=currentNavigation(map,systems,new Date().toISOString());console.log('FULL FEED ACCEPTED',live.nodes.length,live.links.length)}
+          catch(error){console.log('REPRODUCED CURRENT FAILURE:',error.message)}
+          JS
+      - uses: actions/upload-artifact@v4
         with:
-          name: rhw-interface-review
-          path: artifacts/interface
-          if-no-files-found: ignore
-
-      - name: Mobile Logistics discoverability smoke test
-        if: ${{ !cancelled() }}
-        run: python3 scripts/smoke_stability_polish.py
-
-      - name: Compact COMMAND hierarchy smoke test
-        if: ${{ !cancelled() }}
-        run: python3 scripts/smoke_command_compact.py
-
-      - name: Focused daily-navigation smoke test
-        if: ${{ !cancelled() }}
-        run: python3 scripts/smoke_focus_pass.py
-
-      - name: Recipe correctness smoke test
-        if: ${{ !cancelled() }}
-        run: python3 scripts/smoke_v40_recipes.py
-
-      - name: Final recipe label, costing and header smoke test
-        if: ${{ !cancelled() }}
-        run: python3 scripts/smoke_v40_final_polish.py
-
-  deploy:
-    if: github.event_name != 'pull_request'
-    needs: validate
-    permissions:
-      contents: read
-      pages: write
-      id-token: write
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-
-      - name: Configure Pages
-        uses: actions/configure-pages@v5
-
-      - name: Package runtime files only
-        run: python3 scripts/build_app_assets.py --check --dist
-
-      - name: Upload static site
-        uses: actions/upload-pages-artifact@v4
-        with:
-          path: dist
-
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+          name: navigation-full-response
+          path: artifacts/navigation
