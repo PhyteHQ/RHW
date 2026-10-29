@@ -42,6 +42,8 @@ Newswire has been retired from the dashboard, Tools, routes and normal app boot.
 
 `COMMS / DRAFTS` contains the private **DEVICE TRANSFER** center. On supported phones, **SHARE PRIVATE BACKUP** opens the native Android or iOS share sheet with one JSON file; otherwise RHW downloads the same file. Import never uploads anything and always opens a review sheet first. Drafts, senders and price profiles use conflict-safe merge mode. Format V5 preserves archived Price Check overrides for old backups; they are optional to import and never affect the automatic NPC comparison. Archived order data remains optional, while the current message, archived Shipyard plan, Newswire working copy and app settings are explicit opt-in replacements. Backup files can contain private work and should only be shared with a trusted device.
 
+Trade Desk refreshes POB stock and current Darkstat map objects for **every search**. Failed live requests pause calculation and mark previous quotes out of date. The current map constrains the bundled geometry; known server-event closures override the feed. Galileo–Shikoku is explicitly closed in both directions following the 2026-10-29 operator report, because Darkstat still advertises it as a normal gate. Map receipt and geometry build dates are shown separately. See [route freshness and map limitations](docs/trade-route-freshness.md).
+
 ## Install on Samsung, Android or iPhone / iPad
 
 Open **`https://phytehq.github.io/RHW/`** in the browser you want to use for installation.
