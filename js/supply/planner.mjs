@@ -4,6 +4,7 @@ import solver from './core/vendor/lp-solver.mjs';
 import { makeLeg, simulate, volumeFor, validateDataset } from './core/trade.mjs';
 import { ShipNavigator, flightKey } from './navigation.mjs';
 import { trimRouteCache } from './return-planner.mjs';
+import { isSelectableShip } from './ship-profiles.mjs';
 
 export const normalize = value => String(value ?? '').toLowerCase().replace(/platings\b/g, 'plating').replace(/[^a-z0-9]+/g, ' ').trim();
 const finite = value => typeof value === 'number' && Number.isFinite(value);
@@ -203,6 +204,7 @@ export function rankSupplyRoutes(routes, extraPercent = 20, goal = 'income') {
 }
 
 export async function searchSupply(dataset, navigation, profiles, options = {}, progress = () => {}, canceled = () => false) {
+  profiles = profiles.filter(isSelectableShip);
   validateDataset(dataset);
   const rhw = findRhw(dataset), commodity = findCommodity(dataset, options.commodity);
   if (!rhw) throw Error('Resolution Heavy Works was not uniquely found in the POB feed.');

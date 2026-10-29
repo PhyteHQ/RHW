@@ -1,6 +1,7 @@
 import { normalizeDarkstat, validateDataset } from './core/trade.mjs';
 import { validateNavigation } from './core/navigation.mjs';
-import { FALLBACK_SHIPS, normalizeShipRegistry, shipFlightRules } from './ship-profiles.mjs';
+import { FALLBACK_SHIPS, normalizeShipRegistry, shipFlightRules, isSelectableShip } from './ship-profiles.mjs';
+import { haulerCategories, haulerCategory, matchesHauler } from './hauler-categories.mjs';
 import { dockingAccess, enrichBaseOwners, BMM_ID } from './access.mjs';
 import { normalize, findRhw } from './planner.mjs';
 import { commodityGroups } from './commodity-groups.mjs';
@@ -106,7 +107,7 @@ async function prepare(force, signal) {
   if (!force && prepared && now - prepared.pobAt < FIVE_MINUTES && (!current.receivedAt || current.receivedAt <= prepared.pobAt)) return prepared;
   const cache = await database('get').catch(() => null) || {};
   let npc = cache.npc, npcAt = cache.npcAt || 0, pobs = cache.pobs, pobAt = cache.pobAt || 0;
-  let ships = (cache.ships || FALLBACK_SHIPS).map(ship => ({ ...ship, ...shipFlightRules(ship) })), shipAt = cache.shipAt || 0;
+  let ships = (cache.ships || FALLBACK_SHIPS).filter(isSelectableShip).map(ship => ({ ...ship, ...shipFlightRules(ship) })), shipAt = cache.shipAt || 0;
   let shipIdentityVersion = cache.shipIdentityVersion || 0, accessIdentityVersion = cache.accessIdentityVersion || 0;
   let owners = cache.owners || [], factions = cache.factions || [], tractors = cache.tractors || [];
   let identityCards = cache.identityPolicyVersion === 2 ? cache.identityCards || {} : {}, identityAt = cache.identityPolicyVersion === 2 ? cache.identityAt || 0 : 0;
@@ -188,9 +189,9 @@ function setBusy(value, message = '') {
 }
 function shipOptions() {
   const selector = $('supplyShip'), selected = selector.value;
-  const ships = prepared?.ships || FALLBACK_SHIPS;
+  const ships = (prepared?.ships || FALLBACK_SHIPS).filter(ship => isSelectableShip(ship) && matchesHauler(ship, $('supplyHauler').value));
   const ids = selectedIdentities();
-  selector.innerHTML = '<option value="auto">AUTO · Best permitted haulers</option>'
+  selector.innerHTML = '<option value="auto">AUTO · Any matching model</option>'
     + ships.map(ship => {
       const checks = ids.map(id => identityShipCheck(id, ship));
       const blocked = checks.length && checks.every(check => check.state === 'blocked');
@@ -198,6 +199,27 @@ function shipOptions() {
       return `<option value="${esc(ship.id)}"${blocked ? ' disabled' : ''}>${esc(ship.name)} · ${count(ship.cargo)} hold · ${ship.cruise} m/s · ${ship.dockLabel}${shipFlightRules(ship).tradeLanes ? '' : ' · NO TRADE LANES'}${blocked ? ' · ' + restriction : ''}</option>`;
     }).join('');
   if (selected && [...selector.options].some(option => option.value === selected && !option.disabled)) selector.value = selected;
+}
+function haulerOptions() {
+  const selector = $('supplyHauler'), selected = selector.value, ids = selectedIdentities();
+  const categories = haulerCategories(prepared?.ships || FALLBACK_SHIPS);
+  const roles = [...new Set(categories.map(category => category.role))];
+  selector.innerHTML = '<option value="auto">AUTO · Best hauler category</option>' + roles.map(role =>
+    '<optgroup label="' + esc(role.toUpperCase() + 'S') + '">' + categories.filter(category => category.role === role).map(category => {
+      const blocked = ids.length && category.models.every(ship => ids.every(id => identityShipCheck(id, ship).state === 'blocked'));
+      return '<option value="' + esc(category.id) + '"' + (blocked ? ' disabled' : '') + '>' + esc(category.label)
+        + ' · ' + category.dockLabel + (category.tradeLanes ? '' : ' · NO TRADE LANES') + (blocked ? ' · NO COMPATIBLE ID' : '') + '</option>';
+    }).join('') + '</optgroup>').join('');
+  if (selected && [...selector.options].some(option => option.value === selected && !option.disabled)) selector.value = selected;
+}
+function modelMarkup(route) {
+  const models = route.hauler?.models || [{ ship: route.ship, preferredIdentities: route.preferredIdentities || [] }];
+  return '<details class="supply-models"><summary>' + (route.hauler?.selectedModel ? 'SELECTED MODEL' : 'CHECKED MODELS · ' + models.length)
+    + '</summary><p>Use a model marked AVAILABLE with your ID. These models match the quoted hold, flight profile and commodity volumes.</p><ul>'
+    + models.map(model => '<li data-hauler-model="' + esc(model.ship.id) + '"><strong>' + esc(model.ship.name)
+      + '</strong><div>' + model.preferredIdentities.map(row => '<span data-state="' + esc(row.shipCheck.state) + '">'
+        + esc(row.label) + ' · ' + ({ checked: 'AVAILABLE', conditional: 'CONDITIONAL', blocked: 'UNAVAILABLE', unknown: 'NO DATA' }[row.shipCheck.state] || 'NO DATA')
+        + '</span>').join('') + '</div></li>').join('') + '</ul><small>Calculation reference: ' + esc(route.ship.name) + '.</small></details>';
 }
 function staleResults() {
   if (!result || busy) return;
@@ -226,11 +248,12 @@ function identityMarkup(route) {
   }));
   const states = { checked: 'AVAILABLE', blocked: 'UNAVAILABLE', conditional: 'CONDITIONAL', unknown: 'NO DATA' };
   const favorites = preferred.map(row => '<details class="supply-preferred-id" data-preferred-identity="' + esc(row.identity.id) + '" data-state="' + esc(row.shipCheck.state) + '"><summary><span>' + esc(row.label) + '</span><b>' + (states[row.shipCheck.state] || 'NO DATA') + '</b></summary><p>' + esc(row.shipCheck.reason) + '</p></details>').join('');
-  const tags = rows => rows.map(row => '<span data-compatible-identity="' + esc(row.identity.id) + '">' + esc(row.identity.name) + '</span>').join('');
+  const tags = rows => rows.map(row => '<span data-compatible-identity="' + esc(row.identity.id) + '">' + esc(row.identity.name)
+    + (row.models?.length ? '<small>' + row.models.map(model => esc(model.name)).join(', ') + '</small>' : '') + '</span>').join('');
   const others = checked.some(row => priority(row.identity.id) === 99);
   const extra = others ? '<details class="supply-all-identities"><summary>SHOW ALL ' + checked.length + ' COMPATIBLE IDs</summary><div class="supply-id-tags">' + tags(checked) + '</div></details>' : '';
   const pending = conditional.length ? '<details><summary>' + conditional.length + ' CONDITIONAL ID' + (conditional.length === 1 ? '' : 's') + ' · CHECK RULES / ACCESS</summary>' + conditional.slice(0, 8).map(row => '<p><b>' + esc(row.identity.name) + '</b> · ' + esc(row.shipCheck.reason) + '</p>').join('') + (conditional.length > 8 ? '<p>' + (conditional.length - 8) + ' more conditional profiles omitted.</p>' : '') + '</details>' : '';
-  return '<div class="supply-identity-note" data-state="' + (checked.length ? 'checked' : 'conditional') + '"><strong>' + (checked.length ? 'COMPATIBLE IDs · ' + checked.length : 'CONDITIONAL ACCESS') + '</strong><div class="supply-preferred-ids">' + favorites + '</div><small>For this ship and every stop, including return cargo. Open an ID for its result. Personal reputation, membership and POB permissions still apply.</small>' + extra + pending + '</div>';
+  return '<div class="supply-identity-note" data-state="' + (checked.length ? 'checked' : 'conditional') + '"><strong>' + (checked.length ? 'COMPATIBLE IDs · ' + checked.length : 'CONDITIONAL ACCESS') + '</strong><div class="supply-preferred-ids">' + favorites + '</div><small>Open an ID for matching models checked for every stop, including return cargo. Personal reputation, membership and POB permissions still apply.</small>' + extra + pending + '</div>';
 }
 function renderResults() {
   $('supplySource').textContent = sourceMarkup();
@@ -241,6 +264,7 @@ function renderResults() {
     return;
   }
   $('supplyResults').innerHTML = result.results.map(route => {
+    const category = route.hauler || haulerCategory(route.ship);
     const extra = route.extraSeconds > 1 ? `+${duration(route.extraSeconds)} vs standard import` : route.extraSeconds < -1 ? `${duration(-route.extraSeconds)} sooner` : 'No extra flight time';
     const warnings = [...new Set(route.stops)].filter(id => id !== result.origin && (accessFor(route.identity?.id).byId[id]?.state === 'unknown' || prepared.dataset.bases.find(base => base.id === id)?.kind === 'pob'));
     const volume = route.legs.at(-1).volume;
@@ -254,8 +278,9 @@ function renderResults() {
       ? `<p class="supply-recommendation-reason"><strong>WHY THIS ROUTE</strong>Lowest material purchase price within the time and delivery-rate limit.${comparison.buyPriceDelta > 1e-6 ? ` ${money(comparison.buyPriceDelta)} less per unit than fast standard import.` : ' Equal purchase prices are compared by whole-trip $/hour.'}${comparison.hourlyProfitDelta > .01 ? ` ${money(comparison.hourlyProfitDelta)} more per hour than fast standard import.` : ''}</p>`
       : comparison?.kind === 'profit-within-limit'
       ? `<p class="supply-recommendation-reason"><strong>WHY THIS ROUTE</strong>${money(comparison.hourlyProfitDelta)} more per hour than fast standard import, for ${timing} and ${delivery}.${comparison.profitDelta > 0 ? ` ${money(comparison.profitDelta)} more per run.` : ''}</p>` : '';
-    return `<article class="supply-result${route.recommendation ? ' supply-recommended' : express ? ' supply-express' : ''}"><header><div><small>${esc(route.label)}</small><h3>${esc(route.ship.name)}</h3></div><span>${count(route.ship.cargo)} HOLD · ${route.ship.cruise} M/S</span></header>
+    return `<article data-hauler-category="${esc(category.id)}" data-reference-ship="${esc(route.ship.id)}" class="supply-result${route.recommendation ? ' supply-recommended' : express ? ' supply-express' : ''}"><header><div><small>${esc(route.label)}</small><h3>${esc(category.title)}</h3></div><span>${category.cruise} M/S · ${category.dockLabel} DOCK</span></header>
       ${identityMarkup(route)}
+      ${modelMarkup(route)}
       ${expressNote}
       <div class="supply-itinerary">${route.legs.map((leg, i) => `${i === 0 ? '<span>RHW</span>' : ''}<b aria-hidden="true">→</b><span>${esc(leg.target === result.origin ? 'RHW' : leg.to)}</span>`).join('')}</div>
       <div class="supply-metrics"><div><small>DELIVER TO RHW</small><strong>${count(route.delivered)}</strong><span>${esc(result.commodity.name)}</span></div><div><small>EST. ROUND TRIP</small><strong>${duration(route.seconds)}</strong><span>${esc(extra)}</span></div><div><small>SUPPLY / HOUR</small><strong>${count(route.unitsPerHour)}</strong><span>units per hour</span></div><div><small>HAULER PROFIT</small><strong class="${route.profit < 0 ? 'supply-loss' : ''}">${money(route.profit)}</strong><span>${money(route.hourlyProfit)} / hour</span></div></div>
@@ -277,6 +302,7 @@ function renderExports() {
     return;
   }
   $('supplyResults').innerHTML = result.results.map(route => {
+    const category = route.hauler || haulerCategory(route.ship);
     const buyer = route.buyer, back = route.returnTrade;
     const exportLoss = (route.outboundProfit ?? route.profit) < 0;
     const warnings = [...new Set(route.stops)].filter(id => id !== result.origin && (accessFor(route.identity?.id).byId[id]?.state === 'unknown' || prepared.dataset.bases.find(base => base.id === id)?.kind === 'pob'));
@@ -288,8 +314,9 @@ function renderExports() {
       : `No profitable return found among the checked markets within ${result.stats.extraPercent}% extra time and the reported cash, stock and storage limits.`;
     const backMarkup = back ? `<section class="supply-return-cargo"><small>RETURN CARGO</small><h4>${count(back.quantity)} ${esc(back.name)} <span>+${money(back.profit)}</span></h4><p>${esc(back.from)} → ${esc(back.to)} · BUY ${money(back.buy)} / UNIT · SELL ${money(back.sell)} / UNIT</p><p>EXPORT MARGIN ${money(route.outboundProfit)} + RETURN MARGIN ${money(back.profit)} = ${money(route.profit)} PER RUN</p><p>${duration(Math.max(0, route.extraSeconds))} extra vs empty return · ${money(route.hourlyProfit - route.emptyReturn.hourlyProfit)} / hour more · Return load limited by ${esc(back.limiting.join(' / '))}</p></section>`
       : `<p class="supply-ship-note supply-return-note">EMPTY RETURN · ${emptyNote}</p>`;
-    return `<article class="supply-result${route.recommendation ? ' supply-recommended' : exportLoss || route.profit <= 0 ? ' supply-express' : ''}"><header><div><small>${esc(route.label)}</small><h3>${esc(buyer.name)}</h3></div><span>${esc(route.ship.name)} · ${count(route.ship.cargo)} HOLD</span></header>
+    return `<article data-hauler-category="${esc(category.id)}" data-reference-ship="${esc(route.ship.id)}" class="supply-result${route.recommendation ? ' supply-recommended' : exportLoss || route.profit <= 0 ? ' supply-express' : ''}"><header><div><small>${esc(route.label)}</small><h3>${esc(buyer.name)}</h3></div><span>${esc(category.title)}<br>${category.cruise} M/S · ${category.dockLabel} DOCK</span></header>
       ${identityMarkup(route)}
+      ${modelMarkup(route)}
       ${exportLoss || route.profit <= 0 ? '<p class="supply-express-note"><strong>NO PROFITABLE HAULER EXPORT</strong>This buyer pays at or below RHW’s sale price. The export margin is shown separately from any return trade; this is not a profitable export recommendation.</p>' : ''}
       <div class="supply-itinerary"><span>RHW</span>${route.legs.map(leg => `<b aria-hidden="true">→</b><span>${esc(leg.target === result.origin ? 'RHW' : leg.to)}${!leg.good ? ' · empty' : ''}</span>`).join('')}</div>
       <div class="supply-metrics"><div><small>SELL AT DESTINATION</small><strong>${count(route.delivered)}</strong><span>${esc(result.commodity.name)}</span></div><div><small>EST. ROUND TRIP</small><strong>${duration(route.seconds)}</strong><span>${duration(route.deliverySeconds)} until export delivery</span></div><div><small>RHW EXPORT RECEIPTS</small><strong>${money(route.rhwRevenue)}</strong><span>export revenue, before costs</span></div><div><small>HAULER PROFIT</small><strong class="${route.profit < 0 ? 'supply-loss' : ''}">${money(route.profit)}</strong><span>${money(route.hourlyProfit)} / hour</span></div></div>
@@ -316,7 +343,7 @@ async function search(force = false) {
     await prepare(force, controller.signal);
     clearTimeout(timeout);
     if (token !== request || !dialog.open) return;
-    identityOptions(); shipOptions(); $('supplySource').textContent = sourceMarkup();
+    identityOptions(); haulerOptions(); shipOptions(); $('supplySource').textContent = sourceMarkup();
     const shipId = $('supplyShip').value;
     const profiles = prepared.ships;
     if (!profiles.length) throw Error('No usable ship profile; select another ship.');
@@ -336,7 +363,7 @@ async function search(force = false) {
       scopes: prepared.identities.map(identity => ({ identity, blocked: accessFor(identity.id).blocked,
         accessReady: accessFor(identity.id).ready, approvalDocks: accessFor(identity.id).approvalDocks, unverifiedDocks: accessFor(identity.id).unverifiedDocks })),
       options: { mode: $('supplyMode').value, commodity: $('supplyCommodity').value, extraPercent: Number($('supplyExtra').value), returnCargo: $('supplyBackhaul').checked, includePobs: $('supplyPobs').checked,
-        shipId, includeUnverified: $('supplyUnverified').checked, identityId: $('supplyIdentity').value, importGoal: $('supplyImportGoal').value, includeRestrictedPobs: $('supplyRestrictedPobs').checked,
+        shipId, haulerId: $('supplyHauler').value, includeUnverified: $('supplyUnverified').checked, identityId: $('supplyIdentity').value, importGoal: $('supplyImportGoal').value, includeRestrictedPobs: $('supplyRestrictedPobs').checked,
         capital: capital ? Number(capital) : null, quantity: quantity ? Number(quantity) : null } });
   } catch (error) {
     if (token === request && dialog.open) { setBusy(false, controller.signal.aborted ? 'UPLINK TIMED OUT · RETRY OR REFRESH MARKETS' : error.message); $('supplySource').textContent = sourceMarkup(); }
@@ -350,8 +377,8 @@ function mount() {
   if (dialog) return;
   dialog = document.createElement('dialog'); dialog.id = 'rhwSupplyDialog'; dialog.className = 'rhw-supply-dialog';
   dialog.setAttribute('aria-labelledby', 'supplyTitle');
-  dialog.innerHTML = `<header class="supply-heading"><div><small>RHW LOGISTICS</small><h2 id="supplyTitle">RHW TRADE DESK</h2><p>Plan imports to RHW and exports from RHW. Compare ships, time and hauling profit.</p></div><button type="button" id="supplyClose" aria-label="Close Trade Desk">CLOSE</button></header>
-    <div class="supply-content"><p class="supply-source">Find the best route across available IDs, then see which IDs work with the recommended ship. Keep one ID for the whole trip. Ship and ID purchase costs are excluded.</p><form id="supplyForm"><div class="supply-fields supply-main-fields"><label>TRADE MODE<select id="supplyMode"><option value="supply">IMPORT</option><option value="export">EXPORT</option></select></label><label>COMMODITY<select id="supplyCommodity"></select></label><label>SHIP<select id="supplyShip"></select></label></div><details class="supply-settings"><summary id="supplySettingsTitle">IMPORT SETTINGS</summary><div class="supply-fields"><label>LIMIT TO ID<select id="supplyIdentity"><option value="all">AUTO · All available IDs</option></select></label><label data-supply-only>IMPORT PRIORITY<select id="supplyImportGoal"><option value="price">Lowest buy price within time limit</option><option value="income">Best hauler $/hour within time limit</option><option value="speed">Fastest supply rate</option></select></label><label><span id="supplyExtraLabel">MAX EXTRA TIME</span><select id="supplyExtra"><option value="0">Direct import only</option><option value="10">10% extra</option><option value="20" selected>20% extra</option><option value="35">35% extra</option><option value="50">50% extra</option></select></label><label>START CAPITAL · $<input id="supplyCapital" type="number" min="0" step="1" inputmode="numeric" placeholder="Show capital required"></label><label>DELIVERY QUANTITY<input id="supplyQuantity" type="number" min="1" step="1" inputmode="numeric" placeholder="Full hold within RHW limits"></label><label class="supply-check" data-export-only hidden><input id="supplyBackhaul" type="checkbox" checked>Find profitable return cargo</label><label class="supply-check"><input id="supplyPobs" type="checkbox" checked><span id="supplyPobsLabel">Include POB sellers</span></label><label class="supply-check"><input id="supplyUnverified" type="checkbox">Include unverified ID / docking rules · conditional quotes</label><label class="supply-check"><input id="supplyRestrictedPobs" type="checkbox">Include approval-only POBs · conditional quotes</label></div><p id="supplySettingsCopy"></p></details><div class="supply-actions"><button type="submit" id="supplySearch">CALCULATE IMPORT ROUTE</button><button type="button" id="supplyRefresh">REFRESH MARKETS</button><button type="button" id="supplyCancel" hidden>CANCEL SEARCH</button></div></form><p id="supplySource" class="supply-source"></p><p id="supplyStatus" role="status" aria-live="polite"></p><div id="supplyResults"></div></div>`;
+  dialog.innerHTML = `<header class="supply-heading"><div><small>RHW LOGISTICS</small><h2 id="supplyTitle">RHW TRADE DESK</h2><p>Plan imports to RHW and exports from RHW. Compare hauler categories, time and hauling profit.</p></div><button type="button" id="supplyClose" aria-label="Close Trade Desk">CLOSE</button></header>
+    <div class="supply-content"><p class="supply-source">Find a hauler category for the route, then open an ID to see which checked models work for the whole trip. Ship and ID purchase costs are excluded.</p><form id="supplyForm"><div class="supply-fields supply-main-fields"><label>TRADE MODE<select id="supplyMode"><option value="supply">IMPORT</option><option value="export">EXPORT</option></select></label><label>COMMODITY<select id="supplyCommodity"></select></label><label>HAULER CATEGORY<select id="supplyHauler"></select></label></div><details class="supply-settings"><summary id="supplySettingsTitle">IMPORT SETTINGS</summary><div class="supply-fields"><label>LIMIT TO ID<select id="supplyIdentity"><option value="all">AUTO · All available IDs</option></select></label><label>SPECIFIC MODEL · OPTIONAL<select id="supplyShip"></select></label><label data-supply-only>IMPORT PRIORITY<select id="supplyImportGoal"><option value="price">Lowest buy price within time limit</option><option value="income">Best hauler $/hour within time limit</option><option value="speed">Fastest supply rate</option></select></label><label><span id="supplyExtraLabel">MAX EXTRA TIME</span><select id="supplyExtra"><option value="0">Direct import only</option><option value="10">10% extra</option><option value="20" selected>20% extra</option><option value="35">35% extra</option><option value="50">50% extra</option></select></label><label>START CAPITAL · $<input id="supplyCapital" type="number" min="0" step="1" inputmode="numeric" placeholder="Show capital required"></label><label>DELIVERY QUANTITY<input id="supplyQuantity" type="number" min="1" step="1" inputmode="numeric" placeholder="Full hold within RHW limits"></label><label class="supply-check" data-export-only hidden><input id="supplyBackhaul" type="checkbox" checked>Find profitable return cargo</label><label class="supply-check"><input id="supplyPobs" type="checkbox" checked><span id="supplyPobsLabel">Include POB sellers</span></label><label class="supply-check"><input id="supplyUnverified" type="checkbox">Include unverified ID / docking rules · conditional quotes</label><label class="supply-check"><input id="supplyRestrictedPobs" type="checkbox">Include approval-only POBs · conditional quotes</label></div><p id="supplySettingsCopy"></p></details><div class="supply-actions"><button type="submit" id="supplySearch">CALCULATE IMPORT ROUTE</button><button type="button" id="supplyRefresh">REFRESH MARKETS</button><button type="button" id="supplyCancel" hidden>CANCEL SEARCH</button></div></form><p id="supplySource" class="supply-source"></p><p id="supplyStatus" role="status" aria-live="polite"></p><div id="supplyResults"></div></div>`;
   document.body.append(dialog);
   $('supplyClose').addEventListener('click', () => dialog.close());
   dialog.addEventListener('close', () => {
@@ -379,6 +406,8 @@ function mount() {
     if (event.target.id === 'supplyMode') {
       result = null; $('supplyResults').innerHTML = ''; updateMode(selectedByMode[$('supplyMode').value]); search();
     } else if (event.target.id === 'supplyIdentity') {
+      result = null; $('supplyResults').innerHTML = ''; haulerOptions(); shipOptions(); search();
+    } else if (event.target.id === 'supplyHauler') {
       result = null; $('supplyResults').innerHTML = ''; shipOptions(); search();
     } else {
       if (event.target.id === 'supplyCommodity') selectedByMode[$('supplyMode').value] = $('supplyCommodity').value;
@@ -391,7 +420,7 @@ export function open(next) {
   const selected = next.commodity || $('supplyCommodity').value;
   if (next.mode) $('supplyMode').value = next.mode;
   updateMode(selected);
-  identityOptions(); shipOptions();
+  identityOptions(); haulerOptions(); shipOptions();
   if (!dialog.open) dialog.showModal();
   search();
 }

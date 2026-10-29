@@ -181,6 +181,28 @@
           "dsy_license_fc_j_grp": 1
         }
       }
+    },
+    {
+      "nickname": "dsy_super_gallic_train",
+      "name": "Gallic Super Train",
+      "class": 9,
+      "type": "transport",
+      "hold_size": 6250,
+      "cruise_speed": 300,
+      "dock_type": 2,
+      "ship_packages": [
+        {
+          "nickname": "dsy_super_gallic_train_package"
+        }
+      ],
+      "market_goods": null,
+      "tech_compat": {
+        "techchompat_by_id": {
+          "dsy_license_br_m_grp": 1,
+          "dsy_license_co_os_grp": 1,
+          "dsy_license_fc_j_grp": 1
+        }
+      }
     }
   ],
   "patchFlightRules": {

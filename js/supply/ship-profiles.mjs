@@ -25,6 +25,13 @@ const reasonableInteger=(value,lower,upper)=>{
 };
 const profileKey=value=>'ship:'+String(value);
 const short=value=>String(value??'').trim().slice(0,100);
+// Explicitly removed at the owner's request. Public API + current recipe
+// inspection found no regular acquisition source (28 October 2026).
+// Apply to cached profiles too; a ship package alone does not prove availability.
+export function isSelectableShip(ship){
+  const nickname=String(ship?.nickname||ship?.id?.replace(/^ship:/,'')||'').toLowerCase();
+  return nickname!=='dsy_super_gallic_train';
+}
 // The live ships endpoint omits these two shiparch flags and engine charge.
 // Verified in https://patch.discoverygc.com/20261023-patch.zip:
 // DATA/SHIPS/shiparch.ini and DATA/EQUIPMENT/engine_equip.ini.
@@ -38,7 +45,7 @@ export function shipFlightRules(ship){
     cruiseCharge:typeof charge==='number'&&Number.isFinite(charge)&&charge>=0&&charge<=300?charge:nickname==='dsy_cargobarge_1'?15:5};
 }
 function makeShip(raw){
-  if(!raw||typeof raw!=='object'||Array.isArray(raw))return null;
+  if(!raw||typeof raw!=='object'||Array.isArray(raw)||!isSelectableShip(raw))return null;
   const nickname=short(raw.nickname),cargo=reasonableInteger(raw.hold_size,1,50000),
     cruise=reasonableInteger(raw.cruise_speed,1,3000),
     dockType=reasonableInteger(raw.dock_type,1,3),dock=DOCK_CLASSES[dockType];

@@ -83,6 +83,12 @@ def main():
         tractors.append(next(row for row in captured_ids['tractors'] if row['nickname'] == spa_id))
         idcards[spa_id] = captured_ids['cards'][spa_id]
         tech['techchompat_by_id'][spa_id] = 1
+        ships.append({'nickname': 'fixture_spa_train', 'name': 'Spa Cargo Test Model', 'class': 9, 'type': 'transport',
+                      'hold_size': 5000, 'cruise_speed': 350, 'dock_type': 2,
+                      'ship_packages': [{'nickname': 'fixture_spa_train_package'}],
+                      'tech_compat': {'techchompat_by_id': {**tech['techchompat_by_id'], bmm_id: .1}}})
+        flight_fixture = json.loads((Path(__file__).resolve().parent / 'fixtures/hauler-flight-2026-10-28.json').read_text())
+        ships.append(next(row for row in flight_fixture['ships'] if row['nickname'] == 'dsy_super_gallic_train'))
         for identity in tractors:
             identity['market_goods'] = [{'base_sells': True, 'price_base_sells_for': 500, 'region_name': 'BRETONIA', 'faction_nick': 'br_n_grp', 'base_name': 'Fixture Station'}]
         neutral_id = 'dsy_license_neutral'
@@ -90,7 +96,7 @@ def main():
         idcards[neutral_id] = {'infocard': [{'phrases': [{'phrase': 'Allowed ships: Fighters, Freighters, Transports, Gunboats'}]}, {'phrases': [{'phrase': 'This ID can only be given by an Admin and may not be transferred or replaced without Admin permission.'}]}]}
         fixture = {'pobs': [pob, express_pob, export_buyer], 'commodities': commodities, 'ships': ships,
                    'flightTestShip': next(row for row in captured_ids['ships'] if row['nickname'] == 'dsy_cargobarge_1'),
-                   'techTestShip': next(row for row in json.loads((Path(__file__).resolve().parent / 'fixtures/hauler-flight-2026-10-28.json').read_text())['ships'] if row['nickname'] == 'dsy_gallic_train_adv'),
+                   'techTestShip': next(row for row in flight_fixture['ships'] if row['nickname'] == 'dsy_gallic_train_adv'),
                    'npc_bases': [{'nickname': 'trafalgar', 'faction_nick': 'br_n_grp'}, {'nickname': 'molly', 'faction_nick': 'fc_m_grp'}, {'nickname': 'waterloo', 'faction_nick': 'br_n_grp'}, {'nickname': 'oder', 'faction_nick': 'br_n_grp'}],
                    'factions': [], 'tractors': tractors, 'idcards': idcards}
         script = "<script>window.supplyFixture=" + json.dumps(fixture) + ";window.supplyNav=" + json.dumps(nav) + ";window.supplyRequests=[];const originalFetch=window.fetch;window.fetch=(url,options)=>{const u=String(url);if(u.includes('/api/')){const key=u.split('/api/')[1].split('?')[0];supplyRequests.push(key);if(window.supplyOffline)return Promise.reject(Error('Fixture offline'));const response=key==='infocards'?JSON.parse(options.body).map(id=>supplyFixture.idcards[id]||{error:'missing'}):supplyFixture[key]||[];return Promise.resolve(new Response(JSON.stringify(response),{status:200}));}if(u.includes('/assets/navigation.json.gz'))return Promise.resolve(new Response(JSON.stringify(supplyNav),{status:200}));return originalFetch(url,options);};</script>"
@@ -133,6 +139,13 @@ def main():
             raise RuntimeError(f'Supply context/worker result failed: {facts}')
         if 'RECOMMENDED' not in facts['first'] or 'Waterloo Station' not in facts['first'] or 'WHY THIS ROUTE' not in (facts['reason'] or '') or 'more per hour' not in facts['reason']:
             raise RuntimeError(f'Worthwhile backhaul must be recommended first and explained: {facts}')
+        category_ui = base.ev(cdp, "(()=>{const card=document.querySelector('.supply-result'),models=card.querySelector('.supply-models');return {title:card.querySelector('h3').textContent,haulerMain:!!supplyHauler.closest('.supply-main-fields'),modelAdvanced:!!supplyShip.closest('.supply-settings'),closed:!models.open,hidden:[...models.querySelectorAll('li')].every(n=>!n.getClientRects().length),count:models.querySelectorAll('li').length,removed:[...supplyShip.options,...supplyHauler.options].some(n=>/super_gallic_train|Gallic Super Train|6,250/.test(n.value+' '+n.textContent))}})()")
+        if category_ui['title'] != '5,000 Cargo Transport' or not category_ui['haulerMain'] or not category_ui['modelAdvanced'] or not category_ui['closed'] or not category_ui['hidden'] or category_ui['count'] != 2 or category_ui['removed']:
+            raise RuntimeError(f'Categories must lead, optional models stay collapsed, and the removed train cannot enter API-backed selectors: {category_ui}')
+        base.ev(cdp, "document.querySelector('.supply-result .supply-models>summary').click()")
+        if not base.ev(cdp, "(()=>{const row=document.querySelector('[data-hauler-model=\"ship:fixture_spa_train\"]');return row.getClientRects().length>0&&row.innerText.includes('BMM · UNAVAILABLE')&&row.innerText.includes('Orbital Spa & Cruise · AVAILABLE')})()"):
+            raise RuntimeError('Category models must show their own ID status; a compatible category cannot make the 10% model compatible with BMM')
+        base.ev(cdp, "document.querySelector('.supply-result .supply-models>summary').click()")
         express = base.ev(cdp, "(()=>({text:document.querySelector('.supply-express')?.innerText,recommended:document.querySelector('.supply-express')?.classList.contains('supply-recommended')}))()")
         if express['recommended'] or 'Corporate Shipping Airways' not in (express['text'] or '') or 'MATERIAL DELIVERY LOSS' not in express['text'] or '-$75,000' not in express['text']:
             raise RuntimeError(f'Costly POB must be a clearly marked express alternative: {express}')
@@ -146,6 +159,12 @@ def main():
             out.mkdir(parents=True, exist_ok=True)
             shot = cdp.call('Page.captureScreenshot', {'format': 'png'})
             (out / f'supply-route-{width}.png').write_bytes(base64.b64decode(shot['data']))
+        base.ev(cdp, "(()=>{supplyHauler.value=[...supplyHauler.options].find(o=>o.textContent.startsWith('3,600 Cargo Transport')).value;supplyHauler.dispatchEvent(new Event('change',{bubbles:true}));return true})()")
+        wait_for(cdp, "!supplySearch.disabled && supplyResults.dataset.stale==='false'")
+        if not base.ev(cdp, "[...document.querySelectorAll('.supply-result')].every(n=>n.querySelector('h3').textContent==='3,600 Cargo Transport') && !supplyShip.querySelector('[value=\"ship:dsy_advanced_train\"]')"):
+            raise RuntimeError('Choosing a category must restrict the worker results and optional model selector')
+        base.ev(cdp, "(()=>{supplyHauler.value='auto';supplyHauler.dispatchEvent(new Event('change',{bubbles:true}));return true})()")
+        wait_for(cdp, "!supplySearch.disabled && supplyResults.dataset.stale==='false'")
         base.ev(cdp, "(()=>{document.getElementById('supplyPobs').checked=false;document.getElementById('supplyPobs').dispatchEvent(new Event('change',{bubbles:true}));document.getElementById('supplySearch').click();return true})()")
         wait_for(cdp, "!document.getElementById('supplySearch').disabled && document.getElementById('supplyResults').dataset.stale==='false'")
         if base.ev(cdp, "!!document.querySelector('.supply-express') || document.getElementById('supplyResults').innerText.includes('Corporate Shipping Airways')"):
@@ -211,8 +230,8 @@ def main():
         wait_for(cdp, "!supplySearch.disabled")
         base.ev(cdp, "(()=>{supplyCommodity.value='Wildcat Gold';supplyCommodity.dispatchEvent(new Event('change',{bubbles:true}));supplyShip.value='auto';supplySearch.click();return true})()")
         wait_for(cdp, "!supplySearch.disabled && !!document.querySelector('.supply-result [data-compatible-identity]')")
-        identity_result = base.ev(cdp, "(()=>({first:document.querySelector('.supply-result').innerText,compatible:[...document.querySelectorAll('.supply-result:first-child .supply-id-tags>span')].map(n=>n.dataset.compatibleIdentity),idFilter:supplyIdentity.value,goal:supplyImportGoal.value,idInAdvanced:!!supplyIdentity.closest('.supply-settings'),mainFields:document.querySelectorAll('.supply-main-fields select').length,panel:!!document.querySelector('.supply-identity-comparison')}))()")
-        if 'Small Transport' not in identity_result['first'] or 'Dublin Molly Test Base' not in identity_result['first'] or sorted(identity_result['compatible']) != sorted([junker_id, freelancer_id]) or identity_result['idFilter'] != 'all' or identity_result['goal'] != 'price' or not identity_result['idInAdvanced'] or identity_result['mainFields'] != 3 or identity_result['panel'] or 'Neutral ID' in identity_result['first'] or 'CONDITIONAL ID' in identity_result['first']:
+        identity_result = base.ev(cdp, "(()=>({first:document.querySelector('.supply-result').innerText,reference:document.querySelector('.supply-result').dataset.referenceShip,compatible:[...document.querySelectorAll('.supply-result:first-child .supply-id-tags>span')].map(n=>n.dataset.compatibleIdentity),idFilter:supplyIdentity.value,goal:supplyImportGoal.value,idInAdvanced:!!supplyIdentity.closest('.supply-settings'),mainFields:document.querySelectorAll('.supply-main-fields select').length,panel:!!document.querySelector('.supply-identity-comparison')}))()")
+        if '3,600 Cargo Transport' not in identity_result['first'] or identity_result['reference'] != 'ship:small_transport' or 'Dublin Molly Test Base' not in identity_result['first'] or sorted(identity_result['compatible']) != sorted([junker_id, freelancer_id]) or identity_result['idFilter'] != 'all' or identity_result['goal'] != 'price' or not identity_result['idInAdvanced'] or identity_result['mainFields'] != 3 or identity_result['panel'] or 'Neutral ID' in identity_result['first'] or 'CONDITIONAL ID' in identity_result['first']:
             raise RuntimeError(f'Default route-first search must recommend the closer allowed hauler and show all compatible IDs without a preceding ID panel: {identity_result}')
         preferred = base.ev(cdp, "(()=>{const card=document.querySelector('.supply-result');const all=card.querySelector('.supply-all-identities');return {ids:[...card.querySelectorAll('[data-preferred-identity]')].map(n=>({id:n.dataset.preferredIdentity,state:n.dataset.state})),closed:!!all&&!all.open,summary:all?.querySelector('summary').textContent,hidden:[...all.querySelectorAll('[data-compatible-identity]')].every(n=>!n.getClientRects().length)}})()")
         if preferred['ids'] != [{'id': bmm_id, 'state': 'blocked'}, {'id': junker_id, 'state': 'checked'}, {'id': spa_id, 'state': 'blocked'}] or not preferred['closed'] or not preferred['hidden'] or 'SHOW ALL 2 COMPATIBLE IDs' not in preferred['summary']:
@@ -246,8 +265,8 @@ def main():
         wait_for(cdp, "!supplySearch.disabled && !!supplyShip.querySelector('[value=\"ship:dsy_cargobarge_1\"]')")
         base.ev(cdp, "(()=>{supplyCommodity.value='Ablative Armor Plating';supplyShip.value='ship:dsy_cargobarge_1';supplyPobs.checked=false;supplyExtra.value='0';supplySearch.click();return true})()")
         wait_for(cdp, "!supplySearch.disabled && supplyResults.dataset.stale==='false' && !!document.querySelector('.supply-result')")
-        flight = base.ev(cdp, "(()=>{const card=document.querySelector('.supply-result');return {ship:card.querySelector('h3').textContent,note:card.querySelector('.supply-ship-note').textContent,time:card.querySelector('.supply-metrics>div:nth-child(2) strong').textContent,option:supplyShip.selectedOptions[0].textContent}})()")
-        if flight['ship'] != 'Barge Type I' or 'NO TRADE LANES' not in flight['note'] or '15 S CRUISE CHARGE' not in flight['note'] or 'NO TRADE LANES' not in flight['option'] or int(flight['time'].split(':')[0]) < 100:
+        flight = base.ev(cdp, "(()=>{const card=document.querySelector('.supply-result');return {ship:card.querySelector('h3').textContent,reference:card.dataset.referenceShip,note:card.querySelector('.supply-ship-note').textContent,time:card.querySelector('.supply-metrics>div:nth-child(2) strong').textContent,option:supplyShip.selectedOptions[0].textContent}})()")
+        if flight['ship'] != '30,000 Cargo Bulk Hauler' or flight['reference'] != 'ship:dsy_cargobarge_1' or 'NO TRADE LANES' not in flight['note'] or '15 S CRUISE CHARGE' not in flight['note'] or 'NO TRADE LANES' not in flight['option'] or int(flight['time'].split(':')[0]) < 100:
             raise RuntimeError(f'Barge UI must use cruise-only flight time and explain its flight profile: {flight}')
         for width in [390, 1440]:
             cdp.call('Emulation.setDeviceMetricsOverride', {'width': width, 'height': 1000, 'deviceScaleFactor': 1, 'mobile': width < 760})
@@ -263,7 +282,7 @@ def main():
             raise RuntimeError(f'Known 10% Spa tech must disable the Gallic Advanced Train even with unverified rules enabled: {tech_option}')
         base.ev(cdp, "(()=>{supplyShip.value='ship:dsy_gallic_train_adv';supplySearch.click();return true})()")
         wait_for(cdp, "!supplySearch.disabled && supplyResults.dataset.stale==='false'")
-        if not base.ev(cdp, "supplyShip.value==='auto' && ![...document.querySelectorAll('.supply-result h3')].some(n=>n.textContent==='Gallic Advanced Train')"):
+        if not base.ev(cdp, "supplyShip.value==='auto' && !document.querySelector('[data-reference-ship=\"ship:dsy_gallic_train_adv\"],[data-hauler-model=\"ship:dsy_gallic_train_adv\"]')"):
             raise RuntimeError('A restored/programmatic partial-tech selection must reset to Auto without quoting that hull')
         base.ev(cdp, "supplyClose.click()")
         wait_for(cdp, "!rhwSupplyDialog.open && document.activeElement.classList.contains('header-trade-button')", 3)
