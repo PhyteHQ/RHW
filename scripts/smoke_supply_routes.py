@@ -170,8 +170,8 @@ def main():
         wait_for(cdp, "!supplySearch.disabled && supplyResults.dataset.stale==='false'")
         if not base.ev(cdp, "[...document.querySelectorAll('.supply-result')].every(n=>n.querySelector('h3').textContent==='3,600 Cargo Transport') && !supplyShip.querySelector('[value=\"ship:dsy_advanced_train\"]')"):
             raise RuntimeError('Choosing a category must restrict the worker results and optional model selector')
-        if not base.ev(cdp, "supplyHauler.selectedOptions[0].textContent.includes('600 m/s') && supplyResults.innerText.includes('USER SPEED 600 M/S') && supplyResults.innerText.includes('REGISTRY 500 M/S')"):
-            raise RuntimeError('The requested 3.6k/600 comparison must identify the custom speed separately from registry data')
+        if not base.ev(cdp, "supplyHauler.selectedOptions[0].textContent.includes('500 m/s') && !supplyResults.innerText.includes('USER SPEED') && !supplyResults.innerText.includes('REGISTRY 500 M/S')"):
+            raise RuntimeError('The corrected 3.6k/500 profile must use registry speed without the retired user-speed note')
         base.ev(cdp, "(()=>{supplyHauler.value='auto';supplyHauler.dispatchEvent(new Event('change',{bubbles:true}));return true})()")
         wait_for(cdp, "!supplySearch.disabled && supplyResults.dataset.stale==='false'")
         base.ev(cdp, "(()=>{document.getElementById('supplyPobs').checked=false;document.getElementById('supplyPobs').dispatchEvent(new Event('change',{bubbles:true}));document.getElementById('supplySearch').click();return true})()")

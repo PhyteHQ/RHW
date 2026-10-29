@@ -16,7 +16,6 @@ const esc = value => String(value ?? '').replace(/[&<>"']/g, char => ({ '&': '&a
 const count = value => Math.round(value).toLocaleString('en-GB');
 const money = value => `${value < 0 ? '-' : ''}$${count(Math.abs(value))}`;
 const duration = seconds => `${Math.floor(Math.round(seconds) / 60)}:${String(Math.round(seconds) % 60).padStart(2, '0')}`;
-const speedNote = ship => ship.userCruise ? ` · USER SPEED ${ship.cruise} M/S · REGISTRY ${ship.reportedCruise} M/S` : '';
 const date = value => new Date(value).toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
 let dialog, context, worker, abort, request = 0, prepared = null, result = null, busy = false;
 const selectedByMode = { supply: '', export: '' };
@@ -206,7 +205,7 @@ function shipOptions() {
       const checks = ids.map(id => identityShipCheck(id, ship));
       const blocked = checks.length && checks.every(check => check.state === 'blocked');
       const restriction = checks.every(check => check.code === 'tech-incompatible') ? 'TECH INCOMPATIBLE' : 'ID RESTRICTED';
-      return `<option value="${esc(ship.id)}"${blocked ? ' disabled' : ''}>${esc(ship.name)} · ${count(ship.cargo)} hold · ${ship.cruise} m/s · ${ship.dockLabel}${shipFlightRules(ship).tradeLanes ? '' : ' · NO TRADE LANES'}${ship.userCruise ? ' · USER SPEED' : ''}${blocked ? ' · ' + restriction : ''}</option>`;
+      return `<option value="${esc(ship.id)}"${blocked ? ' disabled' : ''}>${esc(ship.name)} · ${count(ship.cargo)} hold · ${ship.cruise} m/s · ${ship.dockLabel}${shipFlightRules(ship).tradeLanes ? '' : ' · NO TRADE LANES'}${blocked ? ' · ' + restriction : ''}</option>`;
     }).join('');
   if (selected && [...selector.options].some(option => option.value === selected && !option.disabled)) selector.value = selected;
 }
@@ -219,7 +218,7 @@ function haulerOptions() {
       const blocked = ids.length && category.models.every(ship => ids.every(id => identityShipCheck(id, ship).state === 'blocked'));
       return '<option value="' + esc(category.id) + '"' + (blocked ? ' disabled' : '') + '>' + esc(category.label)
         + ' · ' + category.dockLabel + (category.tradeLanes ? '' : ' · NO TRADE LANES')
-        + (category.models[0].userCruise ? ' · USER SPEED' : '') + (blocked ? ' · NO COMPATIBLE ID' : '') + '</option>';
+        + (blocked ? ' · NO COMPATIBLE ID' : '') + '</option>';
     }).join('');
   if (selected && [...selector.options].some(option => option.value === selected && !option.disabled)) selector.value = selected;
 }
@@ -298,7 +297,7 @@ function renderResults() {
       <div class="supply-metrics"><div><small>DELIVER TO RHW</small><strong>${count(route.delivered)}</strong><span>${esc(result.commodity.name)}</span></div><div><small>EST. ROUND TRIP</small><strong>${duration(route.seconds)}</strong><span>${esc(extra)}</span></div><div><small>SUPPLY / HOUR</small><strong>${count(route.unitsPerHour)}</strong><span>units per hour</span></div><div><small>HAULER PROFIT</small><strong class="${route.profit < 0 ? 'supply-loss' : ''}">${money(route.profit)}</strong><span>${money(route.hourlyProfit)} / hour</span></div></div>
       ${reason}
       ${economics ? `<p class="supply-target-price">MATERIAL PURCHASE ${money(economics.cost)} · ${money(economics.buyPerUnit)} / UNIT · RHW PAYS ${money(economics.rhwPerUnit)} / UNIT</p>` : ''}
-      <p class="supply-ship-note">${route.ship.dockLabel} DOCK · ${shipFlightRules(route.ship).tradeLanes ? 'TRADE LANES' : 'NO TRADE LANES'} · ${shipFlightRules(route.ship).cruiseCharge} S CRUISE CHARGE${speedNote(route.ship)} · ${volume} cargo volume / unit · Start capital ${money(route.capitalNeeded)} · RHW pays ${money(route.rhwPayout)}</p>
+      <p class="supply-ship-note">${route.ship.dockLabel} DOCK · ${shipFlightRules(route.ship).tradeLanes ? 'TRADE LANES' : 'NO TRADE LANES'} · ${shipFlightRules(route.ship).cruiseCharge} S CRUISE CHARGE · ${volume} cargo volume / unit · Start capital ${money(route.capitalNeeded)} · RHW pays ${money(route.rhwPayout)}</p>
       ${warnings.length ? '<p class="supply-access-note">Private POB owner exceptions and personal reputation may apply at ' + warnings.map(id => esc(prepared.dataset.bases.find(base => base.id === id)?.name || id)).join(', ') + '.</p>' : ''}
       <details class="supply-details"><summary>FLIGHT + TRADE STEPS</summary>${route.legs.map((leg, i) => `<section><h4>${i + 1}. ${esc(leg.from)} → ${esc(leg.to)}</h4><p>${leg.good ? `BUY ${count(route.quantities[i])} ${esc(leg.name)} · ${money(leg.buy)} each<br>SELL ${leg.target === result.origin ? 'TO RHW' : 'AT DESTINATION'} · ${money(leg.sell)} each · ${money(route.quantities[i] * leg.margin)} profit` : 'EMPTY APPROACH'}</p><small>${esc(leg.fromSystem || '')} → ${esc(leg.toSystem || '')} · ${duration(leg.flight.seconds)} flight · ${leg.flight.jumps} jumps</small><p class="supply-path">${esc(timePath(leg))}</p></section>`).join('')}
       <p>Estimates use trade lanes at 2,500 m/s only when this hull can use them, this ship's cruise speed and charge time, 15 s per jump and 30 s per docking operation. Interruptions and manual loading time may vary. Hauler profit includes buying from and selling to RHW. Company manufacturing profit is separate.</p></details></article>`;
@@ -335,7 +334,7 @@ function renderExports() {
       <p class="supply-target-price">BUY EXPORT FROM RHW ${money(route.leg.buy)} / UNIT · EXPORT BUYER PAYS ${money(buyer.price)} / UNIT</p>
       ${limits}
       <p class="supply-ship-note">EXPORT LOAD LIMITED BY ${esc(route.limiting.join(' / '))} · ${count(route.availableAtRhw)} units available above RHW’s reserve · Start capital ${money(route.capitalNeeded)}</p>
-      <p class="supply-ship-note">${route.ship.cruise} M/S · ${shipFlightRules(route.ship).tradeLanes ? 'TRADE LANES' : 'NO TRADE LANES'} · ${shipFlightRules(route.ship).cruiseCharge} S CRUISE CHARGE${speedNote(route.ship)}</p>
+      <p class="supply-ship-note">${route.ship.cruise} M/S · ${shipFlightRules(route.ship).tradeLanes ? 'TRADE LANES' : 'NO TRADE LANES'} · ${shipFlightRules(route.ship).cruiseCharge} S CRUISE CHARGE</p>
       ${backMarkup}
       ${warnings.length ? `<p class="supply-access-note">Personal reputation and POB owner permissions may add restrictions at ${warnings.map(id => esc(prepared.dataset.bases.find(base => base.id === id)?.name || id)).join(', ')}.</p>` : ''}
       <details class="supply-details"><summary>FLIGHT + TRADE STEPS</summary>${route.legs.map((leg, i) => `<section><h4>${i + 1}. ${esc(leg.from)} → ${esc(leg.to)}</h4><p>${leg.good ? `BUY ${count(route.quantities[i])} ${esc(leg.name)} · ${money(leg.buy)} each<br>SELL AT DESTINATION · ${money(leg.sell)} each · ${money(route.quantities[i] * leg.margin)} hauling profit` : 'EMPTY TRANSFER'}</p><small>${esc(leg.fromSystem || '')} → ${esc(leg.toSystem || '')} · ${duration(leg.flight.seconds)} flight · ${leg.flight.jumps} jumps</small><p class="supply-path">${esc(timePath(leg))}</p></section>`).join('')}

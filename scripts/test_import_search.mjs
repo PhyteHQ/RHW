@@ -137,13 +137,16 @@ const fastHull = { ...realTrain, id: 'ship:dsy_firefly', nickname: 'dsy_firefly'
 const available = [...registry, fastHull];
 const fleet = comparisonFleet(available);
 assert.deepEqual(fleet.map(ship => ship.fleetId), ['barge', 'transport-5000', 'pilgrim', 'transport-3600']);
-assert.deepEqual(fleet.map(ship => [ship.cargo, ship.cruise]), [[30000, 90], [5000, 350], [4300, 415], [3600, 600]]);
-assert.equal(fastHull.cruise, 500, 'The source registry is never overwritten by a user speed assumption');
-assert.equal(fleet[3].reportedCruise, 500);
-assert.equal(fleet[3].userCruise, true);
-assert.deepEqual(comparisonFleet(fleet), fleet, 'Cache/worker reapplication retains the original speed provenance');
+assert.deepEqual(fleet.map(ship => [ship.cargo, ship.cruise]), [[30000, 90], [5000, 350], [4300, 415], [3600, 500]]);
+assert.equal(fastHull.cruise, 500);
+assert.equal(Object.hasOwn(fleet[3], 'userCruise'), false);
+assert.equal(Object.hasOwn(fleet[3], 'reportedCruise'), false);
+assert.deepEqual(comparisonFleet(fleet), fleet);
+const cached = { ...fastHull, cruise: 600, reportedCruise: 500, userCruise: true };
+assert.equal(comparisonFleet([cached])[0].cruise, 500, 'An existing 600 m/s cache is migrated before route calculation');
+assert.equal(comparisonFleet([{ ...fastHull, cruise: 600 }]).length, 0, 'A different real registry speed cannot silently become a 500 m/s hull');
 assert.equal(identityShipCheck(spa, { ...fleet[3], techCompat: { [spa.id]: .1 } }).state, 'blocked',
-  'A custom speed never changes the reference hull’s ID or technical restrictions');
+  'Fleet selection never changes the reference hull’s ID or technical restrictions');
 const otherHull = registry.find(ship => ship.nickname === 'zoner_exploration_fr');
 assert.equal((await searchIdentities(market, gifuNav, available, [scope], { ...options, fleetOnly: true, shipId: otherHull.id, includeUnverified: true })).results.length, 0);
 for (const mode of ['supply', 'export']) {
@@ -153,4 +156,4 @@ for (const mode of ['supply', 'export']) {
   assert.ok(result.stats.ships <= 4);
   assert.ok(result.results.every(route => fleet.some(ship => ship.id === route.ship.id)));
 }
-console.log('Import search passed: bounded multi-hull approaches, local alloy profit, seller/buyer disclosure, unverified/approval-only access and the four-profile fleet with explicit user-speed provenance.');
+console.log('Import search passed: bounded multi-hull approaches, local alloy profit, seller/buyer disclosure, unverified/approval-only access, the four-profile fleet and migration of the corrected 500 m/s transport.');

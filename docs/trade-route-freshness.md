@@ -12,9 +12,9 @@ their daily cache. **REFRESH MARKETS** also refreshes these reference datasets.
 
 The Trade Desk compares four reference profiles: Barge (30,000 / 90 m/s),
 5k Transport (5,000 / 350 m/s), Pilgrim (4,300 / current registry speed, 415 m/s
-in the checked API data), and a medium-docking 3.6k Transport. The last profile
-uses the operator's requested 600 m/s assumption; the checked registry hull
-reports 500 m/s. Both values are retained, and the interface marks **USER SPEED**.
+in the checked API data), and a medium-docking 3.6k Transport at 500 m/s.
+The earlier 600 m/s value was a corrected input typo. Cached profiles restore
+their original registry speed before selection; the custom-speed note is retired.
 The reference hull still supplies exact ID, tech, dock, lane and commodity-volume
 rules. Non-fleet hulls cannot enter through a saved selection or worker request.
 
