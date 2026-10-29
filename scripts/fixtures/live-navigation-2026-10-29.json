@@ -1,0 +1,301 @@
+{
+  "capturedAt": "2026-10-29T07:59:53Z",
+  "source": "https://darkstat.dd84ai.com/api/systems",
+  "note": "Compact public API excerpts. The API still marks the user-reported destroyed Galileo/Shikoku gate as Kind 4.",
+  "systems": [
+    {
+      "nickname": "br01",
+      "Jumpholes": [
+        {
+          "Nickname": "br01_to_br10",
+          "Pos": {
+            "X": -28468.900390625,
+            "Y": 0,
+            "Z": 63180.6015625
+          },
+          "Kind": 2,
+          "GotoSystem": "br10"
+        },
+        {
+          "Nickname": "br01_to_br02",
+          "Pos": {
+            "X": 79978,
+            "Y": 0,
+            "Z": -52343
+          },
+          "Kind": 4,
+          "GotoSystem": "br02"
+        },
+        {
+          "Nickname": "br01_to_br03",
+          "Pos": {
+            "X": 72807,
+            "Y": 0,
+            "Z": 60834
+          },
+          "Kind": 4,
+          "GotoSystem": "br03"
+        },
+        {
+          "Nickname": "br01_to_br04",
+          "Pos": {
+            "X": -12034,
+            "Y": 0,
+            "Z": -93084
+          },
+          "Kind": 4,
+          "GotoSystem": "br04"
+        },
+        {
+          "Nickname": "br01_to_br05_hole2",
+          "Pos": {
+            "X": -80531.5,
+            "Y": -4.30175712378333e-28,
+            "Z": 54465.8203125
+          },
+          "Kind": 1,
+          "GotoSystem": "br05"
+        },
+        {
+          "Nickname": "br01_to_br03_hole",
+          "Pos": {
+            "X": 88451,
+            "Y": 0,
+            "Z": 10446
+          },
+          "Kind": 3,
+          "GotoSystem": "br03"
+        },
+        {
+          "Nickname": "br01_to_br04_hole",
+          "Pos": {
+            "X": -57228,
+            "Y": 0,
+            "Z": -73161.1640625
+          },
+          "Kind": 3,
+          "GotoSystem": "br04"
+        },
+        {
+          "Nickname": "br01_to_br05_hole",
+          "Pos": {
+            "X": -70425,
+            "Y": 0,
+            "Z": 26748
+          },
+          "Kind": 3,
+          "GotoSystem": "br05"
+        }
+      ],
+      "Objs": [
+        {
+          "Nickname": "br01_trade_lane_ring_14",
+          "Pos": {
+            "X": -19597.80078125,
+            "Y": 0,
+            "Z": 56111.8984375
+          },
+          "Kind": 2
+        },
+        {
+          "Nickname": "br01_trade_lane_ring_15",
+          "Pos": {
+            "X": -15076.7998046875,
+            "Y": 0,
+            "Z": 51072.8984375
+          },
+          "Kind": 2
+        },
+        {
+          "Nickname": "br01_trade_lane_ring_16",
+          "Pos": {
+            "X": -10056.7998046875,
+            "Y": 0,
+            "Z": 45500.8984375
+          },
+          "Kind": 2
+        }
+      ]
+    },
+    {
+      "nickname": "iw06",
+      "Jumpholes": [
+        {
+          "Nickname": "iw06_to_ku02",
+          "Pos": {
+            "X": 10401,
+            "Y": 0,
+            "Z": -50650
+          },
+          "Kind": 4,
+          "GotoSystem": "ku02"
+        },
+        {
+          "Nickname": "iw06_to_li03",
+          "Pos": {
+            "X": 9200.3720703125,
+            "Y": 0,
+            "Z": 50171.91015625
+          },
+          "Kind": 4,
+          "GotoSystem": "li03"
+        },
+        {
+          "Nickname": "iw06_to_iw05_hole",
+          "Pos": {
+            "X": -40637.4453125,
+            "Y": 0,
+            "Z": -13375.5888671875
+          },
+          "Kind": 3,
+          "GotoSystem": "iw05"
+        },
+        {
+          "Nickname": "iw06_to_li03_hole",
+          "Pos": {
+            "X": -11485.3681640625,
+            "Y": 0,
+            "Z": 33953.3203125
+          },
+          "Kind": 3,
+          "GotoSystem": "li03"
+        },
+        {
+          "Nickname": "iw06_to_iw07_hole",
+          "Pos": {
+            "X": 50600.91015625,
+            "Y": 0,
+            "Z": 20127.564453125
+          },
+          "Kind": 1,
+          "GotoSystem": "iw07"
+        }
+      ],
+      "Objs": [
+        {
+          "Nickname": "iw06_trade_lane_ring_1",
+          "Pos": {
+            "X": 11479.7958984375,
+            "Y": 0,
+            "Z": 39912.08203125
+          },
+          "Kind": 2
+        },
+        {
+          "Nickname": "iw06_trade_lane_ring_2",
+          "Pos": {
+            "X": 13158.828125,
+            "Y": 0,
+            "Z": 32602.216796875
+          },
+          "Kind": 2
+        },
+        {
+          "Nickname": "iw06_trade_lane_ring_3",
+          "Pos": {
+            "X": 14836.935546875,
+            "Y": 0,
+            "Z": 25292.732421875
+          },
+          "Kind": 2
+        }
+      ]
+    },
+    {
+      "nickname": "ku02",
+      "Jumpholes": [
+        {
+          "Nickname": "ku02_to_ku01",
+          "Pos": {
+            "X": -7070.7998046875,
+            "Y": 0,
+            "Z": -51911.80078125
+          },
+          "Kind": 4,
+          "GotoSystem": "ku01"
+        },
+        {
+          "Nickname": "ku02_to_iw06",
+          "Pos": {
+            "X": 41870.44921875,
+            "Y": 0,
+            "Z": 58068.76953125
+          },
+          "Kind": 4,
+          "GotoSystem": "iw06"
+        },
+        {
+          "Nickname": "ku02_to_ku03_hole",
+          "Pos": {
+            "X": -28093.5,
+            "Y": 0,
+            "Z": -31199.19921875
+          },
+          "Kind": 3,
+          "GotoSystem": "ku03"
+        },
+        {
+          "Nickname": "ku02_to_iw05_hole",
+          "Pos": {
+            "X": -37626.3984375,
+            "Y": 0,
+            "Z": 59800.1015625
+          },
+          "Kind": 3,
+          "GotoSystem": "iw05"
+        }
+      ],
+      "Objs": [
+        {
+          "Nickname": "ku02_tl01_01",
+          "Pos": {
+            "X": -5994.7001953125,
+            "Y": 0,
+            "Z": -49655.6015625
+          },
+          "Kind": 2
+        },
+        {
+          "Nickname": "ku02_tl01_02",
+          "Pos": {
+            "X": -2743.60009765625,
+            "Y": 0,
+            "Z": -42896.6015625
+          },
+          "Kind": 2
+        },
+        {
+          "Nickname": "ku02_tl01_03",
+          "Pos": {
+            "X": 507.5,
+            "Y": 0,
+            "Z": -36137.80078125
+          },
+          "Kind": 2
+        }
+      ]
+    }
+  ],
+  "gifu": {
+    "nickname": "gifu_station",
+    "name": "Gifu Station",
+    "system_nickname": "ku01",
+    "money": null,
+    "defense_mode": null,
+    "cargospace": 59011,
+    "shop_items": [
+      {
+        "nickname": "commodity_ship_part_propulsion",
+        "name": "Propulsion Systems",
+        "quantity": 669,
+        "min_stock": 300,
+        "max_stock": 3000,
+        "price": 10500,
+        "sell_price": 1,
+        "volume": 30,
+        "original_volume": 30,
+        "category": "commodity"
+      }
+    ]
+  }
+}

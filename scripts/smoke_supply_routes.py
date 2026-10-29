@@ -99,7 +99,8 @@ def main():
                    'techTestShip': next(row for row in flight_fixture['ships'] if row['nickname'] == 'dsy_gallic_train_adv'),
                    'npc_bases': [{'nickname': 'trafalgar', 'faction_nick': 'br_n_grp'}, {'nickname': 'molly', 'faction_nick': 'fc_m_grp'}, {'nickname': 'waterloo', 'faction_nick': 'br_n_grp'}, {'nickname': 'oder', 'faction_nick': 'br_n_grp'}],
                    'factions': [], 'tractors': tractors, 'idcards': idcards}
-        script = "<script>window.supplyFixture=" + json.dumps(fixture) + ";window.supplyNav=" + json.dumps(nav) + ";window.supplyRequests=[];const originalFetch=window.fetch;window.fetch=(url,options)=>{const u=String(url);if(u.includes('/api/')){const key=u.split('/api/')[1].split('?')[0];supplyRequests.push(key);if(window.supplyOffline)return Promise.reject(Error('Fixture offline'));const response=key==='infocards'?JSON.parse(options.body).map(id=>supplyFixture.idcards[id]||{error:'missing'}):supplyFixture[key]||[];return Promise.resolve(new Response(JSON.stringify(response),{status:200}));}if(u.includes('/assets/navigation.json.gz'))return Promise.resolve(new Response(JSON.stringify(supplyNav),{status:200}));return originalFetch(url,options);};</script>"
+        fixture['systems'] = [{'nickname': 'br01', 'Jumpholes': [], 'Objs': []}]
+        script = "<script>window.supplyFixture=" + json.dumps(fixture) + ";window.supplyNav=" + json.dumps(nav) + ";window.supplyRequests=[];const originalFetch=window.fetch;window.fetch=(url,options)=>{const u=String(url);if(u.includes('/api/')){const key=u.split('/api/')[1].split('?')[0];supplyRequests.push(key);if(window.supplyOffline||key==='systems'&&window.supplyMapOffline)return Promise.reject(Error('Fixture offline'));const response=key==='infocards'?JSON.parse(options.body).map(id=>supplyFixture.idcards[id]||{error:'missing'}):supplyFixture[key]||[];return Promise.resolve(new Response(JSON.stringify(response),{status:200}));}if(u.includes('/assets/navigation.json.gz'))return Promise.resolve(new Response(JSON.stringify(supplyNav),{status:200}));return originalFetch(url,options);};</script>"
         markup = base.document('command/production').replace('<head>', '<head>' + script, 1)
         base.load_document(cdp, target['id'], markup, origin)
         wait_for(cdp, "document.documentElement.dataset.v40Ready==='true' && !!document.querySelector('.production-card [data-supply-commodity=\"Ablative Armor Plating\"]')")
@@ -173,10 +174,26 @@ def main():
         wait_for(cdp, "!document.getElementById('supplySearch').disabled && document.getElementById('supplyResults').dataset.stale==='false'")
         if base.ev(cdp, "document.getElementById('supplyResults').innerText.includes('Waterloo Station')"):
             raise RuntimeError('Direct-only setting retained an extra trading stop')
+        # A second search immediately after the first must get new POB stock,
+        # not the still-recent dashboard, memory or IndexedDB snapshot.
+        prior = base.ev(cdp, "({pobs:supplyRequests.filter(x=>x==='pobs').length,maps:supplyRequests.filter(x=>x==='systems').length})")
+        base.ev(cdp, "(()=>{supplyFixture.pobs[0].shop_items[1].max_stock=40;supplySearch.click();return true})()")
+        wait_for(cdp, "!supplySearch.disabled && supplyResults.dataset.stale==='false'")
+        fresh = base.ev(cdp, "({pobs:supplyRequests.filter(x=>x==='pobs').length,maps:supplyRequests.filter(x=>x==='systems').length,quantity:document.querySelector('.supply-metrics strong').textContent,source:supplySource.textContent})")
+        if fresh['pobs'] != prior['pobs'] + 1 or fresh['maps'] != prior['maps'] + 1 or fresh['quantity'] != '40' or 'REFRESHED EACH SEARCH' not in fresh['source'] or 'MAP OBJECTS RECEIVED' not in fresh['source']:
+            raise RuntimeError(f'Every search must refresh stock and map status, including within five minutes: {fresh}')
+        base.ev(cdp, "(()=>{supplyFixture.pobs[0].shop_items[1].max_stock=20000;window.supplyMapOffline=true;supplySearch.click();return true})()")
+        wait_for(cdp, "!supplySearch.disabled")
+        if not base.ev(cdp, "supplyStatus.textContent.includes('current navigation feed unavailable') && supplyResults.dataset.stale==='true' && supplySource.textContent.includes('REFRESH FAILED') && document.querySelector('.supply-metrics strong').textContent==='40'"):
+            raise RuntimeError('A failed current-map request must pause search and mark the prior quote stale')
+        base.ev(cdp, "(()=>{window.supplyMapOffline=false;supplySearch.click();return true})()")
+        wait_for(cdp, "!supplySearch.disabled && supplyResults.dataset.stale==='false'")
+        if base.ev(cdp, "document.querySelector('.supply-metrics strong').textContent") != '2,500':
+            raise RuntimeError('Retry must use the newly refreshed RHW limits')
         base.ev(cdp, "(()=>{window.supplyOffline=true;document.getElementById('supplyRefresh').click();return true})()")
         wait_for(cdp, "!document.getElementById('supplySearch').disabled")
-        if 'CACHED' not in base.ev(cdp, "document.getElementById('supplySource').textContent"):
-            raise RuntimeError('Failed refresh must label saved market data')
+        if not base.ev(cdp, "supplySource.textContent.includes('REFRESH FAILED') && supplyStatus.textContent.includes('fresh POB stock unavailable') && supplyResults.dataset.stale==='true'"):
+            raise RuntimeError('Failed stock refresh must pause search and label old quotes, not calculate with cached stock')
         base.ev(cdp, "document.getElementById('supplyClose').click()")
         wait_for(cdp, "!document.getElementById('rhwSupplyDialog').open && !!document.activeElement.closest('.production-card')", 3)
         # A desktop resize hides mobile material lists. Keep focus in the source
