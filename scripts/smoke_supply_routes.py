@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Real context button, lazy modules, worker, cache and mobile supply dialog."""
 import base64
+import gzip
 import json
 from pathlib import Path
 import shutil
@@ -99,7 +100,11 @@ def main():
                    'techTestShip': next(row for row in flight_fixture['ships'] if row['nickname'] == 'dsy_gallic_train_adv'),
                    'npc_bases': [{'nickname': 'trafalgar', 'faction_nick': 'br_n_grp'}, {'nickname': 'molly', 'faction_nick': 'fc_m_grp'}, {'nickname': 'waterloo', 'faction_nick': 'br_n_grp'}, {'nickname': 'oder', 'faction_nick': 'br_n_grp'}],
                    'factions': [], 'tractors': tractors, 'idcards': idcards}
-        fixture['systems'] = [{'nickname': 'br01', 'Jumpholes': [], 'Objs': []}]
+        ambiguous_decoration = {'Nickname': 'fixture_ambiguous_decoration', 'Kind': 10, 'Pos': {'X': 20, 'Y': 0, 'Z': 0}}
+        with gzip.open(Path(__file__).resolve().parent / 'fixtures/live-navigation-complete-2026-10-29.json.gz', 'rt') as f:
+            fixture['systems'] = json.load(f)['systems']
+        london = next(system for system in fixture['systems'] if system['nickname'] == 'br01')
+        london['Objs'].extend([ambiguous_decoration, {**ambiguous_decoration, 'Pos': {'X': 30, 'Y': 0, 'Z': 0}}])
         script = "<script>window.supplyFixture=" + json.dumps(fixture) + ";window.supplyNav=" + json.dumps(nav) + ";window.supplyRequests=[];const originalFetch=window.fetch;window.fetch=(url,options)=>{const u=String(url);if(u.includes('/api/')){const key=u.split('/api/')[1].split('?')[0];supplyRequests.push(key);if(window.supplyOffline||key==='systems'&&window.supplyMapOffline)return Promise.reject(Error('Fixture offline'));const response=key==='infocards'?JSON.parse(options.body).map(id=>supplyFixture.idcards[id]||{error:'missing'}):supplyFixture[key]||[];return Promise.resolve(new Response(JSON.stringify(response),{status:200}));}if(u.includes('/assets/navigation.json.gz'))return Promise.resolve(new Response(JSON.stringify(supplyNav),{status:200}));return originalFetch(url,options);};</script>"
         markup = base.document('command/production').replace('<head>', '<head>' + script, 1)
         base.load_document(cdp, target['id'], markup, origin)

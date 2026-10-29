@@ -17,6 +17,16 @@ directed edge. Current positions update mapped objects; deleted lane rings lose
 their links. Existing dock/cargo restrictions remain conservative. A newly
 cargo-limited connection without a known exact capacity is excluded.
 
+Repeated objects in the rendering feed are grouped by system and nickname.
+Identical position, object kind and jump destination count as one routing
+object, even when cosmetic fields differ. Conflicting routing facts exclude
+only that object and its links for the current snapshot. They do not abort
+the whole search, and a later repeated entry cannot restore an ambiguous gate.
+The complete routing projection of the 2026-10-29 08:32 UTC response (146
+systems and 25,247 objects) is retained as a compressed regression fixture.
+It includes the repeated `br07_planet_5_ring_1` that caused the initial global
+failure. Both model and browser tests consume the complete projection.
+
 The API does **not** expose exact destination objects or lane adjacency. These
 continue to come from `assets/navigation.json.gz`; new links are not guessed
 from system names or coordinates. The UI displays the geometry build date

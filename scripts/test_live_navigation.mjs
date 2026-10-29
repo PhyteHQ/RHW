@@ -4,6 +4,8 @@ import { gunzipSync } from 'node:zlib';
 import { currentNavigation, KNOWN_JUMP_CLOSURES } from '../js/supply/live-navigation.mjs';
 import { ShipNavigator } from '../js/supply/navigation.mjs';
 import { normalizeDarkstat } from '../js/supply/core/trade.mjs';
+import { searchSupply } from '../js/supply/planner.mjs';
+import { searchExports } from '../js/supply/export-planner.mjs';
 
 const fixture = JSON.parse(await readFile(new URL('./fixtures/live-navigation-2026-10-29.json', import.meta.url)));
 const time = fixture.capturedAt;
@@ -65,6 +67,35 @@ assert.throws(() => currentNavigation(base, [], time));
 assert.throws(() => currentNavigation(base, [{ nickname: 'iw06' }], time));
 assert.throws(() => currentNavigation(base, feed.concat(feed[0]), time));
 
+// Repeated rendering entries are not a global map failure. Only routing facts
+// determine equivalence, including vector/object coordinate representations.
+const repeated = structuredClone(feed);
+repeated[0].Jumpholes.push({ ...repeated[0].Jumpholes[0], Name: 'Different rendering label', Pos: [0, 0, 0] });
+repeated[0].Objs.push({ ...repeated[0].Objs[0], ShapeName: 'another_rendering_shape' });
+const deduplicated = currentNavigation(base, repeated, time);
+assert.deepEqual(deduplicated.nodes, live.nodes);
+assert.deepEqual(deduplicated.links, live.links);
+assert.equal(deduplicated.live.duplicateObjects, 2);
+assert.equal(deduplicated.live.ambiguousObjects, 0);
+assert.equal(new ShipNavigator(deduplicated, [], profile).route('home', 'supplier').jumps, 2);
+for (const change of [{ Kind: 6 }, { GotoSystem: 'iw05' }, { Pos: [1, 0, 0] }]) {
+  const conflicting = structuredClone(feed), first = conflicting[0].Jumpholes[0];
+  conflicting[0].Jumpholes.push({ ...first, ...change }, { ...first });
+  const scoped = currentNavigation(base, conflicting, time, []);
+  assert.equal(scoped.live.ambiguousObjects, 1);
+  assert.ok(!scoped.nodes.some(node => node.id === 'iw06:iw06_to_ku02'), 'A conflicting gate cannot be restored by the last duplicate');
+  assert.ok(!scoped.links.some(edge => edge.from === 'iw06:iw06_to_ku02' || edge.to === 'iw06:iw06_to_ku02'));
+  const elsewhere = { ...scoped, baseNodes: { otherHome: 'iw06:alt', otherSupplier: 'ku02:alt' } };
+  assert.equal(new ShipNavigator(elsewhere, [], profile).route('otherHome', 'otherSupplier').jumps, 2,
+    'An ambiguous object cannot block unrelated viable routes');
+}
+const badLane = structuredClone(feed), lane = badLane[0].Objs[0];
+badLane[0].Objs.push({ ...lane, Kind: 10 }, { ...lane });
+const noLane = currentNavigation(base, badLane, time);
+assert.ok(!noLane.nodes.some(node => node.id === 'iw06:lane_a'));
+assert.ok(!noLane.links.some(edge => edge.kind === 'lane'));
+assert.ok(new ShipNavigator(noLane, [], profile).route('home', 'supplier'));
+
 // Real current response: the API still advertises the destroyed gate. Its
 // explicit server-closure policy must win over this freshly received data.
 const map = JSON.parse(gunzipSync(await readFile(new URL('../assets/navigation.json.gz', import.meta.url))));
@@ -76,4 +107,34 @@ assert.equal(fixture.systems.find(system => system.nickname === 'iw06').Jumphole
 const gifu = normalizeDarkstat([fixture.gifu], [], time).bases[0].offers[0];
 assert.equal(gifu.stock, 669);
 assert.equal(gifu.stock - gifu.min, 369, 'The new total stock is not confused with units available above the reserve');
-console.log('Live map passed: current object positions, missing/locked/redirected gates, deleted lanes, preserved physical limits, server override, alternative route, reopening and current Gifu reserve arithmetic.');
+
+// Complete routing projection of the real 146-system response that reproduced
+// the production failure. Keep all 25k objects, including the identical planet
+// ring in br07 that is unrelated to the requested RHW route.
+const complete = JSON.parse(gunzipSync(await readFile(new URL('./fixtures/live-navigation-complete-2026-10-29.json.gz', import.meta.url))));
+const completeMap = currentNavigation(map, complete.systems, complete.capturedAt);
+assert.equal(completeMap.live.systems, 146);
+assert.equal(completeMap.live.duplicateObjects, 1);
+assert.equal(completeMap.live.ambiguousObjects, 0);
+assert.ok(completeMap.nodes.length > 2000 && completeMap.links.length > 2000);
+const realDuplicate = complete.systems.find(system => system.nickname === 'br07').Objs.filter(object => object.Nickname === 'br07_planet_5_ring_1');
+assert.equal(realDuplicate.length, 2);
+assert.deepEqual(realDuplicate[0], realDuplicate[1]);
+
+// Synthetic trades on this complete real map must reach both planners. These
+// prices and quantities are controlled test data, not current game offers.
+const item = { id: 'map_fixture', name: 'Map Fixture', buy: 100, sell: 150, volume: 1, originalVolume: 1, volumes: {} };
+const markets = { schema: 1, asOf: time, bases: [
+  { id: 'map_home', name: 'Resolution Heavy Works', kind: 'pob', system: 'br01', pos: [-56474, 0, 53702], cash: 1e8, space: 1e6,
+    offers: [{ ...item, stock: 6000, min: 0, max: 20000 }] },
+  { id: 'map_source', name: 'New Tokyo Route Fixture', kind: 'npc', system: 'ku01', pos: [38824, 105, -7336], offers: [{ ...item, sell: 200 }] }
+] };
+for (const result of [await searchSupply(markets, completeMap, [profile], { commodity: item.id, extraPercent: 0 }),
+  await searchExports(markets, completeMap, [profile], { commodity: item.id, returnCargo: false })]) {
+  assert.ok(result.results.length, 'The full current response must calculate import and export results');
+  assert.equal(result.results[0].delivered, 5000);
+  for (const route of result.results) for (const leg of route.legs) for (const step of leg.flight.path)
+    assert.ok(!KNOWN_JUMP_CLOSURES.some(closure => step.from === closure.from && step.to === closure.to
+      || closure.bidirectional && step.from === closure.to && step.to === closure.from));
+}
+console.log('Live map passed: complete 146-system response, identical and conflicting duplicates, local exclusion, import/export calculation, current positions, gate/lane restrictions, server closure and Gifu reserve arithmetic.');
