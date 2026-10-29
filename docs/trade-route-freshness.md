@@ -10,6 +10,27 @@ they are not timestamps of an in-game transaction or Darkstat's own refresh.
 NPC market/owner/ID reference data retain their six-hour cache; ship data retain
 their daily cache. **REFRESH MARKETS** also refreshes these reference datasets.
 
+The Trade Desk compares four reference profiles: Barge (30,000 / 90 m/s),
+5k Transport (5,000 / 350 m/s), Pilgrim (4,300 / current registry speed, 415 m/s
+in the checked API data), and a medium-docking 3.6k Transport. The last profile
+uses the operator's requested 600 m/s assumption; the checked registry hull
+reports 500 m/s. Both values are retained, and the interface marks **USER SPEED**.
+The reference hull still supplies exact ID, tech, dock, lane and commodity-volume
+rules. Non-fleet hulls cannot enter through a saved selection or worker request.
+
+Import approach jobs share the search budget across viable hull/seller pairs.
+An exact reverse shortest-path tree checks all directed pickup-to-seller times
+before profit shortlisting; it preserves one-way jumps and lane-entry costs.
+Slow hulls outside the direct-flight/delivery bound cannot consume the approach
+budget first. Searches that reach a time or candidate limit say **BEST FOUND**.
+
+POB money and free storage are required when the POB buys cargo from the player.
+A POB that only sells goods does not need to disclose those balances; its stock,
+reserve, limits and cargo volume still apply. Unknown balances stay unknown after
+simulation. Missing docking mode is an unverified policy, separate from reported
+whitelist modes and hostile-IFF owner approvals. It can be quoted conditionally
+through **Include unverified ID / docking rules**, never as a default verified route.
+
 `live-navigation.mjs` checks the bundled graph against the newly fetched map
 objects before either planner runs. Missing, unknown and campaign-locked jump
 objects cannot keep old connections. A changed destination invalidates its old

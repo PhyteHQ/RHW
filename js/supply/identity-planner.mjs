@@ -7,6 +7,7 @@ import { flightKey } from './navigation.mjs';
 import { volumeFor, makeLeg, cargoItems } from './core/trade.mjs';
 import { isSelectableShip } from './ship-profiles.mjs';
 import { haulerCategory, matchesHauler } from './hauler-categories.mjs';
+import { comparisonFleet } from './comparison-fleet.mjs';
 
 // Drop only hulls covered by a faster/larger hull with the same physical
 // access, commodity volumes and every one of their usable IDs. In particular,
@@ -42,6 +43,7 @@ function legacyBmmShips(ships, identity) {
 }
 
 export async function searchIdentities(dataset, navigation, ships, scopes, options = {}, progress = () => {}, canceled = () => false) {
+  if (options.fleetOnly) ships = comparisonFleet(ships);
   ships = ships.filter(ship => isSelectableShip(ship) && matchesHauler(ship, options.haulerId));
   const origin = findRhw(dataset)?.id;
   const bases = new Map(dataset.bases.map(base => [base.id, base]));

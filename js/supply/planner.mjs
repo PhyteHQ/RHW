@@ -1,7 +1,6 @@
-/* RHW supply planning. DTR market, navigation and cargo accounting are reused
-   unchanged; this search maximizes delivery before considering hauling profit. */
+/* RHW supply planning with exact cargo accounting and bounded approach search. */
 import solver from './core/vendor/lp-solver.mjs';
-import { makeLeg, simulate, volumeFor, validateDataset } from './core/trade.mjs';
+import { makeLeg, simulate, volumeFor, validateDataset, baseProblems } from './core/trade.mjs';
 import { ShipNavigator, flightKey } from './navigation.mjs';
 import { trimRouteCache } from './return-planner.mjs';
 import { isSelectableShip } from './ship-profiles.mjs';
@@ -65,7 +64,7 @@ export function quoteSupply(legs, bases, profile, { capital = null, quantity = n
   for (const event of events) {
     const { i, kind } = event, leg = legs[i], base = byId.get(event.base);
     const offer = base?.offers.find(item => item.id === leg.good);
-    if (!offer) return null;
+    if (!offer || baseProblems(base, kind === 'buy' ? 'seller' : 'buyer').length) return null;
     const deltaCash = cash.get(base.id) || vector(); cash.set(base.id, deltaCash);
     const deltaSpace = space.get(base.id) || vector(); space.set(base.id, deltaSpace);
     const stockKey = JSON.stringify([base.id, leg.good]);
@@ -214,19 +213,20 @@ export async function searchSupply(dataset, navigation, profiles, options = {}, 
   const blocked = new Set(options.blocked || []);
   const bases = dataset.bases.filter(base => !blocked.has(base.id) && !base.fallback && (options.includePobs !== false || base.kind !== 'pob' || base.id === rhw.id));
   if (!bases.some(base => base.id === rhw.id)) throw Error('RHW is excluded by the docking profile.');
-  const byId = new Map(bases.map(base => [base.id, base])), routes = [], contexts = [], navigators = new Map();
+  const byId = new Map(bases.map(base => [base.id, base])), routes = [], contexts = [], navigators = new Map(), reverseNavigators = new Map();
   let checked = 0, searchedSources = 0, pruned = false, timedOut = false;
   const withinBudget = () => !canceled() && performance.now() - began < timeLimit;
   const settings = { dock: 30, jump: 15, lane: 10, charge: 5, ...options.timeModel };
+  const extraPercent = Math.min(50, Math.max(0, Number(options.extraPercent) || 0));
   const budget = { capital: finite(options.capital) ? Math.max(0, options.capital) : null,
     quantity: finite(options.quantity) && options.quantity > 0 ? Math.floor(options.quantity) : null };
-  function evaluate(legs, navigator, profile, extraStop = false) {
+  function evaluate(legs, navigator, profile, extraStop = false, knownTravel = null) {
     checked++;
     const stops = [legs[0].source, ...legs.map(leg => leg.target)];
     const identityState = options.routeEligibility?.(profile, stops);
     if (identityState === 'blocked') return null;
     const visited = [...new Set(legs.flatMap(leg => [leg.source, leg.target]))].map(id => byId.get(id));
-    const travel = legs.map(leg => navigator.route(leg.source, leg.target));
+    const travel = knownTravel || legs.map(leg => navigator.route(leg.source, leg.target));
     trimRouteCache(navigator, [rhw.id]);
     if (travel.some(route => !route)) return null;
     const quote = quoteSupply(legs, visited, profile, budget);
@@ -251,7 +251,7 @@ export async function searchSupply(dataset, navigation, profiles, options = {}, 
       const out = outward.times.get(navigator.baseNodes.get(base.id));
       if (!leg || !Number.isFinite(out) || !navigator.allowed(navigator.nodes.get(navigator.baseNodes.get(base.id)))) return [];
       const amount = capacity(leg, base, rhw, profile, true);
-      return amount > 0 ? [{ base, leg, rank: amount / Math.max(1, 2 * out + 3 * settings.dock) }] : [];
+      return amount > 0 ? [{ base, leg, amount, outSeconds: out, rank: amount / Math.max(1, 2 * out + 3 * settings.dock) }] : [];
     }).sort((a, b) => b.rank - a.rank || a.leg.buy - b.leg.buy);
     if (suppliers.length > 36) pruned = true;
     // Preserve ordinary sources even when many nearby POBs quote a material
@@ -266,10 +266,13 @@ export async function searchSupply(dataset, navigation, profiles, options = {}, 
       if (selected.length >= 36) break;
       if (!retained.has(supplier)) { selected.push(supplier); retained.add(supplier); }
     }
-    contexts.push({ profile, navigator, selected });
+    if (extraPercent > 0 && !reverseNavigators.has(key)) reverseNavigators.set(key, new ShipNavigator(navigation, bases, profile, { ...settings, reverse: true }));
+    contexts.push({ profile, navigator, reverseNavigator: reverseNavigators.get(key), selected });
     for (const supplier of selected) {
       if (!withinBudget()) { timedOut = true; break; }
       searchedSources++;
+      supplier.inbound = navigator.route(supplier.base.id, rhw.id);
+      supplier.inboundSeconds = supplier.inbound?.seconds;
       const originLegs = [empty(rhw.id, supplier.base.id), ...bestTrades(rhw, supplier.base, commodity.id, profile).map(item => item.leg)];
       for (const first of originLegs) evaluate([first, supplier.leg], navigator, profile);
       if (searchedSources % 4 === 0) { progress({ phase: 'direct', checked, sources: searchedSources }); await pause(); }
@@ -277,33 +280,60 @@ export async function searchSupply(dataset, navigation, profiles, options = {}, 
   }
   const verified = routes.filter(route => route.identityState !== 'conditional');
   const baseline = fastSupplyBaseline(verified.length ? verified : routes);
-  const extraPercent = Math.min(50, Math.max(0, Number(options.extraPercent) || 0));
   const maxSeconds = baseline ? baseline.seconds * (1 + extraPercent / 100) : 0;
-  if (baseline && extraPercent > 0) for (const { profile, navigator, selected } of contexts) {
-    for (const supplier of selected) {
-      if (!withinBudget()) { timedOut = true; break; }
-      const inbound = navigator.route(supplier.base.id, rhw.id);
-      if (!inbound) continue;
-      const hops = [];
-      for (const hop of bases) {
-        if (hop.id === rhw.id || hop.id === supplier.base.id) continue;
-        if (options.routeEligibility?.(profile, [rhw.id, hop.id, supplier.base.id]) === 'blocked') continue;
-        const out = navigator.route(rhw.id, hop.id);
-        if (!out || out.seconds + inbound.seconds + 4 * settings.dock > maxSeconds) continue;
-        for (const trade of bestTrades(hop, supplier.base, commodity.id, profile, 2)) hops.push({ hop, ...trade, approach: out.seconds });
+  let approachJobs = 0, approachChecked = 0;
+  if (baseline && extraPercent > 0) {
+    // A detour cannot beat the direct shortest flight or exceed this supplier's
+    // maximum available target load. Reject impossible jobs before scanning
+    // hundreds of pickups, then share the remaining budget across ships.
+    const jobs = contexts.flatMap(context => context.selected.flatMap(supplier => {
+      const seconds = supplier.outSeconds + supplier.inboundSeconds + 4 * settings.dock;
+      const rate = supplier.amount * 3600 / seconds;
+      return Number.isFinite(seconds) && seconds <= maxSeconds + .01
+        && rate >= baseline.unitsPerHour / (1 + extraPercent / 100) - .01
+        ? [{ ...context, supplier, rate, cursor: 0, feasible: 0 }] : [];
+    })).sort((a, b) => (options.importGoal === 'price' ? a.supplier.leg.buy - b.supplier.leg.buy : 0)
+      || b.rate - a.rate);
+    approachJobs = jobs.length;
+    let turns = 0;
+    while (jobs.length && withinBudget()) {
+      const job = jobs.shift(), { profile, navigator, reverseNavigator, supplier } = job;
+      if (!job.hops) {
+        const hops = [];
+        const incoming = reverseNavigator.from(supplier.base.id);
+        trimRouteCache(reverseNavigator, [supplier.base.id]);
+        for (const hop of bases) {
+          if (!withinBudget()) break;
+          if (hop.id === rhw.id || hop.id === supplier.base.id) continue;
+          if (options.routeEligibility?.(profile, [rhw.id, hop.id, supplier.base.id]) === 'blocked') continue;
+          const out = navigator.route(rhw.id, hop.id);
+          const middle = incoming?.times.get(reverseNavigator.baseNodes.get(hop.id));
+          const seconds = out?.seconds + middle + supplier.inboundSeconds + 4 * settings.dock;
+          if (!Number.isFinite(seconds) || seconds > maxSeconds + .01) continue;
+          for (const trade of bestTrades(hop, supplier.base, commodity.id, profile, 2)) hops.push({ hop, ...trade, approach: out.seconds, seconds });
+        }
+        // One reverse shortest-path tree supplies exact directed travel from
+        // every pickup to this seller. Rank feasible tours, not distant paper
+        // margins that can displace short profitable pickups before quoting.
+        job.hops = hops.sort((a, b) => (b.potential + supplier.amount * supplier.leg.margin) / b.seconds
+          - (a.potential + supplier.amount * supplier.leg.margin) / a.seconds);
       }
-      hops.sort((a, b) => b.potential / Math.max(1, b.approach + inbound.seconds) - a.potential / Math.max(1, a.approach + inbound.seconds));
-      if (hops.length > 32) pruned = true;
-      for (const candidate of hops.slice(0, 32)) {
-        if (!withinBudget()) { timedOut = true; break; }
-        const middle = navigator.route(candidate.hop.id, supplier.base.id);
-        trimRouteCache(navigator, [rhw.id, supplier.base.id]);
-        if (!middle || candidate.approach + middle.seconds + inbound.seconds + 4 * settings.dock > maxSeconds) continue;
-        const originLegs = [empty(rhw.id, candidate.hop.id), ...bestTrades(rhw, candidate.hop, commodity.id, profile, 2).map(item => item.leg)];
-        for (const first of originLegs) evaluate([first, candidate.leg, supplier.leg], navigator, profile, true);
-        if (checked % 8 < 3) { progress({ phase: 'backhaul', checked, sources: searchedSources }); await pause(); }
+      const candidate = job.hops[job.cursor++];
+      if (candidate && withinBudget()) {
+        approachChecked++;
+        const middle = reverseNavigator.route(supplier.base.id, candidate.hop.id);
+        if (middle && candidate.approach + middle.seconds + supplier.inboundSeconds + 4 * settings.dock <= maxSeconds + .01) {
+          job.feasible++;
+          const originLegs = [empty(rhw.id, candidate.hop.id), ...bestTrades(rhw, candidate.hop, commodity.id, profile, 2).map(item => item.leg)];
+          for (const first of originLegs) evaluate([first, candidate.leg, supplier.leg], navigator, profile, true,
+            [navigator.route(rhw.id, candidate.hop.id), middle, supplier.inbound]);
+        }
       }
+      if (job.cursor < job.hops.length && job.feasible < 32) jobs.push(job);
+      else if (job.cursor < job.hops.length) pruned = true;
+      if (++turns % 4 === 0) { progress({ phase: 'backhaul', checked, sources: searchedSources }); await pause(); }
     }
+    if (jobs.length || !withinBudget()) timedOut = true;
   }
   const eligible = routes.filter(route => route.identityState !== 'conditional');
   const selected = rankSupplyRoutes(eligible.length ? eligible : routes, extraPercent, options.importGoal);
@@ -319,6 +349,6 @@ export async function searchSupply(dataset, navigation, profiles, options = {}, 
           fromSystem: byId.get(leg.source)?.systemName, toSystem: byId.get(leg.target)?.systemName,
           flight: navigator.route(leg.source, leg.target, true) })) };
     }), stats: { checked, sources: searchedSources, ships: contexts.length, pruned, timedOut, canceled: canceled(), extraPercent,
-      benchmarkSeconds: baseline?.seconds ?? null,
+      benchmarkSeconds: baseline?.seconds ?? null, approachJobs, approachChecked,
       expressOnly: selected.length > 0 && !selected.some(route => route.recommendation) } };
 }

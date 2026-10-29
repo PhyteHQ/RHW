@@ -25,6 +25,7 @@ self.RHW_APP_SHELL = [
   "./js/supply/identity-profiles.mjs",
   "./js/supply/identity-planner.mjs",
   "./js/supply/hauler-categories.mjs",
+  "./js/supply/comparison-fleet.mjs",
   "./js/supply/worker.mjs",
   "./js/supply/access.mjs",
   "./js/supply/ship-profiles.mjs",

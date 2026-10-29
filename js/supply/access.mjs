@@ -84,10 +84,11 @@ export function dockingAccess(bases, owners = [], factions = [], tractors = [], 
     const result = ownerAccess(base, index, label);
     if (base.kind !== 'pob') return [base.id, result];
     const mode = number(base.dockingMode);
-    const approvalRequired = mode !== 1 || result.state === 'blocked';
+    const approvalRequired = mode === 2 || mode === 3 || result.state === 'blocked';
     return [base.id, approvalRequired ? { state: 'unknown', approvalRequired: true,
       reason: result.state === 'blocked' ? 'Hostile POB IFF requires explicit owner approval'
-        : mode === 2 || mode === 3 ? 'POB whitelist is required' : 'POB docking policy is not reported' }
+        : 'POB whitelist is required' }
+      : mode !== 1 ? { state: 'unknown', approvalRequired: false, reason: 'POB docking policy is not reported' }
       : { ...result, approvalRequired: false, reason: result.state === 'possible'
         ? label + ' permits this POB IFF; private owner exceptions may apply' : result.reason }];
   });
