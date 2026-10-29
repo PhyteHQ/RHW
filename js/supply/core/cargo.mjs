@@ -33,12 +33,15 @@ export function simulateMixedTour(legs, quantities, bases, options, mask = 0) {
     const line = cargoItems(legs[event.leg])[event.item], q = quantities[event.leg][event.item];
     if (!q) continue;
     const base = state.get(event.base), offer = base?.offers.find(o => o.id === line.good);
-    if (!offer || base.kind === 'pob' && ![base.cash, base.space, offer.stock, offer.min, offer.max].every(known)) return null;
+    if (!offer || base.kind === 'pob' && ![offer.stock, offer.min, offer.max,
+      ...(event.kind === 'sell' ? [base.cash, base.space] : [])].every(known)) return null;
     const before = { cash: base.cash, space: base.space, stock: offer.stock, player: cash, cargo };
     if (event.kind === 'buy') {
       cash -= q * line.buy; cargo += q * line.volume;
       if (base.kind === 'pob') {
-        offer.stock -= q; base.cash += q * line.buy; base.space += q * line.sourceVolume;
+        offer.stock -= q;
+        if (known(base.cash)) base.cash += q * line.buy;
+        if (known(base.space)) base.space += q * line.sourceVolume;
         if (offer.stock < offer.min - EPS) return null;
       }
     } else {
@@ -109,7 +112,8 @@ export function optimizeMixedTour(legs, bases, options) {
     for (const event of eventsFor(legs, mask)) {
       const i = perLeg[event.leg][event.item], line = entries[i].line, base = byId.get(event.base);
       const item = base?.offers.find(o => o.id === line.good);
-      if (!item || base.kind === 'pob' && ![base.cash, base.space, item.stock, item.min, item.max].every(known)) { invalid = true; break; }
+      if (!item || base.kind === 'pob' && ![item.stock, item.min, item.max,
+        ...(event.kind === 'sell' ? [base.cash, base.space] : [])].every(known)) { invalid = true; break; }
       const deltaCash = baseCash.get(base.id) || vector(); baseCash.set(base.id, deltaCash);
       const deltaSpace = baseSpace.get(base.id) || vector(); baseSpace.set(base.id, deltaSpace);
       const key = JSON.stringify([base.id, line.good]), deltaStock = stocks.get(key) || vector(); stocks.set(key, deltaStock);
@@ -127,7 +131,10 @@ export function optimizeMixedTour(legs, bases, options) {
         }
       }
       add(money.map(x => -x), options.capital); add([...hold], options.cargo); add(hold.map(x => -x), 0);
-      if (base.kind === 'pob') { add(deltaCash.map(x => -x), Number(base.cash)); add(deltaSpace.map(x => -x), Number(base.space)); }
+      if (base.kind === 'pob') {
+        if (known(base.cash)) add(deltaCash.map(x => -x), Number(base.cash));
+        if (known(base.space)) add(deltaSpace.map(x => -x), Number(base.space));
+      }
     }
     if (invalid) continue;
     const solved = solver.Solve({ optimize: 'profit', opType: 'max', variables, ints, constraints,

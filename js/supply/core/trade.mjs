@@ -81,8 +81,8 @@ export function volumeFor(item, profile) {
   return finite(v) && v > 0 ? Number(v) : null;
 }
 
-export function baseProblems(base) {
-  if (base.kind !== 'pob') return [];
+export function baseProblems(base, role = 'buyer') {
+  if (base.kind !== 'pob' || role === 'seller') return [];
   return ['cash', 'space'].filter(f => !finite(base[f])).map(f => f === 'cash' ? 'POB-Geld fehlt' : 'POB-Lagerplatz fehlt');
 }
 
@@ -92,7 +92,7 @@ export function makeLeg(source, target, goodId, profile,
   const volume = volumeFor(from, profile);
   if (!volume || (volumeFor(to, profile) != null && Math.abs(volume - volumeFor(to, profile)) > EPS)) return null;
   for (const [base, offer] of [[source, from], [target, to]]) {
-    if (baseProblems(base).length) return null;
+    if (baseProblems(base, base === source ? 'seller' : 'buyer').length) return null;
     if (base.kind === 'pob' && (!['stock', 'min', 'max'].every(f => finite(offer[f])) || !(offer.originalVolume > 0))) return null;
   }
   return { source: source.id, target: target.id, good: goodId, name: from.name, buy: from.buy, sell: to.sell,
@@ -121,12 +121,14 @@ export function simulate(legs, quantities, bases, options, mask = 0) {
     const leg = legs[event.leg], q = quantities[event.leg];
     if (!Number.isSafeInteger(q) || q < 1) return null;
     const base = state.get(event.base), offer = base?.offers.find(o => o.id === leg.good);
-    if (!base || !offer) return null;
+    if (!base || !offer || baseProblems(base, event.kind === 'buy' ? 'seller' : 'buyer').length) return null;
     const before = { cash: base.cash, space: base.space, stock: offer.stock, player: cash, cargo };
     if (event.kind === 'buy') {
       cash -= q * leg.buy; cargo += q * leg.volume;
       if (base.kind === 'pob') {
-        offer.stock -= q; base.cash += q * leg.buy; base.space += q * leg.sourceVolume;
+        offer.stock -= q;
+        if (finite(base.cash)) base.cash += q * leg.buy;
+        if (finite(base.space)) base.space += q * leg.sourceVolume;
         if (offer.stock < offer.min - EPS) return null;
       }
     } else {
@@ -178,7 +180,7 @@ export function optimizeTour(legs, bases, options) {
     for (const event of eventsFor(legs, mask)) {
       const i = event.leg, leg = legs[i], base = byId.get(event.base);
       const item = base?.offers.find(o => o.id === leg.good);
-      if (!item || baseProblems(base).length) { invalid = true; break; }
+      if (!item || baseProblems(base, event.kind === 'buy' ? 'seller' : 'buyer').length) { invalid = true; break; }
       const deltaCash = baseCash.get(base.id) || vectorOf(); baseCash.set(base.id, deltaCash);
       const deltaSpace = baseSpace.get(base.id) || vectorOf(); baseSpace.set(base.id, deltaSpace);
       const stockKey = key(base.id, leg.good), deltaStock = stocks.get(stockKey) || vectorOf(); stocks.set(stockKey, deltaStock);

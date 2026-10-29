@@ -80,11 +80,13 @@ export const FALLBACK_SHIPS=Object.freeze([
   ['dsy_tribun','Hogosha Frigate','transport',3150,500,2],
   ['dsy_corsair_transport','Corsair Transport','transport',3600,500,2],
   ['dsy_bsgalactica','Corsair Train','transport',4450,350,2],
-  ['pilgrim_liner','Pilgrim Liner','capital',4300,415,3],
+  ['pilgrim_liner','Pilgrim Liner','capital',4300,415,3,10],
   ['bristol_transport','Bristol Heavy Explorer','capital',4300,415,3],
-  ['dsy_advanced_train','Advanced Train','transport',5000,350,2]
-].map(([nickname,name,type,hold_size,cruise_speed,dock_type])=>
-  makeShip({nickname,name,type,hold_size,cruise_speed,dock_type})));
+  ['dsy_advanced_train','Advanced Train','transport',5000,350,2,9],
+  ['dsy_cargobarge_1','Barge Type I','capital',30000,90,2,8],
+  ['dsy_firefly','Serenity','transport',3600,500,2,6]
+].map(([nickname,name,type,hold_size,cruise_speed,dock_type,ship_class])=>
+  makeShip({nickname,name,type,hold_size,cruise_speed,dock_type,class:ship_class})));
 export function findProfile(list,id){
   return Array.isArray(list)?list.find(ship=>ship.id===id)||null:null;
 }

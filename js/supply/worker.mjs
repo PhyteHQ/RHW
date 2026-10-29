@@ -1,11 +1,13 @@
 import { searchSupply } from './planner.mjs';
 import { searchExports } from './export-planner.mjs';
 import { searchIdentities } from './identity-planner.mjs';
+import { comparisonFleet } from './comparison-fleet.mjs';
 let generation = 0;
 self.onmessage = async ({ data }) => {
   const token = ++generation;
   if (data.type === 'cancel') return;
   try {
+    if (data.options?.fleetOnly) data.profiles = comparisonFleet(data.profiles);
     const search = data.options?.mode === 'export' ? searchExports : searchSupply;
     const invoke = data.scopes?.length
       ? (...callbacks) => searchIdentities(data.dataset, data.navigation, data.profiles, data.scopes, data.options, ...callbacks)

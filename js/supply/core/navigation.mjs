@@ -89,13 +89,15 @@ export class Navigator {
       };
       for (const edge of this.links.get(current) || []) {
         const target = this.nodes.get(edge.to);
-        const seconds = edge.kind === 'jump' ? this.settings.jump : edge.kind === 'lane' ? dist(node.pos, target.pos) / edge.speed + (node.kind === 'lane' ? 0 : this.settings.lane) : dist(node.pos, target.pos) / this.profile.cruise;
+        const laneEntry = this.settings.reverse ? target : node;
+        const seconds = edge.kind === 'jump' ? this.settings.jump : edge.kind === 'lane' ? dist(node.pos, target.pos) / edge.speed + (laneEntry.kind === 'lane' ? 0 : this.settings.lane) : dist(node.pos, target.pos) / this.profile.cruise;
         relax(edge.to, seconds, edge.kind);
       }
       for (const target of this.systems.get(node.system)) {
         if (target.id === current) continue;
         const multiplier = this.nav.systemMultipliers?.[node.system] ?? 1;
-        const seconds = dist(node.pos, target.pos) / (this.profile.cruise * multiplier) + this.settings.charge + (target.kind === 'lane' ? this.settings.lane : 0);
+        const laneEntry = this.settings.reverse ? node : target;
+        const seconds = dist(node.pos, target.pos) / (this.profile.cruise * multiplier) + this.settings.charge + (laneEntry.kind === 'lane' ? this.settings.lane : 0);
         relax(target.id, seconds, 'cruise');
       }
     }

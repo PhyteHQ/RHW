@@ -11,6 +11,8 @@ export class ShipNavigator extends Navigator {
       navigation = { ...navigation, nodes,
         links: navigation.links.filter(edge => edge.kind !== 'lane' && ids.has(edge.from) && ids.has(edge.to)) };
     }
+    if (navigation && settings.reverse) navigation = { ...navigation,
+      links: navigation.links.map(edge => ({ ...edge, from: edge.to, to: edge.from })) };
     super(navigation, bases, profile, { ...settings, charge: flight.cruiseCharge });
   }
 }

@@ -90,6 +90,7 @@ def main():
                       'tech_compat': {'techchompat_by_id': {**tech['techchompat_by_id'], bmm_id: .1}}})
         flight_fixture = json.loads((Path(__file__).resolve().parent / 'fixtures/hauler-flight-2026-10-28.json').read_text())
         ships.append(next(row for row in flight_fixture['ships'] if row['nickname'] == 'dsy_super_gallic_train'))
+        ships.append(next(row for row in flight_fixture['ships'] if row['nickname'] == 'dsy_cargobarge_1'))
         for identity in tractors:
             identity['market_goods'] = [{'base_sells': True, 'price_base_sells_for': 500, 'region_name': 'BRETONIA', 'faction_nick': 'br_n_grp', 'base_name': 'Fixture Station'}]
         neutral_id = 'dsy_license_neutral'
@@ -145,12 +146,12 @@ def main():
             raise RuntimeError(f'Supply context/worker result failed: {facts}')
         if 'RECOMMENDED' not in facts['first'] or 'Waterloo Station' not in facts['first'] or 'WHY THIS ROUTE' not in (facts['reason'] or '') or 'more per hour' not in facts['reason']:
             raise RuntimeError(f'Worthwhile backhaul must be recommended first and explained: {facts}')
-        category_ui = base.ev(cdp, "(()=>{const card=document.querySelector('.supply-result'),models=card.querySelector('.supply-models');return {title:card.querySelector('h3').textContent,haulerMain:!!supplyHauler.closest('.supply-main-fields'),modelAdvanced:!!supplyShip.closest('.supply-settings'),closed:!models.open,hidden:[...models.querySelectorAll('li')].every(n=>!n.getClientRects().length),count:models.querySelectorAll('li').length,removed:[...supplyShip.options,...supplyHauler.options].some(n=>/super_gallic_train|Gallic Super Train|6,250/.test(n.value+' '+n.textContent))}})()")
-        if category_ui['title'] != '5,000 Cargo Transport' or not category_ui['haulerMain'] or not category_ui['modelAdvanced'] or not category_ui['closed'] or not category_ui['hidden'] or category_ui['count'] != 2 or category_ui['removed']:
+        category_ui = base.ev(cdp, "(()=>{const card=document.querySelector('.supply-result'),models=card.querySelector('.supply-models');return {title:card.querySelector('h3').textContent,haulerMain:!!supplyHauler.closest('.supply-main-fields'),modelAdvanced:!!supplyShip.closest('.supply-settings'),closed:!models.open,hidden:[...models.querySelectorAll('li')].every(n=>!n.getClientRects().length),count:models.querySelectorAll('li').length,removed:[...supplyShip.options,...supplyHauler.options].some(n=>/super_gallic_train|Gallic Super Train|6,250|fixture_spa_train/.test(n.value+' '+n.textContent))}})()")
+        if category_ui['title'] != '5,000 Cargo Transport' or not category_ui['haulerMain'] or not category_ui['modelAdvanced'] or not category_ui['closed'] or not category_ui['hidden'] or category_ui['count'] != 1 or category_ui['removed']:
             raise RuntimeError(f'Categories must lead, optional models stay collapsed, and the removed train cannot enter API-backed selectors: {category_ui}')
         base.ev(cdp, "document.querySelector('.supply-result .supply-models>summary').click()")
-        if not base.ev(cdp, "(()=>{const row=document.querySelector('[data-hauler-model=\"ship:fixture_spa_train\"]');return row.getClientRects().length>0&&row.innerText.includes('BMM · UNAVAILABLE')&&row.innerText.includes('Orbital Spa & Cruise · AVAILABLE')})()"):
-            raise RuntimeError('Category models must show their own ID status; a compatible category cannot make the 10% model compatible with BMM')
+        if not base.ev(cdp, "(()=>{const row=document.querySelector('[data-hauler-model=\"ship:dsy_advanced_train\"]');return row.getClientRects().length>0&&row.innerText.includes('BMM · AVAILABLE')&&row.innerText.includes('Orbital Spa & Cruise · AVAILABLE')&&!document.querySelector('[data-hauler-model=\"ship:fixture_spa_train\"]')})()"):
+            raise RuntimeError('The four-profile comparison must use its checked reference model without adding other hulls')
         base.ev(cdp, "document.querySelector('.supply-result .supply-models>summary').click()")
         express = base.ev(cdp, "(()=>({text:document.querySelector('.supply-express')?.innerText,recommended:document.querySelector('.supply-express')?.classList.contains('supply-recommended')}))()")
         if express['recommended'] or 'Corporate Shipping Airways' not in (express['text'] or '') or 'MATERIAL DELIVERY LOSS' not in express['text'] or '-$75,000' not in express['text']:
@@ -169,6 +170,8 @@ def main():
         wait_for(cdp, "!supplySearch.disabled && supplyResults.dataset.stale==='false'")
         if not base.ev(cdp, "[...document.querySelectorAll('.supply-result')].every(n=>n.querySelector('h3').textContent==='3,600 Cargo Transport') && !supplyShip.querySelector('[value=\"ship:dsy_advanced_train\"]')"):
             raise RuntimeError('Choosing a category must restrict the worker results and optional model selector')
+        if not base.ev(cdp, "supplyHauler.selectedOptions[0].textContent.includes('600 m/s') && supplyResults.innerText.includes('USER SPEED 600 M/S') && supplyResults.innerText.includes('REGISTRY 500 M/S')"):
+            raise RuntimeError('The requested 3.6k/600 comparison must identify the custom speed separately from registry data')
         base.ev(cdp, "(()=>{supplyHauler.value='auto';supplyHauler.dispatchEvent(new Event('change',{bubbles:true}));return true})()")
         wait_for(cdp, "!supplySearch.disabled && supplyResults.dataset.stale==='false'")
         base.ev(cdp, "(()=>{document.getElementById('supplyPobs').checked=false;document.getElementById('supplyPobs').dispatchEvent(new Event('change',{bubbles:true}));document.getElementById('supplySearch').click();return true})()")
@@ -285,6 +288,8 @@ def main():
         # from MID docking, even after a cached ship-registry refresh.
         base.ev(cdp, "(()=>{supplyFixture.ships.push(supplyFixture.flightTestShip);supplyIdentity.value='dsy_license_br_m_grp';supplyRefresh.click();return true})()")
         wait_for(cdp, "!supplySearch.disabled && !!supplyShip.querySelector('[value=\"ship:dsy_cargobarge_1\"]')")
+        if not base.ev(cdp, "supplyHauler.options.length===5 && supplyShip.options.length===5"):
+            raise RuntimeError('Only Auto and the four requested hauler profiles may appear in the selectors')
         base.ev(cdp, "(()=>{supplyCommodity.value='Ablative Armor Plating';supplyShip.value='ship:dsy_cargobarge_1';supplyPobs.checked=false;supplyExtra.value='0';supplySearch.click();return true})()")
         wait_for(cdp, "!supplySearch.disabled && supplyResults.dataset.stale==='false' && !!document.querySelector('.supply-result')")
         flight = base.ev(cdp, "(()=>{const card=document.querySelector('.supply-result');return {ship:card.querySelector('h3').textContent,reference:card.dataset.referenceShip,note:card.querySelector('.supply-ship-note').textContent,time:card.querySelector('.supply-metrics>div:nth-child(2) strong').textContent,option:supplyShip.selectedOptions[0].textContent}})()")
@@ -298,14 +303,27 @@ def main():
             shot = cdp.call('Page.captureScreenshot', {'format': 'png'})
             (out / f'barge-flight-{width}.png').write_bytes(base64.b64decode(shot['data']))
         base.ev(cdp, "(()=>{supplyFixture.ships.push(supplyFixture.techTestShip);supplyIdentity.value='dsy_license_co_os_grp';supplyUnverified.checked=true;supplyRefresh.click();return true})()")
-        wait_for(cdp, "!supplySearch.disabled && !!supplyShip.querySelector('[value=\"ship:dsy_gallic_train_adv\"]')")
-        tech_option = base.ev(cdp, "(()=>{const option=supplyShip.querySelector('[value=\"ship:dsy_gallic_train_adv\"]');return {disabled:option.disabled,text:option.textContent,unverified:supplyUnverified.checked}})()")
-        if not tech_option['disabled'] or 'TECH INCOMPATIBLE' not in tech_option['text'] or not tech_option['unverified']:
-            raise RuntimeError(f'Known 10% Spa tech must disable the Gallic Advanced Train even with unverified rules enabled: {tech_option}')
+        wait_for(cdp, "!supplySearch.disabled && supplyResults.dataset.stale==='false'")
+        if not base.ev(cdp, "!supplyShip.querySelector('[value=\"ship:dsy_gallic_train_adv\"]') && supplyUnverified.checked && supplyShip.options.length===5"):
+            raise RuntimeError('Adding another API hull cannot expand the four-profile fleet, including with unverified rules enabled')
         base.ev(cdp, "(()=>{supplyShip.value='ship:dsy_gallic_train_adv';supplySearch.click();return true})()")
         wait_for(cdp, "!supplySearch.disabled && supplyResults.dataset.stale==='false'")
         if not base.ev(cdp, "supplyShip.value==='auto' && !document.querySelector('[data-reference-ship=\"ship:dsy_gallic_train_adv\"],[data-hauler-model=\"ship:dsy_gallic_train_adv\"]')"):
             raise RuntimeError('A restored/programmatic partial-tech selection must reset to Auto without quoting that hull')
+        # Unknown seller money/storage cannot block a purchase. A missing
+        # docking policy stays conditional under the explicit unverified switch.
+        base.ev(cdp, "(()=>{const p=structuredClone(supplyFixture.pobs[1]);p.nickname='undisclosed';p.name='Undisclosed Seller';p.money=null;p.cargospace=null;p.defense_mode=null;p.base_pos=[12000,0,0];p.shop_items[0].price=100;supplyFixture.pobs.push(p);supplyPobs.checked=true;supplyUnverified.checked=false;supplyRestrictedPobs.checked=false;supplySearch.click();return true})()")
+        wait_for(cdp, "!supplySearch.disabled && supplyResults.dataset.stale==='false'")
+        if 'Undisclosed Seller' in base.ev(cdp, "supplyResults.innerText"):
+            raise RuntimeError('Unknown docking must not become verified by default')
+        base.ev(cdp, "(()=>{supplyUnverified.checked=true;supplySearch.click();return true})()")
+        wait_for(cdp, "!supplySearch.disabled && supplyResults.innerText.includes('Undisclosed Seller')")
+        if not base.ev(cdp, "[...supplyResults.querySelectorAll('.supply-result')].filter(n=>n.innerText.includes('Undisclosed Seller')).every(n=>!n.classList.contains('supply-recommended')&&n.innerText.includes('CONDITIONAL'))"):
+            raise RuntimeError('Undisclosed seller should be a usable conditional quote, never a verified recommendation')
+        base.ev(cdp, "(()=>{supplyFixture.pobs.find(p=>p.nickname==='undisclosed').defense_mode=2;supplySearch.click();return true})()")
+        wait_for(cdp, "!supplySearch.disabled && supplyResults.dataset.stale==='false'")
+        if 'Undisclosed Seller' in base.ev(cdp, "supplyResults.innerText"):
+            raise RuntimeError('Unverified rules alone cannot bypass a reported whitelist')
         base.ev(cdp, "supplyClose.click()")
         wait_for(cdp, "!rhwSupplyDialog.open && document.activeElement.classList.contains('header-trade-button')", 3)
         print('Trade Desk browser passed: route-first default, compatible ID badges, cheaper-source priority, optional ID filter, illegal/partial-tech hulls disabled, import/export and POB regressions, focus and 360/390/1440px layouts.')

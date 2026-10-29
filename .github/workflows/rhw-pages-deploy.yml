@@ -69,6 +69,7 @@ jobs:
           node scripts/test_hauler_flight.mjs
           node scripts/test_hauler_categories.mjs
           node scripts/test_live_navigation.mjs
+          node scripts/test_import_search.mjs
 
       - name: Validate Price Check provenance and backup
         run: node scripts/test_price_check.js
