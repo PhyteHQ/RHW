@@ -107,6 +107,21 @@ def main():
         london = next(system for system in fixture['systems'] if system['nickname'] == 'br01')
         london['Objs'].extend([ambiguous_decoration, {**ambiguous_decoration, 'Pos': {'X': 30, 'Y': 0, 'Z': 0}}])
         script = "<script>window.supplyFixture=" + json.dumps(fixture) + ";window.supplyNav=" + json.dumps(nav) + ";window.supplyRequests=[];const originalFetch=window.fetch;window.fetch=(url,options)=>{const u=String(url);if(u.includes('/api/')){const key=u.split('/api/')[1].split('?')[0];supplyRequests.push(key);if(window.supplyOffline||key==='systems'&&window.supplyMapOffline)return Promise.reject(Error('Fixture offline'));const response=key==='infocards'?JSON.parse(options.body).map(id=>supplyFixture.idcards[id]||{error:'missing'}):supplyFixture[key]||[];return Promise.resolve(new Response(JSON.stringify(response),{status:200}));}if(u.includes('/assets/navigation.json.gz'))return Promise.resolve(new Response(JSON.stringify(supplyNav),{status:200}));return originalFetch(url,options);};</script>"
+        script += """<script>
+          window.supplyCacheOpens=0;window.supplyHeldAborts=0;
+          const supplyOpen=IDBFactory.prototype.open;
+          IDBFactory.prototype.open=function(...args){if(args[0]==='rhw-supply-market-v1')supplyCacheOpens++;return supplyOpen.apply(this,args);};
+          const supplyFetch=window.fetch;
+          window.fetch=(url,options)=>{
+            const path=String(url).split('/api/')[1]?.split('?')[0];
+            if(path==='systems'&&window.supplyHoldMap||path==='commodities'&&window.supplyHoldReferences){
+              return new Promise((resolve,reject)=>{
+                options.signal.addEventListener('abort',()=>{supplyHeldAborts++;reject(new DOMException('Canceled','AbortError'));},{once:true});
+              });
+            }
+            return supplyFetch(url,options);
+          };
+        </script>"""
         markup = base.document('command/production').replace('<head>', '<head>' + script, 1)
         base.load_document(cdp, target['id'], markup, origin)
         wait_for(cdp, "document.documentElement.dataset.v40Ready==='true' && !!document.querySelector('.production-card [data-supply-commodity=\"Ablative Armor Plating\"]')")
@@ -146,6 +161,15 @@ def main():
             raise RuntimeError(f'Supply context/worker result failed: {facts}')
         if 'RECOMMENDED' not in facts['first'] or 'Waterloo Station' not in facts['first'] or 'WHY THIS ROUTE' not in (facts['reason'] or '') or 'more per hour' not in facts['reason']:
             raise RuntimeError(f'Worthwhile backhaul must be recommended first and explained: {facts}')
+        persisted = base.ev(cdp, """new Promise((resolve,reject)=>{
+          const open=indexedDB.open('rhw-supply-market-v1',1);
+          open.onerror=()=>reject(open.error);open.onsuccess=()=>{
+            const db=open.result,tx=db.transaction('market','readonly'),request=tx.objectStore('market').get('latest');
+            request.onsuccess=()=>{const keys=Object.keys(request.result||{});db.close();resolve(keys);};
+          };
+        })""")
+        if 'pobs' in persisted or 'pobAt' in persisted or not all(key in persisted for key in ['npc','ships','identityCards']):
+            raise RuntimeError(f'Persist reference data without the unused live POB snapshot: {persisted}')
         category_ui = base.ev(cdp, "(()=>{const card=document.querySelector('.supply-result'),models=card.querySelector('.supply-models');return {title:card.querySelector('h3').textContent,haulerMain:!!supplyHauler.closest('.supply-main-fields'),modelAdvanced:!!supplyShip.closest('.supply-settings'),closed:!models.open,hidden:[...models.querySelectorAll('li')].every(n=>!n.getClientRects().length),count:models.querySelectorAll('li').length,removed:[...supplyShip.options,...supplyHauler.options].some(n=>/super_gallic_train|Gallic Super Train|6,250|fixture_spa_train/.test(n.value+' '+n.textContent))}})()")
         if category_ui['title'] != '5,000 Cargo Transport' or not category_ui['haulerMain'] or not category_ui['modelAdvanced'] or not category_ui['closed'] or not category_ui['hidden'] or category_ui['count'] != 1 or category_ui['removed']:
             raise RuntimeError(f'Categories must lead, optional models stay collapsed, and the removed train cannot enter API-backed selectors: {category_ui}')
@@ -184,20 +208,30 @@ def main():
             raise RuntimeError('Direct-only setting retained an extra trading stop')
         # A second search immediately after the first must get new POB stock,
         # not the still-recent dashboard, memory or IndexedDB snapshot.
-        prior = base.ev(cdp, "({pobs:supplyRequests.filter(x=>x==='pobs').length,maps:supplyRequests.filter(x=>x==='systems').length})")
+        prior = base.ev(cdp, "({pobs:supplyRequests.filter(x=>x==='pobs').length,maps:supplyRequests.filter(x=>x==='systems').length,opens:supplyCacheOpens,refs:supplyRequests.filter(x=>['commodities','ships','tractors','infocards'].includes(x)).length})")
         base.ev(cdp, "(()=>{supplyFixture.pobs[0].shop_items[1].max_stock=40;supplySearch.click();return true})()")
         wait_for(cdp, "!supplySearch.disabled && supplyResults.dataset.stale==='false'")
-        fresh = base.ev(cdp, "({pobs:supplyRequests.filter(x=>x==='pobs').length,maps:supplyRequests.filter(x=>x==='systems').length,quantity:document.querySelector('.supply-metrics strong').textContent,source:supplySource.textContent})")
-        if fresh['pobs'] != prior['pobs'] + 1 or fresh['maps'] != prior['maps'] + 1 or fresh['quantity'] != '40' or 'REFRESHED EACH SEARCH' not in fresh['source'] or 'MAP OBJECTS RECEIVED' not in fresh['source']:
+        fresh = base.ev(cdp, "({pobs:supplyRequests.filter(x=>x==='pobs').length,maps:supplyRequests.filter(x=>x==='systems').length,opens:supplyCacheOpens,refs:supplyRequests.filter(x=>['commodities','ships','tractors','infocards'].includes(x)).length,quantity:document.querySelector('.supply-metrics strong').textContent,source:supplySource.textContent,status:supplyStatus.textContent})")
+        if fresh['pobs'] != prior['pobs'] + 1 or fresh['maps'] != prior['maps'] + 1 or fresh['opens'] != prior['opens'] or fresh['refs'] != prior['refs'] or fresh['quantity'] != '40' or 'REFRESHED EACH SEARCH' not in fresh['source'] or 'MAP OBJECTS RECEIVED' not in fresh['source'] or ' · DATA ' not in fresh['status'] or ' · SEARCH ' not in fresh['status']:
             raise RuntimeError(f'Every search must refresh stock and map status, including within five minutes: {fresh}')
-        base.ev(cdp, "(()=>{supplyFixture.pobs[0].shop_items[1].max_stock=20000;window.supplyMapOffline=true;supplySearch.click();return true})()")
-        wait_for(cdp, "!supplySearch.disabled")
+        # A failed required map must fail promptly even if an unrelated price
+        # request is hanging. All outstanding requests must then be aborted.
+        base.ev(cdp, "(()=>{supplyFixture.pobs[0].shop_items[1].max_stock=20000;window.supplyMapOffline=true;window.supplyHoldReferences=true;supplyRefresh.click();return true})()")
+        wait_for(cdp, "!supplySearch.disabled", 3)
         if not base.ev(cdp, "supplyStatus.textContent.includes('current navigation feed unavailable') && supplyResults.dataset.stale==='true' && supplySource.textContent.includes('REFRESH FAILED') && document.querySelector('.supply-metrics strong').textContent==='40'"):
             raise RuntimeError('A failed current-map request must pause search and mark the prior quote stale')
-        base.ev(cdp, "(()=>{window.supplyMapOffline=false;supplySearch.click();return true})()")
+        if not base.ev(cdp, "supplyHeldAborts>0"):
+            raise RuntimeError('Live-feed failure did not abort a hanging reference request')
+        base.ev(cdp, "(()=>{window.supplyMapOffline=false;window.supplyHoldReferences=false;supplySearch.click();return true})()")
         wait_for(cdp, "!supplySearch.disabled && supplyResults.dataset.stale==='false'")
         if base.ev(cdp, "document.querySelector('.supply-metrics strong').textContent") != '2,500':
             raise RuntimeError('Retry must use the newly refreshed RHW limits')
+        base.ev(cdp, "(()=>{window.supplyHoldMap=true;supplySearch.click();return true})()")
+        wait_for(cdp, "supplySearch.disabled && supplyStatus.textContent.includes('LOADING LIVE MAP')")
+        base.ev(cdp, "supplyCancel.click()")
+        wait_for(cdp, "!supplySearch.disabled && supplyCancel.hidden && supplyStatus.textContent.includes('SEARCH CANCELED')", 3)
+        base.ev(cdp, "(()=>{window.supplyHoldMap=false;supplySearch.click();return true})()")
+        wait_for(cdp, "!supplySearch.disabled && supplyResults.dataset.stale==='false'")
         base.ev(cdp, "(()=>{window.supplyOffline=true;document.getElementById('supplyRefresh').click();return true})()")
         wait_for(cdp, "!document.getElementById('supplySearch').disabled")
         if not base.ev(cdp, "supplySource.textContent.includes('REFRESH FAILED') && supplyStatus.textContent.includes('fresh POB stock unavailable') && supplyResults.dataset.stale==='true'"):

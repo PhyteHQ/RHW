@@ -73,7 +73,7 @@ export function selectReturnMarkets(markets, route, navigator, extraPercent) {
   return { candidates: selected.sort((a, b) => b.score - a.score), pruned: all.length > selected.length };
 }
 
-export function quoteExportReturn(route, candidate, byId, profile, navigator, settings, options = {}) {
+export function quoteExportReturn(route, candidate, byId, profile, navigator, settings, options = {}, reverseNavigator = null) {
   const exportLeg = route.leg, returnLeg = candidate.leg;
   if (exportLeg.good === returnLeg.good || returnLeg.source === exportLeg.source) return null;
   const legs = [exportLeg];
@@ -83,8 +83,13 @@ export function quoteExportReturn(route, candidate, byId, profile, navigator, se
   const stops = [exportLeg.source, ...legs.map(leg => leg.target)];
   const identityState = options.routeEligibility?.(profile, stops);
   if (identityState === 'blocked') return null;
-  const flights = legs.map(leg => navigator.route(leg.source, leg.target));
+  // Many pickups deliver to the same RHW / New London buyers. One reverse
+  // tree per destination supplies their exact directed flights; do not rebuild
+  // a forward tree for every pickup. Final displayed paths remain forward.
+  const flights = legs.map(leg => reverseNavigator && (leg === returnLeg || leg.target === exportLeg.source)
+    ? reverseNavigator.route(leg.target, leg.source) : navigator.route(leg.source, leg.target));
   trimRouteCache(navigator, [exportLeg.source, exportLeg.target]);
+  if (reverseNavigator) trimRouteCache(reverseNavigator, [exportLeg.source]);
   if (flights.some(flight => !flight)) return null;
   const seconds = flights.reduce((sum, flight) => sum + flight.seconds, 0) + (legs.length + 1) * settings.dock;
   const extraPercent = Math.min(50, Math.max(0, Number(options.extraPercent ?? 20) || 0));
