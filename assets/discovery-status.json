@@ -2,29 +2,29 @@
   "catalog": {
     "effective": {
       "factions": 66,
-      "products": 259,
-      "recipes": 298
+      "products": 258,
+      "recipes": 297
     },
     "raw": {
       "factions": 66,
-      "products": 259,
-      "recipes": 298
+      "products": 258,
+      "recipes": 297
     }
   },
   "catalogState": "verified",
-  "catalogUpdatedAt": "2026-10-27T07:15:04Z",
+  "catalogUpdatedAt": "2026-11-02T12:22:00Z",
   "changes": {
-    "factionsAdded": 1,
-    "factionsChanged": 2,
+    "factionsAdded": 0,
+    "factionsChanged": 0,
     "factionsRemoved": 0,
-    "productsAdded": 8,
+    "productsAdded": 0,
     "productsChanged": 0,
-    "productsRemoved": 0,
-    "recipesAdded": 8,
-    "recipesChanged": 9,
-    "recipesRemoved": 0
+    "productsRemoved": 1,
+    "recipesAdded": 0,
+    "recipesChanged": 0,
+    "recipesRemoved": 1
   },
-  "lastSuccessfulSync": "2026-10-27T07:15:04Z",
+  "lastSuccessfulSync": "2026-11-02T12:22:00Z",
   "schemaVersion": 1,
   "source": {
     "canonicalUrl": "https://discoverygc.com/gameconfigpublic/",
@@ -37,7 +37,7 @@
       "base_recipe_modules.cfg"
     ],
     "sha256": {
-      "base_recipe_items.cfg": "d9b013cfc260f6a479c79ce9b6746ba8e2d72e0e029ac98065880843de081003",
+      "base_recipe_items.cfg": "a26cb74ead069493442794e2987539b1368cbb93a97f7268ad7205226bbdf73d",
       "base_recipe_modules.cfg": "83b8b46b0efb66028f3514b6e5ee0dfcb8b90e8be30beca9cc5d0f7e305ab021"
     }
   },
