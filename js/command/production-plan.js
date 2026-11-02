@@ -26,9 +26,9 @@
         qty: Math.ceil(first.qty * factor - 1e-9) };
     });
     const seconds = volume / recipe.cookingRate * 60;
-    const outputs = [{ ...primary }, ...plan.byproducts].map(o => ({ id: o.id, name: o.name, qty: o.qty }));
     const display = typeof PRODUCTION_MODULES !== 'undefined' ? PRODUCTION_MODULES.find(m => m.recipeId === recipe.id)?.product : null;
     const hull = typeof CAPITAL_SHIPYARD !== 'undefined' ? CAPITAL_SHIPYARD.hulls.find(h => h.recipeId === recipe.id) : null;
+    const outputs = [{ ...primary, name: display || hull?.name || primary.name }, ...plan.byproducts].map(o => ({ id: o.id, name: o.name, qty: o.qty }));
     return { key: row.key, recipeId: recipe.id, name: display || hull?.name || primary.name, inputs, outputs,
       output: primary.qty, seconds: Number.isFinite(seconds) && seconds > 0 ? seconds : null,
       catalysts: plan.catalysts.map(c => ({ ...c })), creditCost: recipe.creditCost || 0 };
@@ -112,8 +112,9 @@
   }
   function selectHull() {
     const row = app.personnel.analyze().rows.find(r => r.key === 'shipyard');
-    return app.personnel.setModule('shipyard', { enabled: !(row.enabled && row.followHull),
-      recipeId: app.shipyard.selectedHull().recipeId, followHull: true });
+    const recipeId = app.shipyard.selectedHull().recipeId;
+    return app.personnel.setModule('shipyard', { enabled: !(row.enabled && row.recipeId === recipeId),
+      recipeId, followHull: true });
   }
   function rowFor(recipeId, result = analyze()) { return result.rows.find(row => row.recipeId === recipeId); }
   app.productionPlan = { analyze, batch, select, selectHull, rowFor, invalidate };

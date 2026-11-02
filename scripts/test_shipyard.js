@@ -83,8 +83,9 @@ ctx.__RHW_RECIPE_CATALOG__ = JSON.parse(zlib.gunzipSync(Buffer.from(ctx.__RHW_RE
 
   const inventoryBefore = JSON.stringify(ctx.items);
   const hulls = vm.runInContext('CAPITAL_SHIPYARD.hulls', ctx);
-  assert.equal(hulls.length, 9);
-  assert.deepEqual(['naval', 'mining', 'civilian'].map(key => hulls.filter(h=>h.division===key).length), [2, 2, 5]);
+  assert.equal(hulls.length, 8);
+  assert.ok(!hulls.some(hull => hull.recipeId === 'ship_assembly_cv_cruiser'), 'Do not offer the removed Civilian Cruiser recipe');
+  assert.deepEqual(['naval', 'mining', 'civilian'].map(key => hulls.filter(h=>h.division===key).length), [2, 2, 4]);
   for (const { key } of hulls) {
     assert.ok(yard.selectHull(key));
     const current = yard.selectedHull(), needs = yard.requirements();
@@ -169,5 +170,5 @@ ctx.__RHW_RECIPE_CATALOG__ = JSON.parse(zlib.gunzipSync(Buffer.from(ctx.__RHW_RE
   recipe.inputs[0].options[0].qty = 181;
   app.lifecycle.emit('catalog:loaded', { catalog: core.state.catalog });
   assert.equal(yard.requirements().materials[0].required, 181, 'A refreshed catalog updates requirements without config changes');
-  console.log('Shipyard and personnel passed: nine hulls, division memory, exact recipes, core reservation, additive concurrent staffing, ship preview, manual/API provenance and missing data.');
+  console.log('Shipyard and personnel passed: eight current hulls, division memory, exact recipes, core reservation, additive concurrent staffing, ship preview, manual/API provenance and missing data.');
 })().catch(error => { console.error(error); process.exitCode = 1; });

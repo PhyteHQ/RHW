@@ -31,9 +31,13 @@
     return { version: 4, coreLevel: 4,
       stock: Object.fromEntries(resources.map(r => [r.key, amount(object.stock?.[r.key])])),
       modules: Object.fromEntries(modules.map(m => [m.key, {
-        enabled: Boolean(m.fixed) || (m.key === 'refinery'
+        // Removed or invalid optional recipes must not silently start a
+        // different job when the saved recipe falls back to the default.
+        enabled: Boolean(m.fixed) || ((m.key === 'refinery'
           ? !(object.version >= 3 && object.modules?.refinery?.enabled === false)
-          : object.modules?.[m.key]?.enabled === true),
+          : object.modules?.[m.key]?.enabled === true)
+          && !(typeof object.modules?.[m.key]?.recipeId === 'string'
+            && !m.accepts({ id: object.modules[m.key].recipeId }))),
         recipeId: m.fixed ? m.defaultRecipe : typeof object.modules?.[m.key]?.recipeId === 'string'
           && m.accepts({ id: object.modules[m.key].recipeId }) ? object.modules[m.key].recipeId : m.defaultRecipe,
         followHull: m.key === 'shipyard' && (object.modules?.shipyard?.followHull === true

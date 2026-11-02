@@ -59,7 +59,7 @@
     try {
       const roles = typeof window.assetRoles === 'function' ? window.assetRoles(item) : [];
       const states = roles.map(role => ({ role, state: window.stateForRole?.(item, role) || 'ok' }));
-      return states.find(entry => entry.state === 'critical') || states.find(entry => entry.state === 'low') || states[0] || { role: 'other', state: 'ok' };
+      return states.find(entry => entry.state === 'critical') || states.find(entry => entry.state === 'low') || states.find(entry => entry.state === 'waiting') || states[0] || { role: 'other', state: 'ok' };
     } catch { return { role: 'other', state: 'ok' }; }
   }
 
@@ -170,10 +170,11 @@
     const states = items.map(roleSeverity);
     const critical = states.filter(entry => entry.state === 'critical').length;
     const low = states.filter(entry => entry.state === 'low').length;
+    const unknown = states.filter(entry => entry.state === 'waiting').length;
     const exports = items.filter(item => { try { return window.hasAssetRole?.(item, 'export'); } catch { return false; } }).length;
-    write('v40OverviewInventory', critical ? `${critical} CRITICAL` : (low ? `${low} LOW` : 'INVENTORY NOMINAL'));
-    write('v40OverviewInventoryMeta', `${critical} CRITICAL // ${low} LOW // ${exports} EXPORT LINES`);
-    setOverviewState('v40OverviewInventory', critical ? 'critical' : (low ? 'low' : 'ok'));
+    write('v40OverviewInventory', critical ? `${critical} CRITICAL` : low ? `${low} LOW` : unknown ? `${unknown} UNKNOWN` : 'INVENTORY NOMINAL');
+    write('v40OverviewInventoryMeta', `${critical} CRITICAL // ${low} LOW${unknown ? ` // ${unknown} UNKNOWN` : ''} // ${exports} EXPORT LINES`);
+    setOverviewState('v40OverviewInventory', critical ? 'critical' : low ? 'low' : unknown ? 'waiting' : 'ok');
 
     const yard = shipyardAnalysis();
     const yardKnown = yard?.buildable !== null && yard?.buildable !== undefined;

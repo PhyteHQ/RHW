@@ -103,6 +103,7 @@ function renderOverviewEmptyRow(text, statusText = 'SECURE') {
 }
 
 function overviewDetail(item, state, role) {
+  if (state === 'waiting') return 'STOCK UNKNOWN';
   const reference = overviewStockReference(item, role);
   if (role === 'byproduct') {
     if (state !== 'ok') return state === 'low' ? 'DISPOSAL REQUIRED' : 'CONTAINMENT CRITICAL';

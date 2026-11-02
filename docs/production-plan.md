@@ -56,7 +56,7 @@ missing shared inputs. Unknown inputs to the card itself still yield no count.
   or the private current production scheduler.
 - Gold / WCG and fuel alternatives use one ordered shared pool. Stock is never
   independently promised to two modules. Every fixed module priority is tested
-  (at most 24) to expose count/time ranges when last-stock allocation differs.
+  (at most 120 with PC reclamation) to expose count/time ranges when last-stock allocation differs.
   Those ranges describe these planned starts and fixed priorities, not every
   possible real server phase or future intervention.
 - Simultaneous completed batches are deposited before a new allocation. A
