@@ -15,8 +15,8 @@
     const metrics = plan.resources.map(r => `<span class="personnel-metric"><small>${r.name.toUpperCase()} REQUIRED</small><strong>${fmt(r.required)}</strong><small>${r.amount === null ? 'STOCK UNKNOWN' : `${fmt(r.amount)} ${r.source} · ${r.gap ? `${fmt(r.gap)} SHORT` : `${fmt(r.spare)} SPARE`}`}</small></span>`).join('');
     const rows = plan.rows.map(row => `<div class="personnel-module${row.enabled ? ' is-enabled' : ''}">
       <strong>${esc(row.name)} <small>${row.fixed ? 'ALWAYS PLANNED' : row.enabled ? 'PLANNED' : 'NOT SELECTED'}</small></strong>
-      <span>${row.enabled ? esc(model.label(row.recipe)) : 'Choose Supers, Reactors or a ship'}</span>
-      <span class="personnel-module-need">${row.personnel ? `${fmt(row.personnel.crew)} Crew · ${fmt(row.personnel.scientists)} Scientists` : 'RECIPE DATA UNKNOWN'}</span>
+      <span>${row.enabled ? esc(model.label(row.recipe)) : row.key === 'refinery' ? 'Choose Gold or Niobium in Production' : 'Choose Supers, Reactors or a ship'}</span>
+      <span class="personnel-module-need">${!row.enabled ? 'NO RECIPE STAFF RESERVED' : row.personnel ? `${fmt(row.personnel.crew)} Crew · ${fmt(row.personnel.scientists)} Scientists` : 'RECIPE DATA UNKNOWN'}</span>
     </div>`).join('');
     const inputs = plan.resources.map(r => `<label>${r.name} available <small>${r.amount === null ? 'Not reported by API' : `${r.source}: ${fmt(r.amount)}`}</small>
       <input type="number" name="stock-${r.key}" min="0" step="1" inputmode="numeric" data-personnel-stock="${r.key}" aria-label="Manual ${r.name.toLowerCase()} stock" placeholder="Use API stock" value="${model.snapshot().stock[r.key] ?? ''}"></label>`).join('');

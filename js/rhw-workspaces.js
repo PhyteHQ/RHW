@@ -2948,8 +2948,9 @@ window.__RHW_RECIPE_CATALOG_GZIP_BASE64__ = (window.__RHW_RECIPE_CATALOG_GZIP_BA
     return { version: 3, coreLevel: 4,
       stock: Object.fromEntries(resources.map(r => [r.key, amount(object.stock?.[r.key])])),
       modules: Object.fromEntries(modules.map(m => [m.key, {
-        enabled: m.fixed || (m.key === 'refinery' ? object.version >= 3
-          ? object.modules?.refinery?.enabled !== false : true : object.modules?.[m.key]?.enabled === true),
+        enabled: Boolean(m.fixed) || (m.key === 'refinery'
+          ? !(object.version >= 3 && object.modules?.refinery?.enabled === false)
+          : object.modules?.[m.key]?.enabled === true),
         recipeId: m.fixed ? m.defaultRecipe : typeof object.modules?.[m.key]?.recipeId === 'string'
           && m.accepts({ id: object.modules[m.key].recipeId }) ? object.modules[m.key].recipeId : m.defaultRecipe,
         followHull: m.key === 'shipyard' && (object.modules?.shipyard?.followHull === true
@@ -3336,8 +3337,8 @@ globalThis.RHW_PRODUCTION_VOLUMES = Object.freeze({
     const metrics = plan.resources.map(r => `<span class="personnel-metric"><small>${r.name.toUpperCase()} REQUIRED</small><strong>${fmt(r.required)}</strong><small>${r.amount === null ? 'STOCK UNKNOWN' : `${fmt(r.amount)} ${r.source} · ${r.gap ? `${fmt(r.gap)} SHORT` : `${fmt(r.spare)} SPARE`}`}</small></span>`).join('');
     const rows = plan.rows.map(row => `<div class="personnel-module${row.enabled ? ' is-enabled' : ''}">
       <strong>${esc(row.name)} <small>${row.fixed ? 'ALWAYS PLANNED' : row.enabled ? 'PLANNED' : 'NOT SELECTED'}</small></strong>
-      <span>${row.enabled ? esc(model.label(row.recipe)) : 'Choose Supers, Reactors or a ship'}</span>
-      <span class="personnel-module-need">${row.personnel ? `${fmt(row.personnel.crew)} Crew · ${fmt(row.personnel.scientists)} Scientists` : 'RECIPE DATA UNKNOWN'}</span>
+      <span>${row.enabled ? esc(model.label(row.recipe)) : row.key === 'refinery' ? 'Choose Gold or Niobium in Production' : 'Choose Supers, Reactors or a ship'}</span>
+      <span class="personnel-module-need">${!row.enabled ? 'NO RECIPE STAFF RESERVED' : row.personnel ? `${fmt(row.personnel.crew)} Crew · ${fmt(row.personnel.scientists)} Scientists` : 'RECIPE DATA UNKNOWN'}</span>
     </div>`).join('');
     const inputs = plan.resources.map(r => `<label>${r.name} available <small>${r.amount === null ? 'Not reported by API' : `${r.source}: ${fmt(r.amount)}`}</small>
       <input type="number" name="stock-${r.key}" min="0" step="1" inputmode="numeric" data-personnel-stock="${r.key}" aria-label="Manual ${r.name.toLowerCase()} stock" placeholder="Use API stock" value="${model.snapshot().stock[r.key] ?? ''}"></label>`).join('');
@@ -3483,7 +3484,7 @@ globalThis.RHW_PRODUCTION_VOLUMES = Object.freeze({
     }
     const focused = document.activeElement?.id === 'productionPlanHull';
     const hull = app.shipyard.selectedHull();
-    const options = CAPITAL_SHIPYARD.divisions.map(division => `<optgroup label="${esc(division.label)}">${CAPITAL_SHIPYARD.hulls.filter(h => h.division === division.key).map(h => `<option value="${esc(h.key)}" ${h.key === hull.key ? 'selected' : ''}>${esc(h.name)}</option>`).join('')}</optgroup>`).join('');
+    const options = CAPITAL_SHIPYARD.divisions.map(division => `<optgroup label="${esc(division.label)}">${CAPITAL_SHIPYARD.hulls.filter(h => h.division === division.key).map(h => `<option value="${esc(h.key)}" ${h.key === hull.key ? 'selected' : ''}>${esc(h.label)}</option>`).join('')}</optgroup>`).join('');
     mount.innerHTML = `<label class="production-hull-selector" for="productionPlanHull"><span>SHIPBUILDING</span><select id="productionPlanHull">${options}</select></label>${hullMarkup('production')}`;
     if (focused) mount.querySelector('select')?.focus({ preventScroll: true });
     bind();

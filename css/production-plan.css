@@ -3,7 +3,7 @@
 .production-plan-button { display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:44px;padding:7px 10px;border:1px solid #595b60;background:#191b1e;color:#c7c9cd;font:10px/1.3 var(--font-tech);letter-spacing:.05em;clip-path:none;box-shadow:none; }
 .production-plan-button:hover,.production-plan-button:focus-visible { border-color:var(--gold);color:var(--gold);background:#25231c; }
 .production-plan-button.is-planned { border-color:#a28a4d;background:#2b271d;color:#e0c474; }
-.production-plan-fixed { max-width:120px;font-size:9px; }
+.production-plan-fixed { max-width:120px;font-size:9px;white-space:nowrap;gap:4px;padding-inline:8px; }
 .production-plan-runtime { display:block;margin-top:4px;color:#b9ac8d;font:10px/1.5 var(--font-tech); }
 .production-plan-stat strong { font-size:22px;overflow-wrap:anywhere; }
 .production-plan-details { margin-top:10px;min-width:0;border-top:1px solid #49412f;font:11px/1.6 var(--font-main); }

@@ -74,7 +74,7 @@
     }
     const focused = document.activeElement?.id === 'productionPlanHull';
     const hull = app.shipyard.selectedHull();
-    const options = CAPITAL_SHIPYARD.divisions.map(division => `<optgroup label="${esc(division.label)}">${CAPITAL_SHIPYARD.hulls.filter(h => h.division === division.key).map(h => `<option value="${esc(h.key)}" ${h.key === hull.key ? 'selected' : ''}>${esc(h.name)}</option>`).join('')}</optgroup>`).join('');
+    const options = CAPITAL_SHIPYARD.divisions.map(division => `<optgroup label="${esc(division.label)}">${CAPITAL_SHIPYARD.hulls.filter(h => h.division === division.key).map(h => `<option value="${esc(h.key)}" ${h.key === hull.key ? 'selected' : ''}>${esc(h.label)}</option>`).join('')}</optgroup>`).join('');
     mount.innerHTML = `<label class="production-hull-selector" for="productionPlanHull"><span>SHIPBUILDING</span><select id="productionPlanHull">${options}</select></label>${hullMarkup('production')}`;
     if (focused) mount.querySelector('select')?.focus({ preventScroll: true });
     bind();

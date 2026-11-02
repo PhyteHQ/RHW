@@ -30,8 +30,9 @@
     return { version: 3, coreLevel: 4,
       stock: Object.fromEntries(resources.map(r => [r.key, amount(object.stock?.[r.key])])),
       modules: Object.fromEntries(modules.map(m => [m.key, {
-        enabled: m.fixed || (m.key === 'refinery' ? object.version >= 3
-          ? object.modules?.refinery?.enabled !== false : true : object.modules?.[m.key]?.enabled === true),
+        enabled: Boolean(m.fixed) || (m.key === 'refinery'
+          ? !(object.version >= 3 && object.modules?.refinery?.enabled === false)
+          : object.modules?.[m.key]?.enabled === true),
         recipeId: m.fixed ? m.defaultRecipe : typeof object.modules?.[m.key]?.recipeId === 'string'
           && m.accepts({ id: object.modules[m.key].recipeId }) ? object.modules[m.key].recipeId : m.defaultRecipe,
         followHull: m.key === 'shipyard' && (object.modules?.shipyard?.followHull === true
