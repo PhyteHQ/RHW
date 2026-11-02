@@ -306,6 +306,10 @@ def main():
           const existingGoldWorks=plan.rows.find(r=>r.key==='foundry').max>0;
           document.querySelector('[data-production-plan="ship_part_reactor"]').click();
           const onlyReactor=document.querySelector('[data-production-plan="ship_part_reactor"]').getAttribute('aria-pressed')==='true'&&document.querySelector('[data-production-plan="ship_part_superstructure"]').getAttribute('aria-pressed')==='false';
+          const inactive=document.querySelector('[data-production-plan="ship_part_superstructure"]').closest('.production-card');
+          const inactiveTime=inactive.querySelector('[data-forecast-mode="solo"] .production-plan-runtime').textContent==='~1h 20m · SOLO ESTIMATE'&&inactive.querySelector('.production-cycle-time').textContent==='~2m / CYCLE';
+          const unknown=document.querySelector('[data-production-plan="recipe_niobium_advanced"]').closest('.production-card');
+          const unknownTime=unknown.querySelector('[data-forecast-mode="solo"] .production-plan-runtime').textContent.includes('TIME UNKNOWN')&&unknown.querySelector('.production-cycle-time').textContent==='~16m / CYCLE';
           document.querySelector('[data-production-plan="ship_part_reactor"]').click();
           const reactorOff=!app.personnel.analyze().rows.find(r=>r.key==='shipyard').enabled;
           document.querySelector('[data-production-plan="recipe_niobium_advanced"]').click();
@@ -334,8 +338,9 @@ def main():
             button.click();return opened&&!details.open&&button.getAttribute('aria-expanded')==='false';
           });
           const touch=[...document.querySelectorAll('#productionGrid .production-plan-button')].every(e=>e.getBoundingClientRect().height>=44);
+          const allTimes=[...document.querySelectorAll('#productionGrid .production-card')].every(card=>card.querySelector('.production-cycle-time')&&card.querySelector('[data-forecast-mode] .production-plan-runtime'));
           const noExtraPanel=!document.querySelector('#productionPlanPanel');
-          return {oreStops,existingGoldWorks,onlyReactor,reactorOff,onlyNiobium,soloFallback,refineryOff,pickerFocus,followsHull,noTabChange,shipTouch,uniqueIds,shipOff,replacesShip,fixed,fixedDetails,touch,noExtraPanel};
+          return {oreStops,existingGoldWorks,onlyReactor,inactiveTime,unknownTime,reactorOff,onlyNiobium,soloFallback,refineryOff,pickerFocus,followsHull,noTabChange,shipTouch,uniqueIds,shipOff,replacesShip,fixed,fixedDetails,touch,allTimes,noExtraPanel};
         })()""")
         assert all(forecast.values()), forecast
         for width in (360,390,1366):

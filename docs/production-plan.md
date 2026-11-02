@@ -14,6 +14,11 @@ summary. Old settings keep the initial Gold choice; version 3 persists an
 explicitly disabled refinery. Chambers / Alloy remain mandatory and their
 ALWAYS ON buttons open or close forecast details instead of disabling them.
 
+Every card shows reference time per cycle beneath its material-cycle count,
+including unselected jobs and jobs with unknown stock. Every yield box also
+shows total time when calculable. Unselected EST. YIELD uses independent material
+coverage multiplied by cycle time, labelled SOLO ESTIMATE; it never consumes
+stock or changes the plan. Unknown stock gives TIME UNKNOWN, not zero time.
 Selected cards show PLANNED YIELD and elapsed planning time; SOLO CYCLES remains
 the independently calculated material coverage and is not the shared forecast.
 Details stay collapsed until requested. A choice does not send commands to the
