@@ -33,29 +33,30 @@
       receivedAt: typeof lastLoaded !== 'undefined' && lastLoaded ? lastLoaded.getTime() : 0,
       stale: typeof dataIsStale !== 'undefined' && dataIsStale };
   }
-  async function open(name, trigger = document.activeElement, mode) {
+  async function open(name, trigger = document.activeElement, mode, { surplus = false } = {}) {
     try {
       modulePromise ||= import(new URL('./js/supply/ui.mjs', document.baseURI).href).catch(error => { modulePromise = null; throw error; });
       const module = await modulePromise;
       const names = commodities();
-      const outputRoles = [...DASHBOARD_CONFIG.roles.export, ...DASHBOARD_CONFIG.roles.byproduct];
+      const outputRoles = [...DASHBOARD_CONFIG.roles.export, ...DASHBOARD_CONFIG.roles.byproduct, ...(surplus ? [name] : [])];
       const outputKeys = new Set(outputRoles.map(keyFromName));
-      const inputRoles = [...DASHBOARD_CONFIG.roles.maintenance, ...DASHBOARD_CONFIG.roles.procurement,
+      const inputRoles = [...DASHBOARD_CONFIG.roles.maintenance, ...DASHBOARD_CONFIG.roles.procurement, ...(DASHBOARD_CONFIG.roles.reserve || []),
         ...DASHBOARD_CONFIG.roles.feedstock, ...DASHBOARD_CONFIG.roles.shipyard, ...DASHBOARD_CONFIG.materialsScan];
       for (const recipe of app.production?.recipes() || []) {
         recipe.ingredients.forEach(([item]) => inputRoles.push(item));
         Object.values(recipe.inputOptions || {}).forEach(options => inputRoles.push(...options));
       }
       const inputKeys = new Set(inputRoles.map(keyFromName));
-      module.open({ commodity: name, commodities: names,
+      module.open({ commodity: name, commodities: names, surplusCommodity: surplus ? name : null,
         exportCommodities: names.filter(item => outputKeys.has(keyFromName(item))),
         importCommodities: names.filter(item => inputKeys.has(keyFromName(item))), mode, telemetry, trigger });
     } catch (error) { app.notify(`TRADE DESK // ${error.message}`, 'warn'); }
   }
   document.addEventListener('click', event => {
-    const trigger = event.target.closest('[data-supply-commodity],[data-export-commodity],[data-trade-desk]');
+    const trigger = event.target.closest('[data-supply-commodity],[data-export-commodity],[data-surplus-commodity],[data-trade-desk]');
     if (!trigger) return;
-    if (trigger.hasAttribute('data-export-commodity')) open(trigger.dataset.exportCommodity, trigger, 'export');
+    if (trigger.hasAttribute('data-surplus-commodity')) open(trigger.dataset.surplusCommodity, trigger, 'export', { surplus: true });
+    else if (trigger.hasAttribute('data-export-commodity')) open(trigger.dataset.exportCommodity, trigger, 'export');
     else if (trigger.hasAttribute('data-supply-commodity')) open(trigger.dataset.supplyCommodity, trigger, 'supply');
     else open(null, trigger);
   });

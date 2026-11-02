@@ -255,10 +255,11 @@ function saveViewPreferences() {
 function restoreViewPreferences() {
   const saved = safeStorageGet(STORAGE_KEYS.view, {});
   const validColumns = new Set(['name', 'role', 'status', 'quantity', 'sell', 'buy']);
-  const validRoles = new Set(['all', 'maintenance', 'procurement', 'export', 'shipyard', 'byproduct', 'confiscated']);
+  const validRoles = new Set(['all', 'maintenance', 'procurement', 'export', 'shipyard', 'byproduct', 'reserve']);
 
   if (els.search && typeof saved?.search === 'string') els.search.value = saved.search.slice(0, 200);
-  if (els.roleFilter && validRoles.has(saved?.role)) els.roleFilter.value = saved.role;
+  const restoredRole = saved?.role === 'confiscated' ? 'reserve' : saved?.role;
+  if (els.roleFilter && validRoles.has(restoredRole)) els.roleFilter.value = restoredRole;
   if (validColumns.has(saved?.sortCol)) sortCol = saved.sortCol;
   if (typeof saved?.sortAsc === 'boolean') sortAsc = saved.sortAsc;
   if (['price', 'stock'].includes(saved?.marketSort)) marketSort = saved.marketSort;

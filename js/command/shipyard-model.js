@@ -71,9 +71,13 @@
     return { hull, snapshot, recipeReady: true, recipe: needs.recipe, materials, prerequisites, buildable, nextHull, bottleneck };
   }
 
-  function selectHull(hullKey) {
+  function selectHull(hullKey, { preservePlan = false } = {}) {
     const hull = config.hulls.find(entry => entry.key === hullKey);
     if (!hull) return false;
+    const planned = app.personnel?.analyze().rows.find(row => row.key === 'shipyard');
+    if (preservePlan && planned?.enabled && planned.followHull && planned.recipeId !== hull.recipeId) {
+      if (!app.personnel.setModule('shipyard', { recipeId: planned.recipeId, followHull: false })) return false;
+    }
     app.state.shipyardHull = hull.key;
     lastHulls[hull.division] = hull.key;
     app.store.set(key, hull.key);

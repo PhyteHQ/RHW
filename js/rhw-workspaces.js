@@ -1158,7 +1158,7 @@ const RHW_APP_CONFIG = Object.freeze({
       <span>STATUS + STOCK + MARKET VALUES</span>
     </header>
     <div class="inventory-view-nav" role="tablist" aria-label="Inventory views">
-      <button type="button" id="inventoryStatusTab" role="tab" aria-controls="inventoryStatusPanel" data-inventory-view="status"><span>STATUS BOARD</span><small>FACILITY + EXPORT + FEEDSTOCK</small></button>
+      <button type="button" id="inventoryStatusTab" role="tab" aria-controls="inventoryStatusPanel" data-inventory-view="status"><span>STATUS BOARD</span><small>FACILITY + RESERVES + EXPORT</small></button>
       <button type="button" id="inventoryManifestTab" role="tab" aria-controls="inventoryManifestPanel" data-inventory-view="manifest"><span>FULL MANIFEST</span><small>SEARCH + FILTER + PRICES</small></button>
     </div>
     <section id="inventoryStatusPanel" class="inventory-view-panel" role="tabpanel" aria-labelledby="inventoryStatusTab" data-inventory-panel="status"></section>
@@ -1166,7 +1166,7 @@ const RHW_APP_CONFIG = Object.freeze({
   }
 
   function safeOperationalItems() {
-    try { return typeof window.operationalItems === 'function' ? window.operationalItems() : []; }
+    try { return typeof window.operationalItems === 'function' ? window.operationalItems().filter(item => window.commodityKey?.(item) !== 'wildcat gold') : []; }
     catch { return []; }
   }
 
@@ -1204,6 +1204,7 @@ const RHW_APP_CONFIG = Object.freeze({
       if (!['critical', 'low'].includes(severity.state)) return;
       let name = item?.name || 'UNKNOWN ASSET';
       try { if (typeof window.displayName === 'function') name = window.displayName(item); } catch {}
+      if (severity.role === 'reserve') name = app.inventoryModel?.reserve(window.commodityKey(item))?.label || name;
       const detail = typeof window.overviewDetail === 'function' ? window.overviewDetail(item, severity.state, severity.role) : '';
       const meta = detail && detail !== 'TRACKED' ? detail : `${severity.state.toUpperCase()} STOCK`;
       const node = severity.role === 'shipyard' ? 'shipyard' : 'inventory';
@@ -2855,9 +2856,13 @@ window.__RHW_RECIPE_CATALOG_GZIP_BASE64__ = (window.__RHW_RECIPE_CATALOG_GZIP_BA
     return { hull, snapshot, recipeReady: true, recipe: needs.recipe, materials, prerequisites, buildable, nextHull, bottleneck };
   }
 
-  function selectHull(hullKey) {
+  function selectHull(hullKey, { preservePlan = false } = {}) {
     const hull = config.hulls.find(entry => entry.key === hullKey);
     if (!hull) return false;
+    const planned = app.personnel?.analyze().rows.find(row => row.key === 'shipyard');
+    if (preservePlan && planned?.enabled && planned.followHull && planned.recipeId !== hull.recipeId) {
+      if (!app.personnel.setModule('shipyard', { recipeId: planned.recipeId, followHull: false })) return false;
+    }
     app.state.shipyardHull = hull.key;
     lastHulls[hull.division] = hull.key;
     app.store.set(key, hull.key);
@@ -2935,6 +2940,7 @@ window.__RHW_RECIPE_CATALOG_GZIP_BASE64__ = (window.__RHW_RECIPE_CATALOG_GZIP_BA
     { key: 'smelter', name: 'Scrap Smelter', fixed: true, defaultRecipe: 'recipe_scrap_advanced', accepts: r => r.id === 'recipe_scrap_advanced' },
     { key: 'shipyard', name: 'Modular Shipyard', defaultRecipe: 'ship_assembly_medium_miner',
       accepts: r => ['ship_part_superstructure', 'ship_part_reactor'].includes(r.id) || CAPITAL_SHIPYARD.hulls.some(h => h.recipeId === r.id) },
+    { key: 'reclamation', name: 'Advanced Materials Complex', defaultRecipe: 'recipe_milsal', accepts: r => r.id === 'recipe_milsal' },
     { key: 'foundry', name: 'Exotic Weapons Components Foundry', fixed: true, defaultRecipe: 'recipe_weapon_part_focusing_chamber',
       accepts: r => r.id === 'recipe_weapon_part_focusing_chamber' }
   ]);
@@ -2945,7 +2951,7 @@ window.__RHW_RECIPE_CATALOG_GZIP_BASE64__ = (window.__RHW_RECIPE_CATALOG_GZIP_BA
   }
   function normalize(raw) {
     const object = raw && typeof raw === 'object' && !Array.isArray(raw) ? raw : {};
-    return { version: 3, coreLevel: 4,
+    return { version: 4, coreLevel: 4,
       stock: Object.fromEntries(resources.map(r => [r.key, amount(object.stock?.[r.key])])),
       modules: Object.fromEntries(modules.map(m => [m.key, {
         enabled: Boolean(m.fixed) || (m.key === 'refinery'
@@ -2954,7 +2960,7 @@ window.__RHW_RECIPE_CATALOG_GZIP_BASE64__ = (window.__RHW_RECIPE_CATALOG_GZIP_BA
         recipeId: m.fixed ? m.defaultRecipe : typeof object.modules?.[m.key]?.recipeId === 'string'
           && m.accepts({ id: object.modules[m.key].recipeId }) ? object.modules[m.key].recipeId : m.defaultRecipe,
         followHull: m.key === 'shipyard' && (object.modules?.shipyard?.followHull === true
-          || CAPITAL_SHIPYARD.hulls.some(h => h.recipeId === object.modules?.shipyard?.recipeId))
+          || object.version < 4 && CAPITAL_SHIPYARD.hulls.some(h => h.recipeId === object.modules?.shipyard?.recipeId))
       }])) };
   }
   let state = normalize(storageKey ? app.store.get(storageKey, {}) : {});
@@ -3030,6 +3036,8 @@ window.__RHW_RECIPE_CATALOG_GZIP_BASE64__ = (window.__RHW_RECIPE_CATALOG_GZIP_BA
     app.personnelView?.render();
     if (typeof renderProductionModules === 'function') renderProductionModules();
     if (typeof renderShipyardControl === 'function') renderShipyardControl();
+    if (typeof renderOverview === 'function') renderOverview();
+    app.requestUiUpdate?.();
     return true;
   }
   function setModule(key, changes) {
@@ -3069,6 +3077,7 @@ globalThis.RHW_PRODUCTION_VOLUMES = Object.freeze({
   "commodity_industrial": 1,
   "commodity_iron": 1,
   "commodity_mox_fuel": 1,
+  "commodity_military_salvage": 1,
   "commodity_niobium": 1,
   "commodity_niobium_ore": 2,
   "commodity_pirate_gold": 1,
@@ -3315,6 +3324,147 @@ globalThis.RHW_PRODUCTION_VOLUMES = Object.freeze({
   function rowFor(recipeId, result = analyze()) { return result.rows.find(row => row.recipeId === recipeId); }
   app.productionPlan = { analyze, batch, select, selectHull, rowFor, invalidate };
   app.lifecycle.on('catalog:loaded', 'production-plan', 50, invalidate);
+})();
+
+;
+
+/* SOURCE: js/command/inventory-model.js */
+/* Inventory roles do not change the live market or spend production stock. */
+(function initInventoryModel() {
+  'use strict';
+  const app = window.RHWV4;
+  const definitions = DASHBOARD_CONFIG.reserveCards;
+  function definition(name) {
+    const key = keyFromName(name);
+    return definitions.find(d => d.key === key || d.members.some(n => keyFromName(n) === key));
+  }
+  function record(name) {
+    const item = findCommodity(name);
+    return { name, item, stock: hasVerifiedTelemetry() && item && !item.missing
+      ? firstFiniteApiStockValue(item, ['quantity', 'amount', 'stock']) : null };
+  }
+  function reserve(name) {
+    const spec = definition(name);
+    if (!spec) return null;
+    const parts = spec.members.map(record);
+    // An absent interchangeable variant contributes zero only when another is
+    // reported. A malformed reported quantity must remain unknown.
+    const known = parts.some(p => p.stock !== null) && parts.every(p => !p.item || p.item.missing || p.stock !== null);
+    const stock = known ? parts.reduce((sum, p) => sum + (p.stock ?? 0), 0) : null;
+    let required = null;
+    if (app.operationsCore?.state.catalog && app.personnel && app.productionPlan) {
+      required = 0;
+      for (const row of app.personnel.analyze().rows.filter(r => r.enabled)) {
+        const batch = app.productionPlan.batch(row);
+        for (const group of batch?.inputs || []) if (group.names.some(n => spec.members.some(member => keyFromName(member) === keyFromName(n)))) required += group.qty;
+      }
+    }
+    const state = stock === null || required === null ? 'waiting' : required === 0 ? 'ok'
+      : stock < required ? 'critical' : stock < required * 2 ? 'low' : 'ok';
+    const maxima = parts.map(p => firstFiniteApiStockValue(p.item, ['max_stock', 'max']));
+    const item = { name: spec.members[0], quantity: stock,
+      max_stock: maxima.some(n => n !== null) ? maxima.reduce((s, n) => s + (n ?? 0), 0) : null };
+    return { ...spec, parts, stock, required, state, item };
+  }
+  function input(name, recipeId) {
+    const value = record(name);
+    const recipe = app.production?.requirements({ recipeId, product: name });
+    const required = recipe?.ingredients.find(([n]) => keyFromName(n) === keyFromName(name))?.[1] ?? null;
+    return { ...value, required, cycles: value.stock !== null && required > 0 ? Math.floor(value.stock / required) : null };
+  }
+  function ships() {
+    return CAPITAL_SHIPYARD.hulls.map(hull => {
+      const item = hasVerifiedTelemetry() ? findShipyardItem(hull) : null;
+      const value = firstFiniteApiStockValue(item, ['quantity', 'amount', 'stock']);
+      return { hull, stock: Number.isSafeInteger(value) ? value : null };
+    });
+  }
+  app.inventoryModel = { definition, record, reserve, input, ships };
+})();
+
+;
+
+/* SOURCE: js/command/inventory-navigation.js */
+/* Overview links select a view; factory planning remains an explicit action. */
+(function initInventoryNavigation() {
+  'use strict';
+  const app = window.RHWV4;
+  let usesDialog, returnFocus, highlightTimer;
+  function recipe(recipeId) {
+    productionModuleFilter = 'all'; productionModuleQuery = '';
+    app.navigate('command', 'production');
+    renderProductionModules();
+    const input = document.querySelector('#productionModuleTools input');
+    if (input) input.value = '';
+    requestAnimationFrame(() => {
+      const card = [...document.querySelectorAll('.production-card')].find(node => node.dataset.productionRecipe === recipeId);
+      if (!card) { app.notify('Production recipe is not available in this view.', 'warn'); return; }
+      productionExpandedModules.add(card.dataset.productionProduct);
+      card.classList.remove('production-card-collapsed'); card.classList.add('production-card-expanded');
+      const button = card.querySelector('.production-card-toggle');
+      button?.setAttribute('aria-expanded', 'true');
+      if (button) button.querySelector('span').textContent = 'HIDE MATERIALS';
+      card.tabIndex = -1; card.focus({ preventScroll: true });
+      card.scrollIntoView({ block: 'start', behavior: 'instant' });
+      clearTimeout(highlightTimer);
+      document.querySelectorAll('.inventory-target').forEach(node => node.classList.remove('inventory-target'));
+      card.classList.add('inventory-target');
+      highlightTimer = setTimeout(() => card.classList.remove('inventory-target'), 2200);
+    });
+  }
+  function hull(key) {
+    if (key && !app.shipyard.selectHull(key, { preservePlan: true })) return;
+    app.navigate('command', 'shipyard');
+    requestAnimationFrame(() => {
+      const target = document.getElementById('shipyardControl');
+      target?.scrollIntoView({ block: 'start', behavior: 'instant' });
+      const selected = target?.querySelector('[data-shipyard-select].active,[data-shipyard-select][aria-pressed="true"]');
+      selected?.focus({ preventScroll: true });
+    });
+  }
+  function material(name, trigger) {
+    const spec = app.inventoryModel.definition(name);
+    const options = [];
+    if (spec) options.push({ id: spec.recipeId, label: 'PRODUCE · ' + spec.members[0] });
+    const names = (spec?.members || [name]).map(keyFromName);
+    for (const r of app.production.recipes()) {
+      const consumed = r.ingredients.some(([n]) => names.includes(keyFromName(n)))
+        || Object.values(r.inputOptions || {}).some(group => group.some(n => names.includes(keyFromName(n))));
+      const produced = r.byproducts.some(([n]) => names.includes(keyFromName(n)));
+      if (consumed || produced) options.push({ id: r.recipeId, label: `${consumed ? 'USED BY' : 'PRODUCED BY'} · ${r.product}` });
+    }
+    if (options.length === 1) { recipe(options[0].id); return; }
+    if (!options.length) return;
+    if (!usesDialog) {
+      usesDialog = document.createElement('dialog'); usesDialog.className = 'inventory-uses-dialog';
+      usesDialog.setAttribute('aria-labelledby', 'inventoryUsesTitle'); document.body.append(usesDialog);
+      usesDialog.addEventListener('click', event => {
+        const target = event.target.closest('[data-inventory-choice]');
+        if (target) { usesDialog.close('navigate'); recipe(target.dataset.inventoryChoice); }
+        else if (event.target.closest('[data-inventory-close]')) usesDialog.close();
+      });
+      usesDialog.addEventListener('close', () => {
+        if (usesDialog.returnValue !== 'navigate' && returnFocus?.isConnected) returnFocus.focus({ preventScroll: true });
+      });
+    }
+    returnFocus = trigger;
+    usesDialog.innerHTML = `<h2 id="inventoryUsesTitle">${escapeHTML(spec?.label || name)}</h2><p>OPEN PRODUCTION</p>${options.map(option => `<button type="button" data-inventory-choice="${escapeHTML(option.id)}">${escapeHTML(option.label)}</button>`).join('')}<button type="button" data-inventory-close>CLOSE</button>`;
+    usesDialog.returnValue = ''; usesDialog.showModal();
+  }
+  document.addEventListener('click', event => {
+    const explicit = event.target.closest('button[data-inventory-recipe],button[data-inventory-material],button[data-inventory-hull],[data-inventory-yard]');
+    const card = event.target.closest('li[data-inventory-recipe],li[data-inventory-material]');
+    if (!explicit && (!card || event.target.closest('button,a,summary,input,select,details'))) return;
+    const target = explicit || card;
+    if (target.hasAttribute('data-inventory-yard')) hull();
+    else if (target.hasAttribute('data-inventory-hull')) hull(target.dataset.inventoryHull);
+    else if (target.dataset.inventoryRecipe) recipe(target.dataset.inventoryRecipe);
+    else if (target.dataset.inventoryMaterial) material(target.dataset.inventoryMaterial, explicit || target.querySelector('button'));
+  });
+  const render = () => { renderOverview(); app.command?.updateOverview?.(); };
+  app.lifecycle.on('catalog:loaded', 'inventory-reserves', 55, render);
+  app.lifecycle.on('command:ready', 'inventory-reserves', 95, render);
+  app.inventoryNavigation = { recipe, hull, material };
 })();
 
 ;
@@ -8570,29 +8720,30 @@ globalThis.RHW_PRODUCTION_VOLUMES = Object.freeze({
       receivedAt: typeof lastLoaded !== 'undefined' && lastLoaded ? lastLoaded.getTime() : 0,
       stale: typeof dataIsStale !== 'undefined' && dataIsStale };
   }
-  async function open(name, trigger = document.activeElement, mode) {
+  async function open(name, trigger = document.activeElement, mode, { surplus = false } = {}) {
     try {
       modulePromise ||= import(new URL('./js/supply/ui.mjs', document.baseURI).href).catch(error => { modulePromise = null; throw error; });
       const module = await modulePromise;
       const names = commodities();
-      const outputRoles = [...DASHBOARD_CONFIG.roles.export, ...DASHBOARD_CONFIG.roles.byproduct];
+      const outputRoles = [...DASHBOARD_CONFIG.roles.export, ...DASHBOARD_CONFIG.roles.byproduct, ...(surplus ? [name] : [])];
       const outputKeys = new Set(outputRoles.map(keyFromName));
-      const inputRoles = [...DASHBOARD_CONFIG.roles.maintenance, ...DASHBOARD_CONFIG.roles.procurement,
+      const inputRoles = [...DASHBOARD_CONFIG.roles.maintenance, ...DASHBOARD_CONFIG.roles.procurement, ...(DASHBOARD_CONFIG.roles.reserve || []),
         ...DASHBOARD_CONFIG.roles.feedstock, ...DASHBOARD_CONFIG.roles.shipyard, ...DASHBOARD_CONFIG.materialsScan];
       for (const recipe of app.production?.recipes() || []) {
         recipe.ingredients.forEach(([item]) => inputRoles.push(item));
         Object.values(recipe.inputOptions || {}).forEach(options => inputRoles.push(...options));
       }
       const inputKeys = new Set(inputRoles.map(keyFromName));
-      module.open({ commodity: name, commodities: names,
+      module.open({ commodity: name, commodities: names, surplusCommodity: surplus ? name : null,
         exportCommodities: names.filter(item => outputKeys.has(keyFromName(item))),
         importCommodities: names.filter(item => inputKeys.has(keyFromName(item))), mode, telemetry, trigger });
     } catch (error) { app.notify(`TRADE DESK // ${error.message}`, 'warn'); }
   }
   document.addEventListener('click', event => {
-    const trigger = event.target.closest('[data-supply-commodity],[data-export-commodity],[data-trade-desk]');
+    const trigger = event.target.closest('[data-supply-commodity],[data-export-commodity],[data-surplus-commodity],[data-trade-desk]');
     if (!trigger) return;
-    if (trigger.hasAttribute('data-export-commodity')) open(trigger.dataset.exportCommodity, trigger, 'export');
+    if (trigger.hasAttribute('data-surplus-commodity')) open(trigger.dataset.surplusCommodity, trigger, 'export', { surplus: true });
+    else if (trigger.hasAttribute('data-export-commodity')) open(trigger.dataset.exportCommodity, trigger, 'export');
     else if (trigger.hasAttribute('data-supply-commodity')) open(trigger.dataset.supplyCommodity, trigger, 'supply');
     else open(null, trigger);
   });

@@ -482,7 +482,7 @@ def main():
           core.state.catalog=null;renderProductionModules();
           production.unavailable=productionGrid.textContent.includes('PRODUCTION RECIPES UNAVAILABLE')&&!productionGrid.querySelector('.production-card');
           core.state.catalog=catalog;renderProductionModules();
-          production.restored=productionGrid.querySelectorAll('.production-card').length===6;
+          production.restored=productionGrid.querySelectorAll('.production-card').length===7;
           document.querySelector('[data-production-product="basic alloy"] .production-calc-button').click();
           return {production,recipe:opsRecipe.value,output:RHWV4.operationsCore.buildPlan({recipeId:opsRecipe.value,
             quantity:1,affiliationId:'br_m_grp',useInventory:false,recursive:false,routingPolicy:'first'}).actualOutput,

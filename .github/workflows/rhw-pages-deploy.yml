@@ -79,6 +79,7 @@ jobs:
         run: |
           node scripts/test_shipyard.js
           node scripts/test_production_plan.js
+          node scripts/test_inventory_reserves.js
 
       - name: Validate Logistics market scans
         run: node scripts/test_logistics_scans.js
@@ -124,7 +125,9 @@ jobs:
 
       - name: Compact COMMAND hierarchy smoke test
         if: ${{ !cancelled() }}
-        run: python3 scripts/smoke_command_compact.py
+        run: |
+          python3 scripts/smoke_command_compact.py
+          python3 scripts/smoke_inventory_reserves.py
 
       - name: Focused daily-navigation smoke test
         if: ${{ !cancelled() }}

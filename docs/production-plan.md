@@ -1,6 +1,14 @@
 # Inline RHW production plan
 
-The existing Production cards own the manual plan controls. Chambers and Basic
+The existing Production cards own the manual plan controls. PC reclamation is
+available as an optional Advanced Materials Complex job, initially unplanned.
+It consumes 250 Military Salvage for 25 PC + 450 Scrap Metal, reserves 100
+Scientists and takes ~125 minutes in the reference volume/rate model. The
+general Military Salvage volume is 1; hauler volume overrides do not apply.
+Staffing schema v4 also retains a pinned planned hull when an inventory click
+opens a different Shipyard preview. See [inventory roles](inventory-reserves.md).
+
+Chambers and Basic
 Alloy are always included. The Industrial Refinery defaults to Advanced Gold;
 Gold and Advanced Niobium are exclusive and can both be off. Clicking the
 selected PLAN button again disables that optional job. Modular Shipyard starts unselected and

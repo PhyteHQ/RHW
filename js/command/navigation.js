@@ -43,7 +43,7 @@
       <span>STATUS + STOCK + MARKET VALUES</span>
     </header>
     <div class="inventory-view-nav" role="tablist" aria-label="Inventory views">
-      <button type="button" id="inventoryStatusTab" role="tab" aria-controls="inventoryStatusPanel" data-inventory-view="status"><span>STATUS BOARD</span><small>FACILITY + EXPORT + FEEDSTOCK</small></button>
+      <button type="button" id="inventoryStatusTab" role="tab" aria-controls="inventoryStatusPanel" data-inventory-view="status"><span>STATUS BOARD</span><small>FACILITY + RESERVES + EXPORT</small></button>
       <button type="button" id="inventoryManifestTab" role="tab" aria-controls="inventoryManifestPanel" data-inventory-view="manifest"><span>FULL MANIFEST</span><small>SEARCH + FILTER + PRICES</small></button>
     </div>
     <section id="inventoryStatusPanel" class="inventory-view-panel" role="tabpanel" aria-labelledby="inventoryStatusTab" data-inventory-panel="status"></section>
@@ -51,7 +51,7 @@
   }
 
   function safeOperationalItems() {
-    try { return typeof window.operationalItems === 'function' ? window.operationalItems() : []; }
+    try { return typeof window.operationalItems === 'function' ? window.operationalItems().filter(item => window.commodityKey?.(item) !== 'wildcat gold') : []; }
     catch { return []; }
   }
 
@@ -89,6 +89,7 @@
       if (!['critical', 'low'].includes(severity.state)) return;
       let name = item?.name || 'UNKNOWN ASSET';
       try { if (typeof window.displayName === 'function') name = window.displayName(item); } catch {}
+      if (severity.role === 'reserve') name = app.inventoryModel?.reserve(window.commodityKey(item))?.label || name;
       const detail = typeof window.overviewDetail === 'function' ? window.overviewDetail(item, severity.state, severity.role) : '';
       const meta = detail && detail !== 'TRACKED' ? detail : `${severity.state.toUpperCase()} STOCK`;
       const node = severity.role === 'shipyard' ? 'shipyard' : 'inventory';

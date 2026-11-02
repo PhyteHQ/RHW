@@ -10,7 +10,8 @@
     "./css/layout.css",
     "./css/recipes.css",
     "./css/supply.css",
-    "./css/production-plan.css"
+    "./css/production-plan.css",
+    "./css/inventory.css"
   ],
   "dashboard": [
     "./js/core/refresh.js",
@@ -50,6 +51,8 @@
     "./js/command/production-volumes.js",
     "./js/command/production-simulation.js",
     "./js/command/production-plan.js",
+    "./js/command/inventory-model.js",
+    "./js/command/inventory-navigation.js",
     "./js/command/personnel.js",
     "./js/command/production-plan-view.js",
     "./js/calculator/ui.js",
