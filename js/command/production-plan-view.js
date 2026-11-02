@@ -43,14 +43,16 @@
   }
   function card(recipeId, plan, analysis) {
     const row = model.rowFor(recipeId, plan);
+    const shared = Boolean(row && plan.ready);
     let cycle = row?.seconds;
     if (!cycle) { try { cycle = model.batch({ key: 'preview', recipe: app.operationsCore.recipe(recipeId) })?.seconds; } catch {} }
     return { selected: Boolean(row), control: control(recipeId),
-      count: row ? plan.ready ? `${plan.truncated ? '≥' : ''}${range(row.min, row.max)}` : range(analysis?.possibleOutput, analysis?.possibleOutput) : null,
-      time: row && plan.ready ? `~${range(row.secondsMin, row.secondsMax, duration)}`
+      count: shared ? `${plan.truncated ? '≥' : ''}${range(row.min, row.max)}` : range(analysis?.possibleOutput, analysis?.possibleOutput),
+      time: shared ? `~${range(row.secondsMin, row.secondsMax, duration)}`
         : Number.isFinite(cycle) && Number.isFinite(analysis?.possibleCycles) ? `~${duration(cycle * analysis.possibleCycles)}` : 'TIME UNKNOWN',
-      yieldLabel: plan.ready ? 'PLANNED YIELD' : 'SOLO YIELD',
-      modeLabel: plan.ready ? plan.conditions.length ? 'CONDITIONAL' : 'MANUAL PLAN' : 'SOLO ESTIMATE',
+      mode: shared ? 'shared' : 'solo',
+      yieldLabel: shared ? 'PLANNED YIELD' : row ? 'SOLO YIELD' : 'EST. YIELD',
+      modeLabel: shared ? plan.conditions.length ? 'CONDITIONAL' : 'MANUAL PLAN' : 'SOLO ESTIMATE',
       cycle: cycle ? duration(cycle) : '', details: details(row, plan) };
   }
   function hullMarkup(context = 'shipyard') {

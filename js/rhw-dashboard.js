@@ -1330,14 +1330,14 @@ function renderProductionModules() {
                 <div>
                   <div class="production-kicker">MODULE-${String(index + 1).padStart(2, '0')}</div>
                   <div class="production-title">${escapeHTML(displayRecipeName(recipe.product))}</div>
-                  <div class="footnote">YIELD PER CYCLE: ${number(recipe.output)}${forecast?.cycle ? ` · ~${forecast.cycle} / CYCLE` : ''}</div>
+                  <div class="footnote">YIELD PER CYCLE: ${number(recipe.output)}</div>
                 </div>
                 <div class="production-card-controls"><span class="module-state ${analysis.cardState}">${statusLabel(analysis.cardState, 'production')}</span>${forecast?.control || ''}</div>
               </div>
               <div class="production-stats">
                 <div class="production-stat production-stock-primary"><small>IN STOCK</small><strong>${number(analysis.productStock)}</strong></div>
-                <div class="production-stat"><small>${forecast?.selected ? 'SOLO CYCLES' : 'MATERIAL CYCLES'}</small><strong>${number(analysis.possibleCycles)}</strong></div>
-                <div class="production-stat${forecast?.selected ? ' production-plan-stat' : ''}" ${forecast?.selected ? `data-forecast-mode="${sharedPlan.ready ? 'shared' : 'solo'}"` : ''}><small>${forecast?.selected ? forecast.yieldLabel : 'EST. YIELD'}</small><strong>${forecast?.selected ? forecast.count : number(analysis.possibleOutput)}</strong>${forecast?.selected ? `<span class="production-plan-runtime">${forecast.time} · ${forecast.modeLabel}</span>` : ''}</div>
+                <div class="production-stat"><small>${forecast?.selected ? 'SOLO CYCLES' : 'MATERIAL CYCLES'}</small><strong>${number(analysis.possibleCycles)}</strong><span class="production-plan-runtime production-cycle-time">${forecast?.cycle ? `~${forecast.cycle} / CYCLE` : 'CYCLE TIME UNKNOWN'}</span></div>
+                <div class="production-stat${forecast?.selected ? ' production-plan-stat' : ''}" data-forecast-mode="${forecast?.mode || 'solo'}"><small>${forecast?.yieldLabel || 'EST. YIELD'}</small><strong>${forecast ? forecast.count : number(analysis.possibleOutput)}</strong><span class="production-plan-runtime">${forecast?.time || 'TIME UNKNOWN'} · ${forecast?.modeLabel || 'SOLO ESTIMATE'}</span></div>
               </div>
               ${forecast?.details || ''}
               ${nextGapText}
