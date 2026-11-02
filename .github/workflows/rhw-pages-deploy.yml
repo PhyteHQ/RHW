@@ -18,6 +18,45 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  live-feed-diagnostic:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Inspect public live feed transport (temporary diagnosis)
+        run: |
+          python3 - <<'PY'
+          import concurrent.futures, gzip, json, time, urllib.request, urllib.error
+          def inspect(job):
+              path, method = job
+              started = time.monotonic()
+              request = urllib.request.Request('https://darkstat.dd84ai.com/api/' + path,
+                  method=method, headers={'Accept':'application/json',
+                  'Accept-Encoding':'gzip', 'Origin':'https://phytehq.github.io'})
+              result = {'endpoint':path, 'method':method}
+              try:
+                  try: response = urllib.request.urlopen(request, timeout=20)
+                  except urllib.error.HTTPError as error: response = error
+                  with response:
+                      result.update(status=response.status, type=response.headers.get('Content-Type'),
+                          cors=response.headers.get('Access-Control-Allow-Origin'),
+                          methods=response.headers.get('Access-Control-Allow-Methods'),
+                          encoding=response.headers.get('Content-Encoding'))
+                      data = response.read(75*1024*1024)
+                  if result['encoding'] == 'gzip': data = gzip.decompress(data)
+                  result['bytes'] = len(data)
+                  try:
+                      parsed = json.loads(data)
+                      result.update(json_type=type(parsed).__name__, count=len(parsed))
+                  except (ValueError, TypeError): result['body_prefix'] = data[:140].decode(errors='replace')
+              except Exception as error: result['error'] = str(error)
+              result['seconds'] = round(time.monotonic()-started, 2)
+              return result
+          with concurrent.futures.ThreadPoolExecutor(max_workers=4) as pool:
+              for result in pool.map(inspect, [(path,method) for path in ('systems','pobs') for method in ('POST','GET')]):
+                  print(json.dumps(result))
+          PY
+
   validate:
     runs-on: ubuntu-latest
     timeout-minutes: 8
