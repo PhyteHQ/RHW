@@ -335,9 +335,9 @@ def test_pr3_decision_ui(cdp, workspace, node):
               const searchProducts=[...grid.querySelectorAll('.production-card')].filter(card=>!card.hidden).map(card=>card.dataset.productionProduct);
               search.value='';search.dispatchEvent(new Event('input',{bubbles:true}));
               const card=grid.querySelector('.production-card'),toggle=card?.querySelector('.production-card-toggle'),list=card?.querySelector('.recipe-list');
-              const before={collapsed:card?.classList.contains('production-card-collapsed'),display:list?getComputedStyle(list).display:''};
+              const before={collapsed:card?.classList.contains('production-card-collapsed'),visible:Boolean(list?.getClientRects().length)};
               toggle?.click();
-              const after={expanded:card?.classList.contains('production-card-expanded'),display:list?getComputedStyle(list).display:'',aria:toggle?.getAttribute('aria-expanded')};
+              const after={expanded:card?.classList.contains('production-card-expanded'),visible:Boolean(list?.getClientRects().length),aria:toggle?.getAttribute('aria-expanded')};
               const touch=[...tools.querySelectorAll('button,input'),...grid.querySelectorAll('.production-card-toggle')].filter(visible).map(x=>x.getBoundingClientRect().height);
               return{
                 total,filters:tools.querySelectorAll('[data-production-filter]').length,
@@ -351,7 +351,7 @@ def test_pr3_decision_ui(cdp, workspace, node):
             raise RuntimeError(f"PR3 Production filters failed: {result}")
         if not result.get("searchProducts") or any("gold" not in product for product in result.get("searchProducts", [])):
             raise RuntimeError(f"PR3 Production search failed: {result}")
-        if not result.get("before", {}).get("collapsed") or result.get("before", {}).get("display") != "none" or not result.get("after", {}).get("expanded") or result.get("after", {}).get("display") == "none" or result.get("after", {}).get("aria") != "true":
+        if not result.get("before", {}).get("collapsed") or result.get("before", {}).get("visible") or not result.get("after", {}).get("expanded") or not result.get("after", {}).get("visible") or result.get("after", {}).get("aria") != "true":
             raise RuntimeError(f"PR3 Production card details failed: {result}")
         if result.get("overflow", 0) > 2 or any(height < 43.5 for height in result.get("touch", [])):
             raise RuntimeError(f"PR3 Production mobile layout failed: {result}")
