@@ -18,24 +18,6 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  live-feed-diagnostic:
-    if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
-    timeout-minutes: 4
-    steps:
-      - uses: actions/checkout@v6
-      - name: Install live-browser test client
-        run: python3 -m pip install --disable-pip-version-check --quiet websocket-client==1.8.0
-      - name: Real-network Trade Desk verification (temporary review)
-        run: python3 scripts/smoke_trade_live.py
-      - name: Save live verification
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: rhw-live-trade-review
-          path: artifacts/live-trade
-          if-no-files-found: ignore
-
   validate:
     runs-on: ubuntu-latest
     timeout-minutes: 8
