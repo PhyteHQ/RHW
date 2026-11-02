@@ -45,7 +45,7 @@ def main():
           inputs:[...inventoryStatusPanel.querySelectorAll('[data-input-name]')].map(n=>n.dataset.inputName),
           bars:[...inventoryStatusPanel.querySelectorAll('[data-input-name] .progress-wrap')].length,
           ships:[...shipStockList.querySelectorAll(':scope>.inventory-ship-row button')].map(n=>n.textContent),
-          phantom:/EXPORT.*GOLD|SEIZED.*WILDCAT/i.test(v40PriorityList.textContent),
+          phantom:[...v40PriorityList.querySelectorAll('strong')].some(n=>n.textContent.startsWith('EXPORT // GOLD')||n.textContent.startsWith('SEIZED // WILDCAT')),
           exports:[...exportList.querySelectorAll('[data-export-commodity]')].map(n=>n.dataset.exportCommodity)}))()""")
         assert state['counts'] == [3, 3, 3], state
         assert state['stocks'] == ['8.600', '9.519', '40'], state

@@ -68,7 +68,7 @@ function renderOverviewRow({ state, role, name, item = null, detail = '', quanti
   const safeDetail = detail ? `<small class="overview-stock-detail">${escapeHTML(detail)}</small>` : '';
   const referenceMarkup = reference ? `<span class="overview-stock-reference"><span aria-hidden="true">/</span> ${number(reference.value)} <small>${escapeHTML(reference.label)}</small></span>` : '';
   return `<li class="overview-stock-row alert-${state}${extraClass ? ` ${extraClass}` : ''}" ${navigation}>
-            <span class="overview-item-copy"><span class="rhw-supply-material">${title}${trade}</span></span>
+            <span class="overview-item-copy"><span class="rhw-supply-material">${title}${trade}${actions}</span></span>
             ${statusPill(state, role)}
             <div class="overview-row-meta">
               <div class="overview-stock-value"><strong class="overview-row-qty">${number(quantityValue)}</strong>${referenceMarkup}</div>
@@ -76,7 +76,7 @@ function renderOverviewRow({ state, role, name, item = null, detail = '', quanti
             </div>
             ${breakdown}
             ${progress}
-            ${input}${actions}
+            ${input}
           </li>`;
 }
 
@@ -176,7 +176,7 @@ function renderOverview() {
     const detail = reserve.required === null ? 'PLAN REQUIREMENTS UNKNOWN' : reserve.required > 0
       ? `NEXT PLANNED INPUTS · ${number(reserve.required)}` : 'AVAILABLE FOR PRODUCTION';
     const progress = reserve.stock === null ? '' : renderProgress(reserve.item, { role: 'reserve', stateOverride: reserve.state, showApiReserve: false });
-    const actions = spec.key === 'prototype components' ? '<div class="inventory-surplus"><small>INTERNAL USE FIRST</small><button type="button" data-surplus-commodity="Prototype Components" title="Check surplus buyers; choose an export quantity after allowing for production">↗ CHECK SURPLUS</button></div>' : '';
+    const actions = spec.key === 'prototype components' ? '<button type="button" class="rhw-supply-button rhw-supply-icon" data-surplus-commodity="Prototype Components" aria-label="Check surplus export buyers for Prototype Components" title="Check surplus buyers · Internal production first"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M14 4h6v6M20 4l-9 9M10 5H4v15h15v-6"/></svg></button>' : '';
     return renderOverviewRow({ role: 'reserve', name: spec.label, item: reserve.item, state: reserve.state,
       quantityValue: reserve.stock, detail, breakdown, progress, input: inventoryInputRow(spec.input, spec.recipeId), actions });
   }).join('');

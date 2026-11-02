@@ -3368,7 +3368,8 @@ globalThis.RHW_PRODUCTION_VOLUMES = Object.freeze({
   }
   function input(name, recipeId) {
     const value = record(name);
-    const recipe = app.production?.requirements({ recipeId, product: name });
+    const module = DASHBOARD_CONFIG.productionModules.find(entry => entry.recipeId === recipeId);
+    const recipe = module ? app.production?.requirements(module) : null;
     const required = recipe?.ingredients.find(([n]) => keyFromName(n) === keyFromName(name))?.[1] ?? null;
     return { ...value, required, cycles: value.stock !== null && required > 0 ? Math.floor(value.stock / required) : null };
   }
