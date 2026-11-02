@@ -111,6 +111,10 @@ jobs:
         if: ${{ !cancelled() }}
         run: python3 scripts/smoke_supply_routes.py
 
+      - name: Inventory reserves, stock links and ship counts
+        if: ${{ !cancelled() }}
+        run: python3 scripts/smoke_inventory_reserves.py
+
       - name: Save interface checks and screenshots
         if: always()
         uses: actions/upload-artifact@v4
@@ -125,9 +129,7 @@ jobs:
 
       - name: Compact COMMAND hierarchy smoke test
         if: ${{ !cancelled() }}
-        run: |
-          python3 scripts/smoke_command_compact.py
-          python3 scripts/smoke_inventory_reserves.py
+        run: python3 scripts/smoke_command_compact.py
 
       - name: Focused daily-navigation smoke test
         if: ${{ !cancelled() }}
