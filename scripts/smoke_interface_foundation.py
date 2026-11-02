@@ -455,7 +455,7 @@ def main():
           RHWV4.navigate('command','production');
           const cards=[...document.querySelectorAll('.production-card')];
           const production={cards:cards.length,crew:cards.filter(card=>card.querySelector('.production-prerequisites')?.textContent.includes('Crew')).length,
-            materialCoverage:cards.every(card=>card.textContent.includes('MATERIAL CYCLES'))};
+            materialCoverage:cards.every(card=>card.textContent.includes(card.querySelector('.production-plan-stat')?'SOLO CYCLES':'MATERIAL CYCLES'))};
           const core=RHWV4.operationsCore,catalog=core.state.catalog;
           core.state.catalog=null;renderProductionModules();
           production.unavailable=productionGrid.textContent.includes('PRODUCTION RECIPES UNAVAILABLE')&&!productionGrid.querySelector('.production-card');
