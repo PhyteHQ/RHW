@@ -12,12 +12,14 @@ import { comparisonFleet, COMPARISON_FLEET } from './comparison-fleet.mjs';
 const API = 'https://darkstat.dd84ai.com/api/';
 const CACHE = 'rhw-supply-market-v1';
 const FIVE_MINUTES = 300000, SIX_HOURS = 21600000, DAY = 86400000;
+const VERIFIED_MAP_AT = '2026-10-29T08:32:15.364670+00:00';
 const esc = value => String(value ?? '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]);
 const count = value => Math.round(value).toLocaleString('en-GB');
 const money = value => `${value < 0 ? '-' : ''}$${count(Math.abs(value))}`;
 const duration = seconds => `${Math.floor(Math.round(seconds) / 60)}:${String(Math.round(seconds) % 60).padStart(2, '0')}`;
 const date = value => new Date(value).toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
 let dialog, context, worker, abort, request = 0, prepared = null, result = null, busy = false;
+let useVerifiedMap = false, verifiedMap = null;
 const selectedByMode = { supply: '', export: '' };
 const $ = id => dialog.querySelector('#' + id);
 const exporting = () => $('supplyMode').value === 'export';
@@ -81,16 +83,39 @@ async function read(path, body, signal) {
   if (!Array.isArray(data)) throw Error(`${path}: invalid response`);
   return data;
 }
-async function loadNavigation(signal) {
-  const response = await fetch(new URL('../../assets/navigation.json.gz', import.meta.url), { signal });
+async function compressedJson(path, signal) {
+  const response = await fetch(new URL('../../assets/' + path, import.meta.url), { signal });
   if (!response.ok) throw Error('Navigation map unavailable');
   const bytes = new Uint8Array(await response.arrayBuffer());
   const text = bytes[0] === 31 && bytes[1] === 139
     ? await new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'))).text()
     : new TextDecoder().decode(bytes);
-  const raw = JSON.parse(text);
+  return JSON.parse(text);
+}
+async function loadNavigation(signal) {
+  const raw = await compressedJson('navigation.json.gz', signal);
   raw.links = raw.links.map(link => link.kind === 'lane' ? { ...link, speed: 2500 } : link);
   return validateNavigation(raw);
+}
+async function loadVerifiedMap(signal) {
+  const data = verifiedMap || await compressedJson('navigation-last-verified.json.gz', signal);
+  if (data.capturedAt !== VERIFIED_MAP_AT || data.source !== API + 'systems'
+    || !Array.isArray(data.systems) || !data.systems.length) throw Error('Last verified map snapshot is invalid');
+  verifiedMap = data;
+  return data;
+}
+async function readLiveMap(signal) {
+  const controller = new AbortController(), cancel = () => controller.abort();
+  signal.addEventListener('abort', cancel, { once: true });
+  const timeout = setTimeout(cancel, 20000);
+  try { return await read('systems', undefined, controller.signal); }
+  finally { clearTimeout(timeout); signal.removeEventListener('abort', cancel); }
+}
+function mapRecovery(active = false) {
+  $('supplyMapRecovery').hidden = false;
+  $('supplyMapRecoveryText').textContent = (active ? 'LAST VERIFIED MAP IN USE' : 'LIVE MAP UNAVAILABLE · LAST VERIFIED MAP')
+    + ' · 29 OCT 2026, 08:32 UTC. New gate, lane or position changes may be missing. Known closures remain excluded. Market stock and prices still refresh.';
+  $('supplyUseVerifiedMap').hidden = active;
 }
 function mergeMarket(npc, pobs, receivedAt) {
   const meta = new Map();
@@ -104,7 +129,7 @@ function mergeMarket(npc, pobs, receivedAt) {
   const ids = new Set(dynamic.bases.map(base => base.id));
   return validateDataset({ ...npc, asOf: new Date(receivedAt).toISOString(), bases: [...npc.bases.filter(base => !ids.has(base.id)), ...dynamic.bases] });
 }
-async function prepare(force, signal, progress = () => {}) {
+async function prepare(force, signal, progress = () => {}, verified = false) {
   const now = Date.now();
   const cache = prepared?.reference || await database('get').catch(() => null) || {};
   if (signal.aborted) throw Error('Search canceled');
@@ -125,16 +150,22 @@ async function prepare(force, signal, progress = () => {}) {
     report();
     return task.finally(() => { waiting.delete(label); report(); });
   };
-  const fresh = (path, label, description, accept) => track(label, read(path, undefined, signal).then(data => {
+  const fresh = (path, label, description, accept) => track(label, (path === 'systems' ? readLiveMap(signal) : read(path, undefined, signal)).then(data => {
     if (!data.length) throw Error('Empty feed');
     accept(data);
-  }).catch(error => { throw Error(`LIVE SEARCH PAUSED · ${description} unavailable · RETRY SEARCH. Previous quotes are out of date. ${error.message}`); }));
+  }).catch(error => {
+    const failure = Error(`LIVE SEARCH PAUSED · ${description} unavailable · RETRY SEARCH. Previous quotes are out of date. ${error.message}`);
+    failure.feed = path; throw failure;
+  }));
   // Every search receives one fresh market snapshot and current map status.
   // Neither recent dashboard telemetry nor a previous quote replaces these.
   const live = [
-    fresh('pobs', 'LIVE POB STOCK', 'fresh POB stock', data => { pobs = data; pobAt = Date.now(); }),
-    fresh('systems', 'LIVE MAP', 'current navigation feed', data => { systems = data; navigationAt = Date.now(); })
+    fresh('pobs', 'LIVE POB STOCK', 'fresh POB stock', data => { pobs = data; pobAt = Date.now(); })
   ];
+  if (verified) live.push(track('LAST VERIFIED MAP', loadVerifiedMap(signal).then(data => {
+    systems = data.systems; navigationAt = Date.parse(data.capturedAt);
+  })));
+  else live.push(fresh('systems', 'LIVE MAP', 'current navigation feed', data => { systems = data; navigationAt = Date.now(); }));
   if (!baseNavigation) live.push(track('ROUTE GEOMETRY', loadNavigation(signal).then(data => { baseNavigation = data; })));
   const tasks = [];
   const reference = (label, task) => tasks.push(track(label, task.then(() => { referenceChanged = true; })));
@@ -170,9 +201,12 @@ async function prepare(force, signal, progress = () => {}) {
   if (!npc || !pobs?.length) throw Error(failures.join(' · ') || 'No market snapshot available');
   const dataset = mergeMarket(npc, pobs, pobAt);
   if (!findRhw(dataset)) throw Error('RHW was not found in the market snapshot');
-  progress('CHECKING LIVE MAP + DOCKING RULES…');
-  const navigation = currentNavigation(baseNavigation, systems, new Date(navigationAt).toISOString());
-  if (!navigation.nodes.some(node => node.system === findRhw(dataset).system)) throw Error('Current map does not cover RHW’s system');
+  progress(verified ? 'CHECKING LAST VERIFIED MAP + DOCKING RULES…' : 'CHECKING LIVE MAP + DOCKING RULES…');
+  let navigation;
+  try {
+    navigation = currentNavigation(baseNavigation, systems, new Date(navigationAt).toISOString());
+    if (!navigation.nodes.some(node => node.system === findRhw(dataset).system)) throw Error('Current map does not cover RHW’s system');
+  } catch (error) { if (!verified) error.feed = 'systems'; throw error; }
   const identities = identityRegistry(tractors, identityCards, identityAt);
   const access = dockingAccess(dataset.bases, owners, factions, tractors, BMM_ID, pobs);
   const saved = { npc, npcAt, ships, shipAt, owners, factions, tractors,
@@ -180,14 +214,17 @@ async function prepare(force, signal, progress = () => {}) {
     accessAt: failures.length ? cache.accessAt || 0 : now };
   if (referenceChanged) await database('put', saved).catch(() => null);
   if (signal.aborted) throw Error('Search canceled');
-  prepared = { dataset, navigation, baseNavigation, navigationAt, ships, shipAt, pobAt, npcAt, access, failures, identities,
+  prepared = { dataset, navigation, baseNavigation, navigationAt, navigationMode: verified ? 'last-verified' : 'live', ships, shipAt, pobAt, npcAt, access, failures, identities,
     identityAt, owners, factions, tractors, pobs, reference: saved, accessByIdentity: new Map([[BMM_ID, access]]) };
   return prepared;
 }
 function sourceMarkup() {
-  if (!prepared) return 'Market data loads when you open the Trade Desk.';
+  if (!prepared) return 'No complete market and navigation snapshot available.';
   const cached = Date.now() - prepared.pobAt >= FIVE_MINUTES || navigator.onLine === false;
-  return `${cached ? 'CACHED POB STOCK' : 'POB STOCK RECEIVED'} ${date(prepared.pobAt)} · REFRESHED EACH SEARCH · MAP OBJECTS RECEIVED ${date(prepared.navigationAt)}${prepared.navigation.live.geometryBuiltAt ? ' · BASE GEOMETRY ' + date(prepared.navigation.live.geometryBuiltAt) : ''} · KNOWN CLOSURE: ${prepared.navigation.live.knownClosures.map(row => row.name).join(', ') || 'NONE'} · NPC PRICES ${date(prepared.npcAt)} · ${prepared.shipAt ? 'SHIP DATA ' + date(prepared.shipAt) : 'LAST VERIFIED SHIP PROFILES'} · ${prepared.identityAt ? 'ID RULES ' + date(prepared.identityAt) : 'ID SHIP RULES UNAVAILABLE'}${prepared.failures.length ? ' · SOME UPLINKS FAILED; SAVED REFERENCE DATA IN USE' : ''}`;
+  const map = prepared.navigationMode === 'last-verified'
+    ? 'LAST VERIFIED MAP ' + date(prepared.navigationAt) + ' · CURRENT MAP UNVERIFIED'
+    : 'MAP OBJECTS RECEIVED ' + date(prepared.navigationAt);
+  return `${cached ? 'CACHED POB STOCK' : 'POB STOCK RECEIVED'} ${date(prepared.pobAt)} · REFRESHED EACH SEARCH · ${map}${prepared.navigation.live.geometryBuiltAt ? ' · BASE GEOMETRY ' + date(prepared.navigation.live.geometryBuiltAt) : ''} · KNOWN CLOSURE: ${prepared.navigation.live.knownClosures.map(row => row.name).join(', ') || 'NONE'} · NPC PRICES ${date(prepared.npcAt)} · ${prepared.shipAt ? 'SHIP DATA ' + date(prepared.shipAt) : 'LAST VERIFIED SHIP PROFILES'} · ${prepared.identityAt ? 'ID RULES ' + date(prepared.identityAt) : 'ID SHIP RULES UNAVAILABLE'}${prepared.failures.length ? ' · SOME UPLINKS FAILED; SAVED REFERENCE DATA IN USE' : ''}`;
 }
 function selectedIdentities() {
   const ids = prepared?.identities || identityRegistry();
@@ -210,6 +247,8 @@ function setBusy(value, message = '') {
   busy = value;
   $('supplySearch').disabled = value;
   $('supplyRefresh').disabled = value;
+  $('supplyUseVerifiedMap').disabled = value;
+  $('supplyRetryLiveMap').disabled = value;
   $('supplyCancel').hidden = !value;
   dialog.querySelectorAll('form select,form input').forEach(control => { control.disabled = value; });
   $('supplyStatus').textContent = message;
@@ -370,11 +409,13 @@ async function search(force = false) {
   abort?.abort(); abort = new AbortController();
   const controller = abort, timeout = setTimeout(() => controller.abort(), 45000);
   setBusy(true, 'LOADING MARKETS + ROUTE MAP…');
+  $('supplyMapRecovery').hidden = true;
+  if (useVerifiedMap) mapRecovery(true);
   $('supplyResults').dataset.stale = 'true';
   try {
     await prepare(force, controller.signal, message => {
       if (token === request && dialog.open) $('supplyStatus').textContent = message;
-    });
+    }, useVerifiedMap);
     clearTimeout(timeout);
     if (token !== request || !dialog.open) return;
     const loaded = performance.now();
@@ -392,7 +433,10 @@ async function search(force = false) {
       if (data.type === 'progress') $('supplyStatus').textContent = `${data.progress.identity ? data.progress.identity + ' · ' : ''}${data.progress.phase === 'profiles' ? 'MATCHING IDS + SHIPS TO ROUTES' : data.progress.phase === 'return' ? 'CHECKING PROFITABLE RETURN CARGO' : data.progress.phase === 'export' ? 'CHECKING EXPORT BUYERS' : data.progress.phase === 'direct' ? 'CHECKING DIRECT IMPORTS' : 'CHECKING PROFITABLE APPROACHES'} · ${data.progress.checked} QUOTES`;
       if (data.type === 'error') { setBusy(false, data.message); worker?.terminate(); worker = null; }
       if (data.type === 'result') {
-        result = data.result; setBusy(false); renderResults();
+        result = data.result;
+        if (prepared.navigationMode === 'last-verified') result.results = result.results.map(route => ({ ...route,
+          recommendation: null, label: 'ESTIMATE · MAP 29 OCT 2026 · VERIFY CURRENT LINKS' }));
+        setBusy(false); renderResults();
         $('supplyStatus').textContent = ($('supplyStatus').textContent || 'SEARCH COMPLETE')
           + ` · DATA ${((loaded - started) / 1000).toFixed(1)}s · SEARCH ${((performance.now() - loaded) / 1000).toFixed(1)}s`;
         worker?.terminate(); worker = null;
@@ -414,6 +458,7 @@ async function search(force = false) {
     if (token === request && dialog.open) {
       setBusy(false, timedOut ? 'UPLINK TIMED OUT · RETRY OR REFRESH MARKETS' : error.message);
       $('supplySource').textContent = 'REFRESH FAILED · PREVIOUS QUOTES ARE OUT OF DATE · ' + sourceMarkup();
+      if (error.feed === 'systems') mapRecovery();
     }
   } finally { clearTimeout(timeout); }
 }
@@ -428,6 +473,7 @@ function mount() {
   dialog.innerHTML = `<header class="supply-heading"><div><small>RHW LOGISTICS</small><h2 id="supplyTitle">RHW TRADE DESK</h2><p>Plan imports to RHW and exports from RHW. Compare hauler categories, time and hauling profit.</p></div><button type="button" id="supplyClose" aria-label="Close Trade Desk">CLOSE</button></header>
     <div class="supply-content"><p class="supply-source">Find a hauler category for the route, then open an ID to see which checked models work for the whole trip. Ship and ID purchase costs are excluded.</p><form id="supplyForm"><div class="supply-fields supply-main-fields"><label>TRADE MODE<select id="supplyMode"><option value="supply">IMPORT</option><option value="export">EXPORT</option></select></label><label>COMMODITY<select id="supplyCommodity"></select></label><label>HAULER CATEGORY<select id="supplyHauler"></select></label></div><details class="supply-settings"><summary id="supplySettingsTitle">IMPORT SETTINGS</summary><div class="supply-fields"><label>LIMIT TO ID<select id="supplyIdentity"><option value="all">AUTO · All available IDs</option></select></label><label>SPECIFIC MODEL · OPTIONAL<select id="supplyShip"></select></label><label data-supply-only>IMPORT PRIORITY<select id="supplyImportGoal"><option value="price">Lowest buy price within time limit</option><option value="income">Best hauler $/hour within time limit</option><option value="speed">Fastest supply rate</option></select></label><label><span id="supplyExtraLabel">MAX EXTRA TIME</span><select id="supplyExtra"><option value="0">Direct import only</option><option value="10">10% extra</option><option value="20" selected>20% extra</option><option value="35">35% extra</option><option value="50">50% extra</option></select></label><label>START CAPITAL · $<input id="supplyCapital" type="number" min="0" step="1" inputmode="numeric" placeholder="Show capital required"></label><label>DELIVERY QUANTITY<input id="supplyQuantity" type="number" min="1" step="1" inputmode="numeric" placeholder="Full hold within RHW limits"></label><label class="supply-check" data-export-only hidden><input id="supplyBackhaul" type="checkbox" checked>Find profitable return cargo</label><label class="supply-check"><input id="supplyPobs" type="checkbox" checked><span id="supplyPobsLabel">Include POB sellers</span></label><label class="supply-check"><input id="supplyUnverified" type="checkbox">Include unverified ID / docking rules · conditional quotes</label><label class="supply-check"><input id="supplyRestrictedPobs" type="checkbox">Include approval-only POBs · conditional quotes</label></div><p id="supplySettingsCopy"></p></details><div class="supply-actions"><button type="submit" id="supplySearch">CALCULATE IMPORT ROUTE</button><button type="button" id="supplyRefresh">REFRESH MARKETS</button><button type="button" id="supplyCancel" hidden>CANCEL SEARCH</button></div></form><p id="supplySource" class="supply-source"></p><p id="supplyStatus" role="status" aria-live="polite"></p><div id="supplyResults"></div></div>`;
   document.body.append(dialog);
+  $('supplyResults').insertAdjacentHTML('beforebegin', '<div id="supplyMapRecovery" class="supply-map-recovery" hidden><p id="supplyMapRecoveryText"></p><div class="supply-actions"><button type="button" id="supplyUseVerifiedMap">USE LAST VERIFIED MAP · 29 OCT</button><button type="button" id="supplyRetryLiveMap">RETRY LIVE MAP</button></div></div>');
   $('supplyClose').addEventListener('click', () => dialog.close());
   dialog.addEventListener('close', () => {
     stop();
@@ -449,6 +495,8 @@ function mount() {
   });
   $('supplyCancel').addEventListener('click', stop);
   $('supplyRefresh').addEventListener('click', () => search(true));
+  $('supplyUseVerifiedMap').addEventListener('click', () => { useVerifiedMap = true; search(); });
+  $('supplyRetryLiveMap').addEventListener('click', () => { useVerifiedMap = false; search(); });
   $('supplyForm').addEventListener('submit', event => { event.preventDefault(); search(); });
   $('supplyForm').addEventListener('change', event => {
     if (event.target.id === 'supplyMode') {
@@ -464,7 +512,7 @@ function mount() {
   });
 }
 export function open(next) {
-  mount(); context = next; result = null; $('supplyResults').innerHTML = '';
+  mount(); context = next; result = null; useVerifiedMap = false; $('supplyResults').innerHTML = '';
   const selected = next.commodity || $('supplyCommodity').value;
   if (next.mode) $('supplyMode').value = next.mode;
   updateMode(selected);

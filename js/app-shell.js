@@ -37,6 +37,7 @@ self.RHW_APP_SHELL = [
   "./js/supply/core/vendor/lp-solver.mjs",
   "./js/supply/core/vendor/LP-SOLVER-LICENSE.txt",
   "./assets/navigation.json.gz",
+  "./assets/navigation-last-verified.json.gz",
   "./assets/fonts/7cHpv4kjgoGqM7E_Ass52Hs.woff2",
   "./assets/fonts/7cHpv4kjgoGqM7E_DMs5.woff2",
   "./assets/fonts/7cHqv4kjgoGqM7E30-8s51os.woff2",
