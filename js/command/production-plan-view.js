@@ -23,7 +23,10 @@
     const selected = row.enabled && !row.followHull && row.recipeId === recipeId;
     return `<button type="button" class="production-plan-button${selected ? ' is-planned' : ''}" data-production-plan="${esc(recipeId)}" aria-pressed="${selected}" aria-label="${selected ? 'Remove' : 'Plan'} ${esc(coreName(recipeId))}${selected ? ' from forecast' : ''}" title="${selected ? 'Click again to remove from your plan' : 'Add to your manual plan'}"><span aria-hidden="true">◷</span> ${selected ? 'PLANNED' : 'PLAN'}</button>`;
   }
-  function coreName(id) { return app.operationsCore.recipe(id)?.name || id; }
+  function coreName(id) {
+    const module = typeof PRODUCTION_MODULES !== 'undefined' ? PRODUCTION_MODULES.find(entry => entry.recipeId === id) : null;
+    return module?.product || app.operationsCore.recipe(id)?.name || id;
+  }
   function details(row, plan, context = 'card') {
     if (!row) return '';
     const id = detailId(row.recipeId, context);
@@ -57,13 +60,15 @@
   }
   function hullMarkup(context = 'shipyard') {
     const row = app.personnel.analyze().rows.find(r => r.key === 'shipyard');
-    const selected = row.enabled && row.followHull;
-    const plan = model.analyze(), result = selected ? model.rowFor(row.recipeId, plan) : null;
-    const solo = result && !plan.ready ? app.shipyard.analyze().buildable : null;
+    const plannedHull = row.enabled ? CAPITAL_SHIPYARD.hulls.find(hull => hull.recipeId === row.recipeId) : null;
+    const selected = Boolean(plannedHull && row.recipeId === app.shipyard.selectedHull().recipeId);
+    const plan = model.analyze(), result = plannedHull ? model.rowFor(row.recipeId, plan) : null;
+    const solo = result && !plan.ready ? app.shipyard.analyze(plannedHull).buildable : null;
     const count = plan.ready ? range(result?.min, result?.max) : range(solo, solo);
     const time = plan.ready ? range(result?.secondsMin, result?.secondsMax, duration)
       : Number.isFinite(solo) && Number.isFinite(result?.seconds) ? duration(solo * result.seconds) : 'TIME UNKNOWN';
     return `<div class="production-hull-plan"><button type="button" class="production-plan-button${selected ? ' is-planned' : ''}" data-production-hull-plan aria-pressed="${selected}" title="${selected ? 'Click again to remove shipbuilding from your plan' : 'Plan this ship instead of Supers / Reactors'}"><span aria-hidden="true">◷</span> ${selected ? 'SHIP PLANNED' : 'PLAN SHIP'}</button>
+      ${plannedHull && !selected ? `<small class="production-pinned-hull">PLANNED HULL · <strong>${esc(plannedHull.label)}</strong> · PLAN SHIP replaces this plan.</small>` : ''}
       ${result ? `<span>${plan.ready ? 'PLANNED YIELD' : 'SOLO YIELD'} <strong>${plan.truncated ? '≥' : ''}${count}</strong> · ~${time}${!plan.ready ? ' · SOLO ESTIMATE' : ''}</span>${details(result, plan, context)}` : '<small>Shares the Shipyard module with Supers / Reactors.</small>'}</div>`;
   }
   function renderShipControl() {

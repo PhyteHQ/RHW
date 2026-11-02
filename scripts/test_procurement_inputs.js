@@ -153,6 +153,32 @@ ctx.__RHW_RECIPE_CATALOG__ = JSON.parse(zlib.gunzipSync(Buffer.from(ctx.__RHW_RE
   assert.equal(ctx.analyzeRecipe(superBatch).possibleCycles, 0, 'An unlisted alternative adds no reported stock');
   ctx.itemsByKey.set('wildcat gold', wildcat);
 
+  // Real refreshes add synthetic rows for unlisted tracked materials. Those
+  // placeholders must not hide a reported, usable interchangeable stock.
+  const originalItems = ctx.items;
+  ctx.items = originalItems.filter(item => item.name !== 'Wildcat Gold').map(item => item.name === 'Gold' ? { ...item, quantity: 2000 } : item);
+  ctx.rebuildItemCaches();
+  assert.equal(ctx.findCommodity('Wildcat Gold').missing, true);
+  assert.equal(ctx.analyzeRecipe(superBatch).possibleCycles, 80, 'A synthetic absent WCG row must not invalidate reported Gold');
+  ctx.items = originalItems.filter(item => item.name !== 'Gold').map(item => item.name === 'Wildcat Gold' ? { ...item, quantity: 2000 } : item);
+  ctx.rebuildItemCaches();
+  assert.equal(ctx.analyzeRecipe(superBatch).possibleCycles, 80, 'Reported WCG remains usable when Gold is unlisted');
+  ctx.items = ctx.items.filter(item => !['Gold', 'Wildcat Gold'].includes(item.name));
+  ctx.rebuildItemCaches();
+  assert.equal(ctx.analyzeRecipe(superBatch).possibleCycles, null, 'A wholly unreported pool stays unknown');
+  ctx.items = originalItems;
+  ctx.rebuildItemCaches();
+
+  assert.equal(ctx.stateForRole({ name: 'Basic Alloy', quantity: null }, 'maintenance'), 'waiting');
+  assert.equal(ctx.stateForRole({ name: 'Basic Alloy', quantity: 0, missing: true }, 'maintenance'), 'waiting');
+  assert.equal(ctx.stateForRole({ name: 'Basic Alloy', quantity: 0 }, 'maintenance'), 'critical', 'A reported zero still triggers the stock warning');
+  assert.equal(ctx.strictestState(['ok', 'waiting']), 'waiting');
+  assert.equal(ctx.strictestState(['waiting', 'low']), 'low');
+  assert.equal(ctx.strictestState(['waiting', 'critical']), 'critical');
+  for (const role of ['maintenance', 'export', 'byproduct']) {
+    assert.equal(ctx.overviewDetail({ name: 'Toxic Waste', quantity: null }, 'waiting', role), 'STOCK UNKNOWN', 'Unknown stock must not claim stability or overflow');
+  }
+
   assert.equal(app.productionPricing.openProductionTarget('Basic Alloy'), true);
   const calc = app.state.calculator;
   assert.equal(calc.altSelections, undefined, 'The Production shortcut discards removed device preferences');

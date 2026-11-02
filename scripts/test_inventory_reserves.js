@@ -64,6 +64,16 @@ ctx.__RHW_RECIPE_CATALOG__ = JSON.parse(zlib.gunzipSync(Buffer.from(ctx.__RHW_RE
   assert.equal(app.personnel.analyze().rows.find(r=>r.key==='shipyard').recipeId,previous,'Browsing another hull must preserve the planned production');
   app.personnel.restore();
   assert.equal(app.personnel.analyze().rows.find(r=>r.key==='shipyard').recipeId,previous,'The plan remains pinned across reloads');
+  app.util = { escape: value => String(value), number: value => String(value) };
+  run('js/command/production-plan-view.js');
+  const previewMarkup = app.productionPlanView.hullMarkup('test');
+  assert.match(previewMarkup, /PLANNED HULL[^<]*<[^>]+>Archon/, 'Browsing a different hull must still name the actual planned ship');
+  assert.match(previewMarkup, /data-production-hull-plan aria-pressed="false"/, 'The different preview is not labelled planned');
+  app.shipyard.selectHull('archon', { preservePlan: true });
+  assert.match(app.productionPlanView.hullMarkup('test'), /data-production-hull-plan aria-pressed="true"/, 'A pinned plan is still selected when its own hull is previewed');
+  app.productionPlan.selectHull();
+  app.personnel.restore();
+  assert.equal(app.personnel.analyze().rows.find(r=>r.key==='shipyard').enabled,false,'Clicking a matching pinned plan must turn it off immediately and persist');
   assert.equal(vm.runInContext("DASHBOARD_CONFIG.roles.export.some(n=>['gold','niobium','prototype components','wildcat gold'].includes(n))",ctx),false);
   console.log('Inventory reserves passed: pooled Gold, unknown stock, selected-input thresholds, raw inputs, exact ship stock, internal roles and navigation without production changes.');
 })().catch(error=>{console.error(error);process.exit(1);});

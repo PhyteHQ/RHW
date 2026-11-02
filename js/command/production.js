@@ -27,7 +27,7 @@ function stockState(item) {
   return 'ok';
 }
 
-const STATE_SEVERITY = Object.freeze({ ok: 0, low: 1, critical: 2 });
+const STATE_SEVERITY = Object.freeze({ ok: 0, waiting: 0.5, low: 1, critical: 2 });
 
 function strictestState(states = []) {
   return states.reduce((worst, state) =>
@@ -48,8 +48,7 @@ function shipyardComponentAnalysis(item) {
 function stateForRole(item, role) {
   const key = commodityKey(item);
   if (role === 'reserve' && window.RHWV4?.inventoryModel) return window.RHWV4.inventoryModel.reserve(key)?.state || 'waiting';
-  if (role === 'procurement' && FEEDSTOCK.includes(key) && window.RHWV4?.inventoryModel?.record(item?.name).stock === null) return 'waiting';
-  if (!item || item.missing) return 'critical';
+  if (firstFiniteApiStockValue(item, ['quantity', 'amount', 'stock']) === null) return 'waiting';
   if (role === 'shipyard') return shipyardComponentAnalysis(item)?.state || stockState(item);
   if (role === 'procurement' && FEEDSTOCK.includes(key)) return feedstockAnalysis(item).state;
   return stockState(item);
@@ -231,10 +230,10 @@ function analyzeRecipe(recipe) {
     // An unlisted alternative contributes no reported stock. A reported item
     // with an invalid/missing quantity must still leave capacity unknown.
     const known = stocks.some(entry => entry.stock !== null)
-      && stocks.every(entry => !entry.item || entry.stock !== null);
+      && stocks.every(entry => !entry.item || entry.item.missing || entry.stock !== null);
     const stock = known ? stocks.reduce((sum, entry) => sum + (entry.stock ?? 0), 0) : null;
     const extraHtml = names.length > 1 ? `<span class="recipe-stock-breakdown">${stocks.map(entry => {
-      return `<span class="recipe-stock-option"><span>${escapeHTML(displayRecipeName(entry.name))}</span><strong>${number(entry.item ? entry.stock : 0)}</strong></span>`;
+      return `<span class="recipe-stock-option"><span>${escapeHTML(displayRecipeName(entry.name))}</span><strong>${number(entry.item && !entry.item.missing ? entry.stock : 0)}</strong></span>`;
     }).join('')}</span>` : '';
     const cycles = stock === null ? null : required > 0 ? Math.floor(stock / required) : 0;
     const currentCycleGap = stock === null ? null : Math.max(0, required - stock);

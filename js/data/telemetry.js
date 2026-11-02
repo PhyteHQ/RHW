@@ -48,6 +48,7 @@ function updateBaseTelemetry() {
 }
 
 function readinessText(state, role) {
+  if (state === 'waiting') return 'STOCK UNKNOWN';
   if (role === 'byproduct') {
     if (state === 'critical') return 'CONTAINMENT CRITICAL';
     if (state === 'low') return 'DISPOSAL WATCH';

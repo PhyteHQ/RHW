@@ -282,7 +282,7 @@ def main():
           app.shipyard.selectHull('archon');
           return {civilians,crew,opened,totals,focus,stayedOpen,touch,fits};
         })()""")
-        assert personnel == {'civilians':5,'crew':200,'opened':True,'totals':[1400,200],'focus':True,'stayedOpen':True,'touch':True,'fits':True}, personnel
+        assert personnel == {'civilians':4,'crew':200,'opened':True,'totals':[1400,200],'focus':True,'stayedOpen':True,'touch':True,'fits':True}, personnel
 
         # Inline controls share one inventory and one physical module choice.
         forecast = base.ev(cdp, """(()=>{

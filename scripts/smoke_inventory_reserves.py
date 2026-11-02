@@ -90,9 +90,26 @@ def main():
         base.ev(cdp, '(()=>{RHWV4.shipyard.selectHull(\'archon\');RHWV4.productionPlan.selectHull();window.inventoryHullPlan=RHWV4.personnel.analyze().rows.find(r=>r.key===\'shipyard\').recipeId;RHWV4.navigate(\'command\',\'inventory\');shipStockList.querySelector(\'[data-inventory-hull="barge"]\').click();return true;})()')
         wait(cdp, "document.body.dataset.commandNode==='shipyard' && RHWV4.shipyard.selectedHull().key==='barge'")
         assert base.ev(cdp, "RHWV4.personnel.analyze().rows.find(r=>r.key==='shipyard').recipeId===inventoryHullPlan")
+        assert base.ev(cdp, "shipyardRequirements.querySelector('.production-pinned-hull')?.textContent.includes('Archon')"), 'A preserved plan must remain visible beside another hull preview'
+        base.ev(cdp, "(()=>{RHWV4.navigate('command','production');productionPlanHull.value='archon';productionPlanHull.dispatchEvent(new Event('change',{bubbles:true}));return true;})()")
+        assert base.ev(cdp, "productionShipPlan.querySelector('[data-production-hull-plan]').getAttribute('aria-pressed')==='true'"), 'The pinned hull must still show SHIP PLANNED when selected again'
+        base.ev(cdp, "productionShipPlan.querySelector('[data-production-hull-plan]').click()")
+        assert base.ev(cdp, "!RHWV4.personnel.analyze().rows.find(r=>r.key==='shipyard').enabled"), 'One click must disable a matching pinned plan'
         # An unreported PC stock is displayed as unknown, never an invented zero.
         base.ev(cdp, "(()=>{items.find(n=>n.name==='Prototype Components').quantity=null;RHWV4.navigate('command','inventory');renderOverview();return true;})()")
         assert base.ev(cdp, "reserveList.children[2].classList.contains('alert-waiting') && reserveList.children[2].querySelector('.overview-row-qty').textContent==='–'")
+        base.ev(cdp, "(()=>{items.filter(n=>['Basic Alloy','Toxic Waste'].includes(n.name)).forEach(n=>n.quantity=null);renderOverview();return true;})()")
+        assert base.ev(cdp, "maintenanceList.firstElementChild.textContent.includes('STOCK UNKNOWN') && !maintenanceList.firstElementChild.textContent.includes('FACILITY STABLE') && byproductList.textContent.includes('STOCK UNKNOWN') && !byproductList.textContent.includes('CONTAINMENT CRITICAL')"), 'Unknown stock must not claim stability or overflow'
+        base.ev(cdp, """(()=>{
+          const stock=(name,quantity)=>({name,quantity,min_stock:0,max_stock:1000000,category:'commodity'});
+          const names=new Set();
+          for(const recipe of RHWV4.production.recipes())for(const [name] of recipe.ingredients)names.add(name);
+          items=[...names].map(name=>stock(name,10000));
+          items.find(n=>n.name==='Gold').quantity=8600;
+          items=items.filter(n=>n.name!=='Wildcat Gold');
+          rebuildItemCaches();renderAll();RHWV4.navigate('command','production');return true;
+        })()""")
+        assert base.ev(cdp, "findCommodity('Wildcat Gold').missing && Number.isFinite(analyzeRecipe(RHWV4.production.recipes().find(r=>r.recipeId==='ship_part_superstructure')).possibleCycles) && !document.querySelector('[data-production-recipe=\"ship_part_superstructure\"]').textContent.includes('INPUT STOCK UNKNOWN')"), 'Synthetic alternate rows must not invalidate reported Gold'
         print('Inventory browser passed: 3–3–3, pooled Gold, attached inputs, exact ship counts, raw manifest, view-only navigation, PC planning, unknown stock and mobile/desktop layouts.')
     finally:
         if cdp:
