@@ -3,7 +3,7 @@
 .production-plan-button { display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:44px;padding:7px 10px;border:1px solid #595b60;background:#191b1e;color:#c7c9cd;font:10px/1.3 var(--font-tech);letter-spacing:.05em;clip-path:none;box-shadow:none; }
 .production-plan-button:hover,.production-plan-button:focus-visible { border-color:var(--gold);color:var(--gold);background:#25231c; }
 .production-plan-button.is-planned { border-color:#a28a4d;background:#2b271d;color:#e0c474; }
-.production-plan-fixed { color:#b9a775;font:8px/1.5 var(--font-tech);letter-spacing:.04em;max-width:100px;text-align:right; }
+.production-plan-fixed { max-width:120px;font-size:9px;white-space:nowrap;gap:4px;padding-inline:8px; }
 .production-plan-runtime { display:block;margin-top:4px;color:#b9ac8d;font:10px/1.5 var(--font-tech); }
 .production-plan-stat strong { font-size:22px;overflow-wrap:anywhere; }
 .production-plan-details { margin-top:10px;min-width:0;border-top:1px solid #49412f;font:11px/1.6 var(--font-main); }
@@ -18,9 +18,17 @@
 .production-plan-caution { color:#c9ad77; }
 .production-hull-plan { display:flex;align-items:center;flex-wrap:wrap;gap:8px 14px;margin-top:12px;color:#c9c1ac;font:11px/1.6 var(--font-main); }
 .production-hull-plan>details { flex-basis:100%; }
+.production-ship-plan { display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;padding:12px 0 2px;min-width:0; }
+.production-hull-selector { display:flex;align-items:center;gap:10px;min-width:0;max-width:100%;color:#b9a775;font:9px/1.5 var(--font-tech); }
+.production-hull-selector select { min-height:44px;min-width:0;max-width:100%;width:260px;padding:8px 28px 8px 10px;background:#191b1e;border:1px solid #595b60;border-radius:0;color:#ddd8cb;font:12px/1.5 var(--font-main); }
+.production-hull-selector select:focus-visible { outline:2px solid var(--gold);outline-offset:2px; }
+.production-ship-plan>.production-hull-plan { flex:1 1 250px;min-width:0;margin:0; }
 .personnel-module>strong { color:var(--text);font:13px/1.5 var(--font-main); }
 .personnel-module>strong small { display:block;color:#b9a775;font:9px/1.5 var(--font-tech); }
 @media(max-width:760px) {
   .production-card-controls { max-width:100px; }
   .production-plan-explanation li { flex-direction:column;gap:1px; }
+  .production-hull-selector { width:100%; }
+  .production-hull-selector select { flex:1; }
+  .production-ship-plan>.production-hull-plan { flex-basis:100%; }
 }

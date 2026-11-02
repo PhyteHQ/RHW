@@ -1245,6 +1245,7 @@ function ensureProductionModuleTools() {
       <div class="production-filter-empty" id="productionFilterEmpty" hidden>NO MODULES MATCH THIS FILTER</div>`;
     els.productionGrid.insertAdjacentElement('beforebegin', toolbar);
   }
+  window.RHWV4?.productionPlanView?.renderShipControl();
   if (toolbar.dataset.bound !== 'true') {
     toolbar.dataset.bound = 'true';
     toolbar.addEventListener('click', event => {
@@ -1294,7 +1295,7 @@ function renderProductionModules() {
   const sharedPlan = window.RHWV4?.productionPlan?.analyze();
   els.productionGrid.innerHTML = recipes.map((recipe, index) => {
     const analysis = analyzeRecipe(recipe);
-    const forecast = sharedPlan ? window.RHWV4.productionPlanView?.card(recipe.recipeId, sharedPlan) : null;
+    const forecast = sharedPlan ? window.RHWV4.productionPlanView?.card(recipe.recipeId, sharedPlan, analysis) : null;
     const ingredientRows = analysis.ingredientData.map(item => {
       const isBottleneck = analysis.bottleneck && item.name === analysis.bottleneck.name;
       const shortText = item.currentCycleGap > 0
@@ -1336,7 +1337,7 @@ function renderProductionModules() {
               <div class="production-stats">
                 <div class="production-stat production-stock-primary"><small>IN STOCK</small><strong>${number(analysis.productStock)}</strong></div>
                 <div class="production-stat"><small>${forecast?.selected ? 'SOLO CYCLES' : 'MATERIAL CYCLES'}</small><strong>${number(analysis.possibleCycles)}</strong></div>
-                <div class="production-stat${forecast?.selected ? ' production-plan-stat' : ''}"><small>${forecast?.selected ? 'PLANNED YIELD' : 'EST. YIELD'}</small><strong>${forecast?.selected ? forecast.count : number(analysis.possibleOutput)}</strong>${forecast?.selected ? `<span class="production-plan-runtime">${forecast.time} · ${sharedPlan.conditions?.length ? 'CONDITIONAL' : 'MANUAL PLAN'}</span>` : ''}</div>
+                <div class="production-stat${forecast?.selected ? ' production-plan-stat' : ''}" ${forecast?.selected ? `data-forecast-mode="${sharedPlan.ready ? 'shared' : 'solo'}"` : ''}><small>${forecast?.selected ? forecast.yieldLabel : 'EST. YIELD'}</small><strong>${forecast?.selected ? forecast.count : number(analysis.possibleOutput)}</strong>${forecast?.selected ? `<span class="production-plan-runtime">${forecast.time} · ${forecast.modeLabel}</span>` : ''}</div>
               </div>
               ${forecast?.details || ''}
               ${nextGapText}

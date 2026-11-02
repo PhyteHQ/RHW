@@ -288,6 +288,7 @@ def main():
         forecast = base.ev(cdp, """(()=>{
           const app=RHWV4, originalItems=items, originalSpace=rhwBase.cargospace;
           window.__forecastRestore={items:originalItems,space:originalSpace,plan:app.personnel.snapshot()};
+          app.navigate('command','production');
           app.productionPlan.select('ship_part_superstructure');
           const inventory=new Map();
           for(const r of app.personnel.analyze().rows.filter(r=>r.enabled)){
@@ -305,29 +306,43 @@ def main():
           const existingGoldWorks=plan.rows.find(r=>r.key==='foundry').max>0;
           document.querySelector('[data-production-plan="ship_part_reactor"]').click();
           const onlyReactor=document.querySelector('[data-production-plan="ship_part_reactor"]').getAttribute('aria-pressed')==='true'&&document.querySelector('[data-production-plan="ship_part_superstructure"]').getAttribute('aria-pressed')==='false';
+          document.querySelector('[data-production-plan="ship_part_reactor"]').click();
+          const reactorOff=!app.personnel.analyze().rows.find(r=>r.key==='shipyard').enabled;
           document.querySelector('[data-production-plan="recipe_niobium_advanced"]').click();
           const onlyNiobium=document.querySelector('[data-production-plan="recipe_gold_advanced"]').getAttribute('aria-pressed')==='false';
+          const soloCards=[...document.querySelectorAll('#productionGrid .production-plan-stat')];
+          const soloFallback=soloCards.length===3&&soloCards.every(e=>e.dataset.forecastMode==='solo'&&e.textContent.includes('SOLO YIELD'))&&soloCards.filter(e=>e.querySelector('strong').textContent!=='—').length===2;
+          document.querySelector('[data-production-plan="recipe_niobium_advanced"]').click();app.personnel.restore();
+          const refineryOff=!app.personnel.analyze().rows.find(r=>r.key==='refinery').enabled&&document.querySelector('#personnelPlanner .personnel-module:not(.is-enabled)').textContent.includes('NO RECIPE STAFF RESERVED');
           document.querySelector('[data-production-plan="recipe_gold_advanced"]').click();
-          app.navigate('command','shipyard');document.querySelector('[data-production-hull-plan]').click();
-          document.querySelector('[data-shipyard-division="civilian"]').click();
-          document.querySelector('[data-shipyard-select="halberd"]').click();
+          const picker=document.getElementById('productionPlanHull');picker.focus();picker.value='halberd';picker.dispatchEvent(new Event('change',{bubbles:true}));
+          const pickerFocus=document.activeElement.id==='productionPlanHull';
+          document.querySelector('#productionShipPlan [data-production-hull-plan]').click();
           const followsHull=app.personnel.analyze().rows.find(r=>r.key==='shipyard').recipeId===app.shipyard.selectedHull().recipeId;
-          const shipTouch=document.querySelector('[data-production-hull-plan]').getBoundingClientRect().height>=44;
-          app.navigate('command','production');
+          const noTabChange=document.body.dataset.commandNode==='production';
+          const shipTouch=document.querySelector('#productionShipPlan [data-production-hull-plan]').getBoundingClientRect().height>=44;
+          const ids=[...document.querySelectorAll('.production-plan-details')].map(e=>e.id),uniqueIds=new Set(ids).size===ids.length;
+          document.querySelector('#productionShipPlan [data-production-hull-plan]').click();
+          const shipOff=!app.personnel.analyze().rows.find(r=>r.key==='shipyard').enabled;
+          document.querySelector('#productionShipPlan [data-production-hull-plan]').click();
           document.querySelector('[data-production-plan="ship_part_superstructure"]').click();
           const replacesShip=app.personnel.analyze().rows.find(r=>r.key==='shipyard').followHull===false;
-          const fixed=document.querySelectorAll('.production-plan-fixed').length===2;
-          const details=document.querySelector('.production-plan-details');details.open=true;
-          const informative=details.textContent.includes('One shared inventory');details.open=false;
+          const fixed=[...document.querySelectorAll('.production-plan-fixed')].length===2;
+          const fixedDetails=[...document.querySelectorAll('.production-plan-fixed')].every(button=>{
+            button.click();const details=document.getElementById(button.getAttribute('aria-controls'));
+            const opened=details.open&&button.getAttribute('aria-expanded')==='true'&&details.textContent.includes('One shared inventory');
+            button.click();return opened&&!details.open&&button.getAttribute('aria-expanded')==='false';
+          });
           const touch=[...document.querySelectorAll('#productionGrid .production-plan-button')].every(e=>e.getBoundingClientRect().height>=44);
           const noExtraPanel=!document.querySelector('#productionPlanPanel');
-          return {oreStops,existingGoldWorks,onlyReactor,onlyNiobium,followsHull,shipTouch,replacesShip,fixed,informative,touch,noExtraPanel};
+          return {oreStops,existingGoldWorks,onlyReactor,reactorOff,onlyNiobium,soloFallback,refineryOff,pickerFocus,followsHull,noTabChange,shipTouch,uniqueIds,shipOff,replacesShip,fixed,fixedDetails,touch,noExtraPanel};
         })()""")
         assert all(forecast.values()), forecast
         for width in (360,390,1366):
             cdp.call('Emulation.setDeviceMetricsOverride', {'width':width,'height':960,'deviceScaleFactor':1,'mobile':width<760})
             base.ev(cdp, 'renderProductionModules()')
             assert base.ev(cdp, 'document.documentElement.scrollWidth<=innerWidth+1'), width
+            capture_card(cdp, '#productionModuleTools', f'{width}-production-ship-controls')
             capture_card(cdp, '.production-card', f'{width}-inline-production-plan')
         base.ev(cdp, """(()=>{
           const old=window.__forecastRestore,app=RHWV4;

@@ -2,17 +2,28 @@
 
 The existing Production cards own the manual plan controls. Chambers and Basic
 Alloy are always included. The Industrial Refinery defaults to Advanced Gold;
-Gold and Advanced Niobium are exclusive. Modular Shipyard starts unselected and
+Gold and Advanced Niobium are exclusive and can both be off. Clicking the
+selected PLAN button again disables that optional job. Modular Shipyard starts unselected and
 can run Supers, Reactors, or the currently selected Shipyard hull. PLAN SHIP is
-inside the existing ship requirements panel. Choosing a different hull updates
+available beside a grouped hull selector in the Production toolbar, as well as
+inside the existing ship requirements panel. Neither selecting nor planning a
+ship in Production changes tabs. Choosing a different hull updates
 ship mode; choosing a component replaces ship mode. No new top-level section is
 added. Choices share the existing portable `personnelPlan` preference and crew
-summary. Old settings migrate to the mandatory Chambers / Alloy / refinery plan.
+summary. Old settings keep the initial Gold choice; version 3 persists an
+explicitly disabled refinery. Chambers / Alloy remain mandatory and their
+ALWAYS ON buttons open or close forecast details instead of disabling them.
 
 Selected cards show PLANNED YIELD and elapsed planning time; SOLO CYCLES remains
 the independently calculated material coverage and is not the shared forecast.
 Details stay collapsed until requested. A choice does not send commands to the
 game, and never changes the live inventory.
+
+When an input to any selected job is unreported, a shared forecast cannot be
+verified. Each card still shows its own material coverage and time if calculable,
+labelled SOLO YIELD / SOLO ESTIMATE. This ignores competition and incoming
+production; it is never substituted for a verified shared total. Details name the
+missing shared inputs. Unknown inputs to the card itself still yield no count.
 
 ## Timing and allocation contract
 
