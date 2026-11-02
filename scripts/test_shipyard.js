@@ -46,7 +46,7 @@ ctx.__RHW_RECIPE_CATALOG__ = JSON.parse(zlib.gunzipSync(Buffer.from(ctx.__RHW_RE
   assert.equal(yard.analyze().buildable, null, 'Missing inventory is unknown, not zero');
 
   ctx.items = needs.materials.map(row => ({ nickname: row.id, name: row.name, quantity: row.required * 2 }));
-  ctx.items.push({ name: 'Crew', quantity: 1200 }, { nickname: 'blueprint_medium_miner', name: 'Archon Design Schematics', quantity: 1 });
+  ctx.items.push({ name: 'Crew', quantity: 1600 }, { nickname: 'blueprint_medium_miner', name: 'Archon Design Schematics', quantity: 1 });
   let result = yard.analyze();
   assert.equal(result.buildable, 2);
   assert.equal(result.nextHull, 3);
@@ -119,7 +119,9 @@ ctx.__RHW_RECIPE_CATALOG__ = JSON.parse(zlib.gunzipSync(Buffer.from(ctx.__RHW_RE
   snapshot.stale = false;
   const staff = app.personnel;
   const total = () => staff.analyze().resources.map(r=>r.required);
-  assert.deepEqual(Array.from(total()), [800, 0], 'Core 4 reserves 800 Crew with all jobs off');
+  assert.deepEqual(Array.from(total()), [1200, 100], 'Core, Gold, Basic Alloy and Chambers form the saved baseline');
+  assert.equal(staff.setModule('smelter', { enabled: false }), false);
+  assert.equal(staff.setModule('foundry', { enabled: false }), false);
   staff.setModule('refinery', { enabled: true });
   staff.setModule('smelter', { enabled: true });
   staff.setModule('foundry', { enabled: true });
@@ -156,7 +158,7 @@ ctx.__RHW_RECIPE_CATALOG__ = JSON.parse(zlib.gunzipSync(Buffer.from(ctx.__RHW_RE
   assert.equal(JSON.stringify(ctx.items), inventoryBefore, 'Planning never consumes or changes the inventory');
   memory.set('personnel', { stock: { crew: 1800 }, modules: { foundry: { enabled: true, recipeId: foundryRecipe.id } } });
   staff.restore();
-  assert.deepEqual(Array.from(total()), [1000, 100], 'Imported local plans restore through the same validation');
+  assert.deepEqual(Array.from(total()), [1200, 100], 'Imported plans retain the mandatory baseline and default Gold');
   assert.equal(staff.analyze().resources[0].amount, 1800);
   memory.set('selection', 'halberd'); memory.set('divisions', { civilian: 'barge' }); yard.restoreSelection();
   assert.equal(yard.selectedHull().key, 'halberd');

@@ -139,7 +139,7 @@ function renderShipyardControl() {
       <section class="shipyard-control-section shipyard-requirements-panel" id="shipyardRequirements" aria-labelledby="shipyardRequirementsTitle">
         <div class="shipyard-requirements-heading"><div><p class="shipyard-eyebrow">BUILD REQUIREMENTS</p><h3 id="shipyardRequirementsTitle">${escapeHTML(selected.label)} <span>${escapeHTML(selected.subtitle)}</span></h3></div>
           <button type="button" class="shipyard-plan-button" data-shipyard-calculate ${analysis?.recipeReady ? '' : 'disabled'}>PRICE 1 SHIP</button>
-        </div>${details}
+        </div>${window.RHWV4?.productionPlanView?.hullMarkup() || ''}${details}
       </section>
     </div>`;
   if (mount._shipyardMarkup !== markup) {

@@ -1,8 +1,10 @@
 # RHW personnel planning
 
 The Production view has a local plan for RHW's Core 4 and its Industrial Refinery,
-Scrap Smelter, Modular Shipyard and Exotic Weapons Components Foundry. All jobs
-start off until explicitly selected. A module runs one selected recipe at a time.
+Scrap Smelter, Modular Shipyard and Exotic Weapons Components Foundry. Chambers
+and Basic Alloy are always included; the refinery initially selects Advanced
+Gold. Shipyard starts unselected. The [inline production plan](production-plan.md)
+owns recipe choices, including one job per physical module.
 Cargo storage and idle factories do not add recipe catalysts.
 
 The core reserves **200 Crew per core level**, so RHW reserves **800 Crew**.

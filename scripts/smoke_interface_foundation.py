@@ -21,7 +21,7 @@ STOCK = {'Basic Alloy': 19129, 'Consumer Goods': 24793, 'Food Rations': 22451,
          'Multi-Mode Focusing Chamber': 2000, 'Reactor Systems': 500,
          'Superstructure Systems': 110, 'Avionics Systems': 420, 'Interior Systems': 300,
          'Propulsion Systems': 350, 'Exotic Systems': 250,
-         'Crew': 1800, 'Archon Design Schematics': 1}
+         'Crew': 2400, 'Archon Design Schematics': 1}
 DATA = [{'name': 'Resolution Heavy Works', 'system_name': 'New London', 'money': 46385683,
          'cargospace': 63777, 'health': 24000000,
          'shop_items': [{'name': k, 'quantity': v, 'sell_price': 100, 'buy_price': 80} for k, v in STOCK.items()]},
@@ -269,22 +269,73 @@ def main():
           const crew=app.shipyard.requirements().prerequisites.find(p=>p.id==='commodity_crew').qty;
           document.querySelector('[data-personnel-open]').click();
           const opened=document.body.dataset.commandNode==='production'&&personnelPlanDetails.open;
-          for(const key of ['refinery','smelter','foundry','shipyard'])document.querySelector(`[data-personnel-module="${key}"]`).click();
-          const recipe=document.querySelector('[data-personnel-recipe="shipyard"]');
-          recipe.value='ship_part_reactor';recipe.dispatchEvent(new Event('change',{bubbles:true}));
+          document.querySelector('[data-production-plan="ship_part_reactor"]').click();
           const stock=document.querySelector('[data-personnel-stock="crew"]');stock.focus();stock.value='1400';stock.dispatchEvent(new Event('change',{bubbles:true}));
           const totals=app.personnel.analyze().resources.map(r=>r.required);
           const focus=document.activeElement?.dataset.personnelStock==='crew';
           const stayedOpen=personnelPlanDetails.open;
           const touch=[...document.querySelectorAll('#personnelPlanner select,#personnelPlanner input[type="number"],.personnel-enable')].filter(e=>!e.disabled).every(e=>e.getBoundingClientRect().height>=44);
           const fits=document.documentElement.scrollWidth<=innerWidth+1;
-          for(const key of ['refinery','smelter','foundry','shipyard'])app.personnel.setModule(key,{enabled:false});
+          app.personnel.setModule('shipyard',{enabled:false});
           app.personnel.setStock('crew','');app.personnel.setStock('scientists','');
           personnelPlanDetails.open=false;
           app.shipyard.selectHull('archon');
           return {civilians,crew,opened,totals,focus,stayedOpen,touch,fits};
         })()""")
         assert personnel == {'civilians':5,'crew':200,'opened':True,'totals':[1400,200],'focus':True,'stayedOpen':True,'touch':True,'fits':True}, personnel
+
+        # Inline controls share one inventory and one physical module choice.
+        forecast = base.ev(cdp, """(()=>{
+          const app=RHWV4, originalItems=items, originalSpace=rhwBase.cargospace;
+          window.__forecastRestore={items:originalItems,space:originalSpace,plan:app.personnel.snapshot()};
+          app.productionPlan.select('ship_part_superstructure');
+          const inventory=new Map();
+          for(const r of app.personnel.analyze().rows.filter(r=>r.enabled)){
+            const b=app.productionPlan.batch(r);
+            for(const g of b.inputs)g.ids.forEach((id,i)=>inventory.set(id,{nickname:id,name:g.names[i],quantity:10000,min_stock:0,max_stock:1000000}));
+            for(const o of b.outputs)if(!inventory.has(o.id))inventory.set(o.id,{nickname:o.id,name:o.name,quantity:0,min_stock:0,max_stock:1000000});
+          }
+          inventory.set('commodity_crew',{nickname:'commodity_crew',name:'Crew',quantity:2000});
+          inventory.set('commodity_scientists',{nickname:'commodity_scientists',name:'Scientists',quantity:500});
+          inventory.get('commodity_gold_ore').quantity=0;
+          inventory.get('commodity_gold').quantity=1000;
+          inventory.get('commodity_pirate_gold').quantity=0;
+          items=[...inventory.values()];rhwBase.cargospace=1000000;rebuildItemCaches();renderProductionModules();
+          const plan=app.productionPlan.analyze(), oreStops=plan.rows.find(r=>r.key==='refinery').max===0;
+          const existingGoldWorks=plan.rows.find(r=>r.key==='foundry').max>0;
+          document.querySelector('[data-production-plan="ship_part_reactor"]').click();
+          const onlyReactor=document.querySelector('[data-production-plan="ship_part_reactor"]').getAttribute('aria-pressed')==='true'&&document.querySelector('[data-production-plan="ship_part_superstructure"]').getAttribute('aria-pressed')==='false';
+          document.querySelector('[data-production-plan="recipe_niobium_advanced"]').click();
+          const onlyNiobium=document.querySelector('[data-production-plan="recipe_gold_advanced"]').getAttribute('aria-pressed')==='false';
+          document.querySelector('[data-production-plan="recipe_gold_advanced"]').click();
+          app.navigate('command','shipyard');document.querySelector('[data-production-hull-plan]').click();
+          document.querySelector('[data-shipyard-division="civilian"]').click();
+          document.querySelector('[data-shipyard-select="halberd"]').click();
+          const followsHull=app.personnel.analyze().rows.find(r=>r.key==='shipyard').recipeId===app.shipyard.selectedHull().recipeId;
+          const shipTouch=document.querySelector('[data-production-hull-plan]').getBoundingClientRect().height>=44;
+          app.navigate('command','production');
+          document.querySelector('[data-production-plan="ship_part_superstructure"]').click();
+          const replacesShip=app.personnel.analyze().rows.find(r=>r.key==='shipyard').followHull===false;
+          const fixed=document.querySelectorAll('.production-plan-fixed').length===2;
+          const details=document.querySelector('.production-plan-details');details.open=true;
+          const informative=details.textContent.includes('One shared inventory');details.open=false;
+          const touch=[...document.querySelectorAll('#productionGrid .production-plan-button')].every(e=>e.getBoundingClientRect().height>=44);
+          const noExtraPanel=!document.querySelector('#productionPlanPanel');
+          return {oreStops,existingGoldWorks,onlyReactor,onlyNiobium,followsHull,shipTouch,replacesShip,fixed,informative,touch,noExtraPanel};
+        })()""")
+        assert all(forecast.values()), forecast
+        for width in (360,390,1366):
+            cdp.call('Emulation.setDeviceMetricsOverride', {'width':width,'height':960,'deviceScaleFactor':1,'mobile':width<760})
+            base.ev(cdp, 'renderProductionModules()')
+            assert base.ev(cdp, 'document.documentElement.scrollWidth<=innerWidth+1'), width
+            capture_card(cdp, '.production-card', f'{width}-inline-production-plan')
+        base.ev(cdp, """(()=>{
+          const old=window.__forecastRestore,app=RHWV4;
+          items=old.items;rhwBase.cargospace=old.space;rebuildItemCaches();
+          app.store.set(app.config.storageKeys.personnelPlan,old.plan);app.personnel.restore();
+          app.shipyard.selectHull('archon');app.productionPlan.invalidate();renderAll();
+          delete window.__forecastRestore;return true;
+        })()""")
 
         # Deliberately long names and seven-digit amounts exercise the actual
         # card boundaries, not just document overflow (cards can clip internally).
@@ -406,7 +457,7 @@ def main():
           RHWV4.navigate('command','production');
           const cards=[...document.querySelectorAll('.production-card')];
           const production={cards:cards.length,crew:cards.filter(card=>card.querySelector('.production-prerequisites')?.textContent.includes('Crew')).length,
-            materialCoverage:cards.every(card=>card.textContent.includes('MATERIAL CYCLES'))};
+            materialCoverage:cards.every(card=>card.textContent.includes(card.querySelector('.production-plan-stat')?'SOLO CYCLES':'MATERIAL CYCLES'))};
           const core=RHWV4.operationsCore,catalog=core.state.catalog;
           core.state.catalog=null;renderProductionModules();
           production.unavailable=productionGrid.textContent.includes('PRODUCTION RECIPES UNAVAILABLE')&&!productionGrid.querySelector('.production-card');
