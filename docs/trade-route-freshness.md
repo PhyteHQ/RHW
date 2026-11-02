@@ -1,32 +1,50 @@
 # Trade Desk freshness
 
-By default every import/export search requests `/api/pobs` and `/api/systems` from Darkstat
-with `cache: no-store`. Recent dashboard telemetry, previous searches and the
-IndexedDB POB snapshot cannot replace these requests. A failed/empty live feed
-pauses calculation and marks existing quotes out of date. Canceling a search
-also aborts its requests. Receipt times describe when RHW received the feeds;
-they are not timestamps of an in-game transaction or Darkstat's own refresh.
+Every import/export search requests `/api/pobs` from Darkstat with
+`cache: no-store`. Recent dashboard telemetry, previous searches and IndexedDB
+cannot replace fresh POB stock and prices. A failed/empty POB feed pauses
+calculation and marks existing quotes out of date. Canceling a search aborts
+its market requests. Receipt times describe when RHW received data; they are
+not timestamps of an in-game transaction or Darkstat's own refresh.
 
-When the live map request fails or exceeds 20 seconds, the dialog offers
-**USE LAST VERIFIED MAP · 29 OCT** and **RETRY LIVE MAP**. The old-map option
-requires an explicit click; it never activates automatically. It loads the full
-146-system routing projection captured on 2026-10-29 at 08:32 UTC, retaining its
-original timestamp. Every search still requires fresh POB stock, prices and
-the usual ID/ship reference rules. Newer gate, lane and position changes may
-be missing, so a warning stays visible and every result is labelled an estimate
-with the map date; verified recommendation styling is removed. Known closures,
-including both Galileo–Shikoku directions, still apply. This choice lasts only
-while the dialog is open. Reopening or RETRY LIVE MAP returns to the default
-live-map requirement. POB-feed failure cannot be bypassed with this option.
+## Independent route map
+
+The map is reused for one day and updated separately. A search immediately uses
+the last successfully checked map saved in IndexedDB, retaining its original
+check time across reloads. With no valid saved map, it starts with the packaged
+146-system routing projection captured on 2026-10-29 at 08:32 UTC. The map panel
+and quote source display the date of the map actually used, separately from
+fresh market timestamps, and distinguish a bundled snapshot from a saved map.
+Known closures, including both Galileo–Shikoku directions, apply in all modes.
+
+If the map is older than one day, `/api/systems` is fetched in the background
+with `cache: no-store` and its own 20-second deadline. It never delays a quote,
+aborts market loading or substitutes old stock. Failed automatic updates have
+a five-minute retry cooldown. **UPDATE MAP** retries immediately, independently
+of **REFRESH MARKETS**, without changing the existing quote or its provenance.
+If an update arrives after a search selected its map, **RECALCULATE WITH UPDATED
+MAP** applies it through a new search with fresh POB stock; current quotes are
+never silently relabelled with a newer map date. Canceling a trade does not
+cancel the independent map update.
+
+Only responses accepted by the existing navigation validator and covering
+RHW's system replace the saved map. Rendering data are stripped; persisted
+routing facts contain system nicknames, objects and jump kinds, positions and
+destination systems. Invalid responses, timeouts, unavailable/full browser
+storage and a missing endpoint cannot discard a valid map. A damaged or older
+cache falls back to the packaged map. Map and reference records use separate
+IndexedDB keys, so concurrent writes cannot overwrite each other. Warm searches
+reuse memory without further IndexedDB reads or writes.
 
 The packaged `assets/navigation-last-verified.json.gz` is the same complete
-public routing projection retained in the map regression fixture. It is loaded
-only on explicit recovery, never passed off as a fresh API response. Geometry
-still comes from `assets/navigation.json.gz`. The optional manual command
-`python scripts/smoke_trade_live.py` verifies actual cross-origin API loading,
-map recovery where necessary, and completion of a Prototype Components search
-in Chrome without fixture responses. External API availability makes it
-unsuitable as an offline-required release check.
+public routing projection retained in the map regression fixture. It is never
+passed off as a fresh API response. Geometry still comes from
+`assets/navigation.json.gz`. Newer unknown gates/lanes may be missing until map
+and geometry updates; routes remain estimates based on the displayed map.
+The optional `python scripts/smoke_trade_live.py` verifies cross-origin API
+loading, independent map updates and a Prototype Components search in Chrome
+without fixture responses. External API availability makes it unsuitable as an
+offline-required release check.
 
 NPC market/owner/ID reference data retain their six-hour cache; ship data retain
 their daily cache. **REFRESH MARKETS** also refreshes these reference datasets.
@@ -38,11 +56,11 @@ nested POB data that the NPC normalizer discarded. Generic and ship-specific
 volumes remain in the joined model; NPC sale/purchase directions and owners are
 preserved. Array-valued filters require POST and cannot silently fall back to a
 GET that drops the filter.
-Only those reference datasets are persisted. Warm searches reuse their in-memory
+Those reference datasets and the separately keyed map are persisted. Warm searches reuse their in-memory
 copy and do not reread or rewrite IndexedDB. Legacy cache entries containing an
-unused POB snapshot are cleaned on a successful search. Stock and map objects
-still come from new required requests every time. The bundled geometry loads
-alongside the live feeds on first use. A failed required feed aborts outstanding
+unused POB snapshot are cleaned on a successful search. Stock and prices still
+come from a new required POB request every time. Bundled geometry loads
+alongside the market feeds on first use. A failed required market feed aborts outstanding
 requests immediately, including slow optional reference refreshes; canceled or
 failed searches cannot publish a later result. Loading status names pending
 feeds. Completed searches report data-load and route-search time separately.
@@ -73,7 +91,7 @@ simulation. Missing docking mode is an unverified policy, separate from reported
 whitelist modes and hostile-IFF owner approvals. It can be quoted conditionally
 through **Include unverified ID / docking rules**, never as a default verified route.
 
-`live-navigation.mjs` checks the bundled graph against the newly fetched map
+`live-navigation.mjs` checks the bundled graph against the selected checked map
 objects before either planner runs. Missing, unknown and campaign-locked jump
 objects cannot keep old connections. A changed destination invalidates its old
 directed edge. Current positions update mapped objects; deleted lane rings lose

@@ -32,25 +32,24 @@ def main():
         wait(cdp, "document.documentElement.dataset.v40Ready==='true'", 25)
         base.ev(cdp, "RHWV4.supplyRoutes.open('Prototype Components',document.querySelector('.header-trade-button'),'supply').then(()=>true)")
         wait(cdp, "!!document.getElementById('supplySearch') && !supplySearch.disabled", 55)
-        initial = base.ev(cdp, "({status:supplyStatus.textContent,source:supplySource.textContent,recovery:!supplyMapRecovery.hidden})")
+        initial = base.ev(cdp, "({status:supplyStatus.textContent,source:supplySource.textContent,map:supplyMapSummary.textContent,mapUpdating:supplyMapRefresh.disabled})")
         print('INITIAL LIVE SEARCH:', json.dumps(initial), flush=True)
-        recovered = initial['recovery']
-        if recovered:
-            base.ev(cdp, "supplyUseVerifiedMap.click()")
+        # Markets must finish independently. Allow the separate map update its
+        # own deadline, then apply a successful update through the actual UI.
+        wait(cdp, "!supplyMapRefresh.disabled", 25)
+        applied = base.ev(cdp, "!supplyMapApply.hidden")
+        if applied:
+            base.ev(cdp, "supplyMapApply.click()")
             wait(cdp, "!supplySearch.disabled && supplyResults.dataset.stale==='false'", 55)
-        state = base.ev(cdp, "({status:supplyStatus.textContent,source:supplySource.textContent,commodity:supplyCommodity.value,stale:supplyResults.dataset.stale,results:supplyResults.querySelectorAll('.supply-result').length,empty:supplyResults.querySelector('.supply-empty')?.textContent,verifiedRecommendation:!!supplyResults.querySelector('.supply-recommended'),labels:[...supplyResults.querySelectorAll('.supply-result>header small')].map(n=>n.textContent)})")
+        state = base.ev(cdp, "({status:supplyStatus.textContent,source:supplySource.textContent,map:supplyMapSummary.textContent,mapNote:supplyMapNote.textContent,commodity:supplyCommodity.value,stale:supplyResults.dataset.stale,results:supplyResults.querySelectorAll('.supply-result').length,empty:supplyResults.querySelector('.supply-empty')?.textContent,labels:[...supplyResults.querySelectorAll('.supply-result>header small')].map(n=>n.textContent)})")
         assert state['stale'] == 'false' and 'POB STOCK RECEIVED' in state['source'], state
         assert state['results'] or state.get('empty'), state
-        if recovered:
-            assert 'CURRENT MAP UNVERIFIED' in state['source'] and not state['verifiedRecommendation'], state
-            assert all('29 OCT 2026' in label for label in state['labels']), state
-        else:
-            assert 'MAP OBJECTS RECEIVED' in state['source'], state
+        assert 'ROUTE MAP CHECKED' in state['source'] and '2026' in state['map'], state
         print('REAL NETWORK TRADE DESK PASSED:', json.dumps(state), flush=True)
         out = Path(__file__).resolve().parents[1] / 'artifacts/live-trade'
         out.mkdir(parents=True, exist_ok=True)
-        (out / 'result.json').write_text(json.dumps({'initial':initial,'recovered':recovered,'result':state}, indent=2))
-        base.ev(cdp, "(supplyMapRecovery.hidden?supplyResults:supplyMapRecovery).scrollIntoView({block:'center',behavior:'instant'})")
+        (out / 'result.json').write_text(json.dumps({'initial':initial,'appliedMapUpdate':applied,'result':state}, indent=2))
+        base.ev(cdp, "supplyMapState.scrollIntoView({block:'center',behavior:'instant'})")
         (out / 'real-network-trade-desk.png').write_bytes(base64.b64decode(cdp.call('Page.captureScreenshot', {'format':'png'})['data']))
     finally:
         if cdp:
