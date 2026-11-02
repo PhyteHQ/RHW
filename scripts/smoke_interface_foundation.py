@@ -21,7 +21,7 @@ STOCK = {'Basic Alloy': 19129, 'Consumer Goods': 24793, 'Food Rations': 22451,
          'Multi-Mode Focusing Chamber': 2000, 'Reactor Systems': 500,
          'Superstructure Systems': 110, 'Avionics Systems': 420, 'Interior Systems': 300,
          'Propulsion Systems': 350, 'Exotic Systems': 250,
-         'Crew': 1800, 'Archon Design Schematics': 1}
+         'Crew': 2400, 'Archon Design Schematics': 1}
 DATA = [{'name': 'Resolution Heavy Works', 'system_name': 'New London', 'money': 46385683,
          'cargospace': 63777, 'health': 24000000,
          'shop_items': [{'name': k, 'quantity': v, 'sell_price': 100, 'buy_price': 80} for k, v in STOCK.items()]},
