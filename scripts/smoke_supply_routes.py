@@ -101,6 +101,11 @@ def main():
                    'techTestShip': next(row for row in flight_fixture['ships'] if row['nickname'] == 'dsy_gallic_train_adv'),
                    'npc_bases': [{'nickname': 'trafalgar', 'faction_nick': 'br_n_grp'}, {'nickname': 'molly', 'faction_nick': 'fc_m_grp'}, {'nickname': 'waterloo', 'faction_nick': 'br_n_grp'}, {'nickname': 'oder', 'faction_nick': 'br_n_grp'}],
                    'factions': [], 'tractors': tractors, 'idcards': idcards}
+        # The live API exposes much smaller base-centric commodity markets.
+        for npc in fixture['npc_bases']:
+            npc['market_goods'] = [dict(market, nickname=good['nickname'], category='commodity')
+                                   for good in commodities for market in good['market_goods']
+                                   if market['base_nickname'] == npc['nickname']]
         ambiguous_decoration = {'Nickname': 'fixture_ambiguous_decoration', 'Kind': 10, 'Pos': {'X': 20, 'Y': 0, 'Z': 0}}
         with gzip.open(Path(__file__).resolve().parent / 'fixtures/live-navigation-complete-2026-10-29.json.gz', 'rt') as f:
             fixture['systems'] = json.load(f)['systems']

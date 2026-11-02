@@ -10,6 +10,27 @@ import { comparisonFleet } from '../js/supply/comparison-fleet.mjs';
 import { identityShipCheck } from '../js/supply/identity-profiles.mjs';
 import { ShipNavigator } from '../js/supply/navigation.mjs';
 import { searchExports } from '../js/supply/export-planner.mjs';
+import { normalizeNpcMarket } from '../js/supply/npc-market.mjs';
+
+const compactNpc = normalizeNpcMarket([
+  { nickname: 'parts', name: 'Parts', volume: 30, ship_class: null },
+  { nickname: 'parts', name: 'Parts', volume: 1, ship_class: 9 },
+  { nickname: 'pob_only', name: 'POB-only Product', volume: 10, ship_class: null },
+  { nickname: 'pob_only', name: 'POB-only Product', volume: 2, ship_class: 9 }
+], [{ nickname: 'npc', name: 'NPC', system_nickname: 'br01', system_name: 'New London',
+  pos: { X: 100, Y: 0, Z: 200 }, faction_nickname: 'br_m_grp', market_goods: [
+    { nickname: 'parts', category: 'commodity', base_sells: true, price_base_sells_for: 200, price_base_buys_for: 180, volume: 1 },
+    { nickname: 'parts', category: 'commodity', PoB: {}, base_sells: true, price_base_sells_for: 1 }
+  ] }]);
+assert.equal(compactNpc.bases.length, 1);
+assert.equal(compactNpc.bases[0].offers[0].volume, 30, 'Storage volume comes from the generic commodity, not a ship-class row');
+assert.equal(compactNpc.bases[0].offers[0].volumes[9], 1, 'Ship-specific cargo volumes survive the compact market join');
+assert.equal(compactNpc.bases[0].offers[0].buy, 200);
+assert.equal(compactNpc.bases[0].offers[0].sell, 180);
+assert.deepEqual(compactNpc.bases[0].pos, [100, 0, 200]);
+assert.equal(compactNpc.bases[0].factionNickname, 'br_m_grp');
+assert.equal(compactNpc.bases[0].offers.length, 1, 'POB prices cannot contaminate the NPC reference market');
+assert.equal(compactNpc.goods.find(item => item.id === 'pob_only').volumes[9], 2, 'POB-only goods retain class-specific volume without an NPC quotation');
 
 const good = { id: 'ablative', name: 'Ablative Armor Plating', buy: 30, sell: 105, volume: 1, originalVolume: 1, volumes: {} };
 const alloy = { id: 'alloy', name: 'Super Alloy', buy: 56, sell: 122, volume: 1, originalVolume: 1, volumes: {} };

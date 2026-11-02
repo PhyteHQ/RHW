@@ -17,6 +17,7 @@ self.RHW_APP_SHELL = [
   "./assets/pwa-icon-512.png",
   "./assets/pwa-icon-maskable-512.png",
   "./js/supply/ui.mjs",
+  "./js/supply/npc-market.mjs",
   "./js/supply/planner.mjs",
   "./js/supply/export-planner.mjs",
   "./js/supply/export-quote.mjs",

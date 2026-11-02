@@ -2,12 +2,13 @@ import { normalizeDarkstat, validateDataset } from './core/trade.mjs';
 import { validateNavigation } from './core/navigation.mjs';
 import { FALLBACK_SHIPS, normalizeShipRegistry, shipFlightRules, isSelectableShip } from './ship-profiles.mjs';
 import { haulerCategories, haulerCategory, matchesHauler } from './hauler-categories.mjs';
-import { dockingAccess, enrichBaseOwners, BMM_ID } from './access.mjs';
+import { dockingAccess, BMM_ID } from './access.mjs';
 import { normalize, findRhw } from './planner.mjs';
 import { commodityGroups } from './commodity-groups.mjs';
 import { identityRegistry, parseIdentityRules, identityShipCheck, PREFERRED_TRADER_IDS } from './identity-profiles.mjs';
 import { currentNavigation } from './live-navigation.mjs';
 import { comparisonFleet, COMPARISON_FLEET } from './comparison-fleet.mjs';
+import { normalizeNpcMarket } from './npc-market.mjs';
 
 const API = 'https://darkstat.dd84ai.com/api/';
 const CACHE = 'rhw-supply-market-v1';
@@ -72,7 +73,7 @@ async function read(path, body, signal) {
   if (body !== undefined) { init.body = JSON.stringify(body); init.headers['Content-Type'] = 'application/json'; }
   let response = await fetch(API + path, init);
   if (response.status === 405) {
-    if (Array.isArray(body)) throw Error(`${path}: this API operation requires POST support`);
+    if (Array.isArray(body) || Object.values(body || {}).some(Array.isArray)) throw Error(`${path}: this API operation requires POST support`);
     const query = body ? '?' + new URLSearchParams(Object.entries(body).map(([key, value]) => [key, String(value)])) : '';
     response = await fetch(API + path + query, { headers: { Accept: 'application/json' }, cache: 'no-store', signal });
   }
@@ -118,7 +119,7 @@ function mapRecovery(active = false) {
   $('supplyUseVerifiedMap').hidden = active;
 }
 function mergeMarket(npc, pobs, receivedAt) {
-  const meta = new Map();
+  const meta = new Map((npc.goods || []).map(item => [item.id, item]));
   npc.bases.forEach(base => base.offers.forEach(item => { if (!meta.has(item.id)) meta.set(item.id, item); }));
   const dynamic = normalizeDarkstat(pobs, [], new Date(receivedAt).toISOString());
   dynamic.bases.forEach(base => base.offers.forEach(item => {
@@ -169,8 +170,14 @@ async function prepare(force, signal, progress = () => {}, verified = false) {
   if (!baseNavigation) live.push(track('ROUTE GEOMETRY', loadNavigation(signal).then(data => { baseNavigation = data; })));
   const tasks = [];
   const reference = (label, task) => tasks.push(track(label, task.then(() => { referenceChanged = true; })));
-  if (force || !npc || now - npcAt > SIX_HOURS) reference('NPC PRICES', read('commodities', { include_market_goods: true, filter_to_useful: true }, signal).then(data => {
-    npc = normalizeDarkstat([], data); npc.bases = enrichBaseOwners(npc.bases, [], [], data); npcAt = Date.now();
+  const refreshNpc = force || !npc || now - npcAt > SIX_HOURS;
+  if (refreshNpc) reference('NPC PRICES', Promise.all([
+    read('commodities', { include_market_goods: false, filter_to_useful: true }, signal),
+    read('npc_bases', { include_market_goods: true, filter_market_good_category: ['commodity'] }, signal)
+  ]).then(([commodities, bases]) => {
+    npc = normalizeNpcMarket(commodities, bases);
+    owners = bases.map(({ market_goods, ...owner }) => owner);
+    npcAt = Date.now();
   }));
   if (force || shipIdentityVersion < 2 || !shipAt || now - shipAt > DAY) reference('HAULER DATA', read('ships', { include_tech_compat: true }, signal).then(data => {
     ships = comparisonFleet(normalizeShipRegistry(data));
@@ -178,7 +185,7 @@ async function prepare(force, signal, progress = () => {}, verified = false) {
     shipAt = Date.now();
   }));
   if (force || accessIdentityVersion < 2 || !cache.accessAt || now - cache.accessAt > SIX_HOURS) {
-    reference('BASE OWNERS', read('npc_bases', {}, signal).then(data => { owners = data; }));
+    if (!refreshNpc) reference('BASE OWNERS', read('npc_bases', {}, signal).then(data => { owners = data; }));
     reference('FACTION DATA', read('factions', { include_reputations: false, include_bribes: false, filter_to_useful: false }, signal).then(data => { factions = data; }));
     reference('ID DOCKING RULES', read('tractors', { include_rephacks: true, include_market_goods: true, filter_to_useful: true }, signal).then(data => { tractors = data; accessIdentityVersion = 2; }));
   }

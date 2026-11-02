@@ -30,6 +30,14 @@ unsuitable as an offline-required release check.
 
 NPC market/owner/ID reference data retain their six-hour cache; ship data retain
 their daily cache. **REFRESH MARKETS** also refreshes these reference datasets.
+NPC quotes now use `/api/npc_bases` with `include_market_goods: true` and
+`filter_market_good_category: ["commodity"]`, joined to commodity metadata from
+`/api/commodities` with `include_market_goods: false`. The old commodity-centric
+market export exceeded 70 MB in the real cold-browser check because it repeated
+nested POB data that the NPC normalizer discarded. Generic and ship-specific
+volumes remain in the joined model; NPC sale/purchase directions and owners are
+preserved. Array-valued filters require POST and cannot silently fall back to a
+GET that drops the filter.
 Only those reference datasets are persisted. Warm searches reuse their in-memory
 copy and do not reread or rewrite IndexedDB. Legacy cache entries containing an
 unused POB snapshot are cleaned on a successful search. Stock and map objects
