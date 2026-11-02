@@ -1,14 +1,43 @@
 # Trade Desk freshness
 
-Every import/export search requests `/api/pobs` and `/api/systems` from Darkstat
+By default every import/export search requests `/api/pobs` and `/api/systems` from Darkstat
 with `cache: no-store`. Recent dashboard telemetry, previous searches and the
 IndexedDB POB snapshot cannot replace these requests. A failed/empty live feed
 pauses calculation and marks existing quotes out of date. Canceling a search
 also aborts its requests. Receipt times describe when RHW received the feeds;
 they are not timestamps of an in-game transaction or Darkstat's own refresh.
 
+When the live map request fails or exceeds 20 seconds, the dialog offers
+**USE LAST VERIFIED MAP · 29 OCT** and **RETRY LIVE MAP**. The old-map option
+requires an explicit click; it never activates automatically. It loads the full
+146-system routing projection captured on 2026-10-29 at 08:32 UTC, retaining its
+original timestamp. Every search still requires fresh POB stock, prices and
+the usual ID/ship reference rules. Newer gate, lane and position changes may
+be missing, so a warning stays visible and every result is labelled an estimate
+with the map date; verified recommendation styling is removed. Known closures,
+including both Galileo–Shikoku directions, still apply. This choice lasts only
+while the dialog is open. Reopening or RETRY LIVE MAP returns to the default
+live-map requirement. POB-feed failure cannot be bypassed with this option.
+
+The packaged `assets/navigation-last-verified.json.gz` is the same complete
+public routing projection retained in the map regression fixture. It is loaded
+only on explicit recovery, never passed off as a fresh API response. Geometry
+still comes from `assets/navigation.json.gz`. The optional manual command
+`python scripts/smoke_trade_live.py` verifies actual cross-origin API loading,
+map recovery where necessary, and completion of a Prototype Components search
+in Chrome without fixture responses. External API availability makes it
+unsuitable as an offline-required release check.
+
 NPC market/owner/ID reference data retain their six-hour cache; ship data retain
 their daily cache. **REFRESH MARKETS** also refreshes these reference datasets.
+NPC quotes now use `/api/npc_bases` with `include_market_goods: true` and
+`filter_market_good_category: ["commodity"]`, joined to commodity metadata from
+`/api/commodities` with `include_market_goods: false`. The old commodity-centric
+market export exceeded 70 MB in the real cold-browser check because it repeated
+nested POB data that the NPC normalizer discarded. Generic and ship-specific
+volumes remain in the joined model; NPC sale/purchase directions and owners are
+preserved. Array-valued filters require POST and cannot silently fall back to a
+GET that drops the filter.
 Only those reference datasets are persisted. Warm searches reuse their in-memory
 copy and do not reread or rewrite IndexedDB. Legacy cache entries containing an
 unused POB snapshot are cleaned on a successful search. Stock and map objects

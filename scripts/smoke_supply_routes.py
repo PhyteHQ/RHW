@@ -101,6 +101,11 @@ def main():
                    'techTestShip': next(row for row in flight_fixture['ships'] if row['nickname'] == 'dsy_gallic_train_adv'),
                    'npc_bases': [{'nickname': 'trafalgar', 'faction_nick': 'br_n_grp'}, {'nickname': 'molly', 'faction_nick': 'fc_m_grp'}, {'nickname': 'waterloo', 'faction_nick': 'br_n_grp'}, {'nickname': 'oder', 'faction_nick': 'br_n_grp'}],
                    'factions': [], 'tractors': tractors, 'idcards': idcards}
+        # The live API exposes much smaller base-centric commodity markets.
+        for npc in fixture['npc_bases']:
+            npc['market_goods'] = [dict(market, nickname=good['nickname'], category='commodity')
+                                   for good in commodities for market in good['market_goods']
+                                   if market['base_nickname'] == npc['nickname']]
         ambiguous_decoration = {'Nickname': 'fixture_ambiguous_decoration', 'Kind': 10, 'Pos': {'X': 20, 'Y': 0, 'Z': 0}}
         with gzip.open(Path(__file__).resolve().parent / 'fixtures/live-navigation-complete-2026-10-29.json.gz', 'rt') as f:
             fixture['systems'] = json.load(f)['systems']
@@ -222,10 +227,26 @@ def main():
             raise RuntimeError('A failed current-map request must pause search and mark the prior quote stale')
         if not base.ev(cdp, "supplyHeldAborts>0"):
             raise RuntimeError('Live-feed failure did not abort a hanging reference request')
-        base.ev(cdp, "(()=>{window.supplyMapOffline=false;window.supplyHoldReferences=false;supplySearch.click();return true})()")
+        if not base.ev(cdp, "!supplyMapRecovery.hidden && !supplyUseVerifiedMap.disabled && supplyMapRecoveryText.textContent.includes('29 OCT 2026') && !supplySource.textContent.includes('CURRENT MAP UNVERIFIED')"):
+            raise RuntimeError('Failed live map must offer a dated, explicit recovery choice without enabling it automatically')
+        last_counts = base.ev(cdp, "({pobs:supplyRequests.filter(x=>x==='pobs').length,maps:supplyRequests.filter(x=>x==='systems').length})")
+        base.ev(cdp, "(()=>{window.supplyHoldReferences=false;supplyUseVerifiedMap.click();return true})()")
+        wait_for(cdp, "!supplySearch.disabled && supplyResults.dataset.stale==='false'")
+        recovered = base.ev(cdp, "({pobs:supplyRequests.filter(x=>x==='pobs').length,maps:supplyRequests.filter(x=>x==='systems').length,quantity:document.querySelector('.supply-metrics strong')?.textContent,source:supplySource.textContent,dated:[...document.querySelectorAll('.supply-result>header small')].every(n=>n.textContent.includes('MAP 29 OCT 2026')),recommended:!!document.querySelector('.supply-recommended'),warning:!supplyMapRecovery.hidden})")
+        if recovered['pobs'] != last_counts['pobs'] + 1 or recovered['maps'] != last_counts['maps'] or recovered['quantity'] != '2,500' or 'CURRENT MAP UNVERIFIED' not in recovered['source'] or 'LAST VERIFIED MAP' not in recovered['source'] or 'Galileo' not in recovered['source'] or not recovered['dated'] or recovered['recommended'] or not recovered['warning']:
+            raise RuntimeError(f'Explicit old-map estimates must refresh stock, retain closure checks and never claim verified recommendations: {recovered}')
+        for width in [360,1440]:
+            cdp.call('Emulation.setDeviceMetricsOverride', {'width':width,'height':900,'deviceScaleFactor':1,'mobile':width<760})
+            if base.ev(cdp, "rhwSupplyDialog.scrollWidth>rhwSupplyDialog.clientWidth+1"):
+                raise RuntimeError(f'Map recovery warning overflows at {width}px')
+            base.ev(cdp, "supplyMapRecovery.scrollIntoView({block:'center',behavior:'instant'})")
+            (out / f'map-recovery-{width}.png').write_bytes(base64.b64decode(cdp.call('Page.captureScreenshot', {'format':'png'})['data']))
+        base.ev(cdp, "(()=>{window.supplyMapOffline=false;supplyRetryLiveMap.click();return true})()")
         wait_for(cdp, "!supplySearch.disabled && supplyResults.dataset.stale==='false'")
         if base.ev(cdp, "document.querySelector('.supply-metrics strong').textContent") != '2,500':
             raise RuntimeError('Retry must use the newly refreshed RHW limits')
+        if not base.ev(cdp, "supplyMapRecovery.hidden && supplySource.textContent.includes('MAP OBJECTS RECEIVED') && !supplySource.textContent.includes('CURRENT MAP UNVERIFIED')"):
+            raise RuntimeError('Retry live map must leave old-map mode and restore fresh provenance')
         base.ev(cdp, "(()=>{window.supplyHoldMap=true;supplySearch.click();return true})()")
         wait_for(cdp, "supplySearch.disabled && supplyStatus.textContent.includes('LOADING LIVE MAP')")
         base.ev(cdp, "supplyCancel.click()")
