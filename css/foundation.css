@@ -1238,10 +1238,6 @@ h1 { font-size: clamp(42px, 4vw, 58px);line-height: 0.88;letter-spacing: 0.045em
 
 .next-gap { margin: 10px 0 0; }
 
-#productionPanel:not(.production-expanded) .recipe-column-head, #productionPanel:not(.production-expanded) .recipe-list, #productionPanel:not(.production-expanded) .byproduct-strip { display: none; }
-
-#productionPanel.production-expanded .next-gap { margin-bottom: 11px; }
-
 .market-scan-grid { grid-template-columns: repeat(6, minmax(0, 1fr));gap: 12px;padding: 14px; }
 
 .market-scan-grid > .market-card:nth-child(-n/**/+3) { grid-column: span 2; }

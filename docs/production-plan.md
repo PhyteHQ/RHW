@@ -19,24 +19,37 @@ ship in Production changes tabs. Choosing a different hull updates
 ship mode; choosing a component replaces ship mode. No new top-level section is
 added. Choices share the existing portable `personnelPlan` preference and crew
 summary. Old settings keep the initial Gold choice; version 3 persists an
-explicitly disabled refinery. Chambers / Alloy remain mandatory and their
-ALWAYS ON buttons open or close forecast details instead of disabling them.
+explicitly disabled refinery. Chambers / Alloy remain mandatory and show an ALWAYS ON label.
 
-Every card shows reference time per cycle beneath its material-cycle count,
-including unselected jobs and jobs with unknown stock. Every yield box also
-shows total time when calculable. Unselected EST. YIELD uses independent material
-coverage multiplied by cycle time, labelled SOLO ESTIMATE; it never consumes
-stock or changes the plan. Unknown stock gives TIME UNKNOWN, not zero time.
-Selected cards show PLANNED YIELD and elapsed planning time; SOLO CYCLES remains
-the independently calculated material coverage and is not the shared forecast.
-Details stay collapsed until requested. A choice does not send commands to the
-game, and never changes the live inventory.
+The Production page has one collapsible **Shared Production Plan** overview
+above the cards. It lists selected jobs, newly completed output, elapsed time,
+limits and internal supply links. Links are derived from the outputs and inputs
+of the actual selected jobs, including byproducts and interchangeable materials.
+They describe planned supply, not guaranteed future deliveries. One explanation
+covers snapshot provenance, missing data and planning assumptions.
 
-When an input to any selected job is unreported, a shared forecast cannot be
-verified. Each card still shows its own material coverage and time if calculable,
-labelled SOLO YIELD / SOLO ESTIMATE. This ignores competition and incoming
-production; it is never substituted for a verified shared total. Details name the
-missing shared inputs. Unknown inputs to the card itself still yield no count.
+Each card shows only **In Stock** and **New Output**, with a clear **Shared Plan**
+or **Solo Estimate** label. Cycle time remains visible for every job, including
+unselected jobs or unknown stock. Selected jobs use the verified shared forecast;
+unselected jobs use their standalone material coverage and are labelled **Not In
+Shared Plan**. Input readiness explicitly refers to standalone input coverage,
+not the shared plan or product stock. A plentiful limiting input is not painted
+red merely because it runs out before the others.
+
+Material details start collapsed at every width and have an individual keyboard
+operable disclosure. They contain material cycles, solo yield, solo duration,
+the next extra solo cycle's shortfall, ingredients, byproducts and reusable
+personnel requirements. Open cards survive telemetry and plan rerenders during
+the session. Inventory links still open and highlight the relevant card without
+changing the production plan. The old global recipe-details preference no longer
+expands every card. Always-on jobs use a fixed label; optional PLAN buttons keep
+the same exclusive choices and persistence.
+
+When any selected input is unreported, the shared forecast is unverified. Cards
+may still show standalone material coverage, explicitly labelled **Plan Unverified
+· Solo Only**, never an invented shared total. Unknown inputs to the card itself
+show no count or duration. The shared overview names the missing inputs. A choice
+never sends commands to the game or changes real inventory.
 
 ## Timing and allocation contract
 
