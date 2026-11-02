@@ -307,6 +307,7 @@ def main():
           const onlyReactor=document.querySelector('[data-production-plan="ship_part_reactor"]').getAttribute('aria-pressed')==='true'&&document.querySelector('[data-production-plan="ship_part_superstructure"]').getAttribute('aria-pressed')==='false';
           document.querySelector('[data-production-plan="recipe_niobium_advanced"]').click();
           const onlyNiobium=document.querySelector('[data-production-plan="recipe_gold_advanced"]').getAttribute('aria-pressed')==='false';
+          document.querySelector('[data-production-plan="recipe_gold_advanced"]').click();
           app.navigate('command','shipyard');document.querySelector('[data-production-hull-plan]').click();
           document.querySelector('[data-shipyard-division="civilian"]').click();
           document.querySelector('[data-shipyard-select="halberd"]').click();
@@ -317,9 +318,10 @@ def main():
           const replacesShip=app.personnel.analyze().rows.find(r=>r.key==='shipyard').followHull===false;
           const fixed=document.querySelectorAll('.production-plan-fixed').length===2;
           const details=document.querySelector('.production-plan-details');details.open=true;
+          const informative=details.textContent.includes('One shared inventory');details.open=false;
           const touch=[...document.querySelectorAll('#productionGrid .production-plan-button')].every(e=>e.getBoundingClientRect().height>=44);
           const noExtraPanel=!document.querySelector('#productionPlanPanel');
-          return {oreStops,existingGoldWorks,onlyReactor,onlyNiobium,followsHull,shipTouch,replacesShip,fixed,touch,noExtraPanel};
+          return {oreStops,existingGoldWorks,onlyReactor,onlyNiobium,followsHull,shipTouch,replacesShip,fixed,informative,touch,noExtraPanel};
         })()""")
         assert all(forecast.values()), forecast
         for width in (360,390,1366):

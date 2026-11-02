@@ -29,9 +29,8 @@
       <div class="production-plan-explanation"><p>MANUAL PLAN · ${esc(plan.snapshot.label)} · New cycles from this snapshot.</p>
         <p>~${duration(row.seconds)} per cycle · ${fmt(row.output)} items per complete batch.</p>
         <ul>${orders}</ul>
-        <p>Shared inventory; inputs allocated at cycle start, full batches added at completion. Refineries and byproducts can supply other selected modules.</p>
-        <p>Times use the Darkstat volume/rate estimate and the first recipe alternative (MOX reference). They are not a live countdown.</p>
-        <p>Ranges allow different priorities for the last shared stock. No deliveries, sales or ongoing base upkeep are assumed.</p>
+        <p>One shared inventory. Finished refinery batches and byproducts can supply other modules. Ranges allow different priorities for scarce stock.</p>
+        <p>Planning estimate with MOX timing. New cycles reserve inputs at start. No deliveries, trades, upkeep or existing job progress are assumed.</p>
         ${plan.conditions.length ? `<p class="production-plan-caution">Conditional: ${esc(plan.conditions.join(' · '))}.</p>` : ''}
         ${plan.truncated ? '<p class="production-plan-caution">Forecast limited to 30 days / simulation budget. Counts are lower bounds, not final capacity.</p>' : ''}
       </div></details>`;
