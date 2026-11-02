@@ -13,12 +13,12 @@
   ]);
   const modules = Object.freeze([
     { key: 'refinery', name: 'Industrial Refinery', defaultRecipe: 'recipe_gold_advanced',
-      accepts: r => /Refining$/.test(r.craftType) && !['ScrapRefining', 'ExoticRefining', 'HeavyWaterRefining'].includes(r.craftType) },
-    { key: 'smelter', name: 'Scrap Smelter', defaultRecipe: 'recipe_scrap_advanced', accepts: r => r.craftType === 'ScrapRefining' },
+      accepts: r => ['recipe_gold_advanced', 'recipe_niobium_advanced'].includes(r.id) },
+    { key: 'smelter', name: 'Scrap Smelter', fixed: true, defaultRecipe: 'recipe_scrap_advanced', accepts: r => r.id === 'recipe_scrap_advanced' },
     { key: 'shipyard', name: 'Modular Shipyard', defaultRecipe: 'ship_assembly_medium_miner',
-      accepts: r => r.craftType === 'ShipyardComponent' || CAPITAL_SHIPYARD.hulls.some(h => h.recipeId === r.id) },
-    { key: 'foundry', name: 'Exotic Weapons Components Foundry', defaultRecipe: 'recipe_weapon_part_focusing_chamber',
-      accepts: r => r.craftType === 'WeaponComponents' }
+      accepts: r => ['ship_part_superstructure', 'ship_part_reactor'].includes(r.id) || CAPITAL_SHIPYARD.hulls.some(h => h.recipeId === r.id) },
+    { key: 'foundry', name: 'Exotic Weapons Components Foundry', fixed: true, defaultRecipe: 'recipe_weapon_part_focusing_chamber',
+      accepts: r => r.id === 'recipe_weapon_part_focusing_chamber' }
   ]);
   function amount(value) {
     if (!['number', 'string'].includes(typeof value) || (typeof value === 'string' && !value.trim())) return null;
@@ -27,11 +27,14 @@
   }
   function normalize(raw) {
     const object = raw && typeof raw === 'object' && !Array.isArray(raw) ? raw : {};
-    return { version: 1, coreLevel: 4,
+    return { version: 2, coreLevel: 4,
       stock: Object.fromEntries(resources.map(r => [r.key, amount(object.stock?.[r.key])])),
       modules: Object.fromEntries(modules.map(m => [m.key, {
-        enabled: object.modules?.[m.key]?.enabled === true,
-        recipeId: typeof object.modules?.[m.key]?.recipeId === 'string' ? object.modules[m.key].recipeId : m.defaultRecipe
+        enabled: m.key !== 'shipyard' || object.modules?.[m.key]?.enabled === true,
+        recipeId: m.fixed ? m.defaultRecipe : typeof object.modules?.[m.key]?.recipeId === 'string'
+          && m.accepts({ id: object.modules[m.key].recipeId }) ? object.modules[m.key].recipeId : m.defaultRecipe,
+        followHull: m.key === 'shipyard' && (object.modules?.shipyard?.followHull === true
+          || CAPITAL_SHIPYARD.hulls.some(h => h.recipeId === object.modules?.shipyard?.recipeId))
       }])) };
   }
   let state = normalize(storageKey ? app.store.get(storageKey, {}) : {});
@@ -70,13 +73,14 @@
     let complete = true;
     const rows = modules.map(module => {
       const selection = state.modules[module.key];
-      const recipe = options(module).find(r => r.id === selection.recipeId);
+      const recipeId = selection.followHull ? app.shipyard?.selectedHull()?.recipeId : selection.recipeId;
+      const recipe = options(module).find(r => r.id === recipeId);
       const personnel = needs(recipe);
       if (selection.enabled && module.key !== excludeModule) {
         if (!personnel) complete = false;
         else for (const r of resources) required[r.key] += personnel[r.key];
       }
-      return { ...module, ...selection, recipe, personnel };
+      return { ...module, ...selection, recipeId, recipe, personnel };
     });
     return { coreLevel: state.coreLevel, coreCrew: state.coreLevel * 200, complete, rows,
       resources: resources.map(r => {
@@ -102,15 +106,21 @@
     const normalized = normalize(next);
     if (storageKey && app.store.set(storageKey, normalized) === false) return false;
     state = normalized;
+    app.productionPlan?.invalidate();
     app.personnelView?.render();
+    if (typeof renderProductionModules === 'function') renderProductionModules();
     if (typeof renderShipyardControl === 'function') renderShipyardControl();
     return true;
   }
   function setModule(key, changes) {
     const module = modules.find(m => m.key === key);
     if (!module) return false;
+    if (key !== 'shipyard' && changes.enabled === false) return false;
+    if (module.fixed && changes.recipeId !== undefined && changes.recipeId !== module.defaultRecipe) return false;
     if (changes.recipeId !== undefined && !options(module).some(r => r.id === changes.recipeId)) return false;
-    return save({ ...state, modules: { ...state.modules, [key]: { ...state.modules[key], ...changes } } });
+    const followHull = key === 'shipyard' && (changes.followHull ?? (changes.recipeId !== undefined
+      ? CAPITAL_SHIPYARD.hulls.some(h => h.recipeId === changes.recipeId) : state.modules[key].followHull));
+    return save({ ...state, modules: { ...state.modules, [key]: { ...state.modules[key], ...changes, followHull } } });
   }
   function setStock(key, value) {
     if (!resources.some(r => r.key === key)) return false;

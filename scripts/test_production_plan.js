@@ -1,0 +1,113 @@
+#!/usr/bin/env node
+'use strict';
+const assert = require('node:assert/strict');
+const fs = require('node:fs'), vm = require('node:vm'), zlib = require('node:zlib');
+const path = require('node:path'), root = path.join(__dirname, '..');
+const memory = new Map(), snapshot = { available: true, stale: false, fetchedAt: '2026-11-02T10:00:00Z', label: 'LIVE STOCK' };
+const ctx = vm.createContext({ console, Map, Set, Intl, items: [], rhwBase: { cargospace: 1000000 }, els: {},
+  telemetrySnapshot: () => snapshot,
+  document: { getElementById: () => null, addEventListener() {} },
+  RHWV4: { state: {}, config: { storageKeys: { shipyardSelection: 'hull', shipyardDivisions: 'divisions', personnelPlan: 'staff' }, operations: { defaultAffiliation: 'br_m_grp' } },
+    store: { get: (key, fallback) => memory.get(key) ?? fallback, set: (key, value) => { memory.set(key, value); return true; } } }
+});
+ctx.window = ctx;
+const run = file => vm.runInContext(fs.readFileSync(path.join(root, file), 'utf8'), ctx, { filename: file });
+run('js/command/config.js');
+vm.runInContext('const CAPITAL_SHIPYARD=DASHBOARD_CONFIG.capitalShipyard;', ctx);
+run('js/shared/utils.js'); run('js/command/shipyard.js'); run('js/core/lifecycle.js');
+ctx.RHWV4.lifecycle = ctx.createRhwLifecycle();
+run('js/calculator/model.js'); run('js/calculator/catalog.js'); run('js/command/shipyard-model.js');
+run('js/command/personnel-model.js'); run('js/command/production-volumes.js');
+run('js/command/production-simulation.js'); run('js/command/production-plan.js');
+for (let i = 1; i <= 6; i++) run(`assets/recipes/catalog-v1-part-${String(i).padStart(2, '0')}.js`);
+ctx.__RHW_RECIPE_CATALOG__ = JSON.parse(zlib.gunzipSync(Buffer.from(ctx.__RHW_RECIPE_CATALOG_GZIP_BASE64__, 'base64')));
+const job = (key, input, qty, output, seconds) => ({ key, inputs: [{ ids: [input], name: input, qty }],
+  outputs: [{ id: key, name: key, qty: output }], output, seconds, catalysts: [] });
+const sim = spec => ctx.RHW_PRODUCTION_SIMULATION.simulate({ space: null, volumes: { gold: 1, ore: 1, fast: 1, slow: 1, metal: 1, alloy: 1 }, ...spec });
+const row = (r, key) => r.rows.find(row => row.key === key);
+(async () => {
+  let jobs = [job('fast', 'gold', 1, 1, 1), job('slow', 'gold', 5, 10, 10)];
+  let result = sim({ jobs, stock: { gold: 12 } });
+  assert.equal(row(result, 'fast').min, 7);
+  assert.equal(row(result, 'slow').min, 10, 'A slow ten-item batch must not be treated as ten individually completed items');
+  result = sim({ jobs, stock: { gold: 5 } });
+  assert.equal(row(result, 'fast').min, 0);
+  assert.equal(row(result, 'fast').max, 5);
+  assert.equal(row(result, 'slow').max, 10, 'Expose order sensitivity instead of silently giving the last stock to one module');
+  const refinery = { ...job('refinery', 'ore', 1, 1, 3), outputs: [{ id: 'gold', name: 'Gold', qty: 3 }] };
+  jobs = [refinery, job('fast', 'gold', 1, 1, 1)];
+  result = sim({ jobs, stock: { ore: 0, gold: 4 } });
+  assert.equal(row(result, 'refinery').max, 0, 'An enabled refinery with no ore cannot supply Gold');
+  assert.equal(row(result, 'fast').min, 4, 'Existing refined stock remains usable after the refinery stops');
+  result = sim({ jobs, stock: { ore: 2, gold: 0 } });
+  assert.equal(row(result, 'fast').min, 6);
+  assert.equal(row(result, 'fast').secondsMin, 9, 'Consumers wait for real completed refinery batches, then resume');
+  const shared = { ...job('slow', 'gold', 5, 1, 10), inputs: [{ ids: ['gold', 'wcg'], name: 'Gold / WCG', qty: 5 }] };
+  result = sim({ jobs: [shared], stock: { gold: 3, wcg: 2 }, volumes: { gold: 1, wcg: 1, slow: 1 } });
+  assert.equal(row(result, 'slow').min, 1, 'Partial Gold and WCG stocks are added automatically');
+  result = sim({ jobs, stock: { ore: 2, gold: 0 }, horizon: 2 });
+  assert.equal(row(result, 'fast').max, 0, 'Future refinery output is not available before completion');
+  const producer = { ...job('producer', 'ore', 1, 1, 2), outputs: [{ id: 'metal', name: 'Scrap', qty: 5 }] };
+  result = sim({ jobs: [producer, job('alloy', 'metal', 5, 5, 3)], stock: { ore: 1, metal: 0 } });
+  assert.equal(row(result, 'alloy').min, 5, 'Actual byproducts can feed another selected factory');
+  result = sim({ jobs: [refinery], stock: { ore: 1, gold: 0 }, limits: { gold: 0 } });
+  assert.equal(row(result, 'refinery').max, 0, 'An explicit zero output limit cannot be treated as unlimited');
+  result = sim({ jobs: [refinery], stock: { ore: 1, gold: 0 }, space: 0 });
+  assert.equal(row(result, 'refinery').max, 0, 'Input space is freed, but a larger output batch must still fit');
+  const clearance = job('fast', 'metal', 3, 1, 5);
+  result = sim({ jobs: [refinery, clearance], stock: { ore: 1, gold: 0, metal: 3 }, space: 0 });
+  assert.equal(row(result, 'refinery').min, 1, 'A different job freeing space can unblock a completed batch');
+  result = sim({ jobs: [job('fast', 'gold', 1, 1, 1)], stock: { gold: 10, commodity_crew: 0 }, coreCrew: 800 });
+  assert.equal(row(result, 'fast').max, 0, 'Core crew shortage blocks production');
+  const original = { gold: 5 };
+  sim({ jobs: [job('fast', 'gold', 1, 1, 1)], stock: original, maxEvents: 2 });
+  assert.deepEqual(original, { gold: 5 }, 'Simulation never spends API inventory');
+  assert.equal(sim({ jobs: [job('fast', 'gold', 1, 1, 1)], stock: original, maxEvents: 2 }).truncated, true);
+
+  const app = ctx.RHWV4, plan = app.productionPlan, core = app.operationsCore, staff = app.personnel;
+  await core.loadCatalog();
+  assert.deepEqual(Array.from(staff.analyze().rows.filter(r => r.enabled), r => r.key), ['refinery', 'smelter', 'foundry']);
+  assert.equal(staff.setModule('foundry', { enabled: false }), false);
+  assert.equal(plan.select('ship_part_superstructure'), true);
+  assert.equal(plan.select('ship_part_reactor'), true);
+  assert.equal(staff.analyze().rows.filter(r => r.key === 'shipyard' && r.enabled).length, 1);
+  assert.equal(staff.analyze().rows.find(r => r.key === 'shipyard').recipeId, 'ship_part_reactor');
+  assert.equal(plan.batch(staff.analyze().rows.find(r => r.key === 'shipyard')).seconds, 120, 'Reactor time is volume/rate, not the raw cooking-rate number');
+  assert.equal(plan.batch(staff.analyze().rows.find(r => r.key === 'foundry')).seconds, 1800, 'Chambers take thirty minutes per ten-item batch in the reference model');
+  plan.select('ship_part_superstructure');
+  const entries = new Map();
+  for (const r of staff.analyze().rows.filter(r => r.enabled)) {
+    const b = plan.batch(r);
+    for (const g of b.inputs) g.ids.forEach((id, i) => entries.set(id, { nickname: id, name: g.names[i], quantity: 10000, max_stock: 1000000 }));
+    for (const o of b.outputs) if (!entries.has(o.id)) entries.set(o.id, { nickname: o.id, name: o.name, quantity: 0, max_stock: 1000000 });
+  }
+  entries.set('commodity_crew', { nickname: 'commodity_crew', name: 'Crew', quantity: 2000 });
+  entries.set('commodity_scientists', { nickname: 'commodity_scientists', name: 'Scientists', quantity: 500 });
+  ctx.items = [...entries.values()];
+  const ore = entries.get('commodity_gold_ore'), gold = entries.get('commodity_gold'), wcg = entries.get('commodity_pirate_gold');
+  ore.quantity = 0; gold.quantity = 1000; wcg.quantity = 0;
+  const before = JSON.stringify(ctx.items);
+  result = plan.analyze();
+  assert.equal(result.ready, true, JSON.stringify(result.unknown));
+  assert.equal(result.rows.find(r => r.key === 'refinery').max, 0);
+  assert.ok(result.rows.find(r => r.key === 'foundry').max > 0);
+  assert.equal(JSON.stringify(ctx.items), before);
+  gold.quantity = 0; wcg.quantity = 1000;
+  const alternate = plan.analyze();
+  assert.equal(alternate.rows.find(r => r.key === 'foundry').max, result.rows.find(r => r.key === 'foundry').max, 'Gold and WCG are a single interchangeable pool');
+  gold.quantity = 0; wcg.quantity = 0;
+  assert.equal(plan.analyze().rows.find(r => r.key === 'foundry').max, 0);
+  ore.quantity = 425;
+  assert.ok(plan.analyze().rows.find(r => r.key === 'foundry').max > 0, 'Finite ore supplies consumers only through completed Gold batches');
+  ore.quantity = null;
+  assert.equal(plan.analyze().ready, false, 'Invalid stock remains unknown, never zero or infinite');
+  ore.quantity = 0;
+  assert.equal(plan.selectHull(), true);
+  app.shipyard.selectHull('halberd');
+  assert.equal(staff.analyze().rows.find(r => r.key === 'shipyard').recipeId, app.shipyard.selectedHull().recipeId, 'Ship mode follows the existing Shipyard selection');
+  plan.select('ship_part_reactor'); staff.restore();
+  assert.equal(staff.analyze().rows.find(r => r.key === 'shipyard').recipeId, 'ship_part_reactor', 'Selections persist in the existing portable personnel setting');
+  snapshot.stale = true; assert.equal(plan.analyze().snapshot.stale, true);
+  snapshot.available = false; assert.equal(plan.analyze().ready, false);
+  console.log('Production plan passed: shared stock, different cycle rates, complete batches, finite/zero ore, byproduct reuse, limits/storage, core crew, allocation ranges, provenance, saved exclusive selections and live hull selection.');
+})().catch(error => { console.error(error); process.exitCode = 1; });

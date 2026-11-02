@@ -1291,8 +1291,10 @@ function renderProductionModules() {
     return;
   }
 
+  const sharedPlan = window.RHWV4?.productionPlan?.analyze();
   els.productionGrid.innerHTML = recipes.map((recipe, index) => {
     const analysis = analyzeRecipe(recipe);
+    const forecast = sharedPlan ? window.RHWV4.productionPlanView?.card(recipe.recipeId, sharedPlan) : null;
     const ingredientRows = analysis.ingredientData.map(item => {
       const isBottleneck = analysis.bottleneck && item.name === analysis.bottleneck.name;
       const shortText = item.currentCycleGap > 0
@@ -1327,15 +1329,16 @@ function renderProductionModules() {
                 <div>
                   <div class="production-kicker">MODULE-${String(index + 1).padStart(2, '0')}</div>
                   <div class="production-title">${escapeHTML(displayRecipeName(recipe.product))}</div>
-                  <div class="footnote">YIELD PER CYCLE: ${number(recipe.output)}</div>
+                  <div class="footnote">YIELD PER CYCLE: ${number(recipe.output)}${forecast?.cycle ? ` · ~${forecast.cycle} / CYCLE` : ''}</div>
                 </div>
-                <span class="module-state ${analysis.cardState}">${statusLabel(analysis.cardState, 'production')}</span>
+                <div class="production-card-controls"><span class="module-state ${analysis.cardState}">${statusLabel(analysis.cardState, 'production')}</span>${forecast?.control || ''}</div>
               </div>
               <div class="production-stats">
                 <div class="production-stat production-stock-primary"><small>IN STOCK</small><strong>${number(analysis.productStock)}</strong></div>
-                <div class="production-stat"><small>MATERIAL CYCLES</small><strong>${number(analysis.possibleCycles)}</strong></div>
-                <div class="production-stat"><small>EST. YIELD</small><strong>${number(analysis.possibleOutput)}</strong></div>
+                <div class="production-stat"><small>${forecast?.selected ? 'SOLO CYCLES' : 'MATERIAL CYCLES'}</small><strong>${number(analysis.possibleCycles)}</strong></div>
+                <div class="production-stat${forecast?.selected ? ' production-plan-stat' : ''}"><small>${forecast?.selected ? 'PLANNED YIELD' : 'EST. YIELD'}</small><strong>${forecast?.selected ? forecast.count : number(analysis.possibleOutput)}</strong>${forecast?.selected ? `<span class="production-plan-runtime">${forecast.time} · ${sharedPlan.conditions?.length ? 'CONDITIONAL' : 'MANUAL PLAN'}</span>` : ''}</div>
               </div>
+              ${forecast?.details || ''}
               ${nextGapText}
               ${analysis.possibleCycles === null ? '<div class="production-stock-note">INPUT STOCK UNKNOWN</div>' : ''}
               <button type="button" class="production-card-toggle" aria-expanded="${mobileCollapsed ? 'false' : 'true'}"><span>${mobileCollapsed ? 'SHOW MATERIALS' : 'HIDE MATERIALS'}</span></button>
@@ -1495,7 +1498,7 @@ function renderShipyardControl() {
       <section class="shipyard-control-section shipyard-requirements-panel" id="shipyardRequirements" aria-labelledby="shipyardRequirementsTitle">
         <div class="shipyard-requirements-heading"><div><p class="shipyard-eyebrow">BUILD REQUIREMENTS</p><h3 id="shipyardRequirementsTitle">${escapeHTML(selected.label)} <span>${escapeHTML(selected.subtitle)}</span></h3></div>
           <button type="button" class="shipyard-plan-button" data-shipyard-calculate ${analysis?.recipeReady ? '' : 'disabled'}>PRICE 1 SHIP</button>
-        </div>${details}
+        </div>${window.RHWV4?.productionPlanView?.hullMarkup() || ''}${details}
       </section>
     </div>`;
   if (mount._shipyardMarkup !== markup) {

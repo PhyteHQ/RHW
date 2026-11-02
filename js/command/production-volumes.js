@@ -1,0 +1,32 @@
+/* General commodity volumes from Darkstat /api/commodities, verified snapshot 28 October 2026.
+   Ship-specific volume overrides are excluded. Unknown future items stay unknown. */
+globalThis.RHW_PRODUCTION_VOLUMES = Object.freeze({
+  "commodity_ablativearmor": 1,
+  "commodity_basic_alloys": 1,
+  "commodity_energy_field_equip": 1,
+  "commodity_gallic_fuel": 1,
+  "commodity_gold": 1,
+  "commodity_gold_ore": 2,
+  "commodity_h_fuel": 0.5,
+  "commodity_hydrocarbons": 1,
+  "commodity_industrial": 1,
+  "commodity_iron": 1,
+  "commodity_mox_fuel": 1,
+  "commodity_niobium": 1,
+  "commodity_niobium_ore": 2,
+  "commodity_pirate_gold": 1,
+  "commodity_prototype_components": 1,
+  "commodity_sciencedata": 1,
+  "commodity_scrap_metal": 1,
+  "commodity_ship_hull_panels": 1,
+  "commodity_ship_part_avionics": 30,
+  "commodity_ship_part_exotic": 30,
+  "commodity_ship_part_interior": 30,
+  "commodity_ship_part_propulsion": 30,
+  "commodity_ship_part_reactor": 30,
+  "commodity_ship_part_superstructure": 30,
+  "commodity_super_alloys": 1,
+  "commodity_titanium": 1,
+  "commodity_toxic_waste": 1,
+  "commodity_weapon_part_focusing_chamber": 10
+});
