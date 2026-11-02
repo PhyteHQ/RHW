@@ -104,65 +104,84 @@ function mergeMarket(npc, pobs, receivedAt) {
   const ids = new Set(dynamic.bases.map(base => base.id));
   return validateDataset({ ...npc, asOf: new Date(receivedAt).toISOString(), bases: [...npc.bases.filter(base => !ids.has(base.id)), ...dynamic.bases] });
 }
-async function prepare(force, signal) {
+async function prepare(force, signal, progress = () => {}) {
   const now = Date.now();
-  const cache = await database('get').catch(() => null) || {};
+  const cache = prepared?.reference || await database('get').catch(() => null) || {};
+  if (signal.aborted) throw Error('Search canceled');
+  // Live snapshots are never reused. Keep only reusable reference data in
+  // IndexedDB, and avoid reading / rewriting that database on every search.
+  let referenceChanged = Object.hasOwn(cache, 'pobs') || Object.hasOwn(cache, 'pobAt');
   let npc = cache.npc, npcAt = cache.npcAt || 0, pobs, pobAt = 0, systems, navigationAt = 0;
   let ships = comparisonFleet((cache.ships || FALLBACK_SHIPS).filter(isSelectableShip).map(ship => ({ ...ship, ...shipFlightRules(ship) }))), shipAt = cache.shipAt || 0;
   let shipIdentityVersion = cache.shipIdentityVersion || 0, accessIdentityVersion = cache.accessIdentityVersion || 0;
   let owners = cache.owners || [], factions = cache.factions || [], tractors = cache.tractors || [];
   let identityCards = cache.identityPolicyVersion === 2 ? cache.identityCards || {} : {}, identityAt = cache.identityPolicyVersion === 2 ? cache.identityAt || 0 : 0;
   let identityPolicyVersion = cache.identityPolicyVersion || 0;
+  let baseNavigation = prepared?.baseNavigation;
+  const waiting = new Set();
+  const track = (label, task) => {
+    waiting.add(label);
+    const report = () => { if (!signal.aborted && waiting.size) progress('LOADING ' + [...waiting].join(' + ') + '…'); };
+    report();
+    return task.finally(() => { waiting.delete(label); report(); });
+  };
+  const fresh = (path, label, description, accept) => track(label, read(path, undefined, signal).then(data => {
+    if (!data.length) throw Error('Empty feed');
+    accept(data);
+  }).catch(error => { throw Error(`LIVE SEARCH PAUSED · ${description} unavailable · RETRY SEARCH. Previous quotes are out of date. ${error.message}`); }));
   // Every search receives one fresh market snapshot and current map status.
   // Neither recent dashboard telemetry nor a previous quote replaces these.
-  const tasks = [
-    read('pobs', undefined, signal).then(data => { pobs = data; pobAt = Date.now(); }),
-    read('systems', undefined, signal).then(data => { systems = data; navigationAt = Date.now(); })
+  const live = [
+    fresh('pobs', 'LIVE POB STOCK', 'fresh POB stock', data => { pobs = data; pobAt = Date.now(); }),
+    fresh('systems', 'LIVE MAP', 'current navigation feed', data => { systems = data; navigationAt = Date.now(); })
   ];
-  if (force || !npc || now - npcAt > SIX_HOURS) tasks.push(read('commodities', { include_market_goods: true, filter_to_useful: true }, signal).then(data => {
+  if (!baseNavigation) live.push(track('ROUTE GEOMETRY', loadNavigation(signal).then(data => { baseNavigation = data; })));
+  const tasks = [];
+  const reference = (label, task) => tasks.push(track(label, task.then(() => { referenceChanged = true; })));
+  if (force || !npc || now - npcAt > SIX_HOURS) reference('NPC PRICES', read('commodities', { include_market_goods: true, filter_to_useful: true }, signal).then(data => {
     npc = normalizeDarkstat([], data); npc.bases = enrichBaseOwners(npc.bases, [], [], data); npcAt = Date.now();
   }));
-  if (force || shipIdentityVersion < 2 || !shipAt || now - shipAt > DAY) tasks.push(read('ships', { include_tech_compat: true }, signal).then(data => {
+  if (force || shipIdentityVersion < 2 || !shipAt || now - shipAt > DAY) reference('HAULER DATA', read('ships', { include_tech_compat: true }, signal).then(data => {
     ships = comparisonFleet(normalizeShipRegistry(data));
     shipIdentityVersion = 2;
     shipAt = Date.now();
   }));
   if (force || accessIdentityVersion < 2 || !cache.accessAt || now - cache.accessAt > SIX_HOURS) {
-    tasks.push(read('npc_bases', {}, signal).then(data => { owners = data; }));
-    tasks.push(read('factions', { include_reputations: false, include_bribes: false, filter_to_useful: false }, signal).then(data => { factions = data; }));
-    tasks.push(read('tractors', { include_rephacks: true, include_market_goods: true, filter_to_useful: true }, signal).then(data => { tractors = data; accessIdentityVersion = 2; }));
+    reference('BASE OWNERS', read('npc_bases', {}, signal).then(data => { owners = data; }));
+    reference('FACTION DATA', read('factions', { include_reputations: false, include_bribes: false, filter_to_useful: false }, signal).then(data => { factions = data; }));
+    reference('ID DOCKING RULES', read('tractors', { include_rephacks: true, include_market_goods: true, filter_to_useful: true }, signal).then(data => { tractors = data; accessIdentityVersion = 2; }));
   }
-  const settled = await Promise.allSettled(tasks);
+  // A failed required live feed must not wait for unrelated slow reference
+  // requests to finish before the user can retry. The caller aborts those.
+  const [, settled] = await Promise.all([Promise.all(live), Promise.allSettled(tasks)]);
   if (signal.aborted) throw Error('Search canceled');
   const failures = settled.filter(entry => entry.status === 'rejected').map(entry => entry.reason?.message || 'Market request failed');
-  if (!pobs?.length || !systems?.length) throw Error('LIVE SEARCH PAUSED · '
-    + (!pobs?.length ? 'fresh POB stock unavailable' : 'current navigation feed unavailable')
-    + ' · RETRY SEARCH. Previous quotes are out of date.' + (failures.length ? ' ' + failures.join(' · ') : ''));
   if (force || !identityAt || now - identityAt > SIX_HOURS) {
     const nicknames = identityRegistry(tractors).filter(id => tractors.some(raw => raw.nickname === id.id)).map(id => id.id);
     if (nicknames.length) try {
+      progress('LOADING ID SHIP RULES…');
       const replies = await read('infocards', nicknames, signal);
       if (replies.length !== nicknames.length) throw Error('ID infocard response length does not match the requested IDs');
       identityCards = Object.fromEntries(nicknames.map((id, index) => [id, { rules: parseIdentityRules(replies[index]) }]));
-      identityAt = Date.now(); identityPolicyVersion = 2;
+      identityAt = Date.now(); identityPolicyVersion = 2; referenceChanged = true;
     } catch (error) { failures.push('ID ship rules: ' + error.message); }
     if (signal.aborted) throw Error('Search canceled');
   }
   if (!npc || !pobs?.length) throw Error(failures.join(' · ') || 'No market snapshot available');
   const dataset = mergeMarket(npc, pobs, pobAt);
   if (!findRhw(dataset)) throw Error('RHW was not found in the market snapshot');
-  const baseNavigation = prepared?.baseNavigation || await loadNavigation(signal);
+  progress('CHECKING LIVE MAP + DOCKING RULES…');
   const navigation = currentNavigation(baseNavigation, systems, new Date(navigationAt).toISOString());
   if (!navigation.nodes.some(node => node.system === findRhw(dataset).system)) throw Error('Current map does not cover RHW’s system');
   const identities = identityRegistry(tractors, identityCards, identityAt);
   const access = dockingAccess(dataset.bases, owners, factions, tractors, BMM_ID, pobs);
-  const saved = { npc, npcAt, pobs, pobAt, ships, shipAt, owners, factions, tractors,
+  const saved = { npc, npcAt, ships, shipAt, owners, factions, tractors,
     identityCards, identityAt, identityPolicyVersion, shipIdentityVersion, accessIdentityVersion,
     accessAt: failures.length ? cache.accessAt || 0 : now };
-  await database('put', saved).catch(() => null);
+  if (referenceChanged) await database('put', saved).catch(() => null);
   if (signal.aborted) throw Error('Search canceled');
   prepared = { dataset, navigation, baseNavigation, navigationAt, ships, shipAt, pobAt, npcAt, access, failures, identities,
-    identityAt, owners, factions, tractors, pobs, accessByIdentity: new Map([[BMM_ID, access]]) };
+    identityAt, owners, factions, tractors, pobs, reference: saved, accessByIdentity: new Map([[BMM_ID, access]]) };
   return prepared;
 }
 function sourceMarkup() {
@@ -315,6 +334,7 @@ function renderExports() {
   $('supplyResults').innerHTML = result.results.map(route => {
     const category = route.hauler || haulerCategory(route.ship);
     const buyer = route.buyer, back = route.returnTrade;
+    const label = route.recommendation && (result.stats.timedOut || result.stats.pruned) ? route.label.replace(/^RECOMMENDED/, 'BEST FOUND') : route.label;
     const exportLoss = (route.outboundProfit ?? route.profit) < 0;
     const warnings = [...new Set(route.stops)].filter(id => id !== result.origin && (accessFor(route.identity?.id).byId[id]?.state === 'unknown' || prepared.dataset.bases.find(base => base.id === id)?.kind === 'pob'));
     const limits = buyer.kind === 'pob' ? `<div class="supply-buyer-grid"><div><small>BUYER FUNDS</small><strong>${money(buyer.cash)}</strong></div><div><small>OPEN PURCHASE LIMIT</small><strong>${count(buyer.demand)} units</strong></div><div><small>FREE BUYER STORAGE</small><strong>${count(buyer.space)}</strong></div></div>` : '<p class="supply-ship-note">NPC buyer · no POB cash or storage limits</p>';
@@ -325,7 +345,7 @@ function renderExports() {
       : `No profitable return found among the checked markets within ${result.stats.extraPercent}% extra time and the reported cash, stock and storage limits.`;
     const backMarkup = back ? `<section class="supply-return-cargo"><small>RETURN CARGO</small><h4>${count(back.quantity)} ${esc(back.name)} <span>+${money(back.profit)}</span></h4><p>${esc(back.from)} → ${esc(back.to)} · BUY ${money(back.buy)} / UNIT · SELL ${money(back.sell)} / UNIT</p><p>EXPORT MARGIN ${money(route.outboundProfit)} + RETURN MARGIN ${money(back.profit)} = ${money(route.profit)} PER RUN</p><p>${duration(Math.max(0, route.extraSeconds))} extra vs empty return · ${money(route.hourlyProfit - route.emptyReturn.hourlyProfit)} / hour more · Return load limited by ${esc(back.limiting.join(' / '))}</p></section>`
       : `<p class="supply-ship-note supply-return-note">EMPTY RETURN · ${emptyNote}</p>`;
-    return `<article data-hauler-category="${esc(category.id)}" data-reference-ship="${esc(route.ship.id)}" class="supply-result${route.recommendation ? ' supply-recommended' : exportLoss || route.profit <= 0 ? ' supply-express' : ''}"><header><div><small>${esc(route.label)}</small><h3>${esc(buyer.name)}</h3></div><span>${esc(category.title)}<br>${category.cruise} M/S · ${category.dockLabel} DOCK</span></header>
+    return `<article data-hauler-category="${esc(category.id)}" data-reference-ship="${esc(route.ship.id)}" class="supply-result${route.recommendation ? ' supply-recommended' : exportLoss || route.profit <= 0 ? ' supply-express' : ''}"><header><div><small>${esc(label)}</small><h3>${esc(buyer.name)}</h3></div><span>${esc(category.title)}<br>${category.cruise} M/S · ${category.dockLabel} DOCK</span></header>
       ${identityMarkup(route)}
       ${modelMarkup(route)}
       ${exportLoss || route.profit <= 0 ? '<p class="supply-express-note"><strong>NO PROFITABLE HAULER EXPORT</strong>This buyer pays at or below RHW’s sale price. The export margin is shown separately from any return trade; this is not a profitable export recommendation.</p>' : ''}
@@ -345,15 +365,19 @@ function renderExports() {
 }
 async function search(force = false) {
   const token = ++request;
+  const started = performance.now();
   worker?.terminate(); worker = null;
   abort?.abort(); abort = new AbortController();
   const controller = abort, timeout = setTimeout(() => controller.abort(), 45000);
   setBusy(true, 'LOADING MARKETS + ROUTE MAP…');
   $('supplyResults').dataset.stale = 'true';
   try {
-    await prepare(force, controller.signal);
+    await prepare(force, controller.signal, message => {
+      if (token === request && dialog.open) $('supplyStatus').textContent = message;
+    });
     clearTimeout(timeout);
     if (token !== request || !dialog.open) return;
+    const loaded = performance.now();
     identityOptions(); haulerOptions(); shipOptions(); $('supplySource').textContent = sourceMarkup();
     const shipId = $('supplyShip').value;
     const profiles = prepared.ships;
@@ -367,9 +391,17 @@ async function search(force = false) {
       if (token !== request || data.id !== token) return;
       if (data.type === 'progress') $('supplyStatus').textContent = `${data.progress.identity ? data.progress.identity + ' · ' : ''}${data.progress.phase === 'profiles' ? 'MATCHING IDS + SHIPS TO ROUTES' : data.progress.phase === 'return' ? 'CHECKING PROFITABLE RETURN CARGO' : data.progress.phase === 'export' ? 'CHECKING EXPORT BUYERS' : data.progress.phase === 'direct' ? 'CHECKING DIRECT IMPORTS' : 'CHECKING PROFITABLE APPROACHES'} · ${data.progress.checked} QUOTES`;
       if (data.type === 'error') { setBusy(false, data.message); worker?.terminate(); worker = null; }
-      if (data.type === 'result') { result = data.result; setBusy(false); renderResults(); worker?.terminate(); worker = null; }
+      if (data.type === 'result') {
+        result = data.result; setBusy(false); renderResults();
+        $('supplyStatus').textContent = ($('supplyStatus').textContent || 'SEARCH COMPLETE')
+          + ` · DATA ${((loaded - started) / 1000).toFixed(1)}s · SEARCH ${((performance.now() - loaded) / 1000).toFixed(1)}s`;
+        worker?.terminate(); worker = null;
+      }
     };
-    worker.onerror = () => { if (token === request) setBusy(false, 'Route worker unavailable. Reload RHW and try again.'); worker?.terminate(); worker = null; };
+    worker.onerror = () => {
+      if (token !== request) return;
+      setBusy(false, 'Route worker unavailable. Reload RHW and try again.'); worker?.terminate(); worker = null;
+    };
     worker.postMessage({ id: token, dataset: prepared.dataset, navigation: prepared.navigation, profiles,
       scopes: prepared.identities.map(identity => ({ identity, blocked: accessFor(identity.id).blocked,
         accessReady: accessFor(identity.id).ready, approvalDocks: accessFor(identity.id).approvalDocks, unverifiedDocks: accessFor(identity.id).unverifiedDocks })),
@@ -377,8 +409,10 @@ async function search(force = false) {
         shipId, haulerId: $('supplyHauler').value, includeUnverified: $('supplyUnverified').checked, identityId: $('supplyIdentity').value, importGoal: $('supplyImportGoal').value, includeRestrictedPobs: $('supplyRestrictedPobs').checked,
         capital: capital ? Number(capital) : null, quantity: quantity ? Number(quantity) : null } });
   } catch (error) {
+    const timedOut = controller.signal.aborted;
+    controller.abort();
     if (token === request && dialog.open) {
-      setBusy(false, controller.signal.aborted ? 'UPLINK TIMED OUT · RETRY OR REFRESH MARKETS' : error.message);
+      setBusy(false, timedOut ? 'UPLINK TIMED OUT · RETRY OR REFRESH MARKETS' : error.message);
       $('supplySource').textContent = 'REFRESH FAILED · PREVIOUS QUOTES ARE OUT OF DATE · ' + sourceMarkup();
     }
   } finally { clearTimeout(timeout); }

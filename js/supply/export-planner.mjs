@@ -39,7 +39,7 @@ export async function searchExports(dataset, navigation, profiles, options = {},
   const bases = dataset.bases.filter(base => !blocked.has(base.id) && !base.fallback
     && (options.includePobs !== false || base.kind !== 'pob' || base.id === rhw.id));
   if (!bases.some(base => base.id === rhw.id)) throw Error('RHW is excluded by the docking profile.');
-  const byId = new Map(bases.map(base => [base.id, base])), navigators = new Map(), flights = new Map(), routes = [];
+  const byId = new Map(bases.map(base => [base.id, base])), navigators = new Map(), flights = new Map(), reverseFlights = new Map(), routes = [];
   const started = performance.now(), timeLimit = Math.min(30000, Math.max(1000, options.searchMs || 18000));
   const settings = { dock: 30, jump: 15, lane: 10, charge: 5, ...options.timeModel };
   const returnEnabled = options.returnCargo !== false;
@@ -51,25 +51,26 @@ export async function searchExports(dataset, navigation, profiles, options = {},
     if (performance.now() - started >= directLimit) { pruned = true; break; }
     const key = flightKey(navigation, profile);
     if (!flights.has(key)) flights.set(key, new ShipNavigator(navigation, bases, profile, settings));
-    const navigator = flights.get(key), outward = navigator.from(rhw.id);
-    if (!outward) continue;
-    navigators.set(profile.id, navigator); ships++;
+    if (!reverseFlights.has(key)) reverseFlights.set(key, new ShipNavigator(navigation, bases, profile, { ...settings, reverse: true }));
+    const navigator = flights.get(key), reverseNavigator = reverseFlights.get(key);
+    const outward = navigator.from(rhw.id), homeward = reverseNavigator.from(rhw.id);
+    if (!outward || !homeward) continue;
+    navigators.set(profile.id, { navigator, reverseNavigator }); ships++;
     const candidates = bases.filter(base => base.id !== rhw.id).flatMap(base => {
       const identityState = options.routeEligibility?.(profile, [rhw.id, base.id]);
       if (identityState === 'blocked') return [];
       const quote = quoteExport(rhw, base, commodity.id, profile, options);
       const seconds = outward.times.get(navigator.baseNodes.get(base.id));
-      if (!quote || !finite(seconds)) return [];
-      return [{ base, quote, identityState, estimate: quote.profit * 3600 / Math.max(1, 2 * seconds + 3 * settings.dock) }];
+      const back = homeward.times.get(reverseNavigator.baseNodes.get(base.id));
+      if (!quote || !finite(seconds) || !finite(back)) return [];
+      return [{ base, quote, identityState, estimate: quote.profit * 3600 / Math.max(1, seconds + back + 3 * settings.dock) }];
     }).sort((a, b) => b.estimate - a.estimate);
     buyers += candidates.length;
     for (const { base, quote, identityState } of candidates) {
       if (canceled()) break;
       if (performance.now() - started >= directLimit) { directStopped = true; pruned = true; break; }
       checked++;
-      const outbound = navigator.route(rhw.id, base.id), inbound = navigator.route(base.id, rhw.id);
-      // A full route map per destination is not retained for the whole market.
-      navigator.cache.delete(base.id);
+      const outbound = navigator.route(rhw.id, base.id), inbound = reverseNavigator.route(rhw.id, base.id);
       if (!outbound || !inbound) continue;
       const seconds = outbound.seconds + inbound.seconds + 3 * settings.dock;
       if (!(seconds > 0)) continue;
@@ -87,7 +88,7 @@ export async function searchExports(dataset, navigation, profiles, options = {},
     for (const route of [...routes].filter(row => row.profit >= 0).sort(order)) {
       if (canceled()) break;
       if (performance.now() - started >= timeLimit) { timedOut = true; break; }
-      const navigator = navigators.get(route.ship.id);
+      const { navigator, reverseNavigator } = navigators.get(route.ship.id);
       if (!markets.has(route.ship.id)) markets.set(route.ship.id, returnMarkets(bases, rhw, route.ship, commodity.id));
       const shortlist = selectReturnMarkets(markets.get(route.ship.id), route, navigator, extraPercent);
       pruned ||= shortlist.pruned;
@@ -97,7 +98,7 @@ export async function searchExports(dataset, navigation, profiles, options = {},
         if (canceled()) break;
         if (performance.now() - started >= timeLimit) { timedOut = true; break; }
         returnChecked++;
-        const quoted = quoteExportReturn(route, candidate, byId, route.ship, navigator, settings, { ...options, extraPercent });
+        const quoted = quoteExportReturn(route, candidate, byId, route.ship, navigator, settings, { ...options, extraPercent }, reverseNavigator);
         if (quoted && (route.identityState !== 'checked' || quoted.identityState !== 'conditional')
           && (!paid || order(quoted, paid) < 0)) paid = quoted;
         if (quoted && order(quoted, best) < 0) best = quoted;
@@ -113,11 +114,12 @@ export async function searchExports(dataset, navigation, profiles, options = {},
   const selected = rankExportRoutes(routes);
   return { mode: 'export', commodity: { id: commodity.id, name: commodity.name }, origin: rhw.id,
     results: selected.map(route => {
-      const navigator = navigators.get(route.ship.id);
-      return { ...route, legs: route.legs.map(leg => ({ ...leg,
+      const { navigator } = navigators.get(route.ship.id);
+      const legs = route.legs.map(leg => ({ ...leg,
         from: byId.get(leg.source).name, to: byId.get(leg.target).name,
         fromSystem: byId.get(leg.source).systemName, toSystem: byId.get(leg.target).systemName,
-        flight: navigator.route(leg.source, leg.target, true) })) };
+        flight: navigator.route(leg.source, leg.target, true) }));
+      return { ...route, legs, jumps: legs.reduce((sum, leg) => sum + leg.flight.jumps, 0) };
     }), stats: { checked, sources: buyers, ships, timedOut, pruned, canceled: canceled(), returnEnabled, returnChecked, extraPercent,
       noProfit: selected.length > 0 && !selected.some(route => route.recommendation) } };
 }

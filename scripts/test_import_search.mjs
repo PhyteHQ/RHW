@@ -9,6 +9,7 @@ import { searchIdentities } from '../js/supply/identity-planner.mjs';
 import { comparisonFleet } from '../js/supply/comparison-fleet.mjs';
 import { identityShipCheck } from '../js/supply/identity-profiles.mjs';
 import { ShipNavigator } from '../js/supply/navigation.mjs';
+import { searchExports } from '../js/supply/export-planner.mjs';
 
 const good = { id: 'ablative', name: 'Ablative Armor Plating', buy: 30, sell: 105, volume: 1, originalVolume: 1, volumes: {} };
 const alloy = { id: 'alloy', name: 'Super Alloy', buy: 56, sell: 122, volume: 1, originalVolume: 1, volumes: {} };
@@ -56,6 +57,37 @@ for (const ship of [train, slow]) {
   }
 }
 assert.deepEqual(directed, beforeNavigation);
+
+// Direct comparisons must not build a whole shortest-path tree for every
+// seller/buyer. Count work rather than relying on CI machine timing. Verify
+// the quoted times against independent forward paths, including their return.
+const many = Array.from({ length: 60 }, (_, i) => ({ ...supplier, id: 'market_' + i,
+  pos: [10000 * (i + 1), 0, 0], offers: [good] }));
+const directHome = { ...home, offers: [{ ...home.offers[0], stock: 10000, max: 1000000 }] };
+const directData = { ...data, bases: [directHome, ...many] };
+const directNav = { schema: 1, nodes: directData.bases.map(b => ({ id: b.id, system: b.system, pos: b.pos, kind: 'base' })),
+  baseNodes: Object.fromEntries(directData.bases.map(b => [b.id, b.id])), links: [] };
+const from = ShipNavigator.prototype.from;
+let trees = 0;
+ShipNavigator.prototype.from = function (id) {
+  if (!this.cache.has(id)) trees++;
+  return from.call(this, id);
+};
+try {
+  for (const search of [searchSupply, searchExports]) {
+    trees = 0;
+    const found = await search(directData, directNav, [train], { commodity: 'ablative', extraPercent: 0, returnCargo: false });
+    assert.ok(found.results.length && found.stats.sources >= 36);
+    assert.ok(trees <= 8, `Shared direct flights used ${trees} trees for 60 markets`);
+    const reference = new ShipNavigator(directNav, directData.bases, train);
+    for (const route of found.results) {
+      const expected = route.legs.reduce((sum, leg) => sum + reference.route(leg.source, leg.target).seconds, 0)
+        + (route.legs.length + 1) * 30;
+      assert.ok(Math.abs(route.seconds - expected) < 1e-6);
+      assert.ok(Math.abs(route.seconds - route.legs.reduce((sum, leg) => sum + leg.flight.seconds, 0) - (route.legs.length + 1) * 30) < 1e-6);
+    }
+  }
+} finally { delete ShipNavigator.prototype.from; }
 
 // Deterministic cost model: checking a slow hull against every optional pickup
 // consumes the budget. Such a hull cannot fit the fastest-import time window.

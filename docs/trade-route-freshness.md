@@ -9,6 +9,14 @@ they are not timestamps of an in-game transaction or Darkstat's own refresh.
 
 NPC market/owner/ID reference data retain their six-hour cache; ship data retain
 their daily cache. **REFRESH MARKETS** also refreshes these reference datasets.
+Only those reference datasets are persisted. Warm searches reuse their in-memory
+copy and do not reread or rewrite IndexedDB. Legacy cache entries containing an
+unused POB snapshot are cleaned on a successful search. Stock and map objects
+still come from new required requests every time. The bundled geometry loads
+alongside the live feeds on first use. A failed required feed aborts outstanding
+requests immediately, including slow optional reference refreshes; canceled or
+failed searches cannot publish a later result. Loading status names pending
+feeds. Completed searches report data-load and route-search time separately.
 
 The Trade Desk compares four reference profiles: Barge (30,000 / 90 m/s),
 5k Transport (5,000 / 350 m/s), Pilgrim (4,300 / current registry speed, 415 m/s
@@ -21,6 +29,11 @@ rules. Non-fleet hulls cannot enter through a saved selection or worker request.
 Import approach jobs share the search budget across viable hull/seller pairs.
 An exact reverse shortest-path tree checks all directed pickup-to-seller times
 before profit shortlisting; it preserves one-way jumps and lane-entry costs.
+Both planners also use an exact reverse tree rooted at RHW for all direct
+return flights. Seller/buyer shortlisting uses actual outward plus homeward
+travel, rather than doubling the outward duration. Export backhaul deliveries
+share reverse trees for their RHW / New London destinations. Only selected
+itineraries materialize forward paths; reported jump counts match those paths.
 Slow hulls outside the direct-flight/delivery bound cannot consume the approach
 budget first. Searches that reach a time or candidate limit say **BEST FOUND**.
 
@@ -67,3 +80,5 @@ and [jump kinds and campaign locks](https://github.com/darklab8/fl-darkstat/blob
 The compact regression fixture was read from the public live endpoints at
 2026-10-29 07:59 UTC. Gifu reported 669 Propulsions with a 300-unit reserve,
 leaving 369 for sale; its cash and docking mode remained undisclosed.
+
+See the [Trade Desk audit and measured replay](trade-desk-audit-2026-11-02.md).

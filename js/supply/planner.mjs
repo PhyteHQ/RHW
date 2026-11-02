@@ -242,16 +242,21 @@ export async function searchSupply(dataset, navigation, profiles, options = {}, 
     if (!withinBudget()) { timedOut = true; break; }
     const key = flightKey(navigation, profile);
     if (!navigators.has(key)) navigators.set(key, new ShipNavigator(navigation, bases, profile, settings));
+    // All direct imports share RHW as destination. Reverse lookup preserves
+    // directed jumps and entry costs without a new tree for every seller.
+    if (!reverseNavigators.has(key)) reverseNavigators.set(key, new ShipNavigator(navigation, bases, profile, { ...settings, reverse: true }));
     const navigator = navigators.get(key);
-    const outward = navigator.from(rhw.id);
-    if (!outward) continue;
+    const reverseNavigator = reverseNavigators.get(key);
+    const outward = navigator.from(rhw.id), homeward = reverseNavigator.from(rhw.id);
+    if (!outward || !homeward) continue;
     const suppliers = bases.filter(base => base.id !== rhw.id).flatMap(base => {
       if (options.routeEligibility?.(profile, [rhw.id, base.id]) === 'blocked') return [];
       const leg = makeLeg(base, rhw, commodity.id, profile);
       const out = outward.times.get(navigator.baseNodes.get(base.id));
-      if (!leg || !Number.isFinite(out) || !navigator.allowed(navigator.nodes.get(navigator.baseNodes.get(base.id)))) return [];
+      const back = homeward.times.get(reverseNavigator.baseNodes.get(base.id));
+      if (!leg || !Number.isFinite(out) || !Number.isFinite(back)) return [];
       const amount = capacity(leg, base, rhw, profile, true);
-      return amount > 0 ? [{ base, leg, amount, outSeconds: out, rank: amount / Math.max(1, 2 * out + 3 * settings.dock) }] : [];
+      return amount > 0 ? [{ base, leg, amount, outSeconds: out, rank: amount / Math.max(1, out + back + 3 * settings.dock) }] : [];
     }).sort((a, b) => b.rank - a.rank || a.leg.buy - b.leg.buy);
     if (suppliers.length > 36) pruned = true;
     // Preserve ordinary sources even when many nearby POBs quote a material
@@ -266,15 +271,15 @@ export async function searchSupply(dataset, navigation, profiles, options = {}, 
       if (selected.length >= 36) break;
       if (!retained.has(supplier)) { selected.push(supplier); retained.add(supplier); }
     }
-    if (extraPercent > 0 && !reverseNavigators.has(key)) reverseNavigators.set(key, new ShipNavigator(navigation, bases, profile, { ...settings, reverse: true }));
-    contexts.push({ profile, navigator, reverseNavigator: reverseNavigators.get(key), selected });
+    contexts.push({ profile, navigator, reverseNavigator, selected });
     for (const supplier of selected) {
       if (!withinBudget()) { timedOut = true; break; }
       searchedSources++;
-      supplier.inbound = navigator.route(supplier.base.id, rhw.id);
+      supplier.inbound = reverseNavigator.route(rhw.id, supplier.base.id);
       supplier.inboundSeconds = supplier.inbound?.seconds;
+      const outbound = navigator.route(rhw.id, supplier.base.id);
       const originLegs = [empty(rhw.id, supplier.base.id), ...bestTrades(rhw, supplier.base, commodity.id, profile).map(item => item.leg)];
-      for (const first of originLegs) evaluate([first, supplier.leg], navigator, profile);
+      for (const first of originLegs) evaluate([first, supplier.leg], navigator, profile, false, [outbound, supplier.inbound]);
       if (searchedSources % 4 === 0) { progress({ phase: 'direct', checked, sources: searchedSources }); await pause(); }
     }
   }
@@ -301,7 +306,7 @@ export async function searchSupply(dataset, navigation, profiles, options = {}, 
       if (!job.hops) {
         const hops = [];
         const incoming = reverseNavigator.from(supplier.base.id);
-        trimRouteCache(reverseNavigator, [supplier.base.id]);
+        trimRouteCache(reverseNavigator, [rhw.id, supplier.base.id]);
         for (const hop of bases) {
           if (!withinBudget()) break;
           if (hop.id === rhw.id || hop.id === supplier.base.id) continue;
@@ -344,10 +349,11 @@ export async function searchSupply(dataset, navigation, profiles, options = {}, 
   return { commodity: { id: commodity.id, name: commodity.name }, origin: rhw.id,
     results: selected.slice(0, 4).map(route => {
       const { navigator, bases: _state, ...data } = route;
-      return { ...data, extraSeconds: route.recommendation?.fastSeconds != null ? route.seconds - route.recommendation.fastSeconds : baseline ? route.seconds - baseline.seconds : 0,
-        legs: data.legs.map(leg => ({ ...leg, from: byId.get(leg.source)?.name, to: byId.get(leg.target)?.name,
+      const legs = data.legs.map(leg => ({ ...leg, from: byId.get(leg.source)?.name, to: byId.get(leg.target)?.name,
           fromSystem: byId.get(leg.source)?.systemName, toSystem: byId.get(leg.target)?.systemName,
-          flight: navigator.route(leg.source, leg.target, true) })) };
+          flight: navigator.route(leg.source, leg.target, true) }));
+      return { ...data, legs, jumps: legs.reduce((sum, leg) => sum + leg.flight.jumps, 0),
+        extraSeconds: route.recommendation?.fastSeconds != null ? route.seconds - route.recommendation.fastSeconds : baseline ? route.seconds - baseline.seconds : 0 };
     }), stats: { checked, sources: searchedSources, ships: contexts.length, pruned, timedOut, canceled: canceled(), extraPercent,
       benchmarkSeconds: baseline?.seconds ?? null, approachJobs, approachChecked,
       expressOnly: selected.length > 0 && !selected.some(route => route.recommendation) } };
