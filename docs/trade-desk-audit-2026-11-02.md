@@ -4,6 +4,11 @@ Reviewed the lazy launcher, live-data loading and local persistence, worker
 lifecycle, four-hull comparison, route/ID matching, import and export ranking,
 transaction accounting, navigation and return-cargo search.
 
+Subsequent map-loading change: maps now persist and update independently once
+a day; a slow map endpoint no longer blocks a fresh market search. The timing
+replays below remain historical measurements of the earlier routing change.
+See [current freshness behavior](trade-route-freshness.md).
+
 ## Findings and changes
 
 - Direct comparisons rebuilt a complete shortest-path tree for every return

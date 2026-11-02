@@ -113,14 +113,16 @@ def main():
         london['Objs'].extend([ambiguous_decoration, {**ambiguous_decoration, 'Pos': {'X': 30, 'Y': 0, 'Z': 0}}])
         script = "<script>window.supplyFixture=" + json.dumps(fixture) + ";window.supplyNav=" + json.dumps(nav) + ";window.supplyRequests=[];const originalFetch=window.fetch;window.fetch=(url,options)=>{const u=String(url);if(u.includes('/api/')){const key=u.split('/api/')[1].split('?')[0];supplyRequests.push(key);if(window.supplyOffline||key==='systems'&&window.supplyMapOffline)return Promise.reject(Error('Fixture offline'));const response=key==='infocards'?JSON.parse(options.body).map(id=>supplyFixture.idcards[id]||{error:'missing'}):supplyFixture[key]||[];return Promise.resolve(new Response(JSON.stringify(response),{status:200}));}if(u.includes('/assets/navigation.json.gz'))return Promise.resolve(new Response(JSON.stringify(supplyNav),{status:200}));return originalFetch(url,options);};</script>"
         script += """<script>
-          window.supplyCacheOpens=0;window.supplyHeldAborts=0;
+          window.supplyCacheOpens=0;window.supplyHeldAborts=0;window.supplyHoldMap=true;
           const supplyOpen=IDBFactory.prototype.open;
           IDBFactory.prototype.open=function(...args){if(args[0]==='rhw-supply-market-v1')supplyCacheOpens++;return supplyOpen.apply(this,args);};
           const supplyFetch=window.fetch;
           window.fetch=(url,options)=>{
             const path=String(url).split('/api/')[1]?.split('?')[0];
-            if(path==='systems'&&window.supplyHoldMap||path==='commodities'&&window.supplyHoldReferences){
+            if(path==='systems'&&window.supplyHoldMap||path==='pobs'&&window.supplyHoldStock||path==='commodities'&&window.supplyHoldReferences){
+              supplyRequests.push(path);
               return new Promise((resolve,reject)=>{
+                if(path==='systems')window.supplyReleaseMap=()=>resolve(new Response(JSON.stringify(supplyFixture.systems),{status:200}));
                 options.signal.addEventListener('abort',()=>{supplyHeldAborts++;reject(new DOMException('Canceled','AbortError'));},{once:true});
               });
             }
@@ -166,6 +168,16 @@ def main():
             raise RuntimeError(f'Supply context/worker result failed: {facts}')
         if 'RECOMMENDED' not in facts['first'] or 'Waterloo Station' not in facts['first'] or 'WHY THIS ROUTE' not in (facts['reason'] or '') or 'more per hour' not in facts['reason']:
             raise RuntimeError(f'Worthwhile backhaul must be recommended first and explained: {facts}')
+        if not base.ev(cdp, "supplyResults.dataset.stale==='false' && supplyMapRefresh.disabled && supplyMapSummary.textContent.includes('29 Oct 2026') && supplySource.textContent.includes('BUNDLED SNAPSHOT')"):
+            raise RuntimeError('The first search must finish on the bundled map while the live map request is still hanging')
+        base.ev(cdp, "(()=>{window.supplyHoldMap=false;supplyReleaseMap();return true})()")
+        wait_for(cdp, "!supplyMapRefresh.disabled && !supplyMapApply.hidden")
+        if not base.ev(cdp, "supplySource.textContent.includes('BUNDLED SNAPSHOT') && supplyMapNote.textContent.includes('Recalculate')"):
+            raise RuntimeError('A background update must not relabel routes computed on the older map')
+        base.ev(cdp, "supplyMapApply.click()")
+        wait_for(cdp, "!supplySearch.disabled && supplyResults.dataset.stale==='false' && supplyMapApply.hidden")
+        if not base.ev(cdp, "supplySource.textContent.includes('SAVED MAP') && !supplySource.textContent.includes('BUNDLED SNAPSHOT')"):
+            raise RuntimeError('Recalculation must apply the checked update and refresh markets')
         persisted = base.ev(cdp, """new Promise((resolve,reject)=>{
           const open=indexedDB.open('rhw-supply-market-v1',1);
           open.onerror=()=>reject(open.error);open.onsuccess=()=>{
@@ -211,52 +223,49 @@ def main():
         wait_for(cdp, "!document.getElementById('supplySearch').disabled && document.getElementById('supplyResults').dataset.stale==='false'")
         if base.ev(cdp, "document.getElementById('supplyResults').innerText.includes('Waterloo Station')"):
             raise RuntimeError('Direct-only setting retained an extra trading stop')
-        # A second search immediately after the first must get new POB stock,
-        # not the still-recent dashboard, memory or IndexedDB snapshot.
+        # Every quote gets new stock, but a checked map is reused for a day.
         prior = base.ev(cdp, "({pobs:supplyRequests.filter(x=>x==='pobs').length,maps:supplyRequests.filter(x=>x==='systems').length,opens:supplyCacheOpens,refs:supplyRequests.filter(x=>['commodities','ships','tractors','infocards'].includes(x)).length})")
         base.ev(cdp, "(()=>{supplyFixture.pobs[0].shop_items[1].max_stock=40;supplySearch.click();return true})()")
         wait_for(cdp, "!supplySearch.disabled && supplyResults.dataset.stale==='false'")
         fresh = base.ev(cdp, "({pobs:supplyRequests.filter(x=>x==='pobs').length,maps:supplyRequests.filter(x=>x==='systems').length,opens:supplyCacheOpens,refs:supplyRequests.filter(x=>['commodities','ships','tractors','infocards'].includes(x)).length,quantity:document.querySelector('.supply-metrics strong').textContent,source:supplySource.textContent,status:supplyStatus.textContent})")
-        if fresh['pobs'] != prior['pobs'] + 1 or fresh['maps'] != prior['maps'] + 1 or fresh['opens'] != prior['opens'] or fresh['refs'] != prior['refs'] or fresh['quantity'] != '40' or 'REFRESHED EACH SEARCH' not in fresh['source'] or 'MAP OBJECTS RECEIVED' not in fresh['source'] or ' · DATA ' not in fresh['status'] or ' · SEARCH ' not in fresh['status']:
-            raise RuntimeError(f'Every search must refresh stock and map status, including within five minutes: {fresh}')
-        # A failed required map must fail promptly even if an unrelated price
-        # request is hanging. All outstanding requests must then be aborted.
-        base.ev(cdp, "(()=>{supplyFixture.pobs[0].shop_items[1].max_stock=20000;window.supplyMapOffline=true;window.supplyHoldReferences=true;supplyRefresh.click();return true})()")
-        wait_for(cdp, "!supplySearch.disabled", 3)
-        if not base.ev(cdp, "supplyStatus.textContent.includes('current navigation feed unavailable') && supplyResults.dataset.stale==='true' && supplySource.textContent.includes('REFRESH FAILED') && document.querySelector('.supply-metrics strong').textContent==='40'"):
-            raise RuntimeError('A failed current-map request must pause search and mark the prior quote stale')
-        if not base.ev(cdp, "supplyHeldAborts>0"):
-            raise RuntimeError('Live-feed failure did not abort a hanging reference request')
-        if not base.ev(cdp, "!supplyMapRecovery.hidden && !supplyUseVerifiedMap.disabled && supplyMapRecoveryText.textContent.includes('29 OCT 2026') && !supplySource.textContent.includes('CURRENT MAP UNVERIFIED')"):
-            raise RuntimeError('Failed live map must offer a dated, explicit recovery choice without enabling it automatically')
+        if fresh['pobs'] != prior['pobs'] + 1 or fresh['maps'] != prior['maps'] or fresh['opens'] != prior['opens'] or fresh['refs'] != prior['refs'] or fresh['quantity'] != '40' or 'REFRESHED EACH SEARCH' not in fresh['source'] or 'ROUTE MAP CHECKED' not in fresh['source'] or ' · DATA ' not in fresh['status'] or ' · SEARCH ' not in fresh['status']:
+            raise RuntimeError(f'Warm searches must refresh only stock, reusing the checked map and reference data: {fresh}')
+        # A manual map update is independent of trade loading and failure.
+        base.ev(cdp, "(()=>{supplyFixture.pobs[0].shop_items[1].max_stock=20000;window.supplyMapOffline=true;supplyMapRefresh.click();return true})()")
+        wait_for(cdp, "!supplyMapRefresh.disabled && supplyMapNote.textContent.includes('unavailable')", 3)
+        if not base.ev(cdp, "supplyResults.dataset.stale==='false' && document.querySelector('.supply-metrics strong').textContent==='40' && !supplySource.textContent.includes('REFRESH FAILED')"):
+            raise RuntimeError('Map failure must retain the last checked map without invalidating market quotes')
         last_counts = base.ev(cdp, "({pobs:supplyRequests.filter(x=>x==='pobs').length,maps:supplyRequests.filter(x=>x==='systems').length})")
-        base.ev(cdp, "(()=>{window.supplyHoldReferences=false;supplyUseVerifiedMap.click();return true})()")
+        base.ev(cdp, "supplySearch.click()")
         wait_for(cdp, "!supplySearch.disabled && supplyResults.dataset.stale==='false'")
-        recovered = base.ev(cdp, "({pobs:supplyRequests.filter(x=>x==='pobs').length,maps:supplyRequests.filter(x=>x==='systems').length,quantity:document.querySelector('.supply-metrics strong')?.textContent,source:supplySource.textContent,dated:[...document.querySelectorAll('.supply-result>header small')].every(n=>n.textContent.includes('MAP 29 OCT 2026')),recommended:!!document.querySelector('.supply-recommended'),warning:!supplyMapRecovery.hidden})")
-        if recovered['pobs'] != last_counts['pobs'] + 1 or recovered['maps'] != last_counts['maps'] or recovered['quantity'] != '2,500' or 'CURRENT MAP UNVERIFIED' not in recovered['source'] or 'LAST VERIFIED MAP' not in recovered['source'] or 'Galileo' not in recovered['source'] or not recovered['dated'] or recovered['recommended'] or not recovered['warning']:
-            raise RuntimeError(f'Explicit old-map estimates must refresh stock, retain closure checks and never claim verified recommendations: {recovered}')
+        recovered = base.ev(cdp, "({pobs:supplyRequests.filter(x=>x==='pobs').length,maps:supplyRequests.filter(x=>x==='systems').length,quantity:document.querySelector('.supply-metrics strong')?.textContent,source:supplySource.textContent,date:supplyMapSummary.textContent,note:supplyMapNote.textContent})")
+        if recovered['pobs'] != last_counts['pobs'] + 1 or recovered['maps'] != last_counts['maps'] or recovered['quantity'] != '2,500' or 'ROUTE MAP CHECKED' not in recovered['source'] or 'Galileo' not in recovered['source'] or '2026' not in recovered['date'] or 'unavailable' not in recovered['note']:
+            raise RuntimeError(f'Map outage must not block fresh trade searches or drop map dates and closure checks: {recovered}')
         for width in [360,1440]:
             cdp.call('Emulation.setDeviceMetricsOverride', {'width':width,'height':900,'deviceScaleFactor':1,'mobile':width<760})
             if base.ev(cdp, "rhwSupplyDialog.scrollWidth>rhwSupplyDialog.clientWidth+1"):
-                raise RuntimeError(f'Map recovery warning overflows at {width}px')
-            base.ev(cdp, "supplyMapRecovery.scrollIntoView({block:'center',behavior:'instant'})")
-            (out / f'map-recovery-{width}.png').write_bytes(base64.b64decode(cdp.call('Page.captureScreenshot', {'format':'png'})['data']))
-        base.ev(cdp, "(()=>{window.supplyMapOffline=false;supplyRetryLiveMap.click();return true})()")
-        wait_for(cdp, "!supplySearch.disabled && supplyResults.dataset.stale==='false'")
-        if base.ev(cdp, "document.querySelector('.supply-metrics strong').textContent") != '2,500':
-            raise RuntimeError('Retry must use the newly refreshed RHW limits')
-        if not base.ev(cdp, "supplyMapRecovery.hidden && supplySource.textContent.includes('MAP OBJECTS RECEIVED') && !supplySource.textContent.includes('CURRENT MAP UNVERIFIED')"):
-            raise RuntimeError('Retry live map must leave old-map mode and restore fresh provenance')
-        base.ev(cdp, "(()=>{window.supplyHoldMap=true;supplySearch.click();return true})()")
-        wait_for(cdp, "supplySearch.disabled && supplyStatus.textContent.includes('LOADING LIVE MAP')")
+                raise RuntimeError(f'Map status overflows at {width}px')
+            base.ev(cdp, "supplyMapState.scrollIntoView({block:'center',behavior:'instant'})")
+            (out / f'map-status-{width}.png').write_bytes(base64.b64decode(cdp.call('Page.captureScreenshot', {'format':'png'})['data']))
+        base.ev(cdp, "(()=>{window.supplyMapOffline=false;window.supplyHoldMap=true;supplyMapRefresh.click();supplySearch.click();return true})()")
+        wait_for(cdp, "!supplySearch.disabled && supplyResults.dataset.stale==='false' && supplyMapRefresh.disabled")
+        if not base.ev(cdp, "document.querySelector('.supply-metrics strong').textContent==='2,500'"):
+            raise RuntimeError('A hanging manual map update must not delay a new stock quote')
+        base.ev(cdp, "(()=>{window.supplyHoldStock=true;supplySearch.click();return true})()")
+        wait_for(cdp, "supplySearch.disabled && supplyStatus.textContent.includes('LIVE POB STOCK')")
         base.ev(cdp, "supplyCancel.click()")
         wait_for(cdp, "!supplySearch.disabled && supplyCancel.hidden && supplyStatus.textContent.includes('SEARCH CANCELED')", 3)
-        base.ev(cdp, "(()=>{window.supplyHoldMap=false;supplySearch.click();return true})()")
+        if not base.ev(cdp, "supplyHeldAborts>0 && supplyMapRefresh.disabled"):
+            raise RuntimeError('Canceling a trade must abort its stock request independently of the background map update')
+        base.ev(cdp, "(()=>{window.supplyHoldMap=false;window.supplyHoldStock=false;supplyReleaseMap();supplySearch.click();return true})()")
         wait_for(cdp, "!supplySearch.disabled && supplyResults.dataset.stale==='false'")
-        base.ev(cdp, "(()=>{window.supplyOffline=true;document.getElementById('supplyRefresh').click();return true})()")
+        base.ev(cdp, "(()=>{window.supplyOffline=true;window.supplyHoldReferences=true;document.getElementById('supplyRefresh').click();return true})()")
         wait_for(cdp, "!document.getElementById('supplySearch').disabled")
         if not base.ev(cdp, "supplySource.textContent.includes('REFRESH FAILED') && supplyStatus.textContent.includes('fresh POB stock unavailable') && supplyResults.dataset.stale==='true'"):
             raise RuntimeError('Failed stock refresh must pause search and label old quotes, not calculate with cached stock')
+        if not base.ev(cdp, "supplyHeldAborts>1"):
+            raise RuntimeError('A failed stock feed must promptly abort unrelated hanging reference refreshes')
+        base.ev(cdp, "window.supplyHoldReferences=false")
         base.ev(cdp, "document.getElementById('supplyClose').click()")
         wait_for(cdp, "!document.getElementById('rhwSupplyDialog').open && !!document.activeElement.closest('.production-card')", 3)
         # A desktop resize hides mobile material lists. Keep focus in the source
@@ -381,7 +390,15 @@ def main():
             raise RuntimeError('Unverified rules alone cannot bypass a reported whitelist')
         base.ev(cdp, "supplyClose.click()")
         wait_for(cdp, "!rhwSupplyDialog.open && document.activeElement.classList.contains('header-trade-button')", 3)
-        print('Trade Desk browser passed: route-first default, compatible ID badges, cheaper-source priority, optional ID filter, illegal/partial-tech hulls disabled, import/export and POB regressions, focus and 360/390/1440px layouts.')
+        # A genuinely new document must restore the dated map from IndexedDB,
+        # even with the map endpoint unavailable. Prices still come from a new request.
+        base.load_document(cdp, target['id'], markup, origin)
+        wait_for(cdp, "document.documentElement.dataset.v40Ready==='true'")
+        base.ev(cdp, "(()=>{window.supplyMapOffline=true;RHWV4.supplyRoutes.open('Ablative Armor Plating',document.querySelector('.header-trade-button'),'supply');return true})()")
+        wait_for(cdp, "!!document.getElementById('supplyResults') && supplyResults.dataset.stale==='false'")
+        if not base.ev(cdp, "!supplyRequests.includes('systems') && supplyRequests.includes('pobs') && supplySource.textContent.includes('SAVED MAP') && !supplySource.textContent.includes('BUNDLED SNAPSHOT') && !!supplyResults.querySelector('.supply-result')"):
+            raise RuntimeError('Reload must restore a recent checked map without contacting the map endpoint, while refreshing stock')
+        print('Trade Desk browser passed: independent background map updates, cold/warm/reload persistence, map outages and cancellation, fresh stock, route-first ranking, compatible IDs, four haulers, import/export, focus and 360/390/1440px layouts.')
     finally:
         if cdp:
             cdp.close()
