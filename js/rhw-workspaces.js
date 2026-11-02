@@ -2945,10 +2945,11 @@ window.__RHW_RECIPE_CATALOG_GZIP_BASE64__ = (window.__RHW_RECIPE_CATALOG_GZIP_BA
   }
   function normalize(raw) {
     const object = raw && typeof raw === 'object' && !Array.isArray(raw) ? raw : {};
-    return { version: 2, coreLevel: 4,
+    return { version: 3, coreLevel: 4,
       stock: Object.fromEntries(resources.map(r => [r.key, amount(object.stock?.[r.key])])),
       modules: Object.fromEntries(modules.map(m => [m.key, {
-        enabled: m.key !== 'shipyard' || object.modules?.[m.key]?.enabled === true,
+        enabled: m.fixed || (m.key === 'refinery' ? object.version >= 3
+          ? object.modules?.refinery?.enabled !== false : true : object.modules?.[m.key]?.enabled === true),
         recipeId: m.fixed ? m.defaultRecipe : typeof object.modules?.[m.key]?.recipeId === 'string'
           && m.accepts({ id: object.modules[m.key].recipeId }) ? object.modules[m.key].recipeId : m.defaultRecipe,
         followHull: m.key === 'shipyard' && (object.modules?.shipyard?.followHull === true
@@ -3033,7 +3034,7 @@ window.__RHW_RECIPE_CATALOG_GZIP_BASE64__ = (window.__RHW_RECIPE_CATALOG_GZIP_BA
   function setModule(key, changes) {
     const module = modules.find(m => m.key === key);
     if (!module) return false;
-    if (key !== 'shipyard' && changes.enabled === false) return false;
+    if (module.fixed && changes.enabled === false) return false;
     if (module.fixed && changes.recipeId !== undefined && changes.recipeId !== module.defaultRecipe) return false;
     if (changes.recipeId !== undefined && !options(module).some(r => r.id === changes.recipeId)) return false;
     const followHull = key === 'shipyard' && (changes.followHull ?? (changes.recipeId !== undefined
@@ -3222,7 +3223,9 @@ globalThis.RHW_PRODUCTION_VOLUMES = Object.freeze({
     });
     const seconds = volume / recipe.cookingRate * 60;
     const outputs = [{ ...primary }, ...plan.byproducts].map(o => ({ id: o.id, name: o.name, qty: o.qty }));
-    return { key: row.key, recipeId: recipe.id, name: primary.name, inputs, outputs,
+    const display = typeof PRODUCTION_MODULES !== 'undefined' ? PRODUCTION_MODULES.find(m => m.recipeId === recipe.id)?.product : null;
+    const hull = typeof CAPITAL_SHIPYARD !== 'undefined' ? CAPITAL_SHIPYARD.hulls.find(h => h.recipeId === recipe.id) : null;
+    return { key: row.key, recipeId: recipe.id, name: display || hull?.name || primary.name, inputs, outputs,
       output: primary.qty, seconds: Number.isFinite(seconds) && seconds > 0 ? seconds : null,
       catalysts: plan.catalysts.map(c => ({ ...c })), creditCost: recipe.creditCost || 0 };
   }
@@ -3300,10 +3303,12 @@ globalThis.RHW_PRODUCTION_VOLUMES = Object.freeze({
     const rows = app.personnel.analyze().rows;
     const row = rows.find(row => app.personnel.options(row).some(r => r.id === recipeId));
     if (!row || row.fixed) return false;
-    return app.personnel.setModule(row.key, { enabled: true, recipeId, followHull: false });
+    const enabled = !(row.enabled && !row.followHull && row.recipeId === recipeId);
+    return app.personnel.setModule(row.key, { enabled, recipeId, followHull: false });
   }
   function selectHull() {
-    return app.personnel.setModule('shipyard', { enabled: true,
+    const row = app.personnel.analyze().rows.find(r => r.key === 'shipyard');
+    return app.personnel.setModule('shipyard', { enabled: !(row.enabled && row.followHull),
       recipeId: app.shipyard.selectedHull().recipeId, followHull: true });
   }
   function rowFor(recipeId, result = analyze()) { return result.rows.find(row => row.recipeId === recipeId); }
@@ -3416,22 +3421,28 @@ globalThis.RHW_PRODUCTION_VOLUMES = Object.freeze({
     if (!Number.isFinite(low)) return '—';
     return low === high ? formatter(low) : `${formatter(low)}–${formatter(high)}`;
   }
+  function detailId(recipeId, context = 'card') { return `production-plan-${context}-${recipeId}`; }
   function control(recipeId) {
     const row = app.personnel.analyze().rows.find(row => app.personnel.options(row).some(r => r.id === recipeId));
     if (!row) return '';
-    if (row.fixed) return '<span class="production-plan-fixed" title="Always included in your manual forecast">ALWAYS PLANNED</span>';
+    if (row.fixed) {
+      const id = detailId(recipeId);
+      return `<button type="button" class="production-plan-button production-plan-fixed is-planned" data-production-details="${esc(id)}" aria-controls="${esc(id)}" aria-expanded="${expanded.has(id)}" aria-label="Forecast details for ${esc(coreName(recipeId))}. Always included in your plan." title="Always included · Show forecast details"><span aria-hidden="true">◷</span> ALWAYS ON <span aria-hidden="true">⌄</span></button>`;
+    }
     const selected = row.enabled && !row.followHull && row.recipeId === recipeId;
-    return `<button type="button" class="production-plan-button${selected ? ' is-planned' : ''}" data-production-plan="${esc(recipeId)}" aria-pressed="${selected}" aria-label="Plan ${esc(coreName(recipeId))}"><span aria-hidden="true">◷</span> ${selected ? 'PLANNED' : 'PLAN'}</button>`;
+    return `<button type="button" class="production-plan-button${selected ? ' is-planned' : ''}" data-production-plan="${esc(recipeId)}" aria-pressed="${selected}" aria-label="${selected ? 'Remove' : 'Plan'} ${esc(coreName(recipeId))}${selected ? ' from forecast' : ''}" title="${selected ? 'Click again to remove from your plan' : 'Add to your manual plan'}"><span aria-hidden="true">◷</span> ${selected ? 'PLANNED' : 'PLAN'}</button>`;
   }
   function coreName(id) { return app.operationsCore.recipe(id)?.name || id; }
-  function details(row, plan) {
+  function details(row, plan, context = 'card') {
     if (!row) return '';
+    const id = detailId(row.recipeId, context);
     const blockers = plan.ready ? row.reasons?.join(' · ') : `Unknown: ${plan.unknown.join(', ')}`;
     const orders = plan.rows.map(r => `<li><span>${esc(r.name)}</span><strong>${plan.truncated ? '≥' : ''}${range(r.min, r.max)} · ${range(r.secondsMin, r.secondsMax, duration)}</strong></li>`).join('');
-    return `<details class="production-plan-details" data-plan-detail="${esc(row.recipeId)}" ${expanded.has(row.recipeId) ? 'open' : ''}>
+    return `<details id="${esc(id)}" class="production-plan-details" data-plan-detail="${esc(id)}" ${expanded.has(id) ? 'open' : ''}>
       <summary><span>${esc(plan.ready ? (row.max > 0 ? 'LIMITED BY' : 'BLOCKED') : 'PLAN UNVERIFIED')} · ${esc(blockers || 'Production materials')}</span><span aria-hidden="true">⌄</span></summary>
       <div class="production-plan-explanation"><p>MANUAL PLAN · ${esc(plan.snapshot.label)} · New cycles from this snapshot.</p>
         <p>~${duration(row.seconds)} per cycle · ${fmt(row.output)} items per complete batch.</p>
+        ${!plan.ready ? `<p class="production-plan-caution">Shared forecast unavailable: ${esc(plan.unknown.join(', '))}. SOLO YIELD shows this module's material coverage alone, without competition or new supplies from other modules.</p>` : ''}
         <ul>${orders}</ul>
         <p>One shared inventory. Finished refinery batches and byproducts can supply other modules. Ranges allow different priorities for scarce stock.</p>
         <p>Planning estimate with MOX timing. New cycles reserve inputs at start. No deliveries, trades, upkeep or existing job progress are assumed.</p>
@@ -3439,42 +3450,76 @@ globalThis.RHW_PRODUCTION_VOLUMES = Object.freeze({
         ${plan.truncated ? '<p class="production-plan-caution">Forecast limited to 30 days / simulation budget. Counts are lower bounds, not final capacity.</p>' : ''}
       </div></details>`;
   }
-  function card(recipeId, plan) {
+  function card(recipeId, plan, analysis) {
     const row = model.rowFor(recipeId, plan);
     let cycle = row?.seconds;
     if (!cycle) { try { cycle = model.batch({ key: 'preview', recipe: app.operationsCore.recipe(recipeId) })?.seconds; } catch {} }
     return { selected: Boolean(row), control: control(recipeId),
-      count: row ? `${plan.truncated ? '≥' : ''}${range(row.min, row.max)}` : null,
-      time: row && plan.ready ? `~${range(row.secondsMin, row.secondsMax, duration)}` : 'TIME UNKNOWN',
+      count: row ? plan.ready ? `${plan.truncated ? '≥' : ''}${range(row.min, row.max)}` : range(analysis?.possibleOutput, analysis?.possibleOutput) : null,
+      time: row && plan.ready ? `~${range(row.secondsMin, row.secondsMax, duration)}`
+        : Number.isFinite(cycle) && Number.isFinite(analysis?.possibleCycles) ? `~${duration(cycle * analysis.possibleCycles)}` : 'TIME UNKNOWN',
+      yieldLabel: plan.ready ? 'PLANNED YIELD' : 'SOLO YIELD',
+      modeLabel: plan.ready ? plan.conditions.length ? 'CONDITIONAL' : 'MANUAL PLAN' : 'SOLO ESTIMATE',
       cycle: cycle ? duration(cycle) : '', details: details(row, plan) };
   }
-  function hullMarkup() {
+  function hullMarkup(context = 'shipyard') {
     const row = app.personnel.analyze().rows.find(r => r.key === 'shipyard');
     const selected = row.enabled && row.followHull;
     const plan = model.analyze(), result = selected ? model.rowFor(row.recipeId, plan) : null;
-    return `<div class="production-hull-plan"><button type="button" class="production-plan-button${selected ? ' is-planned' : ''}" data-production-hull-plan aria-pressed="${selected}"><span aria-hidden="true">◷</span> ${selected ? 'SHIP PLANNED' : 'PLAN SHIP'}</button>
-      ${result ? `<span>PLANNED YIELD <strong>${plan.truncated ? '≥' : ''}${range(result.min, result.max)}</strong> · ~${range(result.secondsMin, result.secondsMax, duration)}</span>${details(result, plan)}` : '<small>Replaces Supers / Reactors in the shared plan.</small>'}</div>`;
+    const solo = result && !plan.ready ? app.shipyard.analyze().buildable : null;
+    const count = plan.ready ? range(result?.min, result?.max) : range(solo, solo);
+    const time = plan.ready ? range(result?.secondsMin, result?.secondsMax, duration)
+      : Number.isFinite(solo) && Number.isFinite(result?.seconds) ? duration(solo * result.seconds) : 'TIME UNKNOWN';
+    return `<div class="production-hull-plan"><button type="button" class="production-plan-button${selected ? ' is-planned' : ''}" data-production-hull-plan aria-pressed="${selected}" title="${selected ? 'Click again to remove shipbuilding from your plan' : 'Plan this ship instead of Supers / Reactors'}"><span aria-hidden="true">◷</span> ${selected ? 'SHIP PLANNED' : 'PLAN SHIP'}</button>
+      ${result ? `<span>${plan.ready ? 'PLANNED YIELD' : 'SOLO YIELD'} <strong>${plan.truncated ? '≥' : ''}${count}</strong> · ~${time}${!plan.ready ? ' · SOLO ESTIMATE' : ''}</span>${details(result, plan, context)}` : '<small>Shares the Shipyard module with Supers / Reactors.</small>'}</div>`;
+  }
+  function renderShipControl() {
+    const toolbar = document.getElementById('productionModuleTools');
+    if (!toolbar || !app.shipyard || !app.operationsCore.state.catalog) return;
+    let mount = document.getElementById('productionShipPlan');
+    if (!mount) {
+      mount = document.createElement('div'); mount.id = 'productionShipPlan';
+      mount.className = 'production-ship-plan'; toolbar.append(mount);
+    }
+    const focused = document.activeElement?.id === 'productionPlanHull';
+    const hull = app.shipyard.selectedHull();
+    const options = CAPITAL_SHIPYARD.divisions.map(division => `<optgroup label="${esc(division.label)}">${CAPITAL_SHIPYARD.hulls.filter(h => h.division === division.key).map(h => `<option value="${esc(h.key)}" ${h.key === hull.key ? 'selected' : ''}>${esc(h.name)}</option>`).join('')}</optgroup>`).join('');
+    mount.innerHTML = `<label class="production-hull-selector" for="productionPlanHull"><span>SHIPBUILDING</span><select id="productionPlanHull">${options}</select></label>${hullMarkup('production')}`;
+    if (focused) mount.querySelector('select')?.focus({ preventScroll: true });
+    bind();
   }
   function bind() {
-    for (const id of ['productionGrid', 'shipyardControl']) {
+    for (const id of ['productionGrid', 'shipyardControl', 'productionShipPlan']) {
       const mount = document.getElementById(id);
       if (!mount || mount.dataset.productionPlanBound) continue;
       mount.dataset.productionPlanBound = 'true';
       mount.addEventListener('click', event => {
+        const toggle = event.target.closest('[data-production-details]');
+        if (toggle) {
+          const detail = document.getElementById(toggle.dataset.productionDetails);
+          if (detail) { detail.open = !detail.open; remember(detail); }
+          return;
+        }
         const button = event.target.closest('[data-production-plan], [data-production-hull-plan]');
         if (!button) return;
         const selector = button.hasAttribute('data-production-hull-plan') ? '[data-production-hull-plan]' : `[data-production-plan="${button.dataset.productionPlan}"]`;
         const success = button.hasAttribute('data-production-hull-plan') ? model.selectHull() : model.select(button.dataset.productionPlan);
         if (success) mount.querySelector(selector)?.focus({ preventScroll: true });
       });
+      mount.addEventListener('change', event => {
+        if (event.target.id === 'productionPlanHull') app.shipyard.selectHull(event.target.value);
+      });
       mount.addEventListener('toggle', event => {
-        const id = event.target.dataset?.planDetail;
-        if (!id) return;
-        if (event.target.open) expanded.add(id); else expanded.delete(id);
+        if (event.target.dataset?.planDetail) remember(event.target);
       }, true);
     }
   }
-  app.productionPlanView = { card, hullMarkup, duration };
+  function remember(detail) {
+    const id = detail.dataset.planDetail;
+    if (detail.open) expanded.add(id); else expanded.delete(id);
+    document.querySelector(`[data-production-details="${id}"]`)?.setAttribute('aria-expanded', String(detail.open));
+  }
+  app.productionPlanView = { card, hullMarkup, duration, renderShipControl };
   app.lifecycle.on('command:ready', 'inline-production-plan', 70, bind);
 })();
 

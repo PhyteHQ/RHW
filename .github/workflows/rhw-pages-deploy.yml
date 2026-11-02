@@ -25,6 +25,30 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
+      - name: Read current public module cargo definitions (temporary review)
+        if: github.event_name == 'pull_request'
+        run: |
+          python3 - <<'PY'
+          import hashlib, json, re, sys
+          sys.path.insert(0, 'scripts')
+          from sync_discovery_catalog import fetch_source, DEFAULT_SOURCE_BASES
+          try:
+              data, url = fetch_source('base_recipe_modules.cfg', DEFAULT_SOURCE_BASES[:2], attempts=1)
+              result = {'source': url, 'sha256': hashlib.sha256(data).hexdigest(), 'modules': []}
+              for block in re.split(r'\[recipe\]', data.decode('utf-8', errors='replace'), flags=re.I)[1:]:
+                  fields = {}
+                  for line in block.splitlines():
+                      if '=' in line and not line.lstrip().startswith((';', '#')):
+                          key, value = line.split('=', 1)
+                          fields.setdefault(key.strip().lower(), []).append(value.split(';', 1)[0].strip())
+                  nickname = fields.get('nickname', [''])[0]
+                  if nickname in ('module_storage', 'module_exotic_refinery'):
+                      result['modules'].append({key: fields[key] for key in ('nickname', 'infotext', 'build_type', 'craft_list', 'cargo_storage') if key in fields})
+              print(json.dumps(result, indent=2))
+          except Exception as error:
+              print('Read-only public configuration check unavailable:', str(error))
+          PY
+
       - name: Verify generated app assets
         run: python3 scripts/build_app_assets.py --check
 

@@ -27,10 +27,11 @@
   }
   function normalize(raw) {
     const object = raw && typeof raw === 'object' && !Array.isArray(raw) ? raw : {};
-    return { version: 2, coreLevel: 4,
+    return { version: 3, coreLevel: 4,
       stock: Object.fromEntries(resources.map(r => [r.key, amount(object.stock?.[r.key])])),
       modules: Object.fromEntries(modules.map(m => [m.key, {
-        enabled: m.key !== 'shipyard' || object.modules?.[m.key]?.enabled === true,
+        enabled: m.fixed || (m.key === 'refinery' ? object.version >= 3
+          ? object.modules?.refinery?.enabled !== false : true : object.modules?.[m.key]?.enabled === true),
         recipeId: m.fixed ? m.defaultRecipe : typeof object.modules?.[m.key]?.recipeId === 'string'
           && m.accepts({ id: object.modules[m.key].recipeId }) ? object.modules[m.key].recipeId : m.defaultRecipe,
         followHull: m.key === 'shipyard' && (object.modules?.shipyard?.followHull === true
@@ -115,7 +116,7 @@
   function setModule(key, changes) {
     const module = modules.find(m => m.key === key);
     if (!module) return false;
-    if (key !== 'shipyard' && changes.enabled === false) return false;
+    if (module.fixed && changes.enabled === false) return false;
     if (module.fixed && changes.recipeId !== undefined && changes.recipeId !== module.defaultRecipe) return false;
     if (changes.recipeId !== undefined && !options(module).some(r => r.id === changes.recipeId)) return false;
     const followHull = key === 'shipyard' && (changes.followHull ?? (changes.recipeId !== undefined
