@@ -35,6 +35,8 @@ def main():
         goods = [{'nickname': 'fixture_' + str(i), 'name': name, 'category': 'commodity', 'quantity': 10000,
                   'min_stock': 0, 'max_stock': 20000, 'price': 100, 'sell_price': 150, 'volume': 1, 'original_volume': 1} for i, name in enumerate(names)]
         goods[1].update(nickname='ablative', quantity=0, volume=2, original_volume=2)
+        goods.append({**goods[3], 'nickname': 'fixture_export', 'name': 'Multi-Mode Focusing Chamber'})
+        goods.append({**goods[3], 'nickname': 'fixture_pc', 'name': 'Prototype Components'})
         pob = {'nickname': 'rhw', 'name': 'Resolution Heavy Works', 'system_nickname': 'br01', 'system_name': 'New London',
                'defense_mode': 1, 'faction_nickname': 'br_n_grp',
                'base_pos': [0, 0, 0], 'money': 100000000, 'cargospace': 1000000, 'health': 24000000, 'shop_items': goods}
@@ -46,10 +48,11 @@ def main():
         export_buyer = {'nickname': 'buyer', 'name': 'Buyer Works', 'system_nickname': 'br01', 'system_name': 'New London',
                         'defense_mode': 1, 'faction_nickname': 'br_n_grp',
                         'base_pos': [90000, 0, 0], 'money': 1000, 'cargospace': 10000,
-                        'shop_items': [{'nickname': 'fixture_3', 'name': 'Gold', 'category': 'commodity', 'quantity': 0,
+                        'shop_items': [{'nickname': 'fixture_export', 'name': 'Multi-Mode Focusing Chamber', 'category': 'commodity', 'quantity': 0,
                                         'min_stock': 0, 'max_stock': 10000, 'price': 9999, 'sell_price': 200, 'volume': 1, 'original_volume': 1},
                                        {'nickname': 'fixture_6', 'name': 'MOX', 'category': 'commodity', 'quantity': 50,
                                         'min_stock': 10, 'max_stock': 10000, 'price': 1, 'sell_price': 1, 'volume': 1, 'original_volume': 1}]}
+        export_buyer['shop_items'].append({**export_buyer['shop_items'][0], 'nickname': 'fixture_pc', 'name': 'Prototype Components'})
         def market(base_id, name, pos, buy, sell, volume):
             return {'base_nickname': base_id, 'base_name': name, 'system_nick': 'br01', 'system_name': 'New London',
                     'base_pos': pos, 'base_sells': True, 'price_base_sells_for': buy, 'price_base_buys_for': sell, 'volume': volume}
@@ -276,11 +279,11 @@ def main():
         base.ev(cdp, "document.getElementById('supplyClose').click()")
         wait_for(cdp, "!document.getElementById('rhwSupplyDialog').open && document.activeElement.dataset.supplyCommodity==='Ablative Armor Plating'", 3)
         base.ev(cdp, "(()=>{document.getElementById('supplyPobs').checked=true;location.hash='#command/inventory';return true})()")
-        wait_for(cdp, "document.querySelector('#exportList [data-export-commodity=\"Gold\"]')?.getClientRects().length>0")
-        base.ev(cdp, "document.querySelector('#exportList [data-export-commodity=\"Gold\"]').click()")
+        wait_for(cdp, "document.querySelector('#exportList [data-export-commodity=\"Multi-Mode Focusing Chamber\"]')?.getClientRects().length>0")
+        base.ev(cdp, "document.querySelector('#exportList [data-export-commodity=\"Multi-Mode Focusing Chamber\"]').click()")
         wait_for(cdp, "document.getElementById('supplyMode').value==='export' && !document.getElementById('supplySearch').disabled && document.querySelectorAll('.supply-result').length>0")
         exported = base.ev(cdp, "(()=>({mode:supplyMode.selectedOptions[0].textContent,text:supplyResults.innerText,quantity:document.querySelector('.supply-metrics strong')?.textContent,buyer:document.querySelector('.supply-result h3')?.textContent,reason:document.querySelector('.supply-ship-note')?.textContent,backhaulVisible:!document.querySelector('[data-export-only]').hidden,groups:[...supplyCommodity.querySelectorAll('optgroup')].map(g=>g.label),names:[...supplyCommodity.options].map(o=>o.value),access:document.querySelector('.supply-access-note')?.textContent,backhaul:document.querySelector('.supply-return-cargo')?.textContent}))()")
-        if exported['mode'] != 'EXPORT' or 'Wildcat Gold' in exported['names'] or exported['quantity'] != '5' or exported['buyer'] != 'Buyer Works' or 'Buyer funds' not in exported['reason'] or not exported['backhaulVisible'] or '$500' not in exported['text'] or 'owner permissions' not in exported['access'] or exported['groups'][0] != 'SHIP SYSTEMS' or 'Ablative Armor Plating' in exported['names'] or 'MOX' in exported['names'] or 'Toxic Waste' not in exported['names'] or '40 MOX' not in (exported['backhaul'] or ''):
+        if exported['mode'] != 'EXPORT' or any(n in exported['names'] for n in ['Gold','Wildcat Gold','Niobium','Prototype Components']) or exported['quantity'] != '5' or exported['buyer'] != 'Buyer Works' or 'Buyer funds' not in exported['reason'] or not exported['backhaulVisible'] or '$500' not in exported['text'] or 'owner permissions' not in exported['access'] or exported['groups'][0] != 'SHIP SYSTEMS' or 'Ablative Armor Plating' in exported['names'] or 'MOX' in exported['names'] or 'Toxic Waste' not in exported['names'] or '40 MOX' not in (exported['backhaul'] or ''):
             raise RuntimeError(f'Export quote must honor POB funds and distinguish revenue/profit/access: {exported}')
         base.ev(cdp, "(()=>{supplyBackhaul.checked=false;supplySearch.click();return true})()")
         wait_for(cdp, "!supplySearch.disabled && supplyResults.dataset.stale==='false'")
@@ -297,7 +300,7 @@ def main():
             shot = cdp.call('Page.captureScreenshot', {'format':'png'})
             (out / f'export-route-{width}.png').write_bytes(base64.b64decode(shot['data']))
         base.ev(cdp, "supplyClose.click()")
-        wait_for(cdp, "!rhwSupplyDialog.open && document.activeElement.dataset.exportCommodity==='Gold'", 3)
+        wait_for(cdp, "!rhwSupplyDialog.open && document.activeElement.dataset.exportCommodity==='Multi-Mode Focusing Chamber'", 3)
         header = base.ev(cdp, "(()=>({trade:!!document.querySelector('.header-trade-button').getClientRects().length,refresh:!!headerRefreshBtn.getClientRects().length,closed:!uplinkDetails.open}))()")
         if not all(header.values()):
             raise RuntimeError(f'Header actions must remain visible with connection details closed: {header}')
@@ -312,7 +315,7 @@ def main():
         if not base.ev(cdp, "supplyCommodity.value==='Ablative Armor Plating' && ![...supplyCommodity.options].some(o=>o.value==='Toxic Waste')"):
             raise RuntimeError('Import mode must restore its own last selection and hide export-only goods')
         base.ev(cdp, "(()=>{supplyMode.value='export';supplyMode.dispatchEvent(new Event('change',{bubbles:true}));return true})()")
-        wait_for(cdp, "!supplySearch.disabled && supplyCommodity.value==='Gold'")
+        wait_for(cdp, "!supplySearch.disabled && supplyCommodity.value==='Multi-Mode Focusing Chamber'")
         if base.ev(cdp, "[...supplyCommodity.options].some(o=>o.value==='Ablative Armor Plating')"):
             raise RuntimeError('Export mode must restore its own last selection and hide import-only goods')
         base.ev(cdp, "(()=>{supplyMode.value='supply';supplyMode.dispatchEvent(new Event('change',{bubbles:true}));return true})()")
@@ -390,6 +393,26 @@ def main():
             raise RuntimeError('Unverified rules alone cannot bypass a reported whitelist')
         base.ev(cdp, "supplyClose.click()")
         wait_for(cdp, "!rhwSupplyDialog.open && document.activeElement.classList.contains('header-trade-button')", 3)
+        # Internal PC is an explicit surplus operation, never an automatic full-hold export.
+        base.ev(cdp, "RHWV4.navigate('command','inventory')")
+        wait_for(cdp, "!!document.querySelector('[data-surplus-commodity]')?.getClientRects().length")
+        before_surplus = base.ev(cdp, "supplyRequests.filter(n=>n==='pobs').length")
+        base.ev(cdp, "document.querySelector('[data-surplus-commodity]').click()")
+        wait_for(cdp, "rhwSupplyDialog.open && !supplySearch.disabled && !supplySurplusNote.hidden")
+        if not base.ev(cdp, f"supplyQuantity.value==='' && supplyResults.dataset.stale==='true' && document.activeElement===supplyQuantity && supplyRequests.filter(n=>n==='pobs').length==={before_surplus}"):
+            raise RuntimeError('Surplus entry must require a conscious quantity before requesting or calculating any full-hold sale')
+        base.ev(cdp, "(()=>{supplyHauler.value='auto';supplyIdentity.value='all';supplyShip.value='auto';supplyPobs.checked=true;supplyQuantity.value='3';supplySearch.click();return true})()")
+        wait_for(cdp, "!supplySearch.disabled && supplyResults.dataset.stale==='false'")
+        if not base.ev(cdp, "supplyCommodity.value==='Prototype Components' && document.querySelector('.supply-metrics strong')?.textContent==='3'"):
+            raise RuntimeError('PC surplus must use the explicit quantity and current buyer/stock limits')
+        base.ev(cdp, "supplyClose.click()")
+        wait_for(cdp, "!rhwSupplyDialog.open")
+        base.ev(cdp, "document.querySelector('.header-trade-button').click()")
+        wait_for(cdp, "rhwSupplyDialog.open && !supplySearch.disabled")
+        if base.ev(cdp, "supplyMode.value==='export' && [...supplyCommodity.options].some(o=>['Gold','Niobium','Prototype Components','Wildcat Gold'].includes(o.value))"):
+            raise RuntimeError('Internal materials must remain excluded from the ordinary export selector')
+        base.ev(cdp, "supplyClose.click()")
+        wait_for(cdp, "!rhwSupplyDialog.open")
         # A genuinely new document must restore the dated map from IndexedDB,
         # even with the map endpoint unavailable. Prices still come from a new request.
         base.load_document(cdp, target['id'], markup, origin)

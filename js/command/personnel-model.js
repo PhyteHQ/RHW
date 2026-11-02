@@ -17,6 +17,7 @@
     { key: 'smelter', name: 'Scrap Smelter', fixed: true, defaultRecipe: 'recipe_scrap_advanced', accepts: r => r.id === 'recipe_scrap_advanced' },
     { key: 'shipyard', name: 'Modular Shipyard', defaultRecipe: 'ship_assembly_medium_miner',
       accepts: r => ['ship_part_superstructure', 'ship_part_reactor'].includes(r.id) || CAPITAL_SHIPYARD.hulls.some(h => h.recipeId === r.id) },
+    { key: 'reclamation', name: 'Advanced Materials Complex', defaultRecipe: 'recipe_milsal', accepts: r => r.id === 'recipe_milsal' },
     { key: 'foundry', name: 'Exotic Weapons Components Foundry', fixed: true, defaultRecipe: 'recipe_weapon_part_focusing_chamber',
       accepts: r => r.id === 'recipe_weapon_part_focusing_chamber' }
   ]);
@@ -27,7 +28,7 @@
   }
   function normalize(raw) {
     const object = raw && typeof raw === 'object' && !Array.isArray(raw) ? raw : {};
-    return { version: 3, coreLevel: 4,
+    return { version: 4, coreLevel: 4,
       stock: Object.fromEntries(resources.map(r => [r.key, amount(object.stock?.[r.key])])),
       modules: Object.fromEntries(modules.map(m => [m.key, {
         enabled: Boolean(m.fixed) || (m.key === 'refinery'
@@ -36,7 +37,7 @@
         recipeId: m.fixed ? m.defaultRecipe : typeof object.modules?.[m.key]?.recipeId === 'string'
           && m.accepts({ id: object.modules[m.key].recipeId }) ? object.modules[m.key].recipeId : m.defaultRecipe,
         followHull: m.key === 'shipyard' && (object.modules?.shipyard?.followHull === true
-          || CAPITAL_SHIPYARD.hulls.some(h => h.recipeId === object.modules?.shipyard?.recipeId))
+          || object.version < 4 && CAPITAL_SHIPYARD.hulls.some(h => h.recipeId === object.modules?.shipyard?.recipeId))
       }])) };
   }
   let state = normalize(storageKey ? app.store.get(storageKey, {}) : {});
@@ -112,6 +113,8 @@
     app.personnelView?.render();
     if (typeof renderProductionModules === 'function') renderProductionModules();
     if (typeof renderShipyardControl === 'function') renderShipyardControl();
+    if (typeof renderOverview === 'function') renderOverview();
+    app.requestUiUpdate?.();
     return true;
   }
   function setModule(key, changes) {

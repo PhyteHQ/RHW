@@ -1,0 +1,53 @@
+/* Three operational columns; raw inputs stay attached to their products. */
+html.rhw-focus-pass #inventoryStatusPanel .summary-grid { align-items:stretch; }
+html.rhw-focus-pass #inventoryStatusPanel .alert-card { align-self:stretch; }
+html.rhw-focus-pass #inventoryStatusPanel .summary-grid>.alert-card:nth-child(-n+3) .alert-list { display:grid;grid-template-rows:repeat(3,minmax(0,1fr));flex:1; }
+html.rhw-focus-pass #inventoryStatusPanel .waste-panel { grid-column:span 2; }
+html.rhw-focus-pass #inventoryStatusPanel .ship-stock-panel { grid-column:span 4; }
+html.rhw-focus-pass #inventoryStatusPanel .overview-stock-row { align-content:start; }
+html.rhw-focus-pass #inventoryStatusPanel .inventory-production-link { display:block;min-height:28px;padding:0;border:0;background:transparent;color:var(--text);font:600 15px/1.4 var(--font-main);text-align:left;clip-path:none;box-shadow:none;cursor:pointer;overflow-wrap:anywhere; }
+html.rhw-focus-pass #inventoryStatusPanel li[data-inventory-recipe],html.rhw-focus-pass #inventoryStatusPanel li[data-inventory-material] { cursor:pointer; }
+html.rhw-focus-pass #inventoryStatusPanel .inventory-production-link:hover { color:var(--gold); }
+.inventory-production-link:focus-visible,.inventory-input-row button:focus-visible,.inventory-ship-row button:focus-visible,.inventory-yard-link:focus-visible { outline:2px solid var(--gold);outline-offset:3px; }
+html.rhw-focus-pass #inventoryStatusPanel .inventory-pool-parts { grid-column:1/-1;display:grid;gap:3px;font:12px/1.6 var(--font-main);color:var(--muted); }
+.inventory-pool-parts>span { display:flex;justify-content:space-between;gap:12px; }
+.inventory-pool-parts strong { color:var(--text);font:13px/1.6 var(--font-tech); }
+html.rhw-focus-pass #inventoryStatusPanel .inventory-input-row { grid-column:1/-1;display:grid;grid-template-columns:auto minmax(0,1fr) auto;grid-template-rows:16px 16px;align-items:center;gap:0 8px;border-top:1px solid var(--line);padding-top:4px;font:11px/1.5 var(--font-main);color:var(--muted); }
+.inventory-input-row>span { grid-column:1;grid-row:1;color:#b6a275;font:10px/1.5 var(--font-tech); }
+html.rhw-focus-pass #inventoryStatusPanel .inventory-input-row button { grid-column:2;grid-row:1/3;min-height:32px;padding:0;border:0;background:none;color:#c7c8ce;font:12px/1.4 var(--font-main);text-align:left;cursor:pointer;white-space:normal; }
+.inventory-input-row>strong { grid-column:3;grid-row:1;text-align:right;color:var(--text);font:14px/1.5 var(--font-tech); }
+.inventory-input-row>small { grid-column:3;grid-row:2;text-align:right;color:#b9a77d;font:10px/1.5 var(--font-tech); }
+html.rhw-focus-pass #inventoryStatusPanel .reserve-panel .alert-ok { border-left-color:#b69b65; }
+html.rhw-focus-pass #inventoryStatusPanel .reserve-panel .pill.ok { color:#dac38a;border-color:#9c8050;background:#b69b650b; }
+.reserve-panel .progress-fill.ok { background:#b69b65; }
+.inventory-surplus { grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;font:10px/1.5 var(--font-tech);color:var(--muted); }
+html.rhw-focus-pass #inventoryStatusPanel :is(.inventory-surplus button,.inventory-yard-link) { min-height:44px;border:1px solid var(--line);background:var(--surface-input);padding:7px 9px;color:#dac38a;font:11px/1.5 var(--font-main);clip-path:none;box-shadow:none;cursor:pointer; }
+html.rhw-focus-pass #inventoryStatusPanel .ship-stock-panel .alert-list { display:grid;gap:0; }
+html.rhw-focus-pass #inventoryStatusPanel .inventory-ship-row { display:block;min-height:0;padding:0 10px;border:0;border-bottom:1px solid var(--line);background:none;box-shadow:none; }
+.inventory-ship-row button { display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;min-height:44px;border:0;background:none;color:var(--text);font:13px/1.5 var(--font-main);text-align:left;cursor:pointer; }
+.inventory-ship-row button strong { font:20px/1.5 var(--font-tech); }
+.inventory-ship-row>small { display:block;margin-top:-4px;padding-bottom:5px;color:var(--muted);font:10px/1.4 var(--font-tech); }
+html.rhw-focus-pass #inventoryStatusPanel .inventory-other-ships { display:block;min-height:0;padding:0 10px;border:0;background:none;box-shadow:none; }
+.inventory-other-ships summary { padding:12px 0;min-height:44px;color:var(--muted);font:11px/1.5 var(--font-tech);cursor:pointer; }
+.inventory-other-ships ul { padding:0;margin:0;list-style:none; }
+.inventory-ship-empty { color:var(--muted);font:12px/1.5 var(--font-main); }
+.inventory-uses-dialog { width:min(460px,calc(100vw - 32px));padding:20px;border:1px solid #9c8050;background:var(--palette-canvas);color:var(--text); }
+.inventory-uses-dialog::backdrop { background:#000b; }
+.inventory-uses-dialog h2 { margin:0;color:var(--gold);font:28px/1.3 var(--font-title); }
+.inventory-uses-dialog p { color:var(--muted);font:12px/1.5 var(--font-tech); }
+.inventory-uses-dialog button { display:block;width:100%;min-height:44px;margin-top:8px;padding:9px 12px;border:1px solid var(--line);background:var(--surface-input);color:var(--text);text-align:left;font:13px/1.5 var(--font-main);cursor:pointer; }
+.inventory-uses-dialog button:focus-visible { outline:2px solid var(--gold);outline-offset:2px; }
+.production-card.inventory-target { outline:2px solid var(--gold);outline-offset:3px; }
+.production-card,.capital-shipyard-control { scroll-margin-top:calc(var(--rhw-sticky-nav-offset,70px) + 12px); }
+.supply-surplus-note { padding:12px;border-left:2px solid #b69b65;background:#b69b650b;color:#dac38a;font:13px/1.6 var(--font-main); }
+@media (min-width:761px) and (max-width:1100px) {
+  html.rhw-focus-pass #inventoryStatusPanel .waste-panel,html.rhw-focus-pass #inventoryStatusPanel .ship-stock-panel { grid-column:auto; }
+  html.rhw-focus-pass #inventoryStatusPanel .summary-grid>.alert-card:nth-child(3) { grid-column:1/-1; }
+}
+@media (max-width:760px) {
+  html.rhw-focus-pass #inventoryStatusPanel .alert-card,html.rhw-focus-pass #inventoryStatusPanel .waste-panel,html.rhw-focus-pass #inventoryStatusPanel .ship-stock-panel { grid-column:auto; }
+  html.rhw-focus-pass #inventoryStatusPanel .summary-grid>.alert-card:nth-child(-n+3) .alert-list { display:flex;flex-direction:column; }
+  html.rhw-focus-pass #inventoryStatusPanel .inventory-production-link { min-height:44px; }
+  html.rhw-focus-pass #inventoryStatusPanel .inventory-input-row { grid-template-rows:22px 20px; }
+  html.rhw-focus-pass #inventoryStatusPanel .inventory-input-row button { min-height:44px; }
+}

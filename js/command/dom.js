@@ -150,14 +150,14 @@ const els = {
   maintenanceList: document.getElementById('maintenanceList'),
   byproductList: document.getElementById('byproductList'),
   exportList: document.getElementById('exportList'),
-  feedstockList: document.getElementById('feedstockList'),
-  confiscatedList: document.getElementById('confiscatedList'),
+  reserveList: document.getElementById('reserveList'),
+  shipStockList: document.getElementById('shipStockList'),
 
   maintenanceCount: document.getElementById('maintenanceCount'),
   byproductCount: document.getElementById('byproductCount'),
   exportCount: document.getElementById('exportCount'),
-  feedstockCount: document.getElementById('feedstockCount'),
-  confiscatedCount: document.getElementById('confiscatedCount'),
+  reserveCount: document.getElementById('reserveCount'),
+  shipStockCount: document.getElementById('shipStockCount'),
 
   itemsBody: document.getElementById('itemsBody'),
   errorBox: document.getElementById('errorBox'),

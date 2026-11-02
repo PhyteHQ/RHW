@@ -45,11 +45,12 @@ def main() -> int:
         base.load_document(cdp, target['id'], markup, origin)
         end = time.time() + 10
         while time.time() < end:
-            if base.ev(cdp, "document.documentElement.dataset.v40Ready==='true' && !!lastLoaded && document.querySelectorAll('.production-calc-button').length===6"):
+            if base.ev(cdp, "document.documentElement.dataset.v40Ready==='true' && !!lastLoaded && document.querySelectorAll('.production-calc-button').length===7"):
                 break
             time.sleep(.1)
         else:
-            raise RuntimeError(f"Procurement fixture failed to boot: {base.snapshot(cdp)}")
+            debug=base.ev(cdp,"({lastLoaded:!!lastLoaded,error:lastSyncError,cards:productionGrid.querySelectorAll('.production-card').length,buttons:productionGrid.querySelectorAll('.production-calc-button').length,titles:[...productionGrid.querySelectorAll('.production-title')].map(n=>n.textContent),bridge:!!RHWV4.productionPricing,installed:productionGrid.dataset.v40ProductionCalculatorBridge,selfTest:RHWV4.productionPricing?.selfTest(),life:RHWV4.lifecycle?.errors})")
+            raise RuntimeError(f"Procurement fixture failed to boot: {base.snapshot(cdp)}; details: {debug}")
 
         pooled = base.ev(cdp, """(()=>{
           const batch=RHWV4.production.recipes().find(row=>row.recipeId==='ship_part_superstructure');

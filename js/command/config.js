@@ -20,12 +20,13 @@ const DASHBOARD_CONFIG = Object.freeze({
   }),
   roles: Object.freeze({
     maintenance: ['basic alloy', 'food rations', 'consumer goods'],
-    export: ['multi-mode focusing chamber', 'multi-mode focusing chambers', 'superstructure systems', 'reactor systems', 'gold', 'niobium'],
+    export: ['multi-mode focusing chamber', 'multi-mode focusing chambers', 'superstructure systems', 'reactor systems'],
+    reserve: ['gold', 'wildcat gold', 'niobium', 'prototype components'],
     byproduct: ['toxic waste'],
-    procurement: ['ablative armor plating', 'avionics systems', 'energy field equipment', 'exotic systems', 'gold ore', 'hull panels', 'hydrocarbons', 'interior systems', 'prototype components', 'propulsion systems', 'mox', 'super alloy', 'titanium', 'industrial materials', 'niobium ore', 'scrap metal'],
+    procurement: ['ablative armor plating', 'avionics systems', 'energy field equipment', 'exotic systems', 'gold ore', 'hull panels', 'hydrocarbons', 'interior systems', 'prototype components', 'propulsion systems', 'mox', 'super alloy', 'titanium', 'industrial materials', 'niobium ore', 'scrap metal', 'military salvage'],
     shipyard: ['avionics systems', 'interior systems', 'propulsion systems', 'superstructure systems', 'reactor systems', 'exotic systems'],
-    feedstock: ['gold ore', 'niobium ore', 'scrap metal'],
-    confiscated: ['wildcat gold']
+    feedstock: ['gold ore', 'niobium ore', 'scrap metal', 'military salvage'],
+    confiscated: []
   }),
   marketScan: Object.freeze([
     'Avionics Systems',
@@ -132,14 +133,20 @@ const DASHBOARD_CONFIG = Object.freeze({
         productId: 'ex_hacker_gunship_package', apiCode: 'ex_hacker_gunship', matches: ['halberd', 'halberd border worlds gunship', 'border worlds gunship'], sellPrice: null })
     ])
   }),
-  exportOrder: ['Multi-Mode Focusing Chamber', 'Reactor Systems', 'Superstructure Systems', 'Gold', 'Niobium'],
+  reserveCards: Object.freeze([
+    Object.freeze({ key: 'gold', label: 'Gold Supply', members: ['Gold', 'Wildcat Gold'], recipeId: 'recipe_gold_advanced', input: 'Gold Ore' }),
+    Object.freeze({ key: 'niobium', label: 'Niobium', members: ['Niobium'], recipeId: 'recipe_niobium_advanced', input: 'Niobium Ore' }),
+    Object.freeze({ key: 'prototype components', label: 'Prototype Components', members: ['Prototype Components'], recipeId: 'recipe_milsal', input: 'Military Salvage' })
+  ]),
+  exportOrder: ['Multi-Mode Focusing Chamber', 'Reactor Systems', 'Superstructure Systems'],
   productionModules: Object.freeze([
     Object.freeze({ product: 'Multi-Mode Focusing Chamber', recipeId: 'recipe_weapon_part_focusing_chamber' }),
     Object.freeze({ product: 'Reactor Systems', recipeId: 'ship_part_reactor' }),
     Object.freeze({ product: 'Superstructure Systems', recipeId: 'ship_part_superstructure' }),
     Object.freeze({ product: 'Basic Alloy', recipeId: 'recipe_scrap_advanced' }),
     Object.freeze({ product: 'Gold', recipeId: 'recipe_gold_advanced' }),
-    Object.freeze({ product: 'Niobium', recipeId: 'recipe_niobium_advanced' })
+    Object.freeze({ product: 'Niobium', recipeId: 'recipe_niobium_advanced' }),
+    Object.freeze({ product: 'Prototype Components', recipeId: 'recipe_milsal' })
   ]),
   alerts: Object.freeze({
     'basic alloy': { type: 'min', red: 2500, yellow: 15000 },

@@ -45,6 +45,7 @@ function commodityOptions(selected) {
 function updateMode(selected = $('supplyCommodity').value) {
   const out = exporting();
   commodityOptions(selected);
+  $('supplySurplusNote').hidden = !(out && context?.surplusCommodity && normalize($('supplyCommodity').value) === normalize(context.surplusCommodity));
   dialog.querySelectorAll('[data-supply-only]').forEach(node => { node.hidden = out; });
   dialog.querySelectorAll('[data-export-only]').forEach(node => { node.hidden = !out; });
   $('supplyExtraLabel').textContent = out ? 'MAX RETURN DETOUR' : 'MAX EXTRA TIME';
@@ -410,6 +411,15 @@ function renderExports() {
   $('supplyStatus').textContent = `${stats.identities || 1} ID POLICIES · ${stats.ships} SHIPS · ${stats.sources} BUYER COMPARISONS · ${stats.checked} EXPORT / ${stats.returnChecked} RETURN QUOTES${stats.returnEnabled ? ` · MAX ${stats.extraPercent}% RETURN DETOUR` : ' · RETURN CARGO OFF'}${stats.noProfit ? ' · NO POSITIVE EXPORT MARGIN' : ''}${stats.timedOut || stats.pruned ? ' · BEST FOUND WITHIN SEARCH LIMIT' : ''}`;
 }
 async function search(force = false) {
+  if (exporting() && context.surplusCommodity && normalize($('supplyCommodity').value) === normalize(context.surplusCommodity)
+    && !(Number.isSafeInteger(Number($('supplyQuantity').value)) && Number($('supplyQuantity').value) > 0)) {
+    request++; abort?.abort(); worker?.terminate(); worker = null;
+    setBusy(false, 'CHOOSE A SURPLUS QUANTITY · ALLOW FOR INTERNAL PRODUCTION FIRST');
+    $('supplyResults').dataset.stale = 'true';
+    $('supplySource').textContent = 'Fresh stock and prices will load when you calculate the chosen quantity.';
+    $('supplySettingsTitle').closest('details').open = true;
+    $('supplyQuantity').focus(); return;
+  }
   const token = ++request;
   const started = performance.now();
   worker?.terminate(); worker = null;
@@ -476,6 +486,7 @@ function mount() {
   dialog.innerHTML = `<header class="supply-heading"><div><small>RHW LOGISTICS</small><h2 id="supplyTitle">RHW TRADE DESK</h2><p>Plan imports to RHW and exports from RHW. Compare hauler categories, time and hauling profit.</p></div><button type="button" id="supplyClose" aria-label="Close Trade Desk">CLOSE</button></header>
     <div class="supply-content"><p class="supply-source">Find a hauler category for the route, then open an ID to see which checked models work for the whole trip. Ship and ID purchase costs are excluded.</p><form id="supplyForm"><div class="supply-fields supply-main-fields"><label>TRADE MODE<select id="supplyMode"><option value="supply">IMPORT</option><option value="export">EXPORT</option></select></label><label>COMMODITY<select id="supplyCommodity"></select></label><label>HAULER CATEGORY<select id="supplyHauler"></select></label></div><details class="supply-settings"><summary id="supplySettingsTitle">IMPORT SETTINGS</summary><div class="supply-fields"><label>LIMIT TO ID<select id="supplyIdentity"><option value="all">AUTO · All available IDs</option></select></label><label>SPECIFIC MODEL · OPTIONAL<select id="supplyShip"></select></label><label data-supply-only>IMPORT PRIORITY<select id="supplyImportGoal"><option value="price">Lowest buy price within time limit</option><option value="income">Best hauler $/hour within time limit</option><option value="speed">Fastest supply rate</option></select></label><label><span id="supplyExtraLabel">MAX EXTRA TIME</span><select id="supplyExtra"><option value="0">Direct import only</option><option value="10">10% extra</option><option value="20" selected>20% extra</option><option value="35">35% extra</option><option value="50">50% extra</option></select></label><label>START CAPITAL · $<input id="supplyCapital" type="number" min="0" step="1" inputmode="numeric" placeholder="Show capital required"></label><label>DELIVERY QUANTITY<input id="supplyQuantity" type="number" min="1" step="1" inputmode="numeric" placeholder="Full hold within RHW limits"></label><label class="supply-check" data-export-only hidden><input id="supplyBackhaul" type="checkbox" checked>Find profitable return cargo</label><label class="supply-check"><input id="supplyPobs" type="checkbox" checked><span id="supplyPobsLabel">Include POB sellers</span></label><label class="supply-check"><input id="supplyUnverified" type="checkbox">Include unverified ID / docking rules · conditional quotes</label><label class="supply-check"><input id="supplyRestrictedPobs" type="checkbox">Include approval-only POBs · conditional quotes</label></div><p id="supplySettingsCopy"></p></details><div class="supply-actions"><button type="submit" id="supplySearch">CALCULATE IMPORT ROUTE</button><button type="button" id="supplyRefresh">REFRESH MARKETS</button><button type="button" id="supplyCancel" hidden>CANCEL SEARCH</button></div></form><p id="supplySource" class="supply-source"></p><p id="supplyStatus" role="status" aria-live="polite"></p><div id="supplyResults"></div></div>`;
   document.body.append(dialog);
+  $('supplyForm').insertAdjacentHTML('beforebegin', '<p id="supplySurplusNote" class="supply-surplus-note" hidden>PROTOTYPE COMPONENTS · INTERNAL RESERVE. Choose an export quantity after allowing for planned production. Fresh quotes still respect RHW’s reported sale reserve and stock.</p>');
   $('supplySource').insertAdjacentHTML('beforebegin', '<section id="supplyMapState" class="supply-map-state" aria-label="Route map"><div><strong id="supplyMapSummary"></strong><p id="supplyMapNote" role="status" aria-live="polite"></p></div><div class="supply-actions"><button type="button" id="supplyMapApply" hidden>RECALCULATE WITH UPDATED MAP</button><button type="button" id="supplyMapRefresh">UPDATE MAP</button></div></section>');
   $('supplyClose').addEventListener('click', () => dialog.close());
   dialog.addEventListener('close', () => {
@@ -485,8 +496,8 @@ function mount() {
     requestAnimationFrame(() => {
       if (dialog.open) return;
       const visible = node => node?.isConnected && node.getClientRects().length > 0 && !node.closest('[hidden]');
-      const trigger = visible(context?.trigger) ? context.trigger : [...document.querySelectorAll('[data-supply-commodity],[data-export-commodity]')]
-        .find(node => (node.dataset.supplyCommodity || node.dataset.exportCommodity) === context?.commodity && visible(node));
+      const trigger = visible(context?.trigger) ? context.trigger : [...document.querySelectorAll('[data-supply-commodity],[data-export-commodity],[data-surplus-commodity]')]
+        .find(node => (node.dataset.supplyCommodity || node.dataset.exportCommodity || node.dataset.surplusCommodity) === context?.commodity && visible(node));
       const oldCard = context?.trigger?.closest('.production-card');
       const card = oldCard?.isConnected ? oldCard : [...document.querySelectorAll('.production-card')]
         .find(node => oldCard && node.dataset.productionProduct === oldCard.dataset.productionProduct);
@@ -515,9 +526,11 @@ function mount() {
   });
 }
 export function open(next) {
+  const previousSurplus = context?.surplusCommodity;
   mount(); context = next; result = null; $('supplyResults').innerHTML = '';
   const selected = next.commodity || $('supplyCommodity').value;
   if (next.mode) $('supplyMode').value = next.mode;
+  if (next.surplusCommodity || previousSurplus) $('supplyQuantity').value = '';
   updateMode(selected);
   identityOptions(); haulerOptions(); shipOptions();
   if (!dialog.open) dialog.showModal();

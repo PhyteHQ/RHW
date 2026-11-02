@@ -482,13 +482,15 @@ def main():
           core.state.catalog=null;renderProductionModules();
           production.unavailable=productionGrid.textContent.includes('PRODUCTION RECIPES UNAVAILABLE')&&!productionGrid.querySelector('.production-card');
           core.state.catalog=catalog;renderProductionModules();
-          production.restored=productionGrid.querySelectorAll('.production-card').length===6;
-          document.querySelector('[data-production-product="basic alloy"] .production-calc-button').click();
+          production.restored=productionGrid.querySelectorAll('.production-card').length===7;
+          const costing=document.querySelector('[data-production-product="basic alloy"] .production-calc-button');
+          if(!costing)return {production,debug:{titles:[...productionGrid.querySelectorAll('.production-title')].map(n=>n.textContent),buttons:productionGrid.querySelectorAll('.production-calc-button').length,bridge:!!RHWV4.productionPricing,installed:productionGrid.dataset.v40ProductionCalculatorBridge,selfTest:RHWV4.productionPricing?.selfTest()}};
+          costing.click();
           return {production,recipe:opsRecipe.value,output:RHWV4.operationsCore.buildPlan({recipeId:opsRecipe.value,
             quantity:1,affiliationId:'br_m_grp',useInventory:false,recursive:false,routingPolicy:'first'}).actualOutput,
             materialNames:document.getElementById('opsMaterialPanel').textContent};
         })()""")
-        assert production_recipe['production']['cards'] == 6 and production_recipe['production']['crew'] >= 3 and all(production_recipe['production'][key] for key in ('materialCoverage','unavailable','restored')), production_recipe
+        assert production_recipe['production']['cards'] == 7 and production_recipe['production']['crew'] >= 3 and all(production_recipe['production'][key] for key in ('materialCoverage','unavailable','restored')), production_recipe
         assert production_recipe['recipe'] == 'recipe_scrap_advanced' and production_recipe['output'] == 750, production_recipe
         assert 'Scrap Metal' in production_recipe['materialNames'] and 'Sealed Container' not in production_recipe['materialNames'], production_recipe
         # A rejected named-save must leave the old archive and the newly typed

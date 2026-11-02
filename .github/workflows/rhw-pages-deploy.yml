@@ -79,6 +79,7 @@ jobs:
         run: |
           node scripts/test_shipyard.js
           node scripts/test_production_plan.js
+          node scripts/test_inventory_reserves.js
 
       - name: Validate Logistics market scans
         run: node scripts/test_logistics_scans.js
@@ -109,6 +110,10 @@ jobs:
       - name: Supply route controls, worker and responsive dialog
         if: ${{ !cancelled() }}
         run: python3 scripts/smoke_supply_routes.py
+
+      - name: Inventory reserves, stock links and ship counts
+        if: ${{ !cancelled() }}
+        run: python3 scripts/smoke_inventory_reserves.py
 
       - name: Save interface checks and screenshots
         if: always()

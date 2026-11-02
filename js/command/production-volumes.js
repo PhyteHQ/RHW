@@ -12,6 +12,7 @@ globalThis.RHW_PRODUCTION_VOLUMES = Object.freeze({
   "commodity_industrial": 1,
   "commodity_iron": 1,
   "commodity_mox_fuel": 1,
+  "commodity_military_salvage": 1,
   "commodity_niobium": 1,
   "commodity_niobium_ore": 2,
   "commodity_pirate_gold": 1,

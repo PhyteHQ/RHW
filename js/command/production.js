@@ -46,8 +46,10 @@ function shipyardComponentAnalysis(item) {
 }
 
 function stateForRole(item, role) {
-  if (!item || item.missing) return 'critical';
   const key = commodityKey(item);
+  if (role === 'reserve' && window.RHWV4?.inventoryModel) return window.RHWV4.inventoryModel.reserve(key)?.state || 'waiting';
+  if (role === 'procurement' && FEEDSTOCK.includes(key) && window.RHWV4?.inventoryModel?.record(item?.name).stock === null) return 'waiting';
+  if (!item || item.missing) return 'critical';
   if (role === 'shipyard') return shipyardComponentAnalysis(item)?.state || stockState(item);
   if (role === 'procurement' && FEEDSTOCK.includes(key)) return feedstockAnalysis(item).state;
   return stockState(item);
@@ -83,10 +85,11 @@ function assetRoles(item) {
   const roles = [];
   if (MAINTENANCE.includes(nm)) roles.push('maintenance');
   if (EXPORTS.includes(nm)) roles.push('export');
+  if ((DASHBOARD_CONFIG.roles.reserve || []).includes(nm)) roles.push('reserve');
   if (SHIPYARD.includes(nm)) roles.push('shipyard');
   if (BYPRODUCTS.includes(nm)) roles.push('byproduct');
   if (CONFISCATED.includes(nm)) roles.push('confiscated');
-  if (PROCUREMENT.includes(nm) || FEEDSTOCK.includes(nm)) roles.push('procurement');
+  if (!roles.includes('reserve') && (PROCUREMENT.includes(nm) || FEEDSTOCK.includes(nm))) roles.push('procurement');
   return [...new Set(roles)];
 }
 
@@ -99,7 +102,7 @@ function assetRole(item) {
 }
 
 function rebuildItemCaches() {
-  const requiredKeys = [...FEEDSTOCK, ...MAINTENANCE, ...EXPORTS, ...SHIPYARD, ...BYPRODUCTS, ...CONFISCATED, ...PROCUREMENT].map(keyFromName);
+  const requiredKeys = [...FEEDSTOCK, ...MAINTENANCE, ...EXPORTS, ...(DASHBOARD_CONFIG.roles.reserve || []), ...SHIPYARD, ...BYPRODUCTS, ...CONFISCATED, ...PROCUREMENT].map(keyFromName);
   const augmentedItems = Array.isArray(items) ? [...items] : [];
   const existingKeys = new Set(augmentedItems.map(commodityKey));
 
@@ -136,6 +139,7 @@ function roleLabel(role) {
   if (role === 'other') return 'OTHER';
   if (role === 'maintenance') return 'FACILITY';
   if (role === 'export') return 'EXPORT';
+  if (role === 'reserve') return 'INTERNAL';
   if (role === 'shipyard') return 'SHIPYARD';
   if (role === 'byproduct') return 'WASTE';
   if (role === 'confiscated') return 'SEIZED';
@@ -144,6 +148,7 @@ function roleLabel(role) {
 
 function statusLabel(state, role) {
   if (state === 'waiting') return 'UNKNOWN';
+  if (role === 'reserve') return state === 'critical' ? 'NEEDED' : state === 'low' ? 'LOW' : 'INTERNAL USE';
   if (role === 'byproduct' || role === 'confiscated') return state === 'critical' ? 'OVERFLOW' : (state === 'low' ? 'WARN' : 'STABLE');
   return state === 'critical' ? 'CRITICAL' : (state === 'low' ? 'LOW' : 'STABLE');
 }
@@ -386,7 +391,7 @@ function renderProductionModules() {
     const productKey = normalize(displayRecipeName(recipe.product));
     const mobileCollapsed = window.matchMedia?.('(max-width: 760px)').matches && !productionExpandedModules.has(productKey);
 
-    return `<div class="production-card ${analysis.cardState}${mobileCollapsed ? ' production-card-collapsed' : ' production-card-expanded'}" data-production-state="${analysis.cardState}" data-production-product="${escapeHTML(productKey)}">
+    return `<div class="production-card ${analysis.cardState}${mobileCollapsed ? ' production-card-collapsed' : ' production-card-expanded'}" data-production-recipe="${escapeHTML(recipe.recipeId)}" data-production-state="${analysis.cardState}" data-production-product="${escapeHTML(productKey)}">
               <div class="production-card-head">
                 <div>
                   <div class="production-kicker">MODULE-${String(index + 1).padStart(2, '0')}</div>

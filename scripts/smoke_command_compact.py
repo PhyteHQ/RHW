@@ -180,14 +180,11 @@ def main() -> int:
               baseHealthVal.textContent='100%';baseMoneyVal.textContent='$123.456.789';baseStorageVal.textContent='1.234.567';
               const names=['Basic Alloy','Consumer Goods','Food Rations'];
               const stock=(name,quantity)=>({name,quantity,min_stock:50,max_stock:150000});
-              renderList(maintenanceList,names.map(name=>stock(name,123456)),'','maintenance');
-              renderList(exportList,EXPORT_ORDER.map(name=>stock(name,name==='Reactor Systems'?350:23456)),'','export');
-              feedstockList.innerHTML=['Gold Ore','Niobium Ore','Scrap Metal'].map(name=>{
-                const item=stock(name,400),a=feedstockAnalysis(item);
-                return renderOverviewRow({state:a.state,role:'procurement',name,item,quantityValue:400,detail:`${a.required-400} NEEDED FOR 1 BATCH`,progress:renderFeedstockProgress(item,a.state,commodityKey(item))});
-              }).join('');
-              renderList(byproductList,[stock('Toxic Waste',17000)],'','byproduct');
-              renderList(confiscatedList,[stock('Wildcat Gold',0)],'','confiscated');
+              items=[...names.map(name=>stock(name,123456)),...EXPORT_ORDER.map(name=>stock(name,name==='Reactor Systems'?350:23456)),
+                stock('Gold',0),stock('Wildcat Gold',23456),stock('Niobium',12345),stock('Prototype Components',500),
+                stock('Gold Ore',400),stock('Niobium Ore',400),stock('Scrap Metal',7978),stock('Military Salvage',250),stock('Toxic Waste',17000),
+                {name:'Archon Design Schematics',quantity:99},{nickname:'medium_miner_package',name:'Archon Modular Miner',quantity:2}];
+              rhwBase=rhwBase||{cargospace:1000000};lastLoaded=new Date();dataIsStale=false;rebuildItemCaches();renderOverview();
               return true;
             })()""")
             uplink = base.ev(cdp, """(()=>{
@@ -229,7 +226,7 @@ def main() -> int:
                 })()""")
                 if geometry['overflow']>2 or geometry['scrollDeck']>2 or len(geometry['cards'])!=5 or not geometry['labelsFit'] or geometry['contentOverflow']:
                     layout_failures.append(f'Inventory overflow at {width}px: {geometry}')
-                if geometry['rows']!=['maintenanceList','exportList','feedstockList','byproductList','confiscatedList']:
+                if geometry['rows']!=['maintenanceList','reserveList','exportList','byproductList','shipStockList']:
                     layout_failures.append(f'Inventory reading order at {width}px: {geometry}')
                 cards=geometry['cards']
                 if width>=1201:
@@ -244,7 +241,7 @@ def main() -> int:
                     if geometry['unavailable']['header']['height']>252 or geometry['unavailable']['wrapped']:
                         layout_failures.append(f'Unavailable telemetry must keep the desktop header at its original height at {width}px: {geometry}')
                 if width>=1200:
-                    if max(c['top'] for c in cards[:3])-min(c['top'] for c in cards[:3])>2 or cards[0]['height']>=cards[1]['height'] or cards[3]['top']<max(c['bottom'] for c in cards[:3])-2:
+                    if max(c['top'] for c in cards[:3])-min(c['top'] for c in cards[:3])>2 or max(c['height'] for c in cards[:3])-min(c['height'] for c in cards[:3])>2 or cards[3]['top']<max(c['bottom'] for c in cards[:3])-2:
                         layout_failures.append(f'Inventory row sizing at {width}px: {geometry}')
                     if cards[0]['top']>455 or geometry['quantity']<19 or geometry['kpi']<20:
                         layout_failures.append(f'Desktop HUD density at {width}px: {geometry}')
