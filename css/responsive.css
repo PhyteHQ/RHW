@@ -283,7 +283,6 @@ body[data-workspace="command"] .command-node-host, body[data-workspace="command"
 .shipyard-component-required, .shipyard-component-stock, .shipyard-component-coverage { display: grid;gap: 3px;align-content: center;font-size: 11px; }
 .shipyard-component-required::before, .shipyard-component-stock::before, .shipyard-component-coverage::before { content: attr(data-label);color: rgba(190,201,207,.48);font-family: var(--font-tech);font-size: 6.5px;font-weight: 400;letter-spacing: .08em; }
 .hull-registry-row { grid-template-columns: minmax(0, 1fr) minmax(62px, auto) minmax(96px, auto);min-height: 72px;padding: 10px; }
-#productionPanel .production-details-toggle { display: none; }
 .production-module-tools { padding: 10px 11px 0; }
 .production-filter-row { grid-template-columns: 1fr auto; }
 .production-filter-segments { grid-column: 1 / -1;display: grid;grid-template-columns: repeat(4, minmax(0, 1fr)); }
@@ -303,10 +302,6 @@ body[data-workspace="command"] .command-node-host, body[data-workspace="command"
 .production-stat strong, .production-stock-primary strong { font-size: 17px; }
 .next-gap { margin-top: 9px;padding: 11px 9px;font-size: 10px; }
 .production-card-toggle { display: flex;align-items: center;justify-content: center; }
-#productionPanel:not(.production-expanded) .production-card:not(.production-card-collapsed) .recipe-column-head { display: grid; }
-#productionPanel:not(.production-expanded) .production-card:not(.production-card-collapsed) .recipe-list { display: block; }
-#productionPanel:not(.production-expanded) .production-card:not(.production-card-collapsed) .byproduct-strip { display: flex; }
-#productionPanel .production-card.production-card-collapsed .recipe-column-head, #productionPanel .production-card.production-card-collapsed .recipe-list, #productionPanel .production-card.production-card-collapsed .byproduct-strip { display: none; }
 .recipe-column-head, .recipe-list li { grid-template-columns: minmax(0, 1fr) 72px 82px;gap: 8px; }
 .recipe-column-head { font-size: 7px; }
 .recipe-list li { min-height: 44px;margin-inline: -5px;padding-inline: 5px; }

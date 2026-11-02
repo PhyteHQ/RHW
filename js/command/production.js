@@ -302,7 +302,7 @@ function ensureProductionModuleTools() {
           <button type="button" data-production-filter="ok" aria-pressed="false">READY</button>
         </div>
         <label class="production-module-search">
-          <span class="sr-only">Search production modules</span>
+          <span class="visually-hidden">Search production modules</span>
           <input id="productionModuleSearch" type="search" autocomplete="off" placeholder="SEARCH PRODUCT…" aria-label="Search production modules">
         </label>
         <span class="production-module-count" id="productionModuleCount" aria-live="polite">0 MODULES</span>
@@ -344,7 +344,10 @@ function ensureProductionModuleTools() {
 
 function renderProductionModules() {
   if (!els.productionGrid) return;
+  const materialFocus = document.activeElement?.closest?.('.production-card-toggle')?.closest('.production-card')?.dataset.productionRecipe;
   ensureProductionModuleTools();
+  const sharedPlan = window.RHWV4?.productionPlan?.analyze();
+  if (sharedPlan) window.RHWV4.productionPlanView?.renderOverview(sharedPlan);
   if (!hasVerifiedTelemetry()) {
     const failed = Boolean(lastSyncError);
     els.productionGrid.innerHTML = `<div class="feature-empty production-empty">${failed ? 'TELEMETRY UNAVAILABLE' : 'AWAITING FIRST TELEMETRY BURST'}<small>${failed ? 'NO VERIFIED RHW INVENTORY IS AVAILABLE' : 'PRODUCTION ANALYSIS WILL APPEAR AFTER THE FIRST SUCCESSFUL SYNC'}</small></div>`;
@@ -357,7 +360,6 @@ function renderProductionModules() {
     return;
   }
 
-  const sharedPlan = window.RHWV4?.productionPlan?.analyze();
   els.productionGrid.innerHTML = recipes.map((recipe, index) => {
     const analysis = analyzeRecipe(recipe);
     const forecast = sharedPlan ? window.RHWV4.productionPlanView?.card(recipe.recipeId, sharedPlan, analysis) : null;
@@ -367,8 +369,8 @@ function renderProductionModules() {
         ? `<span class="recipe-short">Short ${number(item.currentCycleGap)}</span>`
         : '';
 
-      return `<li class="${isBottleneck ? 'bottleneck' : ''}">
-                <span class="recipe-name"><span class="rhw-supply-material"><span>${escapeHTML(item.displayName)}</span>${typeof supplyRouteButton === 'function' ? supplyRouteButton(item.name) : ''}</span>${item.extraHtml || ''}${typeof purchaseSourceButton === 'function' ? purchaseSourceButton(item.name, item.currentCycleGap) : ''}</span>
+      return `<li class="${isBottleneck ? `bottleneck ${analysis.cardState}` : ''}">
+                <span class="recipe-name"><span class="rhw-supply-material"><span>${escapeHTML(item.displayName)}</span>${typeof supplyRouteButton === 'function' ? supplyRouteButton(item.name) : ''}</span>${sharedPlan ? window.RHWV4.productionPlanView?.supplyMarkup(item.name, recipe.recipeId, sharedPlan) || '' : ''}${item.extraHtml || ''}${typeof purchaseSourceButton === 'function' ? purchaseSourceButton(item.name, item.currentCycleGap) : ''}</span>
                 <span class="recipe-required">${number(item.required)}</span>
                 <span class="recipe-stock">${number(item.stock)}${shortText}</span>
               </li>`;
@@ -376,7 +378,7 @@ function renderProductionModules() {
 
     const bottleneckDisplay = analysis.bottleneck ? escapeHTML(analysis.bottleneck.name).toUpperCase() : '';
     const nextGapText = analysis.bottleneck
-      ? `<div class="next-gap ${analysis.cardState}">NEXT +1 CYCLE: <strong>${bottleneckDisplay} +${number(analysis.nextCycleGap)}</strong></div>`
+      ? `<div class="next-gap ${analysis.cardState}">ONE MORE SOLO CYCLE: <strong>${bottleneckDisplay} +${number(analysis.nextCycleGap)}</strong></div>`
       : '';
 
     const byproductsText = recipe.byproducts && recipe.byproducts.length
@@ -388,34 +390,40 @@ function renderProductionModules() {
       : '';
 
     const productKey = normalize(displayRecipeName(recipe.product));
-    const mobileCollapsed = window.matchMedia?.('(max-width: 760px)').matches && !productionExpandedModules.has(productKey);
+    const collapsed = !productionExpandedModules.has(productKey);
+    const materialId = `production-materials-${recipe.recipeId}`;
+    const inputStatus = { ok: 'INPUTS READY', low: 'INPUTS LOW', critical: 'INPUTS MISSING', waiting: 'INPUTS UNKNOWN' }[analysis.cardState];
 
-    return `<div class="production-card ${analysis.cardState}${mobileCollapsed ? ' production-card-collapsed' : ' production-card-expanded'}" data-production-recipe="${escapeHTML(recipe.recipeId)}" data-production-state="${analysis.cardState}" data-production-product="${escapeHTML(productKey)}">
+    return `<div class="production-card ${analysis.cardState}${collapsed ? ' production-card-collapsed' : ' production-card-expanded'}" data-production-recipe="${escapeHTML(recipe.recipeId)}" data-production-state="${analysis.cardState}" data-production-product="${escapeHTML(productKey)}">
               <div class="production-card-head">
                 <div>
                   <div class="production-kicker">MODULE-${String(index + 1).padStart(2, '0')}</div>
                   <div class="production-title">${escapeHTML(displayRecipeName(recipe.product))}</div>
-                  <div class="footnote">YIELD PER CYCLE: ${number(recipe.output)}</div>
+                  <div class="footnote production-batch-time">${number(recipe.output)} / BATCH <span class="production-cycle-time">${forecast?.cycle ? `~${forecast.cycle} / CYCLE` : 'CYCLE TIME UNKNOWN'}</span></div>
                 </div>
-                <div class="production-card-controls"><span class="module-state ${analysis.cardState}">${statusLabel(analysis.cardState, 'production')}</span>${forecast?.control || ''}</div>
+                <div class="production-card-controls"><span class="module-state ${analysis.cardState}" title="Standalone input coverage, before competition or incoming production">${inputStatus}</span>${forecast?.control || ''}</div>
               </div>
               <div class="production-stats">
                 <div class="production-stat production-stock-primary"><small>IN STOCK</small><strong>${number(analysis.productStock)}</strong></div>
-                <div class="production-stat"><small>${forecast?.selected ? 'SOLO CYCLES' : 'MATERIAL CYCLES'}</small><strong>${number(analysis.possibleCycles)}</strong><span class="production-plan-runtime production-cycle-time">${forecast?.cycle ? `~${forecast.cycle} / CYCLE` : 'CYCLE TIME UNKNOWN'}</span></div>
-                <div class="production-stat${forecast?.selected ? ' production-plan-stat' : ''}" data-forecast-mode="${forecast?.mode || 'solo'}"><small>${forecast?.yieldLabel || 'EST. YIELD'}</small><strong>${forecast ? forecast.count : number(analysis.possibleOutput)}</strong><span class="production-plan-runtime">${forecast?.time || 'TIME UNKNOWN'} · ${forecast?.modeLabel || 'SOLO ESTIMATE'}</span></div>
+                <div class="production-stat production-forecast${forecast?.selected ? ' production-plan-stat' : ''}" data-forecast-mode="${forecast?.mode || 'solo'}"><small>${forecast?.yieldLabel || 'NEW OUTPUT · SOLO ESTIMATE'}</small><strong>${forecast ? forecast.count : number(analysis.possibleOutput)}</strong><span class="production-plan-runtime">${forecast?.time || 'TIME UNKNOWN'}</span><span class="production-forecast-context">${forecast?.modeLabel || 'SOLO ESTIMATE'}</span></div>
               </div>
-              ${forecast?.details || ''}
-              ${nextGapText}
+              <div class="production-limit"><span>${escapeHTML(forecast?.limitLabel || 'SOLO LIMIT')}</span><strong>${escapeHTML(forecast?.limit || analysis.bottleneck?.displayName || 'Input stock unknown')}</strong></div>
               ${analysis.possibleCycles === null ? '<div class="production-stock-note">INPUT STOCK UNKNOWN</div>' : ''}
-              <button type="button" class="production-card-toggle" aria-expanded="${mobileCollapsed ? 'false' : 'true'}"><span>${mobileCollapsed ? 'SHOW MATERIALS' : 'HIDE MATERIALS'}</span></button>
+              <button type="button" class="production-card-toggle" aria-controls="${escapeHTML(materialId)}" aria-expanded="${!collapsed}"><span>${collapsed ? 'SHOW MATERIALS' : 'HIDE MATERIALS'}</span></button>
+              <div class="production-materials" id="${escapeHTML(materialId)}">
+              <div class="production-solo-summary"><span>STANDALONE COVERAGE</span><strong>MATERIAL CYCLES ${number(analysis.possibleCycles)} · SOLO YIELD ${number(analysis.possibleOutput)}</strong><small>${forecast?.soloTime || 'TIME UNKNOWN'} · Ignores competition and incoming production.</small></div>
+              ${nextGapText}
               <div class="recipe-column-head" aria-hidden="true">
                 <span>Material</span><span>Required / Cycle</span><span>Current Stock</span>
               </div>
               <ul class="recipe-list">${ingredientRows}</ul>
               ${byproductsText}
               ${prerequisitesText}
+              </div>
             </div>`;
   }).join('');
+  if (materialFocus) [...els.productionGrid.querySelectorAll('.production-card')]
+    .find(card => card.dataset.productionRecipe === materialFocus)?.querySelector('.production-card-toggle')?.focus({ preventScroll: true });
   applyProductionModuleFilters();
   window.RHWRuntime?.rendered('production');
 }
