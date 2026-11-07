@@ -21,9 +21,9 @@
     const known = parts.some(p => p.stock !== null) && parts.every(p => !p.item || p.item.missing || p.stock !== null);
     const stock = known ? parts.reduce((sum, p) => sum + (p.stock ?? 0), 0) : null;
     let required = null;
-    if (app.operationsCore?.state.catalog && app.personnel && app.productionPlan) {
+    if (app.operationsCore?.state.catalog && app.productionScenario && app.productionPlan) {
       required = 0;
-      for (const row of app.personnel.analyze().rows.filter(r => r.enabled)) {
+      for (const row of app.productionScenario.analyze().rows.filter(r => r.enabled)) {
         const batch = app.productionPlan.batch(row);
         for (const group of batch?.inputs || []) if (group.names.some(n => spec.members.some(member => keyFromName(member) === keyFromName(n)))) required += group.qty;
       }

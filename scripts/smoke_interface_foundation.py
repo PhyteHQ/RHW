@@ -258,40 +258,31 @@ def main():
         assert shipyard['stored'] == 'archon' and shipyard['route'] == '#operations/calculator', shipyard
         assert shipyard['recipe'] == 'ship_assembly_medium_miner' and shipyard['iff'] == 'br_m_grp' and shipyard['quantity'] == 1, shipyard
 
-        # Civilian selection, staffing reservations and the mobile planner use
-        # the shipped DOM and real change events, with synthetic stock only.
-        personnel = base.ev(cdp, """(()=>{
+        # The retired planner and its Shipyard links are absent in both views.
+        retired = base.ev(cdp, """(()=>{
           const app=RHWV4;
           app.navigate('command','shipyard');
           document.querySelector('[data-shipyard-division="civilian"]').click();
           const civilians=document.querySelectorAll('[data-shipyard-select]').length;
           document.querySelector('[data-shipyard-select="halberd"]').click();
           const crew=app.shipyard.requirements().prerequisites.find(p=>p.id==='commodity_crew').qty;
-          document.querySelector('[data-personnel-open]').click();
-          const opened=document.body.dataset.commandNode==='production'&&personnelPlanDetails.open;
-          document.querySelector('[data-production-plan="ship_part_reactor"]').click();
-          const stock=document.querySelector('[data-personnel-stock="crew"]');stock.focus();stock.value='1400';stock.dispatchEvent(new Event('change',{bubbles:true}));
-          const totals=app.personnel.analyze().resources.map(r=>r.required);
-          const focus=document.activeElement?.dataset.personnelStock==='crew';
-          const stayedOpen=personnelPlanDetails.open;
-          const touch=[...document.querySelectorAll('#personnelPlanner select,#personnelPlanner input[type="number"],.personnel-enable')].filter(e=>!e.disabled).every(e=>e.getBoundingClientRect().height>=44);
+          const noLinks=!document.querySelector('[data-personnel-open],.shipyard-crew-check');
+          app.navigate('command','production');
+          const noPlanner=!document.querySelector('#personnelPlanner,[data-personnel-stock]')&&!app.personnel;
           const fits=document.documentElement.scrollWidth<=innerWidth+1;
-          app.personnel.setModule('shipyard',{enabled:false});
-          app.personnel.setStock('crew','');app.personnel.setStock('scientists','');
-          personnelPlanDetails.open=false;
           app.shipyard.selectHull('archon');
-          return {civilians,crew,opened,totals,focus,stayedOpen,touch,fits};
+          return {civilians,crew,noLinks,noPlanner,fits};
         })()""")
-        assert personnel == {'civilians':4,'crew':200,'opened':True,'totals':[1400,200],'focus':True,'stayedOpen':True,'touch':True,'fits':True}, personnel
+        assert retired == {'civilians':4,'crew':200,'noLinks':True,'noPlanner':True,'fits':True}, retired
 
         # Inline controls share one inventory and one physical module choice.
         forecast = base.ev(cdp, """(()=>{
           const app=RHWV4, originalItems=items, originalSpace=rhwBase.cargospace;
-          window.__forecastRestore={items:originalItems,space:originalSpace,plan:app.personnel.snapshot()};
+          window.__forecastRestore={items:originalItems,space:originalSpace,plan:app.productionScenario.snapshot()};
           app.navigate('command','production');
           app.productionPlan.select('ship_part_superstructure');
           const inventory=new Map();
-          for(const r of app.personnel.analyze().rows.filter(r=>r.enabled)){
+          for(const r of app.productionScenario.analyze().rows.filter(r=>r.enabled)){
             const b=app.productionPlan.batch(r);
             for(const g of b.inputs)g.ids.forEach((id,i)=>inventory.set(id,{nickname:id,name:g.names[i],quantity:10000,min_stock:0,max_stock:1000000}));
             for(const o of b.outputs)if(!inventory.has(o.id))inventory.set(o.id,{nickname:o.id,name:o.name,quantity:0,min_stock:0,max_stock:1000000});
@@ -311,26 +302,26 @@ def main():
           const unknown=document.querySelector('[data-production-plan="recipe_niobium_advanced"]').closest('.production-card');
           const unknownTime=unknown.querySelector('[data-forecast-mode="solo"] .production-plan-runtime').textContent.includes('TIME UNKNOWN')&&unknown.querySelector('.production-cycle-time').textContent==='~16m / CYCLE';
           document.querySelector('[data-production-plan="ship_part_reactor"]').click();
-          const reactorOff=!app.personnel.analyze().rows.find(r=>r.key==='shipyard').enabled;
+          const reactorOff=!app.productionScenario.analyze().rows.find(r=>r.key==='shipyard').enabled;
           document.querySelector('[data-production-plan="recipe_niobium_advanced"]').click();
           const onlyNiobium=document.querySelector('[data-production-plan="recipe_gold_advanced"]').getAttribute('aria-pressed')==='false';
           const soloCards=[...document.querySelectorAll('#productionGrid .production-plan-stat')];
           const soloFallback=soloCards.length===3&&soloCards.every(e=>e.dataset.forecastMode==='solo'&&e.textContent.includes('NEW OUTPUT · SOLO ESTIMATE'))&&soloCards.filter(e=>e.querySelector('strong').textContent!=='—').length===2;
-          document.querySelector('[data-production-plan="recipe_niobium_advanced"]').click();app.personnel.restore();
-          const refineryOff=!app.personnel.analyze().rows.find(r=>r.key==='refinery').enabled&&document.querySelector('#personnelPlanner .personnel-module:not(.is-enabled)').textContent.includes('NO RECIPE STAFF RESERVED');
+          document.querySelector('[data-production-plan="recipe_niobium_advanced"]').click();app.productionScenario.restore();
+          const refineryOff=!app.productionScenario.analyze().rows.find(r=>r.key==='refinery').enabled&&document.querySelector('#personnelPlanner .personnel-module:not(.is-enabled)').textContent.includes('NO RECIPE STAFF RESERVED');
           document.querySelector('[data-production-plan="recipe_gold_advanced"]').click();
           const picker=document.getElementById('productionPlanHull');picker.focus();picker.value='halberd';picker.dispatchEvent(new Event('change',{bubbles:true}));
           const pickerFocus=document.activeElement.id==='productionPlanHull';
           document.querySelector('#productionShipPlan [data-production-hull-plan]').click();
-          const followsHull=app.personnel.analyze().rows.find(r=>r.key==='shipyard').recipeId===app.shipyard.selectedHull().recipeId;
+          const followsHull=app.productionScenario.analyze().rows.find(r=>r.key==='shipyard').recipeId===app.shipyard.selectedHull().recipeId;
           const noTabChange=document.body.dataset.commandNode==='production';
           const shipTouch=document.querySelector('#productionShipPlan [data-production-hull-plan]').getBoundingClientRect().height>=44;
           const ids=[...document.querySelectorAll('.production-plan-details')].map(e=>e.id),uniqueIds=new Set(ids).size===ids.length;
           document.querySelector('#productionShipPlan [data-production-hull-plan]').click();
-          const shipOff=!app.personnel.analyze().rows.find(r=>r.key==='shipyard').enabled;
+          const shipOff=!app.productionScenario.analyze().rows.find(r=>r.key==='shipyard').enabled;
           document.querySelector('#productionShipPlan [data-production-hull-plan]').click();
           document.querySelector('[data-production-plan="ship_part_superstructure"]').click();
-          const replacesShip=app.personnel.analyze().rows.find(r=>r.key==='shipyard').followHull===false;
+          const replacesShip=app.productionScenario.analyze().rows.find(r=>r.key==='shipyard').followHull===false;
           const fixed=[...document.querySelectorAll('.production-plan-fixed')].length===2;
           const fixedLabels=[...document.querySelectorAll('.production-plan-fixed')].every(label=>label.tagName==='SPAN'&&!label.hasAttribute('aria-expanded'));
           const overview=document.getElementById('productionPlanOverview');
@@ -368,7 +359,7 @@ def main():
         base.ev(cdp, """(()=>{
           const old=window.__forecastRestore,app=RHWV4;
           items=old.items;rhwBase.cargospace=old.space;rebuildItemCaches();
-          app.store.set(app.config.storageKeys.personnelPlan,old.plan);app.personnel.restore();
+          app.store.set(app.config.storageKeys.productionPlan,old.plan);app.productionScenario.restore();
           app.shipyard.selectHull('archon');app.productionPlan.invalidate();renderAll();
           delete window.__forecastRestore;return true;
         })()""")

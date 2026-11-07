@@ -7,7 +7,7 @@ const path = require('node:path');
 const keys = {
   activeWorkspace: 'workspace', commandNode: 'command-node', inventoryView: 'inventory-view',
   operationsNode: 'operations-node', commsNode: 'comms-node', tickerComposer: 'ticker', shipyardSelection: 'shipyard-selection',
-  commsMobileView: 'comms-mobile-view', calculatorPriceProfiles: 'price-profiles', personnelPlan: 'personnel-plan', shipyardDivisions: 'shipyard-divisions',
+  commsMobileView: 'comms-mobile-view', calculatorPriceProfiles: 'price-profiles', productionPlan: 'personnel-plan', shipyardDivisions: 'shipyard-divisions',
   productionOrders: 'production-orders', shipyardPlanner: 'shipyard-planner',
   commsCurrent: 'comms-current', commsDrafts: 'comms-drafts', localSenders: 'local-senders',
   newswireManagerDraft: 'newswire-draft'
@@ -70,13 +70,15 @@ memory.set(keys.productionOrders, [{ id: 'order-a', quantity: 1, updatedAt: 20 }
 memory.set(keys.activeWorkspace, 'command');
 memory.set(keys.shipyardSelection, 'archon');
 memory.set(keys.shipyardDivisions, { mining: 'archon', civilian: 'halberd' });
-memory.set(keys.personnelPlan, { version: 1, stock: { crew: 1200 }, modules: { refinery: { enabled: true, recipeId: 'recipe_gold_advanced' } } });
+memory.set(keys.productionPlan, { version: 1, stock: { crew: 1200 }, modules: { refinery: { enabled: true, recipeId: 'recipe_gold_advanced' } } });
 
 const exported = app.storage.exportPayload();
 assert.equal(exported.version, 5, 'New private backups must use format V5');
 assert.equal(exported.preferences.shipyardSelection, 'archon');
 assert.equal(exported.preferences.shipyardDivisions.civilian, 'halberd');
-assert.equal(exported.preferences.personnelPlan.stock.crew, 1200);
+assert.equal(exported.preferences.productionPlan.modules.refinery.recipeId, 'recipe_gold_advanced');
+assert.equal(exported.preferences.productionPlan.stock, undefined, 'Manual crew counts are excluded from backups');
+assert.equal(exported.preferences.personnelPlan, undefined);
 exported.current.subject = 'DETACHED EXPORT MUTATION';
 assert.equal(app.state.comms.subject, 'KEEP LOCAL CURRENT', 'Exported backup must be detached from live app state');
 const inspection = app.storage.inspectPayload(exported);
@@ -127,6 +129,15 @@ assert.deepEqual(memory.get(keys.shipyardPlanner), { target: 'remote-plan' });
 assert.deepEqual(memory.get(keys.newswireManagerDraft), { source: 'REMOTE NEWSWIRE' });
 assert.equal(memory.get(keys.activeWorkspace), 'comms');
 assert.equal(memory.get(keys.shipyardSelection), 'invincible', 'Ship selection travels with selected app settings');
+
+const legacyPreferences = clone(exported);
+legacyPreferences.preferences = { personnelPlan: { version: 4, stock: { crew: 99999, scientists: 99999 }, modules: {
+  refinery: { enabled: false }, shipyard: { enabled: true, recipeId: 'ship_part_reactor', followHull: false }
+} } };
+app.storage.importPayload(legacyPreferences, { sections: ['preferences'] });
+assert.equal(memory.get(keys.productionPlan).modules.shipyard.recipeId, 'ship_part_reactor', 'Old backups retain selected production');
+assert.equal(memory.get(keys.productionPlan).modules.refinery.enabled, false);
+assert.equal(memory.get(keys.productionPlan).stock, undefined, 'Old backups cannot restore retired staff overrides');
 
 assert.throws(() => app.storage.inspectPayload({ format: 'rhw-webapp-local-cache', version: 99 }), /UNSUPPORTED CACHE FILE/);
 

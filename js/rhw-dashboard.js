@@ -1427,17 +1427,6 @@ function shipyardSilhouette(hull) {
   return `<svg class="shipyard-silhouette${hull.key === 'asteroid-miner' ? ' shipyard-silhouette--asteroid-miner' : ''}" viewBox="${views[hull.key] || '0 0 200 72'}" aria-hidden="true" focusable="false"><path${transform}${fillRule} d="${paths[hull.key] || paths.halberd}"/></svg>`;
 }
 
-function shipyardCrewMarkup(analysis) {
-  if (!analysis?.recipeReady) return '';
-  const staff = window.RHWV4?.personnel?.forRecipe(analysis.recipe);
-  if (!staff) return '';
-  return `<div class="shipyard-crew-check" aria-label="Ship personnel check">${staff.filter(row => row.required > 0).map(row =>
-    `<div class="shipyard-crew-resource" data-state="${row.gap === null ? 'unknown' : row.gap > 0 ? 'short' : 'ready'}"><span><small>${row.name.toUpperCase()} / SHIP</small><strong>${number(row.required)}</strong></span>
-      <span><small>TOTAL WITH CORE &amp; PLAN</small><strong>${number(row.total)}</strong></span>
-      <span><small>${row.amount === null ? 'STOCK UNKNOWN' : `${row.source} STOCK ${number(row.amount)}`}</small><strong>${row.gap === null ? 'ENTER STOCK' : row.gap > 0 ? `${number(row.gap)} SHORT` : 'COVERED'}</strong></span></div>`
-  ).join('')}<button type="button" data-personnel-open>PERSONNEL PLANNER <span aria-hidden="true">↗</span></button></div>`;
-}
-
 function renderShipyardControl() {
   const mount = els.shipyardControl;
   if (!mount) return;
@@ -1480,10 +1469,10 @@ function renderShipyardControl() {
       <td data-label="MISSING" class="shipyard-material-gap">${row.gap > 0 ? `<span class="shipyard-shortage">+${number(row.gap)}</span>` : '—'}</td>
     </tr>`).join('');
     const prerequisiteRows = prerequisites.map(row => `<li class="shipyard-prerequisite ${row.state}">
-      <span><strong>${escapeHTML(row.name)}</strong><small>${number(row.qty)} required · not consumed${row.staffing ? ' · after core & planned jobs' : ''}</small></span>
-      <span class="shipyard-prerequisite-status">${row.state === 'unknown' ? 'NOT REPORTED' : row.state === 'ok' ? 'AVAILABLE' : `MISSING ${number(row.staffing?.gap ?? row.qty - row.stock)}`}</span>
+      <span><strong>${escapeHTML(row.name)}</strong><small>${number(row.qty)} required · not consumed</small></span>
+      <span class="shipyard-prerequisite-status">${row.state === 'unknown' ? 'NOT REPORTED' : row.state === 'ok' ? 'AVAILABLE' : `MISSING ${number(row.qty - row.stock)}`}</span>
     </li>`).join('');
-    details = `${shipyardCrewMarkup(analysis)}<div class="shipyard-decision-strip" aria-label="${escapeHTML(hull.label)} material coverage">
+    details = `<div class="shipyard-decision-strip" aria-label="${escapeHTML(hull.label)} material coverage">
         <div class="shipyard-decision-metric shipyard-coverage state-${state}"><small>MATERIAL FOR</small><strong>${buildable === null ? 'UNKNOWN' : `${number(buildable)} <span>${escapeHTML(buildable === 1 ? hull.label : hull.plural).toUpperCase()}</span>`}</strong></div>
         <div class="shipyard-decision-metric"><small>BOTTLENECK</small><strong>${bottleneck ? escapeHTML(bottleneck.name) : 'STOCK UNKNOWN'}</strong></div>
         <div class="shipyard-decision-metric shipyard-next-ship"><small>${nextHull === null ? 'NEXT SHIP' : `NEXT SHIP #${number(nextHull)}`}</small><strong>${bottleneck ? `+${number(bottleneck.gap)} <span>${escapeHTML(bottleneck.name)}</span>` : 'AWAITING STOCK'}</strong></div>
@@ -1525,7 +1514,6 @@ function renderShipyardControl() {
     const focusSelector = mount.contains(active) ? active?.dataset?.shipyardSelect
       ? `[data-shipyard-select="${active.dataset.shipyardSelect}"]`
       : active?.dataset?.shipyardDivision ? `[data-shipyard-division="${active.dataset.shipyardDivision}"]`
-      : active?.hasAttribute('data-personnel-open') ? '[data-personnel-open]'
       : active?.hasAttribute('data-shipyard-calculate') ? '[data-shipyard-calculate]' : null : null;
     mount.innerHTML = markup;
     mount._shipyardMarkup = markup;

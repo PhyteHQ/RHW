@@ -1,8 +1,8 @@
-/* The personnel scenario is also the sole source of the inline production plan. */
+/* Selected recipes and live stock drive the shared production forecast. */
 (function initProductionPlan() {
   'use strict';
   const app = window.RHWV4, core = app?.operationsCore;
-  if (!core || !app.personnel) return;
+  if (!core || !app.productionScenario) return;
   const volumes = globalThis.RHW_PRODUCTION_VOLUMES;
   let cachedKey = '', cached = null;
   function invalidate() { cachedKey = ''; cached = null; }
@@ -35,8 +35,8 @@
   }
   function read(entry, snapshot) { return app.shipyard.stockRecord(entry, snapshot); }
   function analyze() {
-    const snapshot = telemetrySnapshot(), personnel = app.personnel.analyze();
-    const selected = personnel.rows.filter(row => row.enabled);
+    const snapshot = telemetrySnapshot(), scenario = app.productionScenario.analyze();
+    const selected = scenario.rows.filter(row => row.enabled);
     const jobs = [], unknown = [], conditions = [];
     if (!snapshot.available || !core.state.catalog) return { ready: false, snapshot, rows: [], unknown: ['Inventory or recipe catalog unavailable'] };
     for (const row of selected) {
@@ -82,38 +82,35 @@
       }
       if (job.creditCost) unknown.push(`${job.name} recipe fee timing`);
       for (const c of job.catalysts) {
-        const staff = personnel.resources.find(r => r.id === c.id);
-        const quantity = staff ? staff.amount : read(c, snapshot).stock;
+        const quantity = read(c, snapshot).stock;
         if (quantity === null) conditions.push(`${c.name} availability is not reported`);
         else stock[c.id] = quantity;
       }
     }
-    const crew = personnel.resources.find(r => r.key === 'crew');
-    if (crew?.amount !== null) stock.commodity_crew = crew.amount;
     const space = storageKnown ? firstFiniteApiStockValue(typeof rhwBase !== 'undefined' ? rhwBase : null,
       ['cargospace', 'cargo_space', 'cargo_space_left', 'storage_free']) : null;
     if (space === null) conditions.push('Free storage space is not reported');
     const key = JSON.stringify({ jobs, stock, limits, space, allVolumes, unknown, conditions, stale: snapshot.stale, fetchedAt: snapshot.fetchedAt });
     if (key === cachedKey) return cached;
     const result = unknown.length ? { rows: [], truncated: false, orders: 0 }
-      : RHW_PRODUCTION_SIMULATION.simulate({ jobs, stock, limits, volumes: allVolumes, space, coreCrew: personnel.coreCrew });
+      : RHW_PRODUCTION_SIMULATION.simulate({ jobs, stock, limits, volumes: allVolumes, space, coreCrew: scenario.coreCrew });
     cachedKey = key;
-    cached = { ...result, ready: unknown.length === 0, jobs, personnel, snapshot,
+    cached = { ...result, ready: unknown.length === 0, jobs, scenario, snapshot,
       unknown: [...new Set(unknown)], conditions: [...new Set(conditions)],
       rows: jobs.map(job => ({ ...job, ...result.rows.find(row => row.key === job.key) })) };
     return cached;
   }
   function select(recipeId) {
-    const rows = app.personnel.analyze().rows;
-    const row = rows.find(row => app.personnel.options(row).some(r => r.id === recipeId));
+    const rows = app.productionScenario.analyze().rows;
+    const row = rows.find(row => app.productionScenario.options(row).some(r => r.id === recipeId));
     if (!row || row.fixed) return false;
     const enabled = !(row.enabled && !row.followHull && row.recipeId === recipeId);
-    return app.personnel.setModule(row.key, { enabled, recipeId, followHull: false });
+    return app.productionScenario.setModule(row.key, { enabled, recipeId, followHull: false });
   }
   function selectHull() {
-    const row = app.personnel.analyze().rows.find(r => r.key === 'shipyard');
+    const row = app.productionScenario.analyze().rows.find(r => r.key === 'shipyard');
     const recipeId = app.shipyard.selectedHull().recipeId;
-    return app.personnel.setModule('shipyard', { enabled: !(row.enabled && row.recipeId === recipeId),
+    return app.productionScenario.setModule('shipyard', { enabled: !(row.enabled && row.recipeId === recipeId),
       recipeId, followHull: true });
   }
   function rowFor(recipeId, result = analyze()) { return result.rows.find(row => row.recipeId === recipeId); }
