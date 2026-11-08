@@ -308,7 +308,7 @@ def main():
           const soloCards=[...document.querySelectorAll('#productionGrid .production-plan-stat')];
           const soloFallback=soloCards.length===3&&soloCards.every(e=>e.dataset.forecastMode==='solo'&&e.textContent.includes('NEW OUTPUT · SOLO ESTIMATE'))&&soloCards.filter(e=>e.querySelector('strong').textContent!=='—').length===2;
           document.querySelector('[data-production-plan="recipe_niobium_advanced"]').click();app.productionScenario.restore();
-          const refineryOff=!app.productionScenario.analyze().rows.find(r=>r.key==='refinery').enabled&&document.querySelector('#personnelPlanner .personnel-module:not(.is-enabled)').textContent.includes('NO RECIPE STAFF RESERVED');
+          const refineryOff=!app.productionScenario.analyze().rows.find(r=>r.key==='refinery').enabled&&!document.querySelector('#personnelPlanner');
           document.querySelector('[data-production-plan="recipe_gold_advanced"]').click();
           const picker=document.getElementById('productionPlanHull');picker.focus();picker.value='halberd';picker.dispatchEvent(new Event('change',{bubbles:true}));
           const pickerFocus=document.activeElement.id==='productionPlanHull';
