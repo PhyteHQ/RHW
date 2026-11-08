@@ -64,9 +64,8 @@
     const bottleneck = known ? [...materials].sort((a, b) => a.coverage - b.coverage
       || b.gap / b.required - a.gap / a.required || b.gap - a.gap)[0] : null;
     const prerequisites = needs.prerequisites.map(entry => {
-      const staffing = app.personnel?.forRecipe(needs.recipe).find(row => row.id === entry.id);
-      const stock = staffing ? staffing.free : stockRecord(entry, snapshot).stock;
-      return { ...entry, stock, staffing, state: stock === null ? 'unknown' : stock >= entry.qty && (!staffing || staffing.gap === 0) ? 'ok' : 'critical' };
+      const stock = stockRecord(entry, snapshot).stock;
+      return { ...entry, stock, state: stock === null ? 'unknown' : stock >= entry.qty ? 'ok' : 'critical' };
     });
     return { hull, snapshot, recipeReady: true, recipe: needs.recipe, materials, prerequisites, buildable, nextHull, bottleneck };
   }
@@ -74,9 +73,9 @@
   function selectHull(hullKey, { preservePlan = false } = {}) {
     const hull = config.hulls.find(entry => entry.key === hullKey);
     if (!hull) return false;
-    const planned = app.personnel?.analyze().rows.find(row => row.key === 'shipyard');
+    const planned = app.productionScenario?.analyze().rows.find(row => row.key === 'shipyard');
     if (preservePlan && planned?.enabled && planned.followHull && planned.recipeId !== hull.recipeId) {
-      if (!app.personnel.setModule('shipyard', { recipeId: planned.recipeId, followHull: false })) return false;
+      if (!app.productionScenario.setModule('shipyard', { recipeId: planned.recipeId, followHull: false })) return false;
     }
     app.state.shipyardHull = hull.key;
     lastHulls[hull.division] = hull.key;

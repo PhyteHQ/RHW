@@ -18,7 +18,7 @@
     return module?.product || app.operationsCore.recipe(id)?.name || id;
   }
   function control(recipeId) {
-    const row = app.personnel.analyze().rows.find(row => app.personnel.options(row).some(r => r.id === recipeId));
+    const row = app.productionScenario.analyze().rows.find(row => app.productionScenario.options(row).some(r => r.id === recipeId));
     if (!row) return '';
     if (row.fixed) return '<span class="production-plan-button production-plan-fixed is-planned" title="Always included in the production plan">ALWAYS ON</span>';
     const selected = row.enabled && !row.followHull && row.recipeId === recipeId;
@@ -102,7 +102,7 @@
       cycle: cycle ? duration(cycle) : '', soloTime };
   }
   function hullMarkup(context = 'shipyard') {
-    const row = app.personnel.analyze().rows.find(r => r.key === 'shipyard');
+    const row = app.productionScenario.analyze().rows.find(r => r.key === 'shipyard');
     const plannedHull = row.enabled ? CAPITAL_SHIPYARD.hulls.find(hull => hull.recipeId === row.recipeId) : null;
     const selected = Boolean(plannedHull && row.recipeId === app.shipyard.selectedHull().recipeId);
     const plan = model.analyze(), result = plannedHull ? model.rowFor(row.recipeId, plan) : null;

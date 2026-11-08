@@ -5,7 +5,7 @@ available as an optional Advanced Materials Complex job, initially unplanned.
 It consumes 250 Military Salvage for 25 PC + 450 Scrap Metal, reserves 100
 Scientists and takes ~125 minutes in the reference volume/rate model. The
 general Military Salvage volume is 1; hauler volume overrides do not apply.
-Staffing schema v4 also retains a pinned planned hull when an inventory click
+Production choice schema v5 also retains a pinned planned hull when an inventory click
 opens a different Shipyard preview. See [inventory roles](inventory-reserves.md).
 
 Chambers and Basic
@@ -17,8 +17,8 @@ available beside a grouped hull selector in the Production toolbar, as well as
 inside the existing ship requirements panel. Neither selecting nor planning a
 ship in Production changes tabs. Choosing a different hull updates
 ship mode; choosing a component replaces ship mode. No new top-level section is
-added. Choices share the existing portable `personnelPlan` preference and crew
-summary. Old settings keep the initial Gold choice; version 3 persists an
+added. Choices use the portable `productionPlan` preference. Legacy local choices and
+backups retain their recipe selections; retired manual personnel counts are ignored. Old settings keep the initial Gold choice; version 3 persists an
 explicitly disabled refinery. Chambers / Alloy remain mandatory and show an ALWAYS ON label.
 
 The Production page has one collapsible **Shared Production Plan** overview
@@ -92,7 +92,9 @@ never sends commands to the game or changes real inventory.
 
 - [Darkstat's production-time calculation](https://github.com/darklab8/fl-darkstat/blob/master/darkstat/configs_export/pobs_craftable.go)
 - [Corrected recipe source / provenance](discovery-sync-report.md)
-- [Personnel requirements](personnel-planner.md)
+- The forecast retains Core 4’s 800-Crew reservation and recipe catalysts, using
+  reported inventory. Staff planning is available in game; there is no manual
+  staff override in the dashboard.
 
 Model regression checks: `node scripts/test_production_plan.js`. Bundled browser
 checks exercise real card clicks, mutually exclusive selections, ship mode,

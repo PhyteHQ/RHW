@@ -87,7 +87,8 @@ const RHW_APP_CONFIG = Object.freeze({
     inventoryView: 'rhw-webapp-v4:inventory-view',
     shipyardSelection: 'rhw-webapp-v4:shipyard-selection',
     shipyardDivisions: 'rhw-webapp-v4:shipyard-divisions',
-    personnelPlan: 'rhw-webapp-v4:personnel-plan',
+    // Keep the existing storage address so saved production choices survive.
+    productionPlan: 'rhw-webapp-v4:personnel-plan',
     operationsNode: 'rhw-webapp-v4:operations-node',
     calculatorState: 'rhw-webapp-v4:calculator-state',
     priceCheckOverrides: 'rhw-webapp-v4:price-check-overrides',
@@ -944,7 +945,7 @@ const RHW_APP_CONFIG = Object.freeze({
 
   const preferenceKeys = Object.freeze([
     'activeWorkspace', 'commandNode', 'inventoryView', 'operationsNode', 'commsNode', 'tickerComposer',
-    'commsMobileView', 'shipyardSelection', 'shipyardDivisions', 'personnelPlan'
+    'commsMobileView', 'shipyardSelection', 'shipyardDivisions', 'productionPlan'
   ]);
   const transferSectionKeys = Object.freeze([
     'drafts', 'senders', 'current', 'priceProfiles', 'priceCheckOverrides', 'shipyardPlanner', 'newswireDraft', 'productionOrders', 'preferences'
@@ -955,7 +956,17 @@ const RHW_APP_CONFIG = Object.freeze({
   }
 
   function portablePreferences() {
-    return Object.fromEntries(preferenceKeys.map(name => [name, app.store.get(keys[name], null)]));
+    return Object.fromEntries(preferenceKeys.map(name => {
+      const value = app.store.get(keys[name], null);
+      return [name, name === 'productionPlan'
+        ? portableProductionPlan(app.productionScenario?.snapshot() || value) : value];
+    }));
+  }
+
+  function portableProductionPlan(value) {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+    // Preserve legacy recipe-selection migrations, discard manual staff counts.
+    return { version: value.version, modules: portableCopy(value.modules || {}) };
   }
 
   function portableCopy(value) {
@@ -1038,8 +1049,10 @@ const RHW_APP_CONFIG = Object.freeze({
       if (includes('shipyardPlanner') && raw.shipyardPlanner && typeof raw.shipyardPlanner === 'object') requireStored(keys.shipyardPlanner, raw.shipyardPlanner);
       if (includes('preferences') && raw.preferences && typeof raw.preferences === 'object') {
         preferenceKeys.forEach(name => {
-          if (Object.prototype.hasOwnProperty.call(raw.preferences, name) && raw.preferences[name] !== null) {
-            requireStored(keys[name], raw.preferences[name]);
+          const value = Object.prototype.hasOwnProperty.call(raw.preferences, name)
+            ? raw.preferences[name] : name === 'productionPlan' ? raw.preferences.personnelPlan : null;
+          if (value !== undefined && value !== null) {
+            requireStored(keys[name], name === 'productionPlan' ? portableProductionPlan(value) : value);
           }
         });
       }
@@ -2850,9 +2863,8 @@ window.__RHW_RECIPE_CATALOG_GZIP_BASE64__ = (window.__RHW_RECIPE_CATALOG_GZIP_BA
     const bottleneck = known ? [...materials].sort((a, b) => a.coverage - b.coverage
       || b.gap / b.required - a.gap / a.required || b.gap - a.gap)[0] : null;
     const prerequisites = needs.prerequisites.map(entry => {
-      const staffing = app.personnel?.forRecipe(needs.recipe).find(row => row.id === entry.id);
-      const stock = staffing ? staffing.free : stockRecord(entry, snapshot).stock;
-      return { ...entry, stock, staffing, state: stock === null ? 'unknown' : stock >= entry.qty && (!staffing || staffing.gap === 0) ? 'ok' : 'critical' };
+      const stock = stockRecord(entry, snapshot).stock;
+      return { ...entry, stock, state: stock === null ? 'unknown' : stock >= entry.qty ? 'ok' : 'critical' };
     });
     return { hull, snapshot, recipeReady: true, recipe: needs.recipe, materials, prerequisites, buildable, nextHull, bottleneck };
   }
@@ -2860,9 +2872,9 @@ window.__RHW_RECIPE_CATALOG_GZIP_BASE64__ = (window.__RHW_RECIPE_CATALOG_GZIP_BA
   function selectHull(hullKey, { preservePlan = false } = {}) {
     const hull = config.hulls.find(entry => entry.key === hullKey);
     if (!hull) return false;
-    const planned = app.personnel?.analyze().rows.find(row => row.key === 'shipyard');
+    const planned = app.productionScenario?.analyze().rows.find(row => row.key === 'shipyard');
     if (preservePlan && planned?.enabled && planned.followHull && planned.recipeId !== hull.recipeId) {
-      if (!app.personnel.setModule('shipyard', { recipeId: planned.recipeId, followHull: false })) return false;
+      if (!app.productionScenario.setModule('shipyard', { recipeId: planned.recipeId, followHull: false })) return false;
     }
     app.state.shipyardHull = hull.key;
     lastHulls[hull.division] = hull.key;
@@ -2921,20 +2933,13 @@ window.__RHW_RECIPE_CATALOG_GZIP_BASE64__ = (window.__RHW_RECIPE_CATALOG_GZIP_BA
 
 ;
 
-/* SOURCE: js/command/personnel-model.js */
-/* Local staffing scenarios. Discovery reserves 200 crew/core level, then each
-   running factory reserves its recipe's catalysts for that tick. See
-   docs/personnel-planner.md for the primary server-code references. */
-(function initRhwPersonnel() {
+/* SOURCE: js/command/production-scenario.js */
+/* Saved recipe choices for the shared production forecast. */
+(function initProductionScenario() {
   'use strict';
-  const app = window.RHWV4;
-  const core = app?.operationsCore;
+  const app = window.RHWV4, core = app?.operationsCore;
   if (!core) return;
-  const storageKey = app.config.storageKeys.personnelPlan;
-  const resources = Object.freeze([
-    { key: 'crew', id: 'commodity_crew', name: 'Crew' },
-    { key: 'scientists', id: 'commodity_scientists', name: 'Scientists' }
-  ]);
+  const storageKey = app.config.storageKeys.productionPlan;
   const modules = Object.freeze([
     { key: 'refinery', name: 'Industrial Refinery', defaultRecipe: 'recipe_gold_advanced',
       accepts: r => ['recipe_gold_advanced', 'recipe_niobium_advanced'].includes(r.id) },
@@ -2945,124 +2950,62 @@ window.__RHW_RECIPE_CATALOG_GZIP_BASE64__ = (window.__RHW_RECIPE_CATALOG_GZIP_BA
     { key: 'foundry', name: 'Exotic Weapons Components Foundry', fixed: true, defaultRecipe: 'recipe_weapon_part_focusing_chamber',
       accepts: r => r.id === 'recipe_weapon_part_focusing_chamber' }
   ]);
-  function amount(value) {
-    if (!['number', 'string'].includes(typeof value) || (typeof value === 'string' && !value.trim())) return null;
-    const n = Number(value);
-    return Number.isSafeInteger(n) && n >= 0 ? n : null;
-  }
   function normalize(raw) {
     const object = raw && typeof raw === 'object' && !Array.isArray(raw) ? raw : {};
-    return { version: 4, coreLevel: 4,
-      stock: Object.fromEntries(resources.map(r => [r.key, amount(object.stock?.[r.key])])),
-      modules: Object.fromEntries(modules.map(m => [m.key, {
-        // Removed or invalid optional recipes must not silently start a
-        // different job when the saved recipe falls back to the default.
-        enabled: Boolean(m.fixed) || ((m.key === 'refinery'
-          ? !(object.version >= 3 && object.modules?.refinery?.enabled === false)
-          : object.modules?.[m.key]?.enabled === true)
-          && !(typeof object.modules?.[m.key]?.recipeId === 'string'
-            && !m.accepts({ id: object.modules[m.key].recipeId }))),
-        recipeId: m.fixed ? m.defaultRecipe : typeof object.modules?.[m.key]?.recipeId === 'string'
-          && m.accepts({ id: object.modules[m.key].recipeId }) ? object.modules[m.key].recipeId : m.defaultRecipe,
-        followHull: m.key === 'shipyard' && (object.modules?.shipyard?.followHull === true
-          || object.version < 4 && CAPITAL_SHIPYARD.hulls.some(h => h.recipeId === object.modules?.shipyard?.recipeId))
-      }])) };
+    return { version: 5, modules: Object.fromEntries(modules.map(m => [m.key, {
+      enabled: Boolean(m.fixed) || ((m.key === 'refinery'
+        ? !(object.version >= 3 && object.modules?.refinery?.enabled === false)
+        : object.modules?.[m.key]?.enabled === true)
+        && !(typeof object.modules?.[m.key]?.recipeId === 'string'
+          && !m.accepts({ id: object.modules[m.key].recipeId }))),
+      recipeId: m.fixed ? m.defaultRecipe : typeof object.modules?.[m.key]?.recipeId === 'string'
+        && m.accepts({ id: object.modules[m.key].recipeId }) ? object.modules[m.key].recipeId : m.defaultRecipe,
+      followHull: m.key === 'shipyard' && (object.modules?.shipyard?.followHull === true
+        || object.version < 4 && CAPITAL_SHIPYARD.hulls.some(h => h.recipeId === object.modules?.shipyard?.recipeId))
+    }])) };
   }
-  let state = normalize(storageKey ? app.store.get(storageKey, {}) : {});
+  let state;
+  function restore() { state = normalize(storageKey ? app.store.get(storageKey, {}) : {}); }
+  restore();
   function options(module) {
     return (core.state.catalog?.recipes || []).filter(r => module.accepts(r)
       && core.authorizedFor(r, app.config.operations.defaultAffiliation));
   }
-  function label(recipe) {
-    if (!recipe) return 'RECIPE UNAVAILABLE';
-    const alias = app.operations?.recipeAliases?.[recipe.id];
-    const mode = /_(basic|advanced|bulk|efficient)$/.exec(recipe.id)?.[1];
-    return alias?.name || `${recipe.name}${mode ? ` · ${mode.toUpperCase()}` : ''}`;
-  }
-  function needs(recipe) {
-    if (!recipe || !core.authorizedFor(recipe, app.config.operations.defaultAffiliation)) return null;
-    const result = { crew: 0, scientists: 0 };
-    for (const r of resources) {
-      for (const entry of recipe.catalysts || []) if (entry.id === r.id) {
-        const n = amount(entry.qty);
-        if (n === null) return null;
-        result[r.key] += n;
-      }
-    }
-    return result;
-  }
-  function available(resource) {
-    const manual = state.stock[resource.key];
-    if (manual !== null) return { amount: manual, source: 'MANUAL', stale: false };
-    const snapshot = telemetrySnapshot();
-    if (!snapshot.available) return { amount: null, source: 'NOT REPORTED', stale: false };
-    const stock = app.shipyard?.stockRecord({ id: resource.id, name: resource.name }, snapshot)?.stock;
-    return { amount: amount(stock), source: amount(stock) === null ? 'NOT REPORTED' : snapshot.stale ? 'CACHED' : 'LIVE', stale: snapshot.stale };
-  }
-  function analyze(excludeModule = '') {
-    const required = { crew: state.coreLevel * 200, scientists: 0 };
-    let complete = true;
-    const rows = modules.map(module => {
+  function analyze() {
+    return { coreCrew: 800, rows: modules.map(module => {
       const selection = state.modules[module.key];
       const recipeId = selection.followHull ? app.shipyard?.selectedHull()?.recipeId : selection.recipeId;
-      const recipe = options(module).find(r => r.id === recipeId);
-      const personnel = needs(recipe);
-      if (selection.enabled && module.key !== excludeModule) {
-        if (!personnel) complete = false;
-        else for (const r of resources) required[r.key] += personnel[r.key];
-      }
-      return { ...module, ...selection, recipeId, recipe, personnel };
-    });
-    return { coreLevel: state.coreLevel, coreCrew: state.coreLevel * 200, complete, rows,
-      resources: resources.map(r => {
-        const stock = available(r);
-        const total = complete ? required[r.key] : null;
-        return { ...r, ...stock, required: total,
-          gap: total === null || stock.amount === null ? null : Math.max(0, total - stock.amount),
-          spare: total === null || stock.amount === null ? null : Math.max(0, stock.amount - total) };
-      }) };
+      return { ...module, ...selection, recipeId, recipe: options(module).find(r => r.id === recipeId) };
+    }) };
   }
-  function forRecipe(recipe, moduleKey = 'shipyard') {
-    const plan = analyze(moduleKey), personnel = needs(recipe);
-    return resources.map(r => {
-      const stock = plan.resources.find(entry => entry.key === r.key);
-      const required = personnel?.[r.key] ?? null;
-      const total = required === null || stock.required === null ? null : stock.required + required;
-      const free = stock.amount === null || stock.required === null ? null : Math.max(0, stock.amount - stock.required);
-      return { ...stock, required, reserved: stock.required, total, free,
-        gap: stock.amount === null || total === null ? null : Math.max(0, total - stock.amount) };
-    });
-  }
-  function save(next) {
-    const normalized = normalize(next);
-    if (storageKey && app.store.set(storageKey, normalized) === false) return false;
-    state = normalized;
+  function render() {
     app.productionPlan?.invalidate();
-    app.personnelView?.render();
     if (typeof renderProductionModules === 'function') renderProductionModules();
     if (typeof renderShipyardControl === 'function') renderShipyardControl();
     if (typeof renderOverview === 'function') renderOverview();
     app.requestUiUpdate?.();
-    return true;
   }
   function setModule(key, changes) {
     const module = modules.find(m => m.key === key);
-    if (!module) return false;
-    if (module.fixed && changes.enabled === false) return false;
+    if (!module || module.fixed && changes.enabled === false) return false;
     if (module.fixed && changes.recipeId !== undefined && changes.recipeId !== module.defaultRecipe) return false;
     if (changes.recipeId !== undefined && !options(module).some(r => r.id === changes.recipeId)) return false;
     const followHull = key === 'shipyard' && (changes.followHull ?? (changes.recipeId !== undefined
       ? CAPITAL_SHIPYARD.hulls.some(h => h.recipeId === changes.recipeId) : state.modules[key].followHull));
-    return save({ ...state, modules: { ...state.modules, [key]: { ...state.modules[key], ...changes, followHull } } });
+    const next = normalize({ ...state, modules: { ...state.modules, [key]: { ...state.modules[key], ...changes, followHull } } });
+    if (storageKey && app.store.set(storageKey, next) === false) return false;
+    state = next;
+    render();
+    return true;
   }
-  function setStock(key, value) {
-    if (!resources.some(r => r.key === key)) return false;
-    if (value !== '' && value !== null && amount(value) === null) return false;
-    return save({ ...state, stock: { ...state.stock, [key]: amount(value) } });
-  }
-  app.personnel = { analyze, forRecipe, needs, options, label, setModule, setStock,
-    restore: () => { state = normalize(storageKey ? app.store.get(storageKey, {}) : {}); },
+  app.productionScenario = { analyze, options, setModule, restore,
     snapshot: () => JSON.parse(JSON.stringify(state)) };
+  window.addEventListener?.('rhw:transfer-imported', event => {
+    if (!event.detail?.sections?.includes('preferences')) return;
+    restore();
+    app.shipyard?.restoreSelection();
+    render();
+  });
 })();
 
 ;
@@ -3209,11 +3152,11 @@ globalThis.RHW_PRODUCTION_VOLUMES = Object.freeze({
 ;
 
 /* SOURCE: js/command/production-plan.js */
-/* The personnel scenario is also the sole source of the inline production plan. */
+/* Selected recipes and live stock drive the shared production forecast. */
 (function initProductionPlan() {
   'use strict';
   const app = window.RHWV4, core = app?.operationsCore;
-  if (!core || !app.personnel) return;
+  if (!core || !app.productionScenario) return;
   const volumes = globalThis.RHW_PRODUCTION_VOLUMES;
   let cachedKey = '', cached = null;
   function invalidate() { cachedKey = ''; cached = null; }
@@ -3246,8 +3189,8 @@ globalThis.RHW_PRODUCTION_VOLUMES = Object.freeze({
   }
   function read(entry, snapshot) { return app.shipyard.stockRecord(entry, snapshot); }
   function analyze() {
-    const snapshot = telemetrySnapshot(), personnel = app.personnel.analyze();
-    const selected = personnel.rows.filter(row => row.enabled);
+    const snapshot = telemetrySnapshot(), scenario = app.productionScenario.analyze();
+    const selected = scenario.rows.filter(row => row.enabled);
     const jobs = [], unknown = [], conditions = [];
     if (!snapshot.available || !core.state.catalog) return { ready: false, snapshot, rows: [], unknown: ['Inventory or recipe catalog unavailable'] };
     for (const row of selected) {
@@ -3293,38 +3236,35 @@ globalThis.RHW_PRODUCTION_VOLUMES = Object.freeze({
       }
       if (job.creditCost) unknown.push(`${job.name} recipe fee timing`);
       for (const c of job.catalysts) {
-        const staff = personnel.resources.find(r => r.id === c.id);
-        const quantity = staff ? staff.amount : read(c, snapshot).stock;
+        const quantity = read(c, snapshot).stock;
         if (quantity === null) conditions.push(`${c.name} availability is not reported`);
         else stock[c.id] = quantity;
       }
     }
-    const crew = personnel.resources.find(r => r.key === 'crew');
-    if (crew?.amount !== null) stock.commodity_crew = crew.amount;
     const space = storageKnown ? firstFiniteApiStockValue(typeof rhwBase !== 'undefined' ? rhwBase : null,
       ['cargospace', 'cargo_space', 'cargo_space_left', 'storage_free']) : null;
     if (space === null) conditions.push('Free storage space is not reported');
     const key = JSON.stringify({ jobs, stock, limits, space, allVolumes, unknown, conditions, stale: snapshot.stale, fetchedAt: snapshot.fetchedAt });
     if (key === cachedKey) return cached;
     const result = unknown.length ? { rows: [], truncated: false, orders: 0 }
-      : RHW_PRODUCTION_SIMULATION.simulate({ jobs, stock, limits, volumes: allVolumes, space, coreCrew: personnel.coreCrew });
+      : RHW_PRODUCTION_SIMULATION.simulate({ jobs, stock, limits, volumes: allVolumes, space, coreCrew: scenario.coreCrew });
     cachedKey = key;
-    cached = { ...result, ready: unknown.length === 0, jobs, personnel, snapshot,
+    cached = { ...result, ready: unknown.length === 0, jobs, scenario, snapshot,
       unknown: [...new Set(unknown)], conditions: [...new Set(conditions)],
       rows: jobs.map(job => ({ ...job, ...result.rows.find(row => row.key === job.key) })) };
     return cached;
   }
   function select(recipeId) {
-    const rows = app.personnel.analyze().rows;
-    const row = rows.find(row => app.personnel.options(row).some(r => r.id === recipeId));
+    const rows = app.productionScenario.analyze().rows;
+    const row = rows.find(row => app.productionScenario.options(row).some(r => r.id === recipeId));
     if (!row || row.fixed) return false;
     const enabled = !(row.enabled && !row.followHull && row.recipeId === recipeId);
-    return app.personnel.setModule(row.key, { enabled, recipeId, followHull: false });
+    return app.productionScenario.setModule(row.key, { enabled, recipeId, followHull: false });
   }
   function selectHull() {
-    const row = app.personnel.analyze().rows.find(r => r.key === 'shipyard');
+    const row = app.productionScenario.analyze().rows.find(r => r.key === 'shipyard');
     const recipeId = app.shipyard.selectedHull().recipeId;
-    return app.personnel.setModule('shipyard', { enabled: !(row.enabled && row.recipeId === recipeId),
+    return app.productionScenario.setModule('shipyard', { enabled: !(row.enabled && row.recipeId === recipeId),
       recipeId, followHull: true });
   }
   function rowFor(recipeId, result = analyze()) { return result.rows.find(row => row.recipeId === recipeId); }
@@ -3358,9 +3298,9 @@ globalThis.RHW_PRODUCTION_VOLUMES = Object.freeze({
     const known = parts.some(p => p.stock !== null) && parts.every(p => !p.item || p.item.missing || p.stock !== null);
     const stock = known ? parts.reduce((sum, p) => sum + (p.stock ?? 0), 0) : null;
     let required = null;
-    if (app.operationsCore?.state.catalog && app.personnel && app.productionPlan) {
+    if (app.operationsCore?.state.catalog && app.productionScenario && app.productionPlan) {
       required = 0;
-      for (const row of app.personnel.analyze().rows.filter(r => r.enabled)) {
+      for (const row of app.productionScenario.analyze().rows.filter(r => r.enabled)) {
         const batch = app.productionPlan.batch(row);
         for (const group of batch?.inputs || []) if (group.names.some(n => spec.members.some(member => keyFromName(member) === keyFromName(n)))) required += group.qty;
       }
@@ -3476,94 +3416,6 @@ globalThis.RHW_PRODUCTION_VOLUMES = Object.freeze({
 
 ;
 
-/* SOURCE: js/command/personnel.js */
-/* Staffing planner on Production; its manual scenario also informs Shipyard. */
-(function initRhwPersonnelView() {
-  'use strict';
-  const app = window.RHWV4, model = app?.personnel;
-  if (!model) return;
-  const esc = app.util.escape, fmt = app.util.number;
-  let expanded = false;
-  function render() {
-    const mount = document.getElementById('personnelPlanner');
-    if (!mount) return;
-    expanded = mount.querySelector('details')?.open ?? expanded;
-    const plan = model.analyze();
-    const focused = mount.contains(document.activeElement) ? document.activeElement : null;
-    const focusName = focused?.getAttribute('name');
-    const metrics = plan.resources.map(r => `<span class="personnel-metric"><small>${r.name.toUpperCase()} REQUIRED</small><strong>${fmt(r.required)}</strong><small>${r.amount === null ? 'STOCK UNKNOWN' : `${fmt(r.amount)} ${r.source} · ${r.gap ? `${fmt(r.gap)} SHORT` : `${fmt(r.spare)} SPARE`}`}</small></span>`).join('');
-    const rows = plan.rows.map(row => `<div class="personnel-module${row.enabled ? ' is-enabled' : ''}">
-      <strong>${esc(row.name)} <small>${row.fixed ? 'ALWAYS PLANNED' : row.enabled ? 'PLANNED' : 'NOT SELECTED'}</small></strong>
-      <span>${row.enabled ? esc(model.label(row.recipe)) : row.key === 'refinery' ? 'Choose Gold or Niobium in Production' : 'Choose Supers, Reactors or a ship'}</span>
-      <span class="personnel-module-need">${!row.enabled ? 'NO RECIPE STAFF RESERVED' : row.personnel ? `${fmt(row.personnel.crew)} Crew · ${fmt(row.personnel.scientists)} Scientists` : 'RECIPE DATA UNKNOWN'}</span>
-    </div>`).join('');
-    const inputs = plan.resources.map(r => `<label>${r.name} available <small>${r.amount === null ? 'Not reported by API' : `${r.source}: ${fmt(r.amount)}`}</small>
-      <input type="number" name="stock-${r.key}" min="0" step="1" inputmode="numeric" data-personnel-stock="${r.key}" aria-label="Manual ${r.name.toLowerCase()} stock" placeholder="Use API stock" value="${model.snapshot().stock[r.key] ?? ''}"></label>`).join('');
-    const markup = `<details id="personnelPlanDetails" ${expanded ? 'open' : ''}>
-      <summary><span class="personnel-title"><span class="shipyard-eyebrow">RHW OPERATIONS · MANUAL PLAN</span><strong>PERSONNEL PLANNER</strong><small>Core ${plan.coreLevel} + planned production</small></span>${metrics}<span class="personnel-expand">${expanded ? 'CLOSE' : 'PLAN STAFF'} <span aria-hidden="true">${expanded ? '−' : '+'}</span></span></summary>
-      <div class="personnel-body"><div class="personnel-module-list"><p>Uses the PLAN selections on your production cards and in Shipyard. Chambers and Basic Alloy are always included.</p>
-        <div class="personnel-core"><strong>Core ${plan.coreLevel}</strong><span>${fmt(plan.coreCrew)} Crew always reserved</span></div>${rows}</div>
-        <aside class="personnel-stock"><h3>AVAILABLE PERSONNEL</h3><p>Enter stock when it is not reported, or leave blank to use the API.</p>${inputs}
-          <p>Crew and scientists are retained. Each active recipe reserves its own staff, in addition to the core.</p>
-          <p>Idle modules and cargo storage add no recipe staff. Saved selections describe your plan; active jobs are not reported by the API.</p>
-        </aside></div></details>`;
-    if (mount._personnelMarkup !== markup) {
-      mount.innerHTML = markup;
-      mount._personnelMarkup = markup;
-      if (focusName) mount.querySelector(`[name="${focusName}"]`)?.focus({ preventScroll: true });
-    }
-    const details = mount.querySelector('details');
-    if (details) details.ontoggle = () => {
-      expanded = details.open;
-      const control = details.querySelector('.personnel-expand');
-      if (control) control.textContent = expanded ? 'CLOSE −' : 'PLAN STAFF +';
-    };
-  }
-  function open() {
-    expanded = true;
-    app.navigate('command', 'production');
-    const existing = document.getElementById('personnelPlanDetails');
-    if (existing) existing.open = true;
-    render();
-    const mount = document.getElementById('personnelPlanner');
-    mount?.scrollIntoView({ block: 'start', behavior: 'instant' });
-    mount?.querySelector('summary')?.focus({ preventScroll: true });
-  }
-  function bind() {
-    const mount = document.getElementById('personnelPlanner');
-    if (mount && mount.dataset.bound !== 'true') {
-      mount.dataset.bound = 'true';
-      mount.addEventListener('change', event => {
-        const target = event.target;
-        if (target.dataset.personnelModule) model.setModule(target.dataset.personnelModule, { enabled: target.checked });
-        if (target.dataset.personnelRecipe) model.setModule(target.dataset.personnelRecipe, { recipeId: target.value });
-        if (target.dataset.personnelStock) {
-          const valid = model.setStock(target.dataset.personnelStock, target.value);
-          target.setCustomValidity(valid ? '' : 'Enter a whole number of zero or more.');
-          if (!valid) target.reportValidity();
-        }
-      });
-    }
-    document.getElementById('shipyardControl')?.addEventListener('click', event => {
-      if (event.target.closest('[data-personnel-open]')) open();
-    });
-    render();
-  }
-  app.personnelView = { render, open };
-  app.lifecycle.on('command:ready', 'personnel-planner', 65, bind);
-  app.lifecycle.on('catalog:loaded', 'personnel-recipes', 45, render);
-  app.onUiUpdate?.(render);
-  window.addEventListener('rhw:transfer-imported', event => {
-    if (!event.detail?.sections?.includes('preferences')) return;
-    model.restore();
-    app.shipyard?.restoreSelection();
-    render();
-    if (typeof renderShipyardControl === 'function') renderShipyardControl();
-  });
-})();
-
-;
-
 /* SOURCE: js/command/production-plan-view.js */
 /* One shared forecast overview; cards show one clearly labelled output. */
 (function initInlineProductionPlan() {
@@ -3585,7 +3437,7 @@ globalThis.RHW_PRODUCTION_VOLUMES = Object.freeze({
     return module?.product || app.operationsCore.recipe(id)?.name || id;
   }
   function control(recipeId) {
-    const row = app.personnel.analyze().rows.find(row => app.personnel.options(row).some(r => r.id === recipeId));
+    const row = app.productionScenario.analyze().rows.find(row => app.productionScenario.options(row).some(r => r.id === recipeId));
     if (!row) return '';
     if (row.fixed) return '<span class="production-plan-button production-plan-fixed is-planned" title="Always included in the production plan">ALWAYS ON</span>';
     const selected = row.enabled && !row.followHull && row.recipeId === recipeId;
@@ -3669,7 +3521,7 @@ globalThis.RHW_PRODUCTION_VOLUMES = Object.freeze({
       cycle: cycle ? duration(cycle) : '', soloTime };
   }
   function hullMarkup(context = 'shipyard') {
-    const row = app.personnel.analyze().rows.find(r => r.key === 'shipyard');
+    const row = app.productionScenario.analyze().rows.find(r => r.key === 'shipyard');
     const plannedHull = row.enabled ? CAPITAL_SHIPYARD.hulls.find(hull => hull.recipeId === row.recipeId) : null;
     const selected = Boolean(plannedHull && row.recipeId === app.shipyard.selectedHull().recipeId);
     const plan = model.analyze(), result = plannedHull ? model.rowFor(row.recipeId, plan) : null;

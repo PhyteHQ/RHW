@@ -7,7 +7,7 @@ const memory = new Map(), snapshot = { available: true, stale: false, fetchedAt:
 const ctx = vm.createContext({ console, Map, Set, Intl, items: [], rhwBase: { cargospace: 1000000 }, els: {},
   telemetrySnapshot: () => snapshot,
   document: { getElementById: () => null, addEventListener() {} },
-  RHWV4: { state: {}, config: { storageKeys: { shipyardSelection: 'hull', shipyardDivisions: 'divisions', personnelPlan: 'staff' }, operations: { defaultAffiliation: 'br_m_grp' } },
+  RHWV4: { state: {}, config: { storageKeys: { shipyardSelection: 'hull', shipyardDivisions: 'divisions', productionPlan: 'staff' }, operations: { defaultAffiliation: 'br_m_grp' } },
     store: { get: (key, fallback) => memory.get(key) ?? fallback, set: (key, value) => { memory.set(key, value); return true; } } }
 });
 ctx.window = ctx;
@@ -17,7 +17,7 @@ vm.runInContext('const CAPITAL_SHIPYARD=DASHBOARD_CONFIG.capitalShipyard; const 
 run('js/shared/utils.js'); run('js/command/shipyard.js'); run('js/core/lifecycle.js');
 ctx.RHWV4.lifecycle = ctx.createRhwLifecycle();
 run('js/calculator/model.js'); run('js/calculator/catalog.js'); run('js/command/shipyard-model.js');
-run('js/command/personnel-model.js'); run('js/command/production-volumes.js');
+run('js/command/production-scenario.js'); run('js/command/production-volumes.js');
 run('js/command/production-simulation.js'); run('js/command/production-plan.js');
 for (let i = 1; i <= 6; i++) run(`assets/recipes/catalog-v1-part-${String(i).padStart(2, '0')}.js`);
 ctx.__RHW_RECIPE_CATALOG__ = JSON.parse(zlib.gunzipSync(Buffer.from(ctx.__RHW_RECIPE_CATALOG_GZIP_BASE64__, 'base64')));
@@ -64,7 +64,7 @@ const row = (r, key) => r.rows.find(row => row.key === key);
   assert.deepEqual(original, { gold: 5 }, 'Simulation never spends API inventory');
   assert.equal(sim({ jobs: [job('fast', 'gold', 1, 1, 1)], stock: original, maxEvents: 2 }).truncated, true);
 
-  const app = ctx.RHWV4, plan = app.productionPlan, core = app.operationsCore, staff = app.personnel;
+  const app = ctx.RHWV4, plan = app.productionPlan, core = app.operationsCore, staff = app.productionScenario;
   await core.loadCatalog();
   assert.deepEqual(Array.from(staff.analyze().rows.filter(r => r.enabled), r => r.key), ['refinery', 'smelter', 'foundry']);
   assert.equal(staff.setModule('foundry', { enabled: false }), false);
@@ -77,7 +77,7 @@ const row = (r, key) => r.rows.find(row => row.key === key);
   assert.equal(plan.select('recipe_gold_advanced'), true);
   staff.restore();
   assert.equal(staff.analyze().rows.find(r => r.key === 'refinery').enabled, false, 'Clicking the selected refinery turns it off and persists the off state');
-  assert.equal(memory.get('staff').version, 4);
+  assert.equal(memory.get('staff').version, 5);
   assert.equal(plan.select('recipe_niobium_advanced'), true);
   assert.equal(staff.analyze().rows.filter(r => r.key === 'refinery' && r.enabled).length, 1);
   assert.equal(plan.select('recipe_gold_advanced'), true);
@@ -94,7 +94,7 @@ const row = (r, key) => r.rows.find(row => row.key === key);
   assert.equal(pcBatch.outputs.find(o => o.id === 'commodity_scrap_metal').qty, 450);
   assert.equal(staff.analyze().rows.find(r => r.key === 'reclamation').enabled, false, 'A new factory is opt-in in the manual plan');
   plan.select('recipe_milsal');
-  assert.equal(staff.analyze().resources.find(r => r.key === 'scientists').required, 300);
+  assert.equal(plan.batch(staff.analyze().rows.find(r => r.key === 'reclamation')).catalysts.find(r => r.id === 'commodity_scientists').qty, 100);
   plan.select('recipe_milsal');
 
   plan.select('ship_part_reactor'); staff.restore();
@@ -160,7 +160,7 @@ const row = (r, key) => r.rows.find(row => row.key === key);
   staff.restore();
   assert.equal(staff.analyze().rows.find(r => r.key === 'shipyard').enabled, false, 'Ship mode can be deselected without switching to a component');
   plan.select('ship_part_reactor'); staff.restore();
-  assert.equal(staff.analyze().rows.find(r => r.key === 'shipyard').recipeId, 'ship_part_reactor', 'Selections persist in the existing portable personnel setting');
+  assert.equal(staff.analyze().rows.find(r => r.key === 'shipyard').recipeId, 'ship_part_reactor', 'Selections persist in the portable production setting');
   snapshot.stale = true; assert.equal(plan.analyze().snapshot.stale, true);
   snapshot.available = false; assert.equal(plan.analyze().ready, false);
   console.log('Production plan passed: shared stock, different cycle rates, complete batches, finite/zero ore, byproduct reuse, limits/storage, core crew, allocation ranges, provenance, saved exclusive selections and live hull selection.');

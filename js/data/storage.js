@@ -214,7 +214,7 @@
 
   const preferenceKeys = Object.freeze([
     'activeWorkspace', 'commandNode', 'inventoryView', 'operationsNode', 'commsNode', 'tickerComposer',
-    'commsMobileView', 'shipyardSelection', 'shipyardDivisions', 'personnelPlan'
+    'commsMobileView', 'shipyardSelection', 'shipyardDivisions', 'productionPlan'
   ]);
   const transferSectionKeys = Object.freeze([
     'drafts', 'senders', 'current', 'priceProfiles', 'priceCheckOverrides', 'shipyardPlanner', 'newswireDraft', 'productionOrders', 'preferences'
@@ -225,7 +225,17 @@
   }
 
   function portablePreferences() {
-    return Object.fromEntries(preferenceKeys.map(name => [name, app.store.get(keys[name], null)]));
+    return Object.fromEntries(preferenceKeys.map(name => {
+      const value = app.store.get(keys[name], null);
+      return [name, name === 'productionPlan'
+        ? portableProductionPlan(app.productionScenario?.snapshot() || value) : value];
+    }));
+  }
+
+  function portableProductionPlan(value) {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+    // Preserve legacy recipe-selection migrations, discard manual staff counts.
+    return { version: value.version, modules: portableCopy(value.modules || {}) };
   }
 
   function portableCopy(value) {
@@ -308,8 +318,10 @@
       if (includes('shipyardPlanner') && raw.shipyardPlanner && typeof raw.shipyardPlanner === 'object') requireStored(keys.shipyardPlanner, raw.shipyardPlanner);
       if (includes('preferences') && raw.preferences && typeof raw.preferences === 'object') {
         preferenceKeys.forEach(name => {
-          if (Object.prototype.hasOwnProperty.call(raw.preferences, name) && raw.preferences[name] !== null) {
-            requireStored(keys[name], raw.preferences[name]);
+          const value = Object.prototype.hasOwnProperty.call(raw.preferences, name)
+            ? raw.preferences[name] : name === 'productionPlan' ? raw.preferences.personnelPlan : null;
+          if (value !== undefined && value !== null) {
+            requireStored(keys[name], name === 'productionPlan' ? portableProductionPlan(value) : value);
           }
         });
       }

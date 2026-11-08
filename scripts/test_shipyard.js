@@ -12,7 +12,7 @@ let calculator;
 const ctx = vm.createContext({ console, Map, Set, Intl, items: [], els: { shipyardControl: null },
   telemetrySnapshot: () => snapshot,
   document: { getElementById: () => null, addEventListener() {} },
-  RHWV4: { state: {}, config: { storageKeys: { shipyardSelection: 'selection', shipyardDivisions: 'divisions', personnelPlan: 'personnel' },
+  RHWV4: { state: {}, config: { storageKeys: { shipyardSelection: 'selection', shipyardDivisions: 'divisions', productionPlan: 'personnel' },
     operations: { defaultAffiliation: 'br_m_grp' } },
     store: { get: (key, fallback) => memory.get(key) ?? fallback, set: (key, value) => memory.set(key, value) },
     operations: { openSelection: value => { calculator = value; } }
@@ -29,7 +29,7 @@ ctx.RHWV4.lifecycle = ctx.createRhwLifecycle();
 run('js/calculator/model.js');
 run('js/calculator/catalog.js');
 run('js/command/shipyard-model.js');
-run('js/command/personnel-model.js');
+run('js/command/production-scenario.js');
 for (let i = 1; i <= 6; i++) run(`assets/recipes/catalog-v1-part-${String(i).padStart(2, '0')}.js`);
 ctx.__RHW_RECIPE_CATALOG__ = JSON.parse(zlib.gunzipSync(Buffer.from(ctx.__RHW_RECIPE_CATALOG_GZIP_BASE64__, 'base64')));
 
@@ -118,49 +118,24 @@ ctx.__RHW_RECIPE_CATALOG__ = JSON.parse(zlib.gunzipSync(Buffer.from(ctx.__RHW_RE
   snapshot.available = true;
 
   snapshot.stale = false;
-  const staff = app.personnel;
-  const total = () => staff.analyze().resources.map(r=>r.required);
-  assert.deepEqual(Array.from(total()), [1200, 100], 'Core, Gold, Basic Alloy and Chambers form the saved baseline');
-  assert.equal(staff.setModule('smelter', { enabled: false }), false);
-  assert.equal(staff.setModule('foundry', { enabled: false }), false);
-  staff.setModule('refinery', { enabled: true });
-  staff.setModule('smelter', { enabled: true });
-  staff.setModule('foundry', { enabled: true });
-  staff.setModule('shipyard', { enabled: true, recipeId: 'ship_part_reactor' });
-  assert.deepEqual(Array.from(total()), [1400, 200], 'Concurrent recipes add their catalysts beyond the core reservation');
-  staff.setStock('crew', 1600); staff.setStock('scientists', 100);
-  const preview = staff.forRecipe(core.recipe(archon.recipeId));
-  assert.equal(preview[0].total, 1600, 'A ship preview replaces the shipyard job, rather than double counting it');
-  assert.equal(preview[0].free, 400);
-  assert.equal(preview[0].gap, 0);
-  assert.equal(yard.analyze().prerequisites.find(r=>r.id==='commodity_crew').state, 'ok');
-  staff.setStock('crew', 1599);
-  assert.equal(yard.analyze().prerequisites.find(r=>r.id==='commodity_crew').state, 'critical');
-  assert.equal(staff.forRecipe(core.recipe(archon.recipeId))[0].gap, 1);
-  assert.equal(staff.setModule('refinery', { recipeId: 'ship_part_reactor' }), false, 'Reject a recipe from another physical module');
-  staff.setModule('refinery', { recipeId: 'recipe_niobium_advanced' });
-  assert.deepEqual(Array.from(total()), [1400, 200], 'Changing one refinery recipe never adds a second refinery');
-  staff.setStock('crew', 0); assert.equal(staff.analyze().resources[0].gap, 1400);
-  for (const invalid of [-1, 1.5, true, [], {}, 'broken']) assert.equal(staff.setStock('crew', invalid), false);
-  staff.setStock('crew', ''); assert.equal(staff.analyze().resources[0].source, 'LIVE');
-  snapshot.stale = true; assert.equal(staff.analyze().resources[0].source, 'CACHED'); snapshot.stale = false;
-  snapshot.available = false;
-  assert.equal(staff.analyze().resources[0].gap, null, 'Unreported stock does not become a known shortage');
-  staff.setStock('crew', 0); assert.equal(staff.analyze().resources[0].source, 'MANUAL', 'Manual stock remains usable offline');
-  snapshot.available = true;
-  const foundryRecipe = core.recipe('recipe_weapon_part_focusing_chamber');
-  core.state.recipesById.delete(foundryRecipe.id);
-  // Removing an enabled recipe from the catalog must not silently assume zero staff.
-  const oldRecipes = core.state.catalog.recipes;
-  core.state.catalog.recipes = oldRecipes.filter(r=>r.id !== foundryRecipe.id);
-  assert.equal(staff.analyze().complete, false);
-  assert.equal(staff.analyze().resources[0].required, null);
-  core.state.catalog.recipes = oldRecipes; core.state.recipesById.set(foundryRecipe.id, foundryRecipe);
-  assert.equal(JSON.stringify(ctx.items), inventoryBefore, 'Planning never consumes or changes the inventory');
-  memory.set('personnel', { stock: { crew: 1800 }, modules: { foundry: { enabled: true, recipeId: foundryRecipe.id } } });
-  staff.restore();
-  assert.deepEqual(Array.from(total()), [1200, 100], 'Imported plans retain the mandatory baseline and default Gold');
-  assert.equal(staff.analyze().resources[0].amount, 1800);
+  const scenario = app.productionScenario;
+  assert.deepEqual(Array.from(scenario.analyze().rows.filter(r => r.enabled), r => r.key), ['refinery', 'smelter', 'foundry']);
+  assert.equal(scenario.setModule('smelter', { enabled: false }), false);
+  assert.equal(scenario.setModule('foundry', { enabled: false }), false);
+  assert.equal(scenario.setModule('refinery', { recipeId: 'ship_part_reactor' }), false);
+  scenario.setModule('refinery', { recipeId: 'recipe_niobium_advanced' });
+  assert.equal(scenario.analyze().rows.filter(r => r.key === 'refinery' && r.enabled).length, 1);
+  memory.set('personnel', { version: 4, stock: { crew: 99999 }, modules: {
+    refinery: { enabled: false }, shipyard: { enabled: true, recipeId: 'ship_part_reactor' }
+  } });
+  scenario.restore();
+  assert.equal(scenario.analyze().rows.find(r => r.key === 'shipyard').recipeId, 'ship_part_reactor', 'Existing production choices survive removal of the crew planner');
+  assert.equal(scenario.analyze().rows.find(r => r.key === 'refinery').enabled, false);
+  assert.equal(scenario.snapshot().stock, undefined, 'Removed manual personnel counts are discarded');
+  assert.equal(scenario.setStock, undefined);
+  assert.equal(app.personnel, undefined);
+  assert.equal(yard.analyze().prerequisites.find(r => r.id === 'commodity_crew').stock, 1600, 'Recipe prerequisites use reported stock, never old manual counts');
+  assert.equal(JSON.stringify(ctx.items), inventoryBefore, 'Production planning never changes inventory');
   memory.set('selection', 'halberd'); memory.set('divisions', { civilian: 'barge' }); yard.restoreSelection();
   assert.equal(yard.selectedHull().key, 'halberd');
   yard.selectDivision('mining'); yard.selectDivision('civilian'); assert.equal(yard.selectedHull().key, 'barge');
@@ -170,5 +145,5 @@ ctx.__RHW_RECIPE_CATALOG__ = JSON.parse(zlib.gunzipSync(Buffer.from(ctx.__RHW_RE
   recipe.inputs[0].options[0].qty = 181;
   app.lifecycle.emit('catalog:loaded', { catalog: core.state.catalog });
   assert.equal(yard.requirements().materials[0].required, 181, 'A refreshed catalog updates requirements without config changes');
-  console.log('Shipyard and personnel passed: eight current hulls, division memory, exact recipes, core reservation, additive concurrent staffing, ship preview, manual/API provenance and missing data.');
+  console.log('Shipyard and production choices passed: current hulls, exact recipes, division memory, legacy choices without manual personnel, reported prerequisites and missing data.');
 })().catch(error => { console.error(error); process.exitCode = 1; });

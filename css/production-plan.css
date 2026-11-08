@@ -69,8 +69,6 @@ button.production-plan-button:hover,button.production-plan-button:focus-visible 
 .production-hull-selector select { min-height:44px;min-width:0;max-width:100%;width:260px;padding:8px 28px 8px 10px;background:#191b1e;border:1px solid #595b60;border-radius:0;color:#ddd8cb;font:12px/1.5 var(--font-main); }
 .production-hull-selector select:focus-visible { outline:2px solid var(--gold);outline-offset:2px; }
 .production-ship-plan>.production-hull-plan { flex:1 1 250px;min-width:0;margin:0; }
-.personnel-module>strong { color:var(--text);font:13px/1.5 var(--font-main); }
-.personnel-module>strong small { display:block;color:#b9a775;font:9px/1.5 var(--font-tech); }
 @media(max-width:760px) {
   .production-card-controls { max-width:122px; }
   #productionGrid .production-stat { padding:10px 6px; }

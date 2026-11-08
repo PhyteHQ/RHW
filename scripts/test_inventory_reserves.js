@@ -4,7 +4,7 @@ const root = path.join(__dirname, '..'), memory = new Map();
 const ctx = vm.createContext({ console, Map, Set, Intl, items: [], rhwBase: {}, els: {},
   document: { getElementById: () => null, addEventListener() {} },
   hasVerifiedTelemetry: () => true, telemetrySnapshot: () => ({ available: true, stale: false }),
-  RHWV4: { state: {}, config: { storageKeys: { shipyardSelection: 'hull', shipyardDivisions: 'divisions', personnelPlan: 'plan' }, operations: { defaultAffiliation: 'br_m_grp' } },
+  RHWV4: { state: {}, config: { storageKeys: { shipyardSelection: 'hull', shipyardDivisions: 'divisions', productionPlan: 'plan' }, operations: { defaultAffiliation: 'br_m_grp' } },
     store: { get: (k, fallback) => memory.get(k) ?? fallback, set: (k, v) => memory.set(k, v) } }
 });
 ctx.window = ctx;
@@ -13,7 +13,7 @@ run('js/command/config.js');
 vm.runInContext('const CAPITAL_SHIPYARD=DASHBOARD_CONFIG.capitalShipyard; const PRODUCTION_MODULES=DASHBOARD_CONFIG.productionModules;', ctx);
 run('js/shared/utils.js'); run('js/command/shipyard.js'); run('js/core/lifecycle.js');
 ctx.RHWV4.lifecycle = ctx.createRhwLifecycle();
-run('js/calculator/model.js'); run('js/command/production-model.js'); run('js/command/shipyard-model.js'); run('js/command/personnel-model.js');
+run('js/calculator/model.js'); run('js/command/production-model.js'); run('js/command/shipyard-model.js'); run('js/command/production-scenario.js');
 run('js/command/production-volumes.js'); run('js/command/production-simulation.js'); run('js/command/production-plan.js');
 run('js/command/inventory-model.js');
 ctx.findCommodity = name => ctx.items.find(item => ctx.keyFromName(item.name) === ctx.keyFromName(name)) || null;
@@ -58,12 +58,12 @@ ctx.__RHW_RECIPE_CATALOG__ = JSON.parse(zlib.gunzipSync(Buffer.from(ctx.__RHW_RE
   assert.equal(ships.find(r=>r.hull.key==='asteroid-miner').stock,null);
   assert.equal(ships.find(r=>r.hull.key==='dunkirk').stock,null);
   app.productionPlan.selectHull();
-  const previous=app.personnel.analyze().rows.find(r=>r.key==='shipyard').recipeId;
+  const previous=app.productionScenario.analyze().rows.find(r=>r.key==='shipyard').recipeId;
   assert.equal(app.shipyard.selectHull('barge',{preservePlan:true}),true);
   assert.equal(app.shipyard.selectedHull().key,'barge');
-  assert.equal(app.personnel.analyze().rows.find(r=>r.key==='shipyard').recipeId,previous,'Browsing another hull must preserve the planned production');
-  app.personnel.restore();
-  assert.equal(app.personnel.analyze().rows.find(r=>r.key==='shipyard').recipeId,previous,'The plan remains pinned across reloads');
+  assert.equal(app.productionScenario.analyze().rows.find(r=>r.key==='shipyard').recipeId,previous,'Browsing another hull must preserve the planned production');
+  app.productionScenario.restore();
+  assert.equal(app.productionScenario.analyze().rows.find(r=>r.key==='shipyard').recipeId,previous,'The plan remains pinned across reloads');
   app.util = { escape: value => String(value), number: value => String(value) };
   run('js/command/production-plan-view.js');
   const previewMarkup = app.productionPlanView.hullMarkup('test');
@@ -72,8 +72,8 @@ ctx.__RHW_RECIPE_CATALOG__ = JSON.parse(zlib.gunzipSync(Buffer.from(ctx.__RHW_RE
   app.shipyard.selectHull('archon', { preservePlan: true });
   assert.match(app.productionPlanView.hullMarkup('test'), /data-production-hull-plan aria-pressed="true"/, 'A pinned plan is still selected when its own hull is previewed');
   app.productionPlan.selectHull();
-  app.personnel.restore();
-  assert.equal(app.personnel.analyze().rows.find(r=>r.key==='shipyard').enabled,false,'Clicking a matching pinned plan must turn it off immediately and persist');
+  app.productionScenario.restore();
+  assert.equal(app.productionScenario.analyze().rows.find(r=>r.key==='shipyard').enabled,false,'Clicking a matching pinned plan must turn it off immediately and persist');
   assert.equal(vm.runInContext("DASHBOARD_CONFIG.roles.export.some(n=>['gold','niobium','prototype components','wildcat gold'].includes(n))",ctx),false);
   console.log('Inventory reserves passed: pooled Gold, unknown stock, selected-input thresholds, raw inputs, exact ship stock, internal roles and navigation without production changes.');
 })().catch(error=>{console.error(error);process.exit(1);});
