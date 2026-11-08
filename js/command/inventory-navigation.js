@@ -1,4 +1,4 @@
-/* Overview links select a view; factory planning remains an explicit action. */
+/* Inventory links open recipes or ship details without changing stock. */
 (function initInventoryNavigation() {
   'use strict';
   const app = window.RHWV4;
@@ -26,7 +26,7 @@
     });
   }
   function hull(key) {
-    if (key && !app.shipyard.selectHull(key, { preservePlan: true })) return;
+    if (key && !app.shipyard.selectHull(key)) return;
     app.navigate('command', 'shipyard');
     requestAnimationFrame(() => {
       const target = document.getElementById('shipyardControl');

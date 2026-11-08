@@ -12,7 +12,7 @@ let calculator;
 const ctx = vm.createContext({ console, Map, Set, Intl, items: [], els: { shipyardControl: null },
   telemetrySnapshot: () => snapshot,
   document: { getElementById: () => null, addEventListener() {} },
-  RHWV4: { state: {}, config: { storageKeys: { shipyardSelection: 'selection', shipyardDivisions: 'divisions', productionPlan: 'personnel' },
+  RHWV4: { state: {}, config: { storageKeys: { shipyardSelection: 'selection', shipyardDivisions: 'divisions' },
     operations: { defaultAffiliation: 'br_m_grp' } },
     store: { get: (key, fallback) => memory.get(key) ?? fallback, set: (key, value) => memory.set(key, value) },
     operations: { openSelection: value => { calculator = value; } }
@@ -29,7 +29,6 @@ ctx.RHWV4.lifecycle = ctx.createRhwLifecycle();
 run('js/calculator/model.js');
 run('js/calculator/catalog.js');
 run('js/command/shipyard-model.js');
-run('js/command/production-scenario.js');
 for (let i = 1; i <= 6; i++) run(`assets/recipes/catalog-v1-part-${String(i).padStart(2, '0')}.js`);
 ctx.__RHW_RECIPE_CATALOG__ = JSON.parse(zlib.gunzipSync(Buffer.from(ctx.__RHW_RECIPE_CATALOG_GZIP_BASE64__, 'base64')));
 
@@ -118,24 +117,8 @@ ctx.__RHW_RECIPE_CATALOG__ = JSON.parse(zlib.gunzipSync(Buffer.from(ctx.__RHW_RE
   snapshot.available = true;
 
   snapshot.stale = false;
-  const scenario = app.productionScenario;
-  assert.deepEqual(Array.from(scenario.analyze().rows.filter(r => r.enabled), r => r.key), ['refinery', 'smelter', 'foundry']);
-  assert.equal(scenario.setModule('smelter', { enabled: false }), false);
-  assert.equal(scenario.setModule('foundry', { enabled: false }), false);
-  assert.equal(scenario.setModule('refinery', { recipeId: 'ship_part_reactor' }), false);
-  scenario.setModule('refinery', { recipeId: 'recipe_niobium_advanced' });
-  assert.equal(scenario.analyze().rows.filter(r => r.key === 'refinery' && r.enabled).length, 1);
-  memory.set('personnel', { version: 4, stock: { crew: 99999 }, modules: {
-    refinery: { enabled: false }, shipyard: { enabled: true, recipeId: 'ship_part_reactor' }
-  } });
-  scenario.restore();
-  assert.equal(scenario.analyze().rows.find(r => r.key === 'shipyard').recipeId, 'ship_part_reactor', 'Existing production choices survive removal of the crew planner');
-  assert.equal(scenario.analyze().rows.find(r => r.key === 'refinery').enabled, false);
-  assert.equal(scenario.snapshot().stock, undefined, 'Removed manual personnel counts are discarded');
-  assert.equal(scenario.setStock, undefined);
-  assert.equal(app.personnel, undefined);
-  assert.equal(yard.analyze().prerequisites.find(r => r.id === 'commodity_crew').stock, 1600, 'Recipe prerequisites use reported stock, never old manual counts');
-  assert.equal(JSON.stringify(ctx.items), inventoryBefore, 'Production planning never changes inventory');
+  assert.equal(yard.analyze().prerequisites.find(r => r.id === 'commodity_crew').stock, 1600, 'Recipe prerequisites use reported stock');
+  assert.equal(JSON.stringify(ctx.items), inventoryBefore, 'Ship browsing never changes inventory');
   memory.set('selection', 'halberd'); memory.set('divisions', { civilian: 'barge' }); yard.restoreSelection();
   assert.equal(yard.selectedHull().key, 'halberd');
   yard.selectDivision('mining'); yard.selectDivision('civilian'); assert.equal(yard.selectedHull().key, 'barge');
@@ -145,5 +128,5 @@ ctx.__RHW_RECIPE_CATALOG__ = JSON.parse(zlib.gunzipSync(Buffer.from(ctx.__RHW_RE
   recipe.inputs[0].options[0].qty = 181;
   app.lifecycle.emit('catalog:loaded', { catalog: core.state.catalog });
   assert.equal(yard.requirements().materials[0].required, 181, 'A refreshed catalog updates requirements without config changes');
-  console.log('Shipyard and production choices passed: current hulls, exact recipes, division memory, legacy choices without manual personnel, reported prerequisites and missing data.');
+  console.log('Shipyard passed: current hulls, exact recipes, division memory, reported prerequisites and missing data.');
 })().catch(error => { console.error(error); process.exitCode = 1; });

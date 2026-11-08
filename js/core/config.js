@@ -15,8 +15,6 @@ const RHW_APP_CONFIG = Object.freeze({
     inventoryView: 'rhw-webapp-v4:inventory-view',
     shipyardSelection: 'rhw-webapp-v4:shipyard-selection',
     shipyardDivisions: 'rhw-webapp-v4:shipyard-divisions',
-    // Keep the existing storage address so saved production choices survive.
-    productionPlan: 'rhw-webapp-v4:personnel-plan',
     operationsNode: 'rhw-webapp-v4:operations-node',
     calculatorState: 'rhw-webapp-v4:calculator-state',
     priceCheckOverrides: 'rhw-webapp-v4:price-check-overrides',

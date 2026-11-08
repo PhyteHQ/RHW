@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Real inventory rendering, navigation, planning and keyboard/touch controls."""
+"""Real inventory rendering, navigation and keyboard/touch controls."""
 import base64
 import json
 from pathlib import Path
@@ -74,27 +74,19 @@ def main():
         # Raw manifest entries stay separate, including a real zero Gold stock.
         base.ev(cdp, "(()=>{inventoryManifestTab.click();roleFilter.value='reserve';roleFilter.dispatchEvent(new Event('change'));return true;})()")
         assert base.ev(cdp, "itemsBody.querySelectorAll('tr').length===4 && [...itemsBody.querySelectorAll('tr')].some(n=>n.textContent.includes('Wildcat Gold'))")
-        base.ev(cdp, "(()=>{inventoryStatusTab.click();window.inventoryPlanBefore=JSON.stringify(RHWV4.productionScenario.snapshot());reserveList.querySelector('button[data-inventory-material]').click();return true;})()")
+        base.ev(cdp, "(()=>{inventoryStatusTab.click();window.inventoryBefore=JSON.stringify(items);reserveList.querySelector('button[data-inventory-material]').click();return true;})()")
         wait(cdp, "!!document.querySelector('.inventory-uses-dialog[open]')")
         base.ev(cdp, "document.querySelector('[data-inventory-choice=\"recipe_weapon_part_focusing_chamber\"]').click()")
         wait(cdp, "document.body.dataset.commandNode==='production' && !!document.querySelector('.inventory-target')")
-        assert base.ev(cdp, "JSON.stringify(RHWV4.productionScenario.snapshot())===inventoryPlanBefore && document.querySelector('.inventory-target').dataset.productionRecipe==='recipe_weapon_part_focusing_chamber'")
+        assert base.ev(cdp, "JSON.stringify(items)===inventoryBefore && document.querySelector('.inventory-target').dataset.productionRecipe==='recipe_weapon_part_focusing_chamber'")
         base.ev(cdp, '(()=>{RHWV4.navigate(\'command\',\'inventory\');reserveList.querySelector(\'[data-input-name="Military Salvage"] button\').click();return true;})()')
         wait(cdp, "!!document.querySelector('.inventory-target[data-production-recipe=\"recipe_milsal\"]')")
-        assert base.ev(cdp, "document.querySelector('.inventory-target .production-cycle-time').textContent.includes('2h 5m') && JSON.stringify(RHWV4.productionScenario.snapshot())===inventoryPlanBefore")
-        base.ev(cdp, "document.querySelector('[data-production-plan=\"recipe_milsal\"]').click()")
-        assert base.ev(cdp, "RHWV4.productionScenario.analyze().rows.find(r=>r.key==='reclamation').enabled")
-        base.ev(cdp, "document.querySelector('[data-production-plan=\"recipe_milsal\"]').click()")
-        assert base.ev(cdp, "!RHWV4.productionScenario.analyze().rows.find(r=>r.key==='reclamation').enabled")
-        # A ship's stock click previews that hull, retaining an existing ship plan.
-        base.ev(cdp, '(()=>{RHWV4.shipyard.selectHull(\'archon\');RHWV4.productionPlan.selectHull();window.inventoryHullPlan=RHWV4.productionScenario.analyze().rows.find(r=>r.key===\'shipyard\').recipeId;RHWV4.navigate(\'command\',\'inventory\');shipStockList.querySelector(\'[data-inventory-hull="barge"]\').click();return true;})()')
+        assert base.ev(cdp, "document.querySelector('.inventory-target .production-cycle-time').textContent.includes('2h 5m') && JSON.stringify(items)===inventoryBefore")
+        assert base.ev(cdp, "!document.querySelector('[data-production-plan],[data-production-hull-plan],#productionPlanSummary') && !RHWV4.productionPlan && !RHWV4.productionScenario")
+        # A stock click opens the matching ship preview without any plan controls.
+        base.ev(cdp, '(()=>{RHWV4.navigate(\'command\',\'inventory\');shipStockList.querySelector(\'[data-inventory-hull="barge"]\').click();return true;})()')
         wait(cdp, "document.body.dataset.commandNode==='shipyard' && RHWV4.shipyard.selectedHull().key==='barge'")
-        assert base.ev(cdp, "RHWV4.productionScenario.analyze().rows.find(r=>r.key==='shipyard').recipeId===inventoryHullPlan")
-        assert base.ev(cdp, "shipyardRequirements.querySelector('.production-pinned-hull')?.textContent.includes('Archon')"), 'A preserved plan must remain visible beside another hull preview'
-        base.ev(cdp, "(()=>{RHWV4.navigate('command','production');productionPlanHull.value='archon';productionPlanHull.dispatchEvent(new Event('change',{bubbles:true}));return true;})()")
-        assert base.ev(cdp, "productionShipPlan.querySelector('[data-production-hull-plan]').getAttribute('aria-pressed')==='true'"), 'The pinned hull must still show SHIP PLANNED when selected again'
-        base.ev(cdp, "productionShipPlan.querySelector('[data-production-hull-plan]').click()")
-        assert base.ev(cdp, "!RHWV4.productionScenario.analyze().rows.find(r=>r.key==='shipyard').enabled"), 'One click must disable a matching pinned plan'
+        assert base.ev(cdp, "!shipyardControl.querySelector('[data-production-hull-plan],.production-pinned-hull')")
         # An unreported PC stock is displayed as unknown, never an invented zero.
         base.ev(cdp, "(()=>{items.find(n=>n.name==='Prototype Components').quantity=null;RHWV4.navigate('command','inventory');renderOverview();return true;})()")
         assert base.ev(cdp, "reserveList.children[2].classList.contains('alert-waiting') && reserveList.children[2].querySelector('.overview-row-qty').textContent==='–'")
@@ -110,7 +102,7 @@ def main():
           rebuildItemCaches();renderAll();RHWV4.navigate('command','production');return true;
         })()""")
         assert base.ev(cdp, "findCommodity('Wildcat Gold').missing && Number.isFinite(analyzeRecipe(RHWV4.production.recipes().find(r=>r.recipeId==='ship_part_superstructure')).possibleCycles) && !document.querySelector('[data-production-recipe=\"ship_part_superstructure\"]').textContent.includes('INPUT STOCK UNKNOWN')"), 'Synthetic alternate rows must not invalidate reported Gold'
-        print('Inventory browser passed: 3–3–3, pooled Gold, attached inputs, exact ship counts, raw manifest, view-only navigation, PC planning, unknown stock and mobile/desktop layouts.')
+        print('Inventory browser passed: 3–3–3, pooled Gold, attached inputs, exact ship counts, raw manifest, view-only navigation, independent recipe capacity, unknown stock and mobile/desktop layouts.')
     finally:
         if cdp:
             cdp.close()
