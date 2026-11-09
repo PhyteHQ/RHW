@@ -3,7 +3,7 @@
 Shared values live in `css/tokens.css`. Edit the owning theme/layout/component
 sources and regenerate assets with `python3 scripts/build_app_assets.py`.
 
-- Barlow Condensed: page titles (28 px), panel titles (24 px) and product/hull
+- Teko: page titles (28 px), panel titles (24 px) and product/hull
   names (22 px). Branding and the generated forum document retain their own
   identity hierarchy.
 - Barlow: interface labels, actions and explanatory copy. Small utility copy
@@ -15,7 +15,8 @@ sources and regenerate assets with `python3 scripts/build_app_assets.py`.
   shadows. Panel spacing is 16 px; inner card spacing is 12 px.
 - Primary controls have 44 px targets. Compact production actions may use
   36 px on desktop and expand to 44 px on phones. Inline stock links and icons
-  keep their distinct, compact treatment.
+  keep their distinct, compact treatment. Utility-dialog actions retain their
+  larger 48 px phone targets.
 
 The Status Board uses three independent operational stacks on wide screens:
 Maintenance/Waste, Production Reserves and Exports/Ship Stock. It switches to

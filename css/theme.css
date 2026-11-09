@@ -637,6 +637,7 @@ html.rhw-focus-pass .market-material-symbol { width: 39px;height: 43px;font-size
 }
 
 @media (max-width: 760px) {
+html.rhw-focus-pass :is(.discovery-data-actions button,.discovery-data-actions a,.rhw-diagnostics-actions button,.rhw-transfer-actions button,.rhw-transfer-dialog button,.rhw-full-audit-actions button) { min-height:var(--rhw-touch-height); }
 html.rhw-focus-pass .command-header { padding: 12px; }
 html.rhw-focus-pass .command-header-inner { grid-template-columns: 1fr;gap: 10px; }
 html.rhw-focus-pass .brand-copy { display: contents; }
