@@ -1,10 +1,12 @@
 # Inventory roles and production links
 
-The Status Board has three columns: Facility Maintenance (Basic Alloy, Consumer
-Goods, Food Rations), Production Reserves (Gold Supply, Niobium, Prototype
-Components, MOX), and Export Inventory (Chambers, Reactors, Superstructures). Waste
-and a compact Ship Stock list follow. Tablets stack the export panel below the
-first two columns; phones use the same reading order in one column.
+The Status Board has three independent stacks: Facility Maintenance (Basic
+Alloy, Consumer Goods, Food Rations) with Waste directly below; Production
+Reserves (Gold Supply, Niobium, Prototype Components, MOX); and Export Inventory
+(Chambers, Reactors, Superstructures) with Ship Stock directly below. Taller
+reserves cannot push the two secondary cards down. Tablets put Exports and
+Ship Stock side by side beneath the first two stacks; phones read each group
+in DOM order, in one column.
 
 Gold Supply is an additive Gold / Wildcat Gold pool. Its breakdown preserves
 the individual stocks; Full Manifest continues to list every original item.

@@ -87,11 +87,11 @@ html.rhw-focus-pass #commandAlertDetails .priority-state { font: 11px/1.4 var(--
 
 html.rhw-focus-pass #commandGlobalAlerts[hidden] { display: none; }
 
-html.rhw-focus-pass #inventoryStatusPanel .summary-grid { display: grid;grid-template-columns: repeat(6,minmax(0,1fr));align-items: start;gap: 16px;padding: 0;margin: 0;overflow: visible;scroll-snap-type: none; }
+html.rhw-focus-pass #inventoryStatusPanel .summary-grid { display: grid;grid-template-columns: repeat(3,minmax(0,1fr));align-items: start;gap: var(--rhw-space-panel);padding: 0;margin: 0;overflow: visible;scroll-snap-type: none; }
 
-html.rhw-focus-pass #inventoryStatusPanel .alert-card { grid-column: span 2;width: auto;max-width: none;min-width: 0;min-height: 0;align-self: start;padding: 0;backdrop-filter: none; }
+html.rhw-focus-pass #inventoryStatusPanel .inventory-column { display:grid;align-content:start;gap:var(--rhw-space-panel);min-width:0; }
 
-html.rhw-focus-pass #inventoryStatusPanel :is(.waste-panel,.confiscated-panel) { grid-column: span 3; }
+html.rhw-focus-pass #inventoryStatusPanel .alert-card { grid-column: auto;width: auto;max-width: none;min-width: 0;min-height: 0;align-self: start;padding: 0;backdrop-filter: none; }
 
 html.rhw-focus-pass #inventoryStatusPanel .alert-title { margin: 0;gap: 8px; }
 
@@ -101,7 +101,7 @@ html.rhw-focus-pass #inventoryStatusPanel .section-title-meta { flex-wrap: wrap;
 
 html.rhw-focus-pass #inventoryStatusPanel .alert-list { gap: 7px;padding: 14px;flex: initial; }
 
-html.rhw-focus-pass #inventoryStatusPanel .alert-list li { position: relative;min-width: 0;padding: 12px;gap: 12px;border: 1px solid #253029;border-left: 2px solid var(--line);background: linear-gradient(100deg,#0b110d,#090d0c);box-shadow: inset 0 1px #ffffff03; }
+html.rhw-focus-pass #inventoryStatusPanel .alert-list li { position: relative;min-width: 0;padding: var(--rhw-space-card);gap: var(--rhw-space-card);border: 1px solid var(--line);border-left: 2px solid var(--line);background: var(--surface-input);box-shadow: inset 0 1px #ffffff03; }
 
 html.rhw-focus-pass #inventoryStatusPanel .alert-list li.alert-critical { border-left-color: var(--danger); }
 
@@ -137,7 +137,7 @@ html.rhw-focus-pass #commandControlDeck, html.rhw-focus-pass body[data-command-n
 html.rhw-focus-pass #commandGlobalAlerts { grid-column: 1 / -1; }
 html.rhw-focus-pass #inventoryStatusPanel .summary-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
 html.rhw-focus-pass #inventoryStatusPanel .alert-card { grid-column: auto; }
-html.rhw-focus-pass #inventoryStatusPanel .feedstock-panel { grid-column: 1 / -1; }
+html.rhw-focus-pass #inventoryStatusPanel .inventory-column-market { grid-column:1/-1;grid-template-columns:repeat(2,minmax(0,1fr));align-items:start; }
 }
 
 @media (max-width: 760px) {
@@ -263,15 +263,15 @@ html.rhw-focus-pass #rhwFocusToolsBtn { background: #1a1a18;border-color: #45453
 
 html.rhw-focus-pass #commandGlobalSearch::placeholder { color: #a7a69d;opacity: 1; }
 
-html.rhw-focus-pass :is(.alert-card,.panel,.ops-panel,.comms-panel,.remote-card,.production-card,.production-module-card,.v40-tool-panel,.capital-shipyard-control) { background: linear-gradient(145deg,#ffffff03,transparent 45%),var(--panel);box-shadow: inset 0 1px #eee5cf0c,0 8px 22px #0006; }
+html.rhw-focus-pass :is(.alert-card,.panel,.ops-panel,.comms-panel,.remote-card,.production-card,.production-module-card,.v40-tool-panel,.capital-shipyard-control) { background: linear-gradient(145deg,#ffffff03,transparent 45%),var(--panel);box-shadow: var(--rhw-card-shadow); }
 
 html.rhw-focus-pass #inventoryStatusPanel .alert-card { border-top: 2px solid #8c825a; }
 
-html.rhw-focus-pass #inventoryStatusPanel .alert-card:first-child { border-top-color: var(--gold); }
+html.rhw-focus-pass #inventoryStatusPanel .maintenance-panel { border-top-color: var(--gold); }
 
 html.rhw-focus-pass #inventoryStatusPanel .feedstock-panel { border-top-color: var(--gold); }
 
-html.rhw-focus-pass #inventoryStatusPanel .alert-title { min-height: 54px;padding: 12px 16px;border-bottom-color: #f0c56b33;background: var(--rhw-head-fill);box-shadow: inset 0 1px #ffffff06; }
+html.rhw-focus-pass #inventoryStatusPanel .alert-title { min-height: 52px;padding: var(--rhw-space-card) var(--rhw-space-panel);border-bottom-color: #f0c56b33;background: var(--rhw-head-fill);box-shadow: inset 0 1px #ffffff06; }
 
 html.rhw-focus-pass #inventoryStatusPanel .alert-card:first-child .alert-title { background: var(--rhw-head-fill); }
 
@@ -279,9 +279,9 @@ html.rhw-focus-pass #inventoryStatusPanel .alert-title > span:first-child { colo
 
 html.rhw-focus-pass #inventoryStatusPanel :is(.waste-panel,.confiscated-panel) { border-top: 1px solid var(--palette-line-bright);background: #0e0f13;box-shadow: inset 0 1px #ffffff04; }
 
-html.rhw-focus-pass #inventoryStatusPanel :is(.waste-panel,.confiscated-panel) .alert-title { min-height: 46px;padding-block: 10px;background: #17181d;font-size: 23px; }
+html.rhw-focus-pass #inventoryStatusPanel :is(.waste-panel,.confiscated-panel) .alert-title { min-height: 52px;padding-block:var(--rhw-space-card);background:var(--rhw-head-fill);font-size:var(--rhw-panel-title-size); }
 
-html.rhw-focus-pass #inventoryStatusPanel :is(.waste-panel,.confiscated-panel) .alert-title > span:first-child { color: #c6c3b9; }
+html.rhw-focus-pass #inventoryStatusPanel :is(.waste-panel,.confiscated-panel) .alert-title > span:first-child { color:var(--gold); }
 
 html.rhw-focus-pass #inventoryStatusPanel .alert-list { padding-inline: 16px; }
 
@@ -356,7 +356,7 @@ html.rhw-focus-pass #inventoryStatusPanel .alert-list { padding-inline: 14px; }
 .shipyard-divisions { display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px; }
 #shipyardControl .shipyard-divisions button { position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:6px;min-width:0;min-height:108px;margin:0;padding:17px 18px;border:1px solid var(--palette-line-bright);background:linear-gradient(125deg,#1c1e25,#101115);clip-path:none;color:var(--text);text-align:left;box-shadow:inset 0 1px #ffffff05; }
 #shipyardControl .shipyard-divisions button[aria-pressed="true"] { border-color:var(--gold);box-shadow:inset 0 3px var(--gold);background:linear-gradient(125deg,#302a1e,#121318); }
-.shipyard-division-title { font:500 23px/1.1 var(--font-title);letter-spacing:.055em; }
+.shipyard-division-title { font:500 var(--rhw-product-title-size)/1.2 var(--font-title);letter-spacing:.045em; }
 .shipyard-division-short { display:none; }
 .shipyard-divisions small { font:12px/1.4 var(--font-main);color:var(--muted);letter-spacing:normal; }
 .shipyard-division-count { margin-top:auto;font:10px/1.4 var(--font-tech);letter-spacing:.12em;color:var(--gold); }
@@ -388,7 +388,7 @@ html.rhw-focus-pass #inventoryStatusPanel .alert-list { padding-inline: 14px; }
 
 #shipyardControl .shipyard-hull-card[aria-pressed="true"]::after { border-color:var(--gold); }
 #shipyardControl .shipyard-hull-card:focus-visible { outline:2px solid var(--gold);outline-offset:3px; }
-.shipyard-hull-name { position:relative;grid-column:1/-1;padding-right:20px;color:var(--text);font:500 29px/1.05 var(--font-title);letter-spacing:.035em; }
+.shipyard-hull-name { position:relative;grid-column:1/-1;padding-right:20px;color:var(--text);font:500 var(--rhw-product-title-size)/1.2 var(--font-title);letter-spacing:.025em; }
 .shipyard-hull-card[aria-pressed="true"] .shipyard-hull-name { color:var(--gold);text-shadow:0 0 18px #f0c56b22; }
 .shipyard-hull-type { grid-column:1/-1;color:var(--muted);font-size:12px;margin-bottom:14px; }
 .shipyard-hull-indicator { position:absolute;top:20px;right:20px;width:13px;height:13px;border:1px solid #777568;border-radius:50%; }
@@ -400,9 +400,9 @@ html.rhw-focus-pass #inventoryStatusPanel .alert-list { padding-inline: 14px; }
 .shipyard-hull-price { grid-column:2;grid-row:4;align-self:end;text-align:right;color:var(--gold);font:17px/1.5 var(--font-tech);font-variant-numeric:tabular-nums; }
 .shipyard-requirements-heading { display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:14px; }
 .shipyard-eyebrow { margin:0 0 5px;color:var(--muted);font:11px/1.4 var(--font-tech);letter-spacing:.12em; }
-.shipyard-requirements-heading h3 { display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin:0;color:var(--text);font:500 32px/1 var(--font-title); }
+.shipyard-requirements-heading h3 { display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin:0;color:var(--gold);font:500 var(--rhw-panel-title-size)/1.2 var(--font-title); }
 .shipyard-requirements-heading h3 span { color:var(--muted);font:400 13px/1.4 var(--font-main); }
-#shipyardControl .shipyard-plan-button { flex-shrink:0;margin:0;min-height:44px;padding:10px 16px;border:1px solid #ba9449;background:linear-gradient(120deg,#493718,#211e11);color:#ffe5ac;box-shadow:inset 0 1px #f0c56b33;font:500 12px/1.3 var(--font-tech);letter-spacing:.035em; }
+#shipyardControl .shipyard-plan-button { flex-shrink:0;margin:0;min-height:var(--rhw-control-height);padding:10px 16px;border:1px solid var(--rhw-control-border);background:var(--rhw-action-fill);color:var(--gold);box-shadow:inset 0 1px #f0c56b33;font:500 var(--rhw-control-size)/1.4 var(--font-main);letter-spacing:.025em; }
 #shipyardControl .shipyard-decision-strip { grid-template-columns:repeat(3,minmax(0,1fr));gap:0;border:1px solid var(--palette-line-bright);border-radius:2px;background:#101115;overflow:hidden;box-shadow:inset 0 1px #ffffff05; }
 #shipyardControl .shipyard-decision-metric { display:flex;flex-direction:column;justify-content:center;grid-column:auto;min-height:100px;padding:15px 20px;border:0;box-shadow:none; }
 #shipyardControl .shipyard-decision-metric + .shipyard-decision-metric { border-left:1px solid var(--line); }

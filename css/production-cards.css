@@ -5,7 +5,7 @@
 .production-card-meta { display:flex;align-items:center;gap:6px;min-height:32px;margin-bottom:8px; }
 #productionGrid .production-kicker { margin:0;margin-right:auto;color:var(--muted);font:11px/1.4 var(--font-main);letter-spacing:.06em; }
 #productionGrid .module-state { padding:4px 6px;font:11px/1.4 var(--font-main);letter-spacing:0;white-space:nowrap; }
-#productionGrid .production-title { min-height:2.4em;font-size:22px;line-height:1.2;letter-spacing:.025em;overflow-wrap:anywhere; }
+#productionGrid .production-title { min-height:2.4em;font-size:var(--rhw-product-title-size);line-height:1.2;letter-spacing:.025em;overflow-wrap:anywhere; }
 .production-batch-time { display:flex;flex-wrap:wrap;gap:3px 10px;margin:0 0 10px;font:12px/1.5 var(--font-main); }
 .production-cycle-time { color:#b9ac8d; }
 #productionGrid .production-stats { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0;margin:10px 0 12px; }
@@ -19,7 +19,7 @@
 .production-limit>span { margin-right:7px;color:var(--muted);font-size:11px; }
 .production-limit>strong { font-weight:400; }
 .production-card-actions { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px; }
-#productionGrid :is(.production-card-toggle,.production-calc-button) { display:flex;align-items:center;justify-content:center;width:100%;min-height:36px;margin:0;padding:7px 8px;border:1px solid #55482e;border-radius:2px;clip-path:none;box-shadow:none;background:#24201666;color:#d8caaa;font:12px/1.4 var(--font-main);letter-spacing:.02em; }
+#productionGrid :is(.production-card-toggle,.production-calc-button) { display:flex;align-items:center;justify-content:center;width:100%;min-height:var(--rhw-compact-height);margin:0;padding:7px 8px;border:1px solid var(--rhw-control-border);border-radius:var(--rhw-surface-radius);clip-path:none;box-shadow:none;background:var(--rhw-control-fill);color:#d8caaa;font:var(--rhw-control-size)/1.4 var(--font-main);letter-spacing:.02em; }
 #productionGrid .production-card-toggle:hover,#productionGrid .production-card-toggle:focus-visible { border-color:var(--gold);background:#332b1c;color:#f0d994; }
 #productionGrid .production-calc-button { background:transparent;color:var(--muted);border-color:var(--line); }
 #productionGrid .production-calc-button:hover,#productionGrid .production-calc-button:focus-visible { border-color:var(--gold);color:var(--gold); }

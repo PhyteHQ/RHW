@@ -1,5 +1,5 @@
 /* RHW RECIPES — edit this owning cascade stage; do not add release override files. */
-html.rhw-focus-pass #opsCompareToggle, html.rhw-focus-pass .ops-comparison-table button, html.rhw-focus-pass .rhw-source-button { min-height: 44px;padding: 9px 12px;border: 1px solid #796740;background: #27241d;color: #ebd49a;font: 600 12px/1.4 var(--font-main);letter-spacing: .035em;cursor: pointer;clip-path: none; }
+html.rhw-focus-pass #opsCompareToggle, html.rhw-focus-pass .ops-comparison-table button, html.rhw-focus-pass .rhw-source-button { min-height:var(--rhw-control-height);padding: 9px 12px;border:1px solid var(--rhw-control-border);background:var(--rhw-action-fill);color:var(--gold);font:500 var(--rhw-control-size)/1.4 var(--font-main);letter-spacing:.025em;cursor: pointer;clip-path: none; }
 
 html.rhw-focus-pass #opsCompareToggle { margin: 0 16px 16px;width: calc(100% - 32px); }
 
@@ -58,7 +58,7 @@ html.rhw-focus-pass .ops-comparison-locked td { color: #b9b3a6;text-align: left;
 html.rhw-focus-pass .ops-comparison-table button { width: 100%; }
 
 html.rhw-focus-pass .ops-rhw-prices { margin: 16px;padding: 14px;border: 1px solid var(--line);background: var(--surface-input); }
-html.rhw-focus-pass #opsLoadRhwPrices { min-height: 44px;padding: 10px 14px;border: 1px solid #796740;background: #27241d;color: #ebd49a;font: 600 13px/1.4 var(--font-main);cursor: pointer; }
+html.rhw-focus-pass #opsLoadRhwPrices { min-height:var(--rhw-control-height);padding: 10px 14px;border:1px solid var(--rhw-control-border);background:var(--rhw-action-fill);color:var(--gold);font:500 var(--rhw-control-size)/1.4 var(--font-main);cursor: pointer; }
 html.rhw-focus-pass #opsLoadRhwPrices:disabled { opacity: .65;cursor: default; }
 html.rhw-focus-pass .ops-rhw-prices p { margin: 10px 0 6px;color: var(--text);font: 14px/1.5 var(--font-main); }
 html.rhw-focus-pass :is(#opsRhwPriceStatus,.ops-material-price-source) { display: block;color: var(--muted);font: 12px/1.5 var(--font-main);overflow-wrap: anywhere; }

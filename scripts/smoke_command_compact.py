@@ -171,8 +171,8 @@ def main() -> int:
             if initial.get("overflow", 0) > 2:
                 raise RuntimeError(f"Compact COMMAND layout has horizontal overflow: {result}")
 
-            # Real CSS layout at phone, tablet and desktop sizes. A long Export
-            # list must not stretch unrelated cards; all categories stay reachable.
+            # Related panels stack independently on desktop; keyboard and
+            # phone reading order follow the same operational groups.
             base.ev(cdp, """(()=>{
               document.querySelector('.uplink-details')?.removeAttribute('open');
               uplinkPanel.classList.remove('offline');uplinkPanel.classList.add('online');
@@ -226,7 +226,7 @@ def main() -> int:
                 })()""")
                 if geometry['overflow']>2 or geometry['scrollDeck']>2 or len(geometry['cards'])!=5 or not geometry['labelsFit'] or geometry['contentOverflow']:
                     layout_failures.append(f'Inventory overflow at {width}px: {geometry}')
-                if geometry['rows']!=['maintenanceList','reserveList','exportList','byproductList','shipStockList']:
+                if geometry['rows']!=['maintenanceList','byproductList','reserveList','exportList','shipStockList']:
                     layout_failures.append(f'Inventory reading order at {width}px: {geometry}')
                 cards=geometry['cards']
                 if width>=1201:
@@ -241,8 +241,12 @@ def main() -> int:
                     if geometry['unavailable']['header']['height']>252 or geometry['unavailable']['wrapped']:
                         layout_failures.append(f'Unavailable telemetry must keep the desktop header at its original height at {width}px: {geometry}')
                 if width>=1200:
-                    if max(c['top'] for c in cards[:3])-min(c['top'] for c in cards[:3])>2 or cards[3]['top']<max(c['bottom'] for c in cards[:3])-2:
-                        layout_failures.append(f'Inventory row sizing at {width}px: {geometry}')
+                    maintenance,waste,reserves,exports,ships=cards
+                    if max(c['top'] for c in [maintenance,reserves,exports])-min(c['top'] for c in [maintenance,reserves,exports])>2:
+                        layout_failures.append(f'Inventory column alignment at {width}px: {geometry}')
+                    for parent,child in [(maintenance,waste),(exports,ships)]:
+                        if not 0<child['top']-parent['bottom']<=17 or abs(child['left']-parent['left'])>2 or abs(child['width']-parent['width'])>2:
+                            layout_failures.append(f'Inventory stacks must not wait for taller unrelated panels at {width}px: {geometry}')
                     if cards[0]['top']>455 or geometry['quantity']<19 or geometry['kpi']<20:
                         layout_failures.append(f'Desktop HUD density at {width}px: {geometry}')
                 if width<760 and any(cards[i+1]['top']<cards[i]['bottom']-2 for i in range(4)):

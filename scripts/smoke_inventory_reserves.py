@@ -60,16 +60,26 @@ def main():
             cdp.call('Emulation.setDeviceMetricsOverride', {'width': width, 'height': 1100, 'deviceScaleFactor': 1, 'mobile': width < 760})
             base.ev(cdp, "inventoryStatusPanel.scrollIntoView({block:'start',behavior:'instant'})")
             geometry = base.ev(cdp, """(()=>{
-              const r=n=>n.getBoundingClientRect();const cards=[...inventoryStatusPanel.querySelectorAll('.summary-grid>.alert-card')];
+              const r=n=>n.getBoundingClientRect();
+              const panel=name=>inventoryStatusPanel.querySelector('.'+name);
+              const maintenance=r(panel('maintenance-panel')),reserve=r(panel('reserve-panel')),exports=r(panel('export-panel'));
+              const waste=r(panel('waste-panel')),ships=r(panel('ship-stock-panel'));
               return {overflow:document.documentElement.scrollWidth>innerWidth+2,
                 internal:inventoryStatusPanel.scrollWidth>inventoryStatusPanel.clientWidth+2,
-                columns:Math.max(...cards.slice(0,3).map(n=>r(n).top))-Math.min(...cards.slice(0,3).map(n=>r(n).top)),
-                heights:Math.max(...cards.slice(0,3).map(n=>r(n).height))-Math.min(...cards.slice(0,3).map(n=>r(n).height)),
+                columns:Math.max(maintenance.top,reserve.top,exports.top)-Math.min(maintenance.top,reserve.top,exports.top),
+                wasteGap:waste.top-maintenance.bottom,shipGap:ships.top-exports.bottom,
+                wasteAligned:Math.abs(waste.left-maintenance.left)<2&&Math.abs(waste.width-maintenance.width)<2,
+                shipsAligned:Math.abs(ships.left-exports.left)<2&&Math.abs(ships.width-exports.width)<2,
+                tabletMarketAligned:Math.abs(exports.top-ships.top)<2&&ships.left>exports.left,
                 touch:[...inventoryStatusPanel.querySelectorAll('button')].filter(n=>n.getClientRects().length).every(n=>r(n).height>=(innerWidth<760?43:27))};
             })()""")
             assert not geometry['overflow'] and not geometry['internal'] and geometry['touch'], (width, geometry)
             if width > 1100:
                 assert geometry['columns'] < 2, geometry
+                assert geometry['wasteAligned'] and geometry['shipsAligned'], geometry
+                assert 0<geometry['wasteGap']<=17 and 0<geometry['shipGap']<=17, 'Lower cards must follow their own columns without waiting for tall reserves: '+str(geometry)
+            elif width>760:
+                assert geometry['tabletMarketAligned'], geometry
             (out / f'inventory-reserves-{width}.png').write_bytes(base64.b64decode(cdp.call('Page.captureScreenshot', {'format': 'png'})['data']))
         # Raw manifest entries stay separate, including a real zero Gold stock.
         base.ev(cdp, "(()=>{inventoryManifestTab.click();roleFilter.value='reserve';roleFilter.dispatchEvent(new Event('change'));return true;})()")

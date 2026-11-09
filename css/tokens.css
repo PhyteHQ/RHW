@@ -15,4 +15,20 @@
   --palette-gold-muted: #bd9753;
   --palette-white: #ffffff;
   --palette-black: #000000;
+  /* One visual scale for Command, Calculator, Price Check, Forum and tools. */
+  --rhw-space-panel: 16px;
+  --rhw-space-card: 12px;
+  --rhw-space-control: 8px;
+  --rhw-title-size: 28px;
+  --rhw-panel-title-size: 24px;
+  --rhw-product-title-size: 22px;
+  --rhw-control-size: 12px;
+  --rhw-control-height: 44px;
+  --rhw-compact-height: 36px;
+  --rhw-touch-height: 48px;
+  --rhw-control-fill: #17181c;
+  --rhw-control-hover: #29251d;
+  --rhw-control-border: #62553d;
+  --rhw-action-fill: linear-gradient(110deg,#34291a,#1a1919);
+  --rhw-card-shadow: inset 0 1px #eee5cf0c,0 8px 22px #0006;
 }
