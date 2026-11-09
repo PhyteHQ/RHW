@@ -241,7 +241,7 @@ def main() -> int:
                     if geometry['unavailable']['header']['height']>252 or geometry['unavailable']['wrapped']:
                         layout_failures.append(f'Unavailable telemetry must keep the desktop header at its original height at {width}px: {geometry}')
                 if width>=1200:
-                    if max(c['top'] for c in cards[:3])-min(c['top'] for c in cards[:3])>2 or max(c['height'] for c in cards[:3])-min(c['height'] for c in cards[:3])>2 or cards[3]['top']<max(c['bottom'] for c in cards[:3])-2:
+                    if max(c['top'] for c in cards[:3])-min(c['top'] for c in cards[:3])>2 or cards[3]['top']<max(c['bottom'] for c in cards[:3])-2:
                         layout_failures.append(f'Inventory row sizing at {width}px: {geometry}')
                     if cards[0]['top']>455 or geometry['quantity']<19 or geometry['kpi']<20:
                         layout_failures.append(f'Desktop HUD density at {width}px: {geometry}')

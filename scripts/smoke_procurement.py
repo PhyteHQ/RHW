@@ -45,7 +45,7 @@ def main() -> int:
         base.load_document(cdp, target['id'], markup, origin)
         end = time.time() + 10
         while time.time() < end:
-            if base.ev(cdp, "document.documentElement.dataset.v40Ready==='true' && !!lastLoaded && document.querySelectorAll('.production-calc-button').length===7"):
+            if base.ev(cdp, "document.documentElement.dataset.v40Ready==='true' && !!lastLoaded && document.querySelectorAll('.production-calc-button').length===8"):
                 break
             time.sleep(.1)
         else:
