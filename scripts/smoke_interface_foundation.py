@@ -120,6 +120,13 @@ def main():
         cdp.call('Page.navigate', {'url': f'http://127.0.0.1:{server.server_port}/index.html#command/inventory'})
         wait_ready(cdp)
         base.ev(cdp, 'navigator.serviceWorker.ready.then(()=>true)')
+        # Boot and service-worker readiness can precede the async cache read
+        # and first fixture fetch. Check the stock view only after that fetch.
+        stock_deadline = time.monotonic() + 15
+        while not base.ev(cdp, "hasVerifiedTelemetry() && !isLoading && !lastSyncError"):
+            if time.monotonic() >= stock_deadline:
+                raise AssertionError('Initial fixture stock did not load: ' + str(base.ev(cdp, 'telemetrySnapshot()')))
+            time.sleep(.05)
         assert base.ev(cdp, 'window.__rhwNpcRequests') == 0, 'COMMAND startup must not fetch the Price Check market'
         report = []
         for width in WIDTHS:
