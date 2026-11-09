@@ -55,7 +55,9 @@ jobs:
           node scripts/test_app_contracts.js
 
       - name: Validate audit regressions
-        run: node scripts/test_audit_regressions.js
+        run: |
+          node scripts/test_audit_regressions.js
+          node scripts/test_telemetry_cache.js
 
       - name: Validate procurement prices, pooled inputs and full inventory
         run: node scripts/test_procurement_inputs.js

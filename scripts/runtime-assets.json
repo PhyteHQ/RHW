@@ -18,6 +18,7 @@
     "./js/command/config.js",
     "./js/command/dom.js",
     "./js/shared/utils.js",
+    "./js/data/telemetry-cache.js",
     "./js/data/telemetry.js",
     "./js/command/production.js",
     "./js/command/shipyard.js",

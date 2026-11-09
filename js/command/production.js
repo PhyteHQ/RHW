@@ -331,6 +331,15 @@ function ensureProductionModuleTools() {
   }
   if (els.productionGrid.dataset.cardDetailsBound !== 'true') {
     els.productionGrid.dataset.cardDetailsBound = 'true';
+    els.productionGrid.addEventListener('change', event => {
+      if (!event.target.matches('[data-production-mox]')) return;
+      if (!window.RHWV4.production.selectMoxRecipe(event.target.value)) {
+        window.RHWV4.notify?.('Recipe selection could not be saved on this device.', 'warn');
+      }
+      renderAll();
+      window.RHWV4.requestUiUpdate?.();
+      els.productionGrid.querySelector('[data-production-mox]')?.focus({ preventScroll: true });
+    });
     els.productionGrid.addEventListener('click', event => {
       const button = event.target.closest('.production-card-toggle');
       if (!button) return;
@@ -350,20 +359,24 @@ function ensureProductionModuleTools() {
 function renderProductionModules() {
   if (!els.productionGrid) return;
   const materialFocus = document.activeElement?.closest?.('.production-card-toggle')?.closest('.production-card')?.dataset.productionRecipe;
+  const moxFocus = document.activeElement?.matches?.('[data-production-mox]');
   ensureProductionModuleTools();
   if (!hasVerifiedTelemetry()) {
     const failed = Boolean(lastSyncError);
     els.productionGrid.innerHTML = `<div class="feature-empty production-empty">${failed ? 'TELEMETRY UNAVAILABLE' : 'AWAITING FIRST TELEMETRY BURST'}<small>${failed ? 'NO VERIFIED RHW INVENTORY IS AVAILABLE' : 'PRODUCTION ANALYSIS WILL APPEAR AFTER THE FIRST SUCCESSFUL SYNC'}</small></div>`;
     return;
   }
-  const recipes = productionRecipes();
-  if (!recipes.length) {
+  const model = window.RHWV4.production;
+  if (!window.RHWV4.operationsCore.state.catalog) {
     els.productionGrid.innerHTML = '<div class="feature-empty production-empty">PRODUCTION RECIPES UNAVAILABLE<small>CAPACITY REQUIRES THE VERIFIED RECIPE CATALOG</small></div>';
     applyProductionModuleFilters();
     return;
   }
 
-  els.productionGrid.innerHTML = recipes.map((recipe, index) => {
+  els.productionGrid.innerHTML = model.modules().map((module, index) => {
+    const recipe = model.requirements(module);
+    const variant = module.product === 'MOX' ? `<label class="production-variant"><span>MOX RECIPE</span><select data-production-mox aria-label="MOX recipe">${model.moxRecipes.map(option => `<option value="${option.recipeId}"${option.recipeId === module.recipeId ? ' selected' : ''}>${option.label}</option>`).join('')}</select></label>` : '';
+    if (!recipe) return `<div class="production-card waiting production-unavailable" data-production-recipe="${escapeHTML(module.recipeId)}" data-production-state="waiting" data-production-product="${escapeHTML(normalize(module.product))}"><div class="production-kicker">MODULE-${String(index + 1).padStart(2, '0')}</div><div class="production-title">${escapeHTML(module.product)}</div>${variant}<strong>RECIPE UNAVAILABLE</strong><p>Material coverage is unknown. Other modules remain available.</p></div>`;
     const analysis = analyzeRecipe(recipe);
     const cycle = window.RHWV4.production.cycleSeconds(recipe.recipeId);
     const runtime = analysis.possibleCycles === null || cycle === null ? null : analysis.possibleCycles * cycle;
@@ -380,7 +393,7 @@ function renderProductionModules() {
               </li>`;
     }).join('');
 
-    const bottleneckDisplay = analysis.bottleneck ? escapeHTML(analysis.bottleneck.name).toUpperCase() : '';
+    const bottleneckDisplay = analysis.bottleneck ? escapeHTML(analysis.bottleneck.displayName).toUpperCase() : '';
     const nextGapText = analysis.bottleneck
       ? `<div class="next-gap ${analysis.cardState}">NEXT +1 CYCLE: <strong>${bottleneckDisplay} +${number(analysis.nextCycleGap)}</strong></div>`
       : '';
@@ -403,19 +416,20 @@ function renderProductionModules() {
                 <div>
                   <div class="production-kicker">MODULE-${String(index + 1).padStart(2, '0')}</div>
                   <div class="production-title">${escapeHTML(displayRecipeName(recipe.product))}</div>
+                  ${variant}
                   <div class="footnote production-batch-time">${number(recipe.output)} / BATCH <span class="production-cycle-time">${cycle === null ? 'CYCLE TIME UNKNOWN' : `~${productionDuration(cycle)} / CYCLE`}</span></div>
                 </div>
                 <div class="production-card-controls"><span class="module-state ${analysis.cardState}" title="Standalone input coverage, before competition or incoming production">${inputStatus}</span></div>
               </div>
               <div class="production-stats">
                 <div class="production-stat production-stock-primary"><small>IN STOCK</small><strong>${number(analysis.productStock)}</strong></div>
-                <div class="production-stat production-capacity"><small>PRODUCIBLE FROM STOCK</small><strong>${number(analysis.possibleOutput)}</strong><span class="production-runtime">${runtime === null ? 'TIME UNKNOWN' : `~${productionDuration(runtime)}`}</span><span class="production-capacity-context">CURRENT INPUTS · THIS MODULE</span></div>
+                <div class="production-stat production-capacity"><small>MATERIAL COVERAGE</small><strong>${number(analysis.possibleOutput)}</strong><span class="production-runtime">${runtime === null ? 'TIME UNKNOWN' : `~${productionDuration(runtime)}`}</span><span class="production-capacity-context">OUTPUT FROM CURRENT INPUTS</span></div>
               </div>
               <div class="production-limit"><span>LIMITED BY</span><strong>${escapeHTML(analysis.bottleneck?.displayName || 'Input stock unknown')}</strong></div>
               ${analysis.possibleCycles === null ? '<div class="production-stock-note">INPUT STOCK UNKNOWN</div>' : ''}
               <button type="button" class="production-card-toggle" aria-controls="${escapeHTML(materialId)}" aria-expanded="${!collapsed}"><span>${collapsed ? 'SHOW MATERIALS' : 'HIDE MATERIALS'}</span></button>
               <div class="production-materials" id="${escapeHTML(materialId)}">
-              <div class="production-coverage-summary"><span>MATERIAL COVERAGE</span><strong>MATERIAL CYCLES ${number(analysis.possibleCycles)} · OUTPUT ${number(analysis.possibleOutput)}</strong><small>${runtime === null ? 'TIME UNKNOWN' : `~${productionDuration(runtime)}`} · Other modules may use the same stock.</small></div>
+              <div class="production-coverage-summary"><span>INPUT DETAILS</span><strong>MATERIAL CYCLES ${number(analysis.possibleCycles)} · OUTPUT ${number(analysis.possibleOutput)}</strong><small>Materials only; prerequisites and module activity are not checked. Other modules may use the same stock.</small></div>
               ${nextGapText}
               <div class="recipe-column-head" aria-hidden="true">
                 <span>Material</span><span>Required / Cycle</span><span>Current Stock</span>
@@ -428,6 +442,7 @@ function renderProductionModules() {
   }).join('');
   if (materialFocus) [...els.productionGrid.querySelectorAll('.production-card')]
     .find(card => card.dataset.productionRecipe === materialFocus)?.querySelector('.production-card-toggle')?.focus({ preventScroll: true });
+  if (moxFocus) els.productionGrid.querySelector('[data-production-mox]')?.focus({ preventScroll: true });
   applyProductionModuleFilters();
   window.RHWRuntime?.rendered('production');
 }

@@ -69,7 +69,7 @@ def main():
             })()""")
             assert not geometry['overflow'] and not geometry['internal'] and geometry['touch'], (width, geometry)
             if width > 1100:
-                assert geometry['columns'] < 2 and geometry['heights'] < 2, geometry
+                assert geometry['columns'] < 2, geometry
             (out / f'inventory-reserves-{width}.png').write_bytes(base64.b64decode(cdp.call('Page.captureScreenshot', {'format': 'png'})['data']))
         # Raw manifest entries stay separate, including a real zero Gold stock.
         base.ev(cdp, "(()=>{inventoryManifestTab.click();roleFilter.value='reserve';roleFilter.dispatchEvent(new Event('change'));return true;})()")

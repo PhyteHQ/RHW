@@ -495,3 +495,23 @@ html.rhw-focus-pass #inventoryStatusPanel .alert-list { padding-inline: 14px; }
   .shipyard-prerequisites { padding:14px 12px 2px; }
   .shipyard-prerequisites ul { display:block; }
 }
+
+/* Keep operational stock closer to the top without changing RHW's identity. */
+@media (min-width:1001px) {
+html.rhw-focus-pass .command-header { padding-block:16px; }
+html.rhw-focus-pass .command-header-inner { min-height:168px; }
+html.rhw-focus-pass .command-header-inner .crest-frame { top:-16px;bottom:-16px; }
+}
+@media (max-width:760px) {
+html.rhw-focus-pass .command-header { padding:9px 12px; }
+html.rhw-focus-pass .command-header-inner { gap:7px; }
+html.rhw-focus-pass .command-brand { grid-template-columns:72px minmax(0,1fr);gap:0 10px; }
+html.rhw-focus-pass .crest-frame { width:72px;min-height:82px; }
+html.rhw-focus-pass .crest { width:71px;height:82px; }
+html.rhw-focus-pass .command-header h1 { font-size:38px; }
+html.rhw-focus-pass .base-telemetry-bar { padding-block:6px;margin-top:6px; }
+}
+.command-priority-entry { border:1px solid var(--line);background:var(--surface-input); }
+.command-priority-entry>.command-priority-item { width:100%;border:0; }
+.priority-supply-button { display:block;margin:0 12px 10px auto;min-height:44px;padding:8px 12px;border:1px solid #8f7438;background:#292319;color:#ead7a3;font:12px/1.5 var(--font-main);cursor:pointer; }
+.priority-supply-button:focus-visible { outline:2px solid var(--gold);outline-offset:2px; }

@@ -117,6 +117,7 @@ function overviewDetail(item, state, role) {
     if (state !== 'ok') return state === 'low' ? 'REVIEW REQUIRED' : 'VAULT OVERFLOW';
     return reference ? `${number(Math.max(0, reference.value - quantity(item)))} UNTIL REVIEW` : 'EVIDENCE SECURED';
   }
+  if (state === 'ok' && (role === 'maintenance' || role === 'export')) return '';
   return readinessText(state, role);
 }
 

@@ -1,6 +1,6 @@
 # RHW production capacity
 
-Manual production planning has been removed. Each of the seven recipe cards
+Manual production planning has been removed. Each of the eight recipe cards
 shows existing product stock, whole output batches supported by the current
 inputs, a reference cycle time, and the limiting input. Materials remain in an
 accessible disclosure with persistent open/closed state across stock refreshes.
@@ -19,6 +19,16 @@ Missing recipe/volume data remains unknown.
 The calculator, material source links and Shipyard build requirements remain.
 Production choices and personnel overrides are no longer stored or exported;
 old backup fields for these retired features are ignored.
+
+MOX is one card with two recipe variants. Basic is the default: 1,000 Toxic
+Waste produces 333 MOX. Advanced consumes the same waste plus 100 Uranium
+for 500 MOX. The HazMat variant is excluded. This recipe preference survives
+reloads and optional settings transfer; it creates no production job or plan.
+The costing shortcut always opens the variant shown on the card.
+
+Each unavailable recipe gets its own unknown-capacity card. Other recipes
+remain usable. The headline says MATERIAL COVERAGE because catalysts,
+module availability and current in-game operations are not inferred.
 
 Checks: `node scripts/test_production_plan.js`,
 `node scripts/test_inventory_reserves.js` and the bundled interface browser test.

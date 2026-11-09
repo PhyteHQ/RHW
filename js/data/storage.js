@@ -214,7 +214,7 @@
 
   const preferenceKeys = Object.freeze([
     'activeWorkspace', 'commandNode', 'inventoryView', 'operationsNode', 'commsNode', 'tickerComposer',
-    'commsMobileView', 'shipyardSelection', 'shipyardDivisions'
+    'commsMobileView', 'shipyardSelection', 'shipyardDivisions', 'moxRecipe'
   ]);
   const transferSectionKeys = Object.freeze([
     'drafts', 'senders', 'current', 'priceProfiles', 'priceCheckOverrides', 'shipyardPlanner', 'newswireDraft', 'productionOrders', 'preferences'

@@ -23,7 +23,7 @@ const DASHBOARD_CONFIG = Object.freeze({
     export: ['multi-mode focusing chamber', 'multi-mode focusing chambers', 'superstructure systems', 'reactor systems'],
     reserve: ['gold', 'wildcat gold', 'niobium', 'prototype components'],
     byproduct: ['toxic waste'],
-    procurement: ['ablative armor plating', 'avionics systems', 'energy field equipment', 'exotic systems', 'gold ore', 'hull panels', 'hydrocarbons', 'interior systems', 'prototype components', 'propulsion systems', 'mox', 'super alloy', 'titanium', 'industrial materials', 'niobium ore', 'scrap metal', 'military salvage'],
+    procurement: ['ablative armor plating', 'avionics systems', 'energy field equipment', 'exotic systems', 'gold ore', 'hull panels', 'hydrocarbons', 'interior systems', 'prototype components', 'propulsion systems', 'mox', 'uranium', 'super alloy', 'titanium', 'industrial materials', 'niobium ore', 'scrap metal', 'military salvage'],
     shipyard: ['avionics systems', 'interior systems', 'propulsion systems', 'superstructure systems', 'reactor systems', 'exotic systems'],
     feedstock: ['gold ore', 'niobium ore', 'scrap metal', 'military salvage'],
     confiscated: []
@@ -143,7 +143,8 @@ const DASHBOARD_CONFIG = Object.freeze({
     Object.freeze({ product: 'Basic Alloy', recipeId: 'recipe_scrap_advanced' }),
     Object.freeze({ product: 'Gold', recipeId: 'recipe_gold_advanced' }),
     Object.freeze({ product: 'Niobium', recipeId: 'recipe_niobium_advanced' }),
-    Object.freeze({ product: 'Prototype Components', recipeId: 'recipe_milsal' })
+    Object.freeze({ product: 'Prototype Components', recipeId: 'recipe_milsal' }),
+    Object.freeze({ product: 'MOX', recipeId: 'recipe_mox_fuel_basic' })
   ]),
   alerts: Object.freeze({
     'basic alloy': { type: 'min', red: 2500, yellow: 15000 },

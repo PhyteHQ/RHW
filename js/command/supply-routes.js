@@ -33,7 +33,7 @@
       receivedAt: typeof lastLoaded !== 'undefined' && lastLoaded ? lastLoaded.getTime() : 0,
       stale: typeof dataIsStale !== 'undefined' && dataIsStale };
   }
-  async function open(name, trigger = document.activeElement, mode, { surplus = false } = {}) {
+  async function open(name, trigger = document.activeElement, mode, { surplus = false, quantity = null } = {}) {
     try {
       modulePromise ||= import(new URL('./js/supply/ui.mjs', document.baseURI).href).catch(error => { modulePromise = null; throw error; });
       const module = await modulePromise;
@@ -49,7 +49,8 @@
       const inputKeys = new Set(inputRoles.map(keyFromName));
       module.open({ commodity: name, commodities: names, surplusCommodity: surplus ? name : null,
         exportCommodities: names.filter(item => outputKeys.has(keyFromName(item))),
-        importCommodities: names.filter(item => inputKeys.has(keyFromName(item))), mode, telemetry, trigger });
+        importCommodities: names.filter(item => inputKeys.has(keyFromName(item))), mode, telemetry, trigger,
+        quantity: Number.isSafeInteger(quantity) && quantity > 0 ? quantity : null });
     } catch (error) { app.notify(`TRADE DESK // ${error.message}`, 'warn'); }
   }
   document.addEventListener('click', event => {
@@ -57,7 +58,10 @@
     if (!trigger) return;
     if (trigger.hasAttribute('data-surplus-commodity')) open(trigger.dataset.surplusCommodity, trigger, 'export', { surplus: true });
     else if (trigger.hasAttribute('data-export-commodity')) open(trigger.dataset.exportCommodity, trigger, 'export');
-    else if (trigger.hasAttribute('data-supply-commodity')) open(trigger.dataset.supplyCommodity, trigger, 'supply');
+    else if (trigger.hasAttribute('data-supply-commodity')) {
+      app.inventoryToolbar?.closeAlerts();
+      open(trigger.dataset.supplyCommodity, trigger, 'supply', { quantity: Number(trigger.dataset.supplyQuantity) });
+    }
     else open(null, trigger);
   });
   app.lifecycle.on('command:ready', 'supply-route-launcher', 90, () => {

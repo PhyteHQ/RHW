@@ -27,7 +27,7 @@ ctx.__RHW_RECIPE_CATALOG__ = JSON.parse(zlib.gunzipSync(Buffer.from(ctx.__RHW_RE
   model.input('Gold Ore','recipe_gold_advanced');
   model.input('Niobium Ore','recipe_niobium_advanced');
   model.input('Military Salvage','recipe_milsal');
-  assert.deepEqual(Array.from(app.production.recipes(), r=>r.product),['Multi-Mode Focusing Chamber','Reactor Systems','Superstructure Systems','Basic Alloy','Gold','Niobium','Prototype Components'], 'Reading inputs before the first production render must never overwrite the cached product identities');
+  assert.deepEqual(Array.from(app.production.recipes(), r=>r.product),['Multi-Mode Focusing Chamber','Reactor Systems','Superstructure Systems','Basic Alloy','Gold','Niobium','Prototype Components','MOX'], 'Reading inputs before the first production render must never overwrite the cached product identities');
   ctx.items = [raw('Gold',0),raw('Wildcat Gold',8600),raw('Niobium',9519),raw('Prototype Components',40),raw('Gold Ore',0),raw('Military Salvage',250)];
   const untouched = JSON.stringify(ctx.items);
   assert.equal(model.reserve('Gold').stock, 8600);

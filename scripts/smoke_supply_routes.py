@@ -421,6 +421,11 @@ def main():
         wait_for(cdp, "!!document.getElementById('supplyResults') && supplyResults.dataset.stale==='false'")
         if not base.ev(cdp, "!supplyRequests.includes('systems') && supplyRequests.includes('pobs') && supplySource.textContent.includes('SAVED MAP') && !supplySource.textContent.includes('BUNDLED SNAPSHOT') && !!supplyResults.querySelector('.supply-result')"):
             raise RuntimeError('Reload must restore a recent checked map without contacting the map endpoint, while refreshing stock')
+        base.ev(cdp, "supplyClose.click()")
+        base.ev(cdp, "RHWV4.supplyRoutes.open('Ablative Armor Plating',document.querySelector('.header-trade-button'),'supply',{quantity:123})")
+        wait_for(cdp, "rhwSupplyDialog.open && !supplySearch.disabled && supplyResults.dataset.stale==='false'")
+        if not base.ev(cdp, "supplyQuantity.value==='123' && [...supplyResults.querySelectorAll('.supply-metrics>div:first-child strong')].every(n=>Number(n.textContent.replace(/[^0-9]/g,''))<=123)"):
+            raise RuntimeError('Restock entry quantity must reach the real route form and cap the delivery')
         print('Trade Desk browser passed: independent background map updates, cold/warm/reload persistence, map outages and cancellation, fresh stock, route-first ranking, compatible IDs, four haulers, import/export, focus and 360/390/1440px layouts.')
     finally:
         if cdp:

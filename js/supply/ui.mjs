@@ -531,6 +531,7 @@ export function open(next) {
   const selected = next.commodity || $('supplyCommodity').value;
   if (next.mode) $('supplyMode').value = next.mode;
   if (next.surplusCommodity || previousSurplus) $('supplyQuantity').value = '';
+  if (Number.isSafeInteger(next.quantity) && next.quantity > 0) $('supplyQuantity').value = String(next.quantity);
   updateMode(selected);
   identityOptions(); haulerOptions(); shipOptions();
   if (!dialog.open) dialog.showModal();

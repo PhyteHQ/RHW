@@ -325,7 +325,9 @@ function progressMeta(item, roleOverride = null) {
   let cls = state;
   if (role === 'byproduct') cls = 'waste';
   if (role === 'confiscated' && state === 'ok') cls = 'confiscated-bar';
-  return { percent: Math.max(0, Math.round(percent)), cls, max };
+  const reportedMax = firstFiniteApiStockValue(item, ['max_stock', 'max', 'maxStock', 'max_quantity', 'maxQuantity']);
+  return { percent: Math.max(0, Math.round(percent)), cls, max, reportedMax,
+    actualMaximum: reportedMax > 0 && reportedMax === max };
 }
 
 function renderProgress(item, options = {}) {
@@ -340,7 +342,8 @@ function renderProgress(item, options = {}) {
   const boundary = showApiReserve ? apiStockBoundary(item) : { min: null, max: null, valid: false };
 
   if (!boundary.valid) {
-    const tooltip = `${meta.percent}% OF MAX ${number(meta.max)}`;
+    const tooltip = meta.actualMaximum ? `${meta.percent}% OF API MAX ${number(meta.max)}`
+      : `STOCK ${number(q)} // DISPLAY SCALE ${number(meta.max)} // ${meta.reportedMax > 0 ? `API MAX ${number(meta.reportedMax)}` : 'API MAX NOT REPORTED'}`;
     return `<div class="progress-wrap" data-tooltip="${tooltip}" aria-label="${tooltip}"><div class="progress-fill ${fillClass}" style="width:${meta.percent}%"></div></div>`;
   }
 
@@ -362,7 +365,7 @@ function renderProgress(item, options = {}) {
 function renderFeedstockProgress(item, state, fallbackKey) {
   if (item) return renderProgress(item, { role: 'procurement', stateOverride: state, showApiReserve: true });
   const max = BAR_MAX_FALLBACKS[fallbackKey] || 1;
-  return `<div class="progress-wrap" data-tooltip="0% OF MAX ${number(max)}" aria-label="0% OF MAX ${number(max)}"><div class="progress-fill ${state}" style="width:0%"></div></div>`;
+  return `<div class="progress-wrap" data-tooltip="DISPLAY SCALE ${number(max)} // STOCK NOT REPORTED" aria-label="DISPLAY SCALE ${number(max)} // STOCK NOT REPORTED"><div class="progress-fill ${state}" style="width:0%"></div></div>`;
 }
 
 function formatBaseHealth(value) {

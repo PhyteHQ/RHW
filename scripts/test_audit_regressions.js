@@ -190,10 +190,10 @@ async function models() {
   run(ctx, 'js/calculator/production-bridge.js');
   run(ctx, 'js/command/production-model.js');
   const moduleRegistry = vm.runInContext('PRODUCTION_MODULES', ctx);
-  assert.equal(moduleRegistry.length, 7);
+  assert.equal(moduleRegistry.length, 8);
   assert.ok(moduleRegistry.every(module => Object.keys(module).sort().join(',') === 'product,recipeId'), 'The registry must not carry duplicate recipe quantities');
   const productionModules = app.production.recipes();
-  assert.equal(productionModules.length, 7, 'All configured modules resolve from the catalog');
+  assert.equal(productionModules.length, 8, 'All configured modules resolve from the catalog');
   for (const spec of productionModules) {
     const entry = app.productionPricing.findRecipeForLabel(spec.product);
     assert.equal(entry.id, spec.recipeId, `Production shortcut for ${spec.product}`);
@@ -207,7 +207,8 @@ async function models() {
   const alloy = core.state.recipesById.get('recipe_scrap_advanced');
   core.state.recipesById.delete(alloy.id);
   assert.equal(app.productionPricing.findRecipeForLabel('Basic Alloy'), null, 'A missing module recipe must not silently choose another variant');
-  assert.equal(app.production.recipes().length, 0, 'A missing recipe must not retain cached material coverage');
+  assert.equal(app.production.recipes().length, 7, 'A missing recipe must not hide the seven other modules');
+  assert.ok(!app.production.recipes().some(module => module.recipeId === alloy.id), 'An unavailable recipe retains no cached capacity');
   core.state.recipesById.set(alloy.id, alloy);
   const catalog = core.state.catalog;
   core.state.catalog = null;
@@ -234,7 +235,7 @@ async function models() {
   assert.equal(updated.byproducts.find(([name]) => name === 'Toxic Waste')[1], 175);
   ore.qty = saved.ore; refining.outputs[0].qty = saved.output; waste.qty = saved.waste;
   app.lifecycle.emit('catalog:loaded', { catalog });
-  console.log('Production catalog passed: all seven modules, BMM inputs, byproducts, non-consumed crew, refresh propagation and unavailable recipes.');
+  console.log('Production catalog passed: eight modules, isolated recipe failures, BMM inputs, byproducts and refresh propagation.');
   const yard = node();
   yard.insertAdjacentHTML = () => assert.fail('Retired planner must not be injected');
   nodes.set('shipyardControl', yard);

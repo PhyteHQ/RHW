@@ -1,10 +1,15 @@
 /* Three operational columns; raw inputs stay attached to their products. */
-html.rhw-focus-pass #inventoryStatusPanel .summary-grid { align-items:stretch; }
-html.rhw-focus-pass #inventoryStatusPanel .alert-card { align-self:stretch; }
-html.rhw-focus-pass #inventoryStatusPanel .summary-grid>.alert-card:nth-child(-n+3) .alert-list { display:grid;grid-template-rows:repeat(3,minmax(0,1fr));flex:1; }
+html.rhw-focus-pass #inventoryStatusPanel .summary-grid { align-items:start; }
+html.rhw-focus-pass #inventoryStatusPanel .alert-card { align-self:start; }
+html.rhw-focus-pass #inventoryStatusPanel .summary-grid>.alert-card:nth-child(-n+3) .alert-list { display:flex;flex-direction:column;flex:initial; }
 html.rhw-focus-pass #inventoryStatusPanel .waste-panel { grid-column:span 2; }
 html.rhw-focus-pass #inventoryStatusPanel .ship-stock-panel { grid-column:span 4; }
-html.rhw-focus-pass #inventoryStatusPanel .overview-stock-row { align-content:start; }
+html.rhw-focus-pass #inventoryStatusPanel .overview-stock-row { align-content:start;min-height:0; }
+html.rhw-focus-pass #inventoryStatusPanel .alert-list { gap:6px;padding:10px; }
+html.rhw-focus-pass #inventoryStatusPanel .alert-list li.overview-stock-row { padding:9px 10px;gap:5px 8px; }
+html.rhw-focus-pass #inventoryStatusPanel .overview-stock-detail { font:11px/1.5 var(--font-main); }
+html.rhw-focus-pass #inventoryStatusPanel .overview-stock-row>.progress-wrap { margin-top:1px; }
+html.rhw-focus-pass #inventoryStatusPanel .alert-title { padding-block:12px; }
 html.rhw-focus-pass #inventoryStatusPanel .inventory-production-link { display:block;min-height:28px;padding:0;border:0;background:transparent;color:var(--text);font:600 15px/1.4 var(--font-main);text-align:left;clip-path:none;box-shadow:none;cursor:pointer;overflow-wrap:anywhere; }
 html.rhw-focus-pass #inventoryStatusPanel li[data-inventory-recipe],html.rhw-focus-pass #inventoryStatusPanel li[data-inventory-material] { cursor:pointer; }
 html.rhw-focus-pass #inventoryStatusPanel .inventory-production-link:hover { color:var(--gold); }

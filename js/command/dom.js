@@ -104,7 +104,7 @@ const numFormatter = new Intl.NumberFormat('de-DE');
 const CANONICAL_NAMES = {
   'ablative armor plating': 'Ablative Armor Plating', 'energy field equipment': 'Energy Field Equipment',
   'gold ore': 'Gold Ore', 'hull panels': 'Hull Panels', 'hydrocarbons': 'Hydrocarbons',
-  'military salvage': 'Military Salvage', 'mox': 'MOX', 'niobium': 'Niobium',
+  'military salvage': 'Military Salvage', 'mox': 'MOX', 'uranium': 'Uranium', 'niobium': 'Niobium',
   'super alloy': 'Super Alloy', 'titanium': 'Titanium', 'multi-mode focusing chamber': 'Multi-Mode Focusing Chamber',
   'multi-mode focusing chambers': 'Multi-Mode Focusing Chamber', 'superstructure systems': 'Superstructure Systems',
   'reactor systems': 'Reactor Systems', 'gold': 'Gold', 'prototype components': 'Prototype Components',

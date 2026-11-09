@@ -5,6 +5,24 @@
   const core = app?.operationsCore;
   if (!core || typeof PRODUCTION_MODULES === 'undefined') return;
   const plans = new Map();
+  const moxRecipes = Object.freeze([
+    Object.freeze({ recipeId: 'recipe_mox_fuel_basic', label: 'BASIC · TOXIC WASTE ONLY' }),
+    Object.freeze({ recipeId: 'recipe_mox_fuel_advanced', label: 'ADVANCED · WASTE + URANIUM' })
+  ]);
+  const moxKey = app.config.storageKeys?.moxRecipe;
+  let moxRecipe = moxKey ? app.store?.get(moxKey, moxRecipes[0].recipeId) : moxRecipes[0].recipeId;
+  if (!moxRecipes.some(entry => entry.recipeId === moxRecipe)) moxRecipe = moxRecipes[0].recipeId;
+
+  function modules() {
+    return PRODUCTION_MODULES.map(module => module.product === 'MOX' ? { ...module, recipeId: moxRecipe } : module);
+  }
+
+  function selectMoxRecipe(recipeId) {
+    if (!moxRecipes.some(entry => entry.recipeId === recipeId)) return false;
+    if (moxKey && app.store?.set(moxKey, recipeId) === false) return false;
+    moxRecipe = recipeId;
+    return true;
+  }
 
   function requirements(module) {
     if (!core.state.catalog || !module) return null;
@@ -39,8 +57,7 @@
   }
 
   function recipes() {
-    const batches = PRODUCTION_MODULES.map(requirements);
-    return batches.length && batches.every(Boolean) ? batches : [];
+    return modules().map(requirements).filter(Boolean);
   }
 
   function cycleSeconds(recipeId) {
@@ -59,7 +76,14 @@
     return Number.isFinite(seconds) && seconds > 0 ? seconds : null;
   }
 
-  app.production = { requirements, recipes, cycleSeconds };
+  app.production = { requirements, recipes, cycleSeconds, modules, moxRecipes, selectMoxRecipe };
+  window.addEventListener?.('rhw:transfer-imported', event => {
+    if (!event.detail?.sections?.includes('preferences') || !moxKey) return;
+    const saved = app.store.get(moxKey, moxRecipes[0].recipeId);
+    moxRecipe = moxRecipes.some(entry => entry.recipeId === saved) ? saved : moxRecipes[0].recipeId;
+    window.renderAll?.();
+    app.requestUiUpdate?.();
+  });
   // Semantics are normalized at order 10; the shared Command render follows
   // at order 40. Invalidate derived batches before that render.
   app.lifecycle.on('catalog:loaded', 'production-recipes', 30, () => { plans.clear(); });
