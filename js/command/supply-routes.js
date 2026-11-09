@@ -59,8 +59,10 @@
     if (trigger.hasAttribute('data-surplus-commodity')) open(trigger.dataset.surplusCommodity, trigger, 'export', { surplus: true });
     else if (trigger.hasAttribute('data-export-commodity')) open(trigger.dataset.exportCommodity, trigger, 'export');
     else if (trigger.hasAttribute('data-supply-commodity')) {
+      const returnFocus = trigger.closest('.command-priority-entry')
+        ? document.getElementById('commandAlertToggle') || trigger : trigger;
       app.inventoryToolbar?.closeAlerts();
-      open(trigger.dataset.supplyCommodity, trigger, 'supply', { quantity: Number(trigger.dataset.supplyQuantity) });
+      open(trigger.dataset.supplyCommodity, returnFocus, 'supply', { quantity: Number(trigger.dataset.supplyQuantity) });
     }
     else open(null, trigger);
   });
