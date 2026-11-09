@@ -92,7 +92,7 @@ const DASHBOARD_CONFIG = Object.freeze({
   roles: Object.freeze({
     maintenance: ['basic alloy', 'food rations', 'consumer goods'],
     export: ['multi-mode focusing chamber', 'multi-mode focusing chambers', 'superstructure systems', 'reactor systems'],
-    reserve: ['gold', 'wildcat gold', 'niobium', 'prototype components'],
+    reserve: ['gold', 'wildcat gold', 'niobium', 'prototype components', 'mox'],
     byproduct: ['toxic waste'],
     procurement: ['ablative armor plating', 'avionics systems', 'energy field equipment', 'exotic systems', 'gold ore', 'hull panels', 'hydrocarbons', 'interior systems', 'prototype components', 'propulsion systems', 'mox', 'uranium', 'super alloy', 'titanium', 'industrial materials', 'niobium ore', 'scrap metal', 'military salvage'],
     shipyard: ['avionics systems', 'interior systems', 'propulsion systems', 'superstructure systems', 'reactor systems', 'exotic systems'],
@@ -204,7 +204,8 @@ const DASHBOARD_CONFIG = Object.freeze({
   reserveCards: Object.freeze([
     Object.freeze({ key: 'gold', label: 'Gold Supply', members: ['Gold', 'Wildcat Gold'], recipeId: 'recipe_gold_advanced', input: 'Gold Ore' }),
     Object.freeze({ key: 'niobium', label: 'Niobium', members: ['Niobium'], recipeId: 'recipe_niobium_advanced', input: 'Niobium Ore' }),
-    Object.freeze({ key: 'prototype components', label: 'Prototype Components', members: ['Prototype Components'], recipeId: 'recipe_milsal', input: 'Military Salvage' })
+    Object.freeze({ key: 'prototype components', label: 'Prototype Components', members: ['Prototype Components'], recipeId: 'recipe_milsal', input: 'Military Salvage' }),
+    Object.freeze({ key: 'mox', label: 'MOX', members: ['MOX'], recipeId: 'recipe_mox_fuel_basic', input: 'Toxic Waste' })
   ]),
   exportOrder: ['Multi-Mode Focusing Chamber', 'Reactor Systems', 'Superstructure Systems'],
   productionModules: Object.freeze([
@@ -233,7 +234,7 @@ const DASHBOARD_CONFIG = Object.freeze({
   barMaxFallbacks: Object.freeze({
     'basic alloy': 45000, 'food rations': 45000, 'consumer goods': 45000,
     'reactor systems': 1000, 'superstructure systems': 1000, 'multi-mode focusing chamber': 2000,
-    'gold': 60000, 'niobium': 30000, 'prototype components': 25000,
+    'gold': 60000, 'niobium': 30000, 'prototype components': 25000, 'mox': 10000,
     'gold ore': 50000, 'niobium ore': 50000, 'scrap metal': 30000, 'toxic waste': 50000,
     'wildcat gold': 30000
   })
@@ -1368,7 +1369,8 @@ function ensureProductionModuleTools() {
       const expanded = card.classList.toggle('production-card-expanded');
       card.classList.toggle('production-card-collapsed', !expanded);
       button.setAttribute('aria-expanded', expanded ? 'true' : 'false');
-      button.querySelector('span').textContent = expanded ? 'HIDE MATERIALS' : 'SHOW MATERIALS';
+      button.querySelector('span').textContent = expanded ? 'CLOSE DETAILS' : 'DETAILS';
+      button.setAttribute('aria-label', `${expanded ? 'Hide' : 'Show'} details for ${card.querySelector('.production-title').textContent}`);
       if (expanded) productionExpandedModules.add(key);
       else productionExpandedModules.delete(key);
     });
@@ -1394,7 +1396,7 @@ function renderProductionModules() {
 
   els.productionGrid.innerHTML = model.modules().map((module, index) => {
     const recipe = model.requirements(module);
-    const variant = module.product === 'MOX' ? `<label class="production-variant"><span>MOX RECIPE</span><select data-production-mox aria-label="MOX recipe">${model.moxRecipes.map(option => `<option value="${option.recipeId}"${option.recipeId === module.recipeId ? ' selected' : ''}>${option.label}</option>`).join('')}</select></label>` : '';
+    const variant = module.product === 'MOX' ? `<label class="production-variant"><span class="visually-hidden">MOX recipe</span><select data-production-mox aria-label="MOX recipe" title="MOX recipe: Basic uses Toxic Waste; Advanced also uses Uranium">${model.moxRecipes.map(option => `<option value="${option.recipeId}"${option.recipeId === module.recipeId ? ' selected' : ''}>${option.shortLabel}</option>`).join('')}</select></label>` : '';
     if (!recipe) return `<div class="production-card waiting production-unavailable" data-production-recipe="${escapeHTML(module.recipeId)}" data-production-state="waiting" data-production-product="${escapeHTML(normalize(module.product))}"><div class="production-kicker">MODULE-${String(index + 1).padStart(2, '0')}</div><div class="production-title">${escapeHTML(module.product)}</div>${variant}<strong>RECIPE UNAVAILABLE</strong><p>Material coverage is unknown. Other modules remain available.</p></div>`;
     const analysis = analyzeRecipe(recipe);
     const cycle = window.RHWV4.production.cycleSeconds(recipe.recipeId);
@@ -1430,25 +1432,29 @@ function renderProductionModules() {
     const materialId = `production-materials-${recipe.recipeId}`;
     const inputStatus = { ok: 'INPUTS READY', low: 'INPUTS LOW', critical: 'INPUTS MISSING', waiting: 'INPUTS UNKNOWN' }[analysis.cardState];
 
+    const role = DASHBOARD_CONFIG.roles.export.includes(keyFromName(module.product)) ? 'EXPORT'
+      : DASHBOARD_CONFIG.roles.maintenance.includes(keyFromName(module.product)) ? 'FACILITY' : 'INTERNAL';
+
     return `<div class="production-card ${analysis.cardState}${collapsed ? ' production-card-collapsed' : ' production-card-expanded'}" data-production-recipe="${escapeHTML(recipe.recipeId)}" data-production-state="${analysis.cardState}" data-production-product="${escapeHTML(productKey)}">
               <div class="production-card-head">
-                <div>
-                  <div class="production-kicker">MODULE-${String(index + 1).padStart(2, '0')}</div>
-                  <div class="production-title">${escapeHTML(displayRecipeName(recipe.product))}</div>
+                <div class="production-card-meta">
+                  <span class="production-kicker">${role}</span>
                   ${variant}
-                  <div class="footnote production-batch-time">${number(recipe.output)} / BATCH <span class="production-cycle-time">${cycle === null ? 'CYCLE TIME UNKNOWN' : `~${productionDuration(cycle)} / CYCLE`}</span></div>
+                  <span class="module-state ${analysis.cardState}" title="Standalone input coverage, before competition or incoming production">${inputStatus}</span>
                 </div>
-                <div class="production-card-controls"><span class="module-state ${analysis.cardState}" title="Standalone input coverage, before competition or incoming production">${inputStatus}</span></div>
+                <div class="production-title">${escapeHTML(displayRecipeName(recipe.product))}</div>
               </div>
               <div class="production-stats">
                 <div class="production-stat production-stock-primary"><small>IN STOCK</small><strong>${number(analysis.productStock)}</strong></div>
-                <div class="production-stat production-capacity"><small>MATERIAL COVERAGE</small><strong>${number(analysis.possibleOutput)}</strong><span class="production-runtime">${runtime === null ? 'TIME UNKNOWN' : `~${productionDuration(runtime)}`}</span><span class="production-capacity-context">OUTPUT FROM CURRENT INPUTS</span></div>
+                <div class="production-stat production-capacity" title="Output covered by current materials; prerequisites and module activity are not checked"><small>MATERIAL COVERAGE</small><strong>${number(analysis.possibleOutput)}</strong></div>
               </div>
-              <div class="production-limit"><span>LIMITED BY</span><strong>${escapeHTML(analysis.bottleneck?.displayName || 'Input stock unknown')}</strong></div>
-              ${analysis.possibleCycles === null ? '<div class="production-stock-note">INPUT STOCK UNKNOWN</div>' : ''}
-              <button type="button" class="production-card-toggle" aria-controls="${escapeHTML(materialId)}" aria-expanded="${!collapsed}"><span>${collapsed ? 'SHOW MATERIALS' : 'HIDE MATERIALS'}</span></button>
+              <div class="production-limit" title="${escapeHTML(analysis.bottleneck?.displayName || 'Input stock unknown')}"><span>LIMITED BY</span><strong>${escapeHTML(analysis.bottleneck?.displayName || 'Input stock unknown')}</strong></div>
+              <div class="production-card-actions"><button type="button" class="production-card-toggle" aria-label="${collapsed ? 'Show' : 'Hide'} details for ${escapeHTML(displayRecipeName(recipe.product))}" aria-controls="${escapeHTML(materialId)}" aria-expanded="${!collapsed}"><span>${collapsed ? 'DETAILS' : 'CLOSE DETAILS'}</span></button></div>
               <div class="production-materials" id="${escapeHTML(materialId)}">
+              <div class="footnote production-batch-time">${number(recipe.output)} / BATCH <span class="production-cycle-time">${cycle === null ? 'CYCLE TIME UNKNOWN' : `~${productionDuration(cycle)} / CYCLE`}</span></div>
               <div class="production-coverage-summary"><span>INPUT DETAILS</span><strong>MATERIAL CYCLES ${number(analysis.possibleCycles)} · OUTPUT ${number(analysis.possibleOutput)}</strong><small>Materials only; prerequisites and module activity are not checked. Other modules may use the same stock.</small></div>
+              <span class="production-runtime">${runtime === null ? 'TIME UNKNOWN' : `~${productionDuration(runtime)}`} · AT REFERENCE CYCLE TIME</span>
+              ${analysis.possibleCycles === null ? '<div class="production-stock-note">INPUT STOCK UNKNOWN</div>' : ''}
               ${nextGapText}
               <div class="recipe-column-head" aria-hidden="true">
                 <span>Material</span><span>Required / Cycle</span><span>Current Stock</span>
@@ -1985,7 +1991,8 @@ function renderOverviewTelemetryState(message, state = 'low') {
 
 function renderOverviewRow({ state, role, name, item = null, detail = '', quantityValue = 0, progress = '', extraClass = '', breakdown = '', input = '', actions = '' }) {
   const reference = overviewStockReference(item, role);
-  const recipeId = DASHBOARD_CONFIG.productionModules.find(module => keyFromName(module.product) === keyFromName(name))?.recipeId;
+  const modules = globalThis.RHWV4?.production?.modules?.() || DASHBOARD_CONFIG.productionModules;
+  const recipeId = modules.find(module => keyFromName(module.product) === keyFromName(name))?.recipeId;
   const navigation = recipeId ? `data-inventory-recipe="${escapeHTML(recipeId)}"` : role === 'reserve' || role === 'byproduct' ? `data-inventory-material="${escapeHTML(item?.name || name)}"` : '';
   const title = navigation ? `<button type="button" class="inventory-production-link" ${navigation}>${escapeHTML(name)}</button>` : `<strong>${escapeHTML(name)}</strong>`;
   const trade = role === 'export' && typeof exportRouteButton === 'function' ? exportRouteButton(name)
@@ -2105,7 +2112,8 @@ function renderOverview() {
     const progress = reserve.stock === null ? '' : renderProgress(reserve.item, { role: 'reserve', stateOverride: reserve.state, showApiReserve: false });
     const actions = spec.key === 'prototype components' ? '<button type="button" class="rhw-supply-button rhw-supply-icon" data-surplus-commodity="Prototype Components" aria-label="Check surplus export buyers for Prototype Components" title="Check surplus buyers · Internal production first"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M14 4h6v6M20 4l-9 9M10 5H4v15h15v-6"/></svg></button>' : '';
     return renderOverviewRow({ role: 'reserve', name: spec.label, item: reserve.item, state: reserve.state,
-      quantityValue: reserve.stock, detail, breakdown, progress, input: inventoryInputRow(spec.input, spec.recipeId), actions });
+      quantityValue: reserve.stock, detail, breakdown, progress,
+      input: (reserve.inputs || [reserve.input]).map(name => inventoryInputRow(name, reserve.recipeId)).join(''), actions });
   }).join('');
   renderShipStock();
 }

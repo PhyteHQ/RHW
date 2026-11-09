@@ -2751,8 +2751,8 @@ window.__RHW_RECIPE_CATALOG_GZIP_BASE64__ = (window.__RHW_RECIPE_CATALOG_GZIP_BA
   if (!core || typeof PRODUCTION_MODULES === 'undefined') return;
   const plans = new Map();
   const moxRecipes = Object.freeze([
-    Object.freeze({ recipeId: 'recipe_mox_fuel_basic', label: 'BASIC · WASTE ONLY' }),
-    Object.freeze({ recipeId: 'recipe_mox_fuel_advanced', label: 'ADVANCED · + URANIUM' })
+    Object.freeze({ recipeId: 'recipe_mox_fuel_basic', label: 'BASIC · WASTE ONLY', shortLabel: 'BASIC' }),
+    Object.freeze({ recipeId: 'recipe_mox_fuel_advanced', label: 'ADVANCED · + URANIUM', shortLabel: 'ADVANCED' })
   ]);
   const moxKey = app.config.storageKeys?.moxRecipe;
   let moxRecipe = moxKey ? app.store?.get(moxKey, moxRecipes[0].recipeId) : moxRecipes[0].recipeId;
@@ -3022,7 +3022,12 @@ globalThis.RHW_PRODUCTION_VOLUMES = Object.freeze({
   const definitions = DASHBOARD_CONFIG.reserveCards;
   function definition(name) {
     const key = keyFromName(name);
-    return definitions.find(d => d.key === key || d.members.some(n => keyFromName(n) === key));
+    const spec = definitions.find(d => d.key === key || d.members.some(n => keyFromName(n) === key));
+    if (spec?.key !== 'mox') return spec;
+    const module = app.production?.modules().find(entry => entry.product === 'MOX');
+    const batch = module && app.production.requirements(module);
+    return { ...spec, recipeId: module?.recipeId || spec.recipeId,
+      inputs: batch ? batch.ingredients.map(([ingredient]) => ingredient) : [spec.input] };
   }
   function record(name) {
     const item = findCommodity(name);
@@ -3059,7 +3064,7 @@ globalThis.RHW_PRODUCTION_VOLUMES = Object.freeze({
   }
   function input(name, recipeId) {
     const value = record(name);
-    const module = DASHBOARD_CONFIG.productionModules.find(entry => entry.recipeId === recipeId);
+    const module = (app.production?.modules() || DASHBOARD_CONFIG.productionModules).find(entry => entry.recipeId === recipeId);
     const recipe = module ? app.production?.requirements(module) : null;
     const required = recipe?.ingredients.find(([n]) => keyFromName(n) === keyFromName(name))?.[1] ?? null;
     return { ...value, required, cycles: value.stock !== null && required > 0 ? Math.floor(value.stock / required) : null };
@@ -3095,7 +3100,10 @@ globalThis.RHW_PRODUCTION_VOLUMES = Object.freeze({
       card.classList.remove('production-card-collapsed'); card.classList.add('production-card-expanded');
       const button = card.querySelector('.production-card-toggle');
       button?.setAttribute('aria-expanded', 'true');
-      if (button) button.querySelector('span').textContent = 'HIDE MATERIALS';
+      if (button) {
+        button.querySelector('span').textContent = 'CLOSE DETAILS';
+        button.setAttribute('aria-label', `Hide details for ${card.querySelector('.production-title').textContent}`);
+      }
       card.tabIndex = -1; card.focus({ preventScroll: true });
       card.scrollIntoView({ block: 'start', behavior: 'instant' });
       clearTimeout(highlightTimer);
@@ -4092,13 +4100,13 @@ globalThis.RHW_PRODUCTION_VOLUMES = Object.freeze({
       if (!title) return;
       const label = title.textContent.trim();
       if (!findRecipeForLabel(label)) return;
-      const host = card.querySelector('.production-card-head > div') || title.parentElement;
+      const host = card.querySelector('.production-card-actions') || title.parentElement;
       if (!host) return;
       const button = document.createElement('button');
       button.type = 'button';
       button.className = 'production-calc-button';
       button.dataset.productionCostTarget = label;
-      button.textContent = 'COST / CALCULATE';
+      button.textContent = 'CALCULATOR';
       button.title = `Open ${label} in the RHW Item Calculator`;
       button.addEventListener('click', event => {
         event.preventDefault();
