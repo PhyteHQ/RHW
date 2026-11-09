@@ -312,7 +312,7 @@ def main():
             raise RuntimeError('POB OFF must also exclude export buyers')
         base.ev(cdp, "(()=>{supplyMode.value='supply';supplyMode.dispatchEvent(new Event('change',{bubbles:true}));return true})()")
         wait_for(cdp, "!supplySearch.disabled && supplySearch.textContent==='CALCULATE IMPORT ROUTE'")
-        if not base.ev(cdp, "supplyCommodity.value==='Ablative Armor Plating' && ![...supplyCommodity.options].some(o=>o.value==='Toxic Waste')"):
+        if not base.ev(cdp, "supplyCommodity.value==='Ablative Armor Plating' && ![...supplyCommodity.options].some(o=>o.value==='Multi-Mode Focusing Chamber') && [...supplyCommodity.options].some(o=>o.value==='Toxic Waste')"):
             raise RuntimeError('Import mode must restore its own last selection and hide export-only goods')
         base.ev(cdp, "(()=>{supplyMode.value='export';supplyMode.dispatchEvent(new Event('change',{bubbles:true}));return true})()")
         wait_for(cdp, "!supplySearch.disabled && supplyCommodity.value==='Multi-Mode Focusing Chamber'")
