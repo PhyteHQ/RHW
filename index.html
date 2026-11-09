@@ -14,7 +14,7 @@
   <link rel="icon" type="image/png" href="./assets/favicon.png" />
   <link rel="apple-touch-icon" href="./assets/apple-touch-icon.png" />
   
-  <link rel="stylesheet" href="./css/rhw-app.css?v=sha256-5f5075f7088fc07b6500">
+  <link rel="stylesheet" href="./css/rhw-app.css?v=sha256-9bc9058fae277163b65c">
 </head>
 <body>
 
@@ -92,11 +92,17 @@
   <main>
     <aside id="telemetryNotice" class="telemetry-notice" role="status" hidden><div><strong id="telemetryNoticeTitle">Connecting to inventory</strong><p id="telemetryNoticeCopy">Stock remains unknown until a verified response arrives.</p></div><button type="button" id="telemetryRetry">RETRY CONNECTION</button></aside>
     <section class="summary-grid anim-boot delay-4">
-      <div class="alert-card"><div class="alert-title"><span>Facility Maintenance</span><span class="section-title-meta"><span class="section-freshness" data-freshness-badge hidden></span><span class="count-badge scramble" id="maintenanceCount">0</span></span></div><ul class="alert-list" id="maintenanceList"></ul></div>
-      <div class="alert-card reserve-panel"><div class="alert-title"><span>Production Reserves</span><span class="section-title-meta"><span class="section-freshness" data-freshness-badge hidden></span><span class="count-badge scramble" id="reserveCount">0</span></span></div><ul class="alert-list" id="reserveList"></ul></div>
-      <div class="alert-card"><div class="alert-title"><span>Export Inventory</span><span class="section-title-meta"><span class="section-freshness" data-freshness-badge hidden></span><span class="count-badge scramble" id="exportCount">0</span></span></div><ul class="alert-list" id="exportList"></ul></div>
-      <div class="alert-card waste-panel"><div class="alert-title"><span>Waste Management</span><span class="section-title-meta"><span class="section-freshness" data-freshness-badge hidden></span><span class="count-badge scramble" id="byproductCount">0</span></span></div><ul class="alert-list" id="byproductList"></ul></div>
-      <div class="alert-card ship-stock-panel"><div class="alert-title"><span>Ship Stock</span><span class="section-title-meta"><span class="section-freshness" data-freshness-badge hidden></span><span class="count-badge" id="shipStockCount">–</span><button type="button" class="inventory-yard-link" data-inventory-yard>OPEN SHIPYARD ↗</button></span></div><ul class="alert-list" id="shipStockList"></ul></div>
+      <div class="inventory-column inventory-column-facility">
+        <div class="alert-card maintenance-panel"><div class="alert-title"><span>Facility Maintenance</span><span class="section-title-meta"><span class="section-freshness" data-freshness-badge hidden></span><span class="count-badge scramble" id="maintenanceCount">0</span></span></div><ul class="alert-list" id="maintenanceList"></ul></div>
+        <div class="alert-card waste-panel"><div class="alert-title"><span>Waste Management</span><span class="section-title-meta"><span class="section-freshness" data-freshness-badge hidden></span><span class="count-badge scramble" id="byproductCount">0</span></span></div><ul class="alert-list" id="byproductList"></ul></div>
+      </div>
+      <div class="inventory-column inventory-column-production">
+        <div class="alert-card reserve-panel"><div class="alert-title"><span>Production Reserves</span><span class="section-title-meta"><span class="section-freshness" data-freshness-badge hidden></span><span class="count-badge scramble" id="reserveCount">0</span></span></div><ul class="alert-list" id="reserveList"></ul></div>
+      </div>
+      <div class="inventory-column inventory-column-market">
+        <div class="alert-card export-panel"><div class="alert-title"><span>Export Inventory</span><span class="section-title-meta"><span class="section-freshness" data-freshness-badge hidden></span><span class="count-badge scramble" id="exportCount">0</span></span></div><ul class="alert-list" id="exportList"></ul></div>
+        <div class="alert-card ship-stock-panel"><div class="alert-title"><span>Ship Stock</span><span class="section-title-meta"><span class="section-freshness" data-freshness-badge hidden></span><span class="count-badge" id="shipStockCount">–</span><button type="button" class="inventory-yard-link" data-inventory-yard>OPEN SHIPYARD ↗</button></span></div><ul class="alert-list" id="shipStockList"></ul></div>
+      </div>
     </section>
 
     <section class="capital-shipyard-control anim-boot delay-4" id="shipyardControl" aria-label="Capital Shipyard Control"></section>
@@ -144,8 +150,8 @@
 
   <footer><hr class="hrc-dark">CONNECTION <span id="footerConnection">SYNCING</span> /// GLORY TO THE QUEEN<br><div class="footer-clock" id="rpFooterTime"></div></footer>
 
-<script src="./js/build-info.js?v=sha256-5f5075f7088fc07b6500"></script>
-<script src="./js/00-bootstrap.js?v=sha256-5f5075f7088fc07b6500"></script>
-<script src="./js/rhw-dashboard.js?v=sha256-5f5075f7088fc07b6500"></script>
+<script src="./js/build-info.js?v=sha256-9bc9058fae277163b65c"></script>
+<script src="./js/00-bootstrap.js?v=sha256-9bc9058fae277163b65c"></script>
+<script src="./js/rhw-dashboard.js?v=sha256-9bc9058fae277163b65c"></script>
 </body>
 </html>

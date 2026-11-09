@@ -127,7 +127,7 @@ html.rhw-focus-pass .anim-boot { opacity: 1;transform: none;filter: none; }
 
 html.rhw-focus-pass body::before, html.rhw-focus-pass body::after, html.rhw-focus-pass .app-nav-pulse, html.rhw-focus-pass .rhw-workspace-index, html.rhw-focus-pass .rhw-module-index { display: none !important; }
 
-html.rhw-focus-pass :is(button,input,select,textarea,summary) { border-radius: 2px; }
+html.rhw-focus-pass :is(button,input,select,textarea,summary) { border-radius: var(--rhw-surface-radius);clip-path:none; }
 
 html.rhw-focus-pass :is(button,input,select,textarea,summary,a):focus-visible { outline: 2px solid var(--gold);outline-offset: 3px; }
 
@@ -145,7 +145,12 @@ html.rhw-focus-pass .app-workspace :is(p,.footnote,.ops-cost-note,.production-no
 
 html.rhw-focus-pass .app-workspace :is(input,select,textarea) { font-size: 16px !important; }
 
-html.rhw-focus-pass .app-workspace button { min-height: 44px;font: 500 12px/1.4 var(--font-main);letter-spacing: .035em; }
+html.rhw-focus-pass .app-workspace button { min-height: var(--rhw-control-height);font: 500 var(--rhw-control-size)/1.4 var(--font-main);letter-spacing: .025em; }
+
+/* Barlow for interface copy, condensed headings, monospace for quantities. */
+html.rhw-focus-pass :is(.ops-field>span,.ops-form-grid label>span,.comms-field>span,.message-field>label,.supply-fields>label,.production-kicker,.pricecheck-status>small,.shipyard-section-title) { color:var(--muted);font:500 var(--rhw-label-size)/1.5 var(--font-main);letter-spacing:.025em; }
+
+html.rhw-focus-pass :is(.ops-panel-head,.comms-panel-head,.panel-head) { padding:var(--rhw-space-card) var(--rhw-space-panel); }
 
 html.rhw-focus-pass :is(.uplink-button,.ops-button,.comms-button,.pricecheck-refresh,.market-sort-button,.command-refresh-button) { transition: border-color 160ms,background 160ms,box-shadow 160ms; }
 
@@ -281,19 +286,19 @@ html.rhw-focus-pass :is(.alert-title,.panel-head,.ops-panel-head,.comms-panel-he
 
 html.rhw-focus-pass :is(.alert-title,.panel-title,.shipyard-control-title,.production-title,.production-module-title) { color: var(--gold);font-family: var(--font-title);text-shadow: 0 0 18px #f0c56b12; }
 
-html.rhw-focus-pass .alert-title { font-size: 27px;line-height: 1.15;letter-spacing: .055em; }
+html.rhw-focus-pass .alert-title { font-size: var(--rhw-panel-title-size);line-height: 1.2;letter-spacing: .045em; }
 
 html.rhw-focus-pass .alert-title .section-index { color: var(--gold);font: 12px var(--font-tech); }
 
-html.rhw-focus-pass .alert-card:first-child .alert-title { background: linear-gradient(110deg,#332d20,#232323 66%); }
+html.rhw-focus-pass .alert-card:first-child .alert-title { background: var(--rhw-head-fill); }
 
 html.rhw-focus-pass :is(.feedstock-panel,.waste-panel,.confiscated-panel) .alert-title { background: var(--rhw-head-fill); }
 
-html.rhw-focus-pass :is(.panel-title,.shipyard-control-title) { font-size: 34px;line-height: 1.1;letter-spacing: .07em; }
+html.rhw-focus-pass :is(.panel-title,.shipyard-control-title) { font-size: var(--rhw-title-size);line-height: 1.2;letter-spacing: .045em; }
 
 html.rhw-focus-pass .workspace-heading { padding: 10px 0;margin-bottom: 16px;border: 0;background: transparent;box-shadow: none; }
 
-html.rhw-focus-pass .workspace-heading h2 { color: var(--gold);font: 500 34px/1.1 var(--font-title);letter-spacing: .055em; }
+html.rhw-focus-pass .workspace-heading h2 { color: var(--gold);font: 500 var(--rhw-title-size)/1.2 var(--font-title);letter-spacing: .045em; }
 
 html.rhw-focus-pass .workspace-heading p { font: 13px/1.5 var(--font-main);text-transform: none; }
 
@@ -303,7 +308,7 @@ html.rhw-focus-pass #workspaceOperations .workspace-heading, html.rhw-focus-pass
 
 html.rhw-focus-pass :is(.production-card,.production-module-card) { border-top-color: #8d7c59; }
 
-html.rhw-focus-pass :is(.production-title,.production-module-title) { font-size: 26px;line-height: 1.15; }
+html.rhw-focus-pass :is(.production-title,.production-module-title) { font-size: var(--rhw-product-title-size);line-height: 1.2; }
 
 html.rhw-focus-pass :is(.section-kicker,.remote-route small) { color: var(--muted);font-size: 12px; }
 
@@ -323,11 +328,11 @@ html.rhw-focus-pass .logistics-subhead { background: linear-gradient(105deg,#2f2
 
 html.rhw-focus-pass .logistics-subhead-kicker { color: var(--muted);font: 12px var(--font-tech); }
 
-html.rhw-focus-pass .logistics-subhead-title { color: var(--text);font: 500 32px/1.1 var(--font-title);letter-spacing: .06em; }
+html.rhw-focus-pass .logistics-subhead-title { color: var(--gold);font: 500 var(--rhw-title-size)/1.2 var(--font-title);letter-spacing: .045em; }
 
 html.rhw-focus-pass .market-sort-segments { background: #171717;border-color: #5e5e5e; }
 
-html.rhw-focus-pass .market-sort-button { color: #cbcbcb;background: transparent;font: 12px var(--font-tech);min-height: 42px; }
+html.rhw-focus-pass .market-sort-button { color: var(--text);background: transparent;font:500 var(--rhw-control-size)/1.4 var(--font-main);min-height:var(--rhw-control-height); }
 
 html.rhw-focus-pass .market-sort-button.active { color: #f0d5a1;border-color: #a88b56;background: linear-gradient(115deg,#352b1c,#232522); }
 
@@ -359,7 +364,7 @@ html.rhw-focus-pass .market-material-symbol { display: grid;place-items: center;
 
 html.rhw-focus-pass .market-card[data-market-kind="components"] .market-material-symbol { color: var(--gold);border-color: #a28b62; }
 
-html.rhw-focus-pass .market-card .supplier-title { color: var(--text);font: 500 29px/1.1 var(--font-title);letter-spacing: .045em;margin-top: 5px; }
+html.rhw-focus-pass .market-card .supplier-title { color: var(--gold);font: 500 var(--rhw-product-title-size)/1.2 var(--font-title);letter-spacing: .025em;margin-top: 5px; }
 
 html.rhw-focus-pass .market-card .remote-badge { color: #cbcbcb;border-color: #6e6e6e;background: #16161644;font: 11px/1.2 var(--font-tech);letter-spacing: .02em;white-space: normal; }
 
@@ -411,7 +416,7 @@ html.rhw-focus-pass .market-card[data-market-kind="ore"] .remote-facility-head {
 
 html.rhw-focus-pass .market-card[data-market-kind="ore"] .market-material-symbol { width: 31px;height: 34px;font-size: 24px;background: #181818;box-shadow: none; }
 
-html.rhw-focus-pass .market-card[data-market-kind="ore"] .supplier-title { font-size: 25px;margin-top: 3px; }
+html.rhw-focus-pass .market-card[data-market-kind="ore"] .supplier-title { font-size: var(--rhw-product-title-size);margin-top: 3px; }
 
 html.rhw-focus-pass .market-card[data-market-kind="ore"] .remote-facility-subline { display: none; }
 
@@ -445,7 +450,7 @@ html.rhw-focus-pass .ops-panel-head { padding: 13px 16px; }
 
 html.rhw-focus-pass .ops-panel-head>div>span { display: inline-flex;color: var(--gold);font: 12px var(--font-tech); }
 
-html.rhw-focus-pass .ops-panel-head strong { color: var(--gold);font: 500 27px/1.1 var(--font-title);letter-spacing: .065em; }
+html.rhw-focus-pass .ops-panel-head strong { color: var(--gold);font: 500 var(--rhw-panel-title-size)/1.2 var(--font-title);letter-spacing: .045em; }
 
 html.rhw-focus-pass .ops-setup-panel .ops-panel-head { background: var(--rhw-head-fill); }
 
@@ -477,7 +482,7 @@ html.rhw-focus-pass .ops-price-input-wrap>span { color: var(--muted);font: 12px 
 
 html.rhw-focus-pass .ops-recipe-meta { margin: 0 16px 16px;padding: 13px 0;background: transparent;border: 0;border-top: 1px solid #5f5f5f;box-shadow: none; }
 
-html.rhw-focus-pass .ops-recipe-meta strong { color: var(--text);font: 500 27px/1.15 var(--font-title); }
+html.rhw-focus-pass .ops-recipe-meta strong { color: var(--text);font: 24px/1.2 var(--font-tech);font-variant-numeric:tabular-nums; }
 
 html.rhw-focus-pass .ops-price-memory { padding: 0;margin: 12px 16px;border: 0;background: transparent;color: var(--muted); }
 
@@ -505,11 +510,13 @@ html.rhw-focus-pass :is(.ops-price-profiles,.ops-price-profile-tools) { backgrou
 
 html.rhw-focus-pass .ops-price-profiles button { color: #dadada;background: #262626;border-color: #616161; }
 
-html.rhw-focus-pass .pricecheck-heading h2 { color: var(--gold);font: 500 34px/1.1 var(--font-title);letter-spacing: .055em; }
+html.rhw-focus-pass .pricecheck-heading { border-color:var(--line);border-left-color:var(--gold);border-radius:var(--rhw-surface-radius);background:var(--rhw-head-fill); }
 
-html.rhw-focus-pass .pricecheck-status { background: var(--rhw-head-fill);box-shadow: inset 0 1px #ffffff08;border-color: var(--rhw-border); }
+html.rhw-focus-pass .pricecheck-heading h2 { color: var(--gold);font: 500 var(--rhw-title-size)/1.2 var(--font-title);letter-spacing: .045em; }
 
-html.rhw-focus-pass .pricecheck-status strong { font: 500 24px/1.2 var(--font-title); }
+html.rhw-focus-pass .pricecheck-status { background: var(--rhw-head-fill);box-shadow: inset 0 1px #ffffff08;border-color: var(--rhw-border);border-radius:var(--rhw-surface-radius); }
+
+html.rhw-focus-pass .pricecheck-status strong { font: 24px/1.2 var(--font-tech);font-variant-numeric:tabular-nums; }
 
 html.rhw-focus-pass :is(.pricecheck-source strong,.pricecheck-payout strong,.pricecheck-source-price) { font: 500 14px/1.4 var(--font-main); }
 
@@ -535,9 +542,15 @@ html.rhw-focus-pass .comms-panel-head { padding: 13px 16px; }
 
 html.rhw-focus-pass .comms-panel-head>div>span { display: none; }
 
-html.rhw-focus-pass .comms-panel-head strong { color: var(--gold);font: 500 27px/1.1 var(--font-title);letter-spacing: .065em; }
+html.rhw-focus-pass .comms-panel-head strong { color: var(--gold);font: 500 var(--rhw-panel-title-size)/1.2 var(--font-title);letter-spacing: .045em; }
 
 html.rhw-focus-pass .comms-editor-toolbar { background: var(--surface-input);border-color: var(--rhw-border); }
+
+html.rhw-focus-pass :is(.comms-editor-toolbar button,.comms-context-tools button,.ops-price-profiles button,.pricecheck-refresh,.rhw-diagnostics-actions button,.rhw-diagnostics-head button,.rhw-focus-tools-head button,.rhw-transfer-actions button,.rhw-transfer-dialog button,.discovery-data-actions button,.discovery-data-actions a) { min-height:var(--rhw-control-height);border:1px solid var(--rhw-border);border-radius:var(--rhw-surface-radius);clip-path:none;background:var(--rhw-control-fill);box-shadow:none;color:var(--text);font:500 var(--rhw-control-size)/1.4 var(--font-main);letter-spacing:.025em; }
+
+html.rhw-focus-pass :is(.comms-editor-toolbar button,.comms-context-tools button,.ops-price-profiles button,.pricecheck-refresh,.rhw-diagnostics-actions button,.rhw-diagnostics-head button,.rhw-focus-tools-head button,.rhw-transfer-actions button,.rhw-transfer-dialog button,.discovery-data-actions button,.discovery-data-actions a):is(:hover,:focus-visible) { border-color:var(--gold);background:var(--rhw-control-hover);color:var(--gold); }
+
+html.rhw-focus-pass :is(.pricecheck-refresh,.rhw-diagnostics-actions button.primary,.rhw-transfer-actions button.comms-primary,.rhw-transfer-dialog button.comms-primary) { border-color:var(--rhw-control-border);background:var(--rhw-action-fill);color:var(--gold); }
 
 html.rhw-focus-pass .comms-field label, html.rhw-focus-pass .message-field>label { font: 12px/1.4 var(--font-main); }
 
@@ -545,7 +558,29 @@ html.rhw-focus-pass .comms-field textarea { min-height: 160px; }
 
 html.rhw-focus-pass .comms-preview-live { line-height: 1.6; }
 
-html.rhw-focus-pass .rhw-focus-tools-sheet { border-radius: 3px;background: var(--rhw-surface);border-color: #6f6f6f; }
+html.rhw-focus-pass :is(.rhw-focus-tools-sheet,.rhw-diagnostics-sheet,.rhw-transfer-sheet) { border-radius:var(--rhw-surface-radius);background:var(--panel);color:var(--text);border:1px solid var(--line);border-top:2px solid var(--gold);box-shadow:var(--rhw-card-shadow); }
+
+html.rhw-focus-pass :is(.rhw-focus-tools-head,.rhw-diagnostics-head,.rhw-transfer-sheet>header,.discovery-data-head) { background:var(--rhw-head-fill);border-bottom:1px solid var(--line);padding:var(--rhw-space-card) var(--rhw-space-panel); }
+
+html.rhw-focus-pass :is(.rhw-focus-tools-head,.rhw-diagnostics-head,.rhw-transfer-sheet>header,.discovery-data-head) strong { color:var(--gold);font:500 var(--rhw-panel-title-size)/1.2 var(--font-title);letter-spacing:.045em; }
+
+html.rhw-focus-pass :is(.rhw-diagnostics-card,.discovery-data-grid article,.rhw-transfer-center) { background:var(--surface-input);border-color:var(--line); }
+
+html.rhw-focus-pass :is(.rhw-diagnostics-card small,.rhw-diagnostics-card span,.rhw-diagnostics-head small,.rhw-diagnostics-head span,.rhw-diagnostics-overall span,.rhw-diagnostics-events summary,.rhw-diagnostics-events p,.rhw-diagnostics-privacy,.rhw-diagnostics-actions>span,.discovery-data-grid span,.discovery-source-details,.rhw-transfer-intro>p,.rhw-transfer-contents span,.rhw-transfer-privacy,.rhw-transfer-privacy span,.rhw-transfer-status,.rhw-transfer-section-copy small,.rhw-transfer-mode-help,.rhw-transfer-file-meta small) { color:var(--muted);font:12px/1.6 var(--font-main);letter-spacing:.015em; }
+
+html.rhw-focus-pass :is(.rhw-diagnostics-card strong,.discovery-data-grid strong,.rhw-transfer-intro>strong,.rhw-transfer-file-meta strong) { font:500 16px/1.4 var(--font-main); }
+
+html.rhw-focus-pass :is(.discovery-data-panel,.rhw-full-audit) { background:var(--surface-input);border:1px solid var(--line);border-radius:var(--rhw-surface-radius);box-shadow:none; }
+
+html.rhw-focus-pass :is(.discovery-data-grid small,.discovery-data-head span,.rhw-transfer-intro>span,.rhw-transfer-privacy strong,.rhw-transfer-sheet>header span,.rhw-transfer-section>b,.rhw-transfer-import-warning,.rhw-full-audit small,.rhw-full-audit-result>span,.rhw-full-audit-empty) { font:12px/1.6 var(--font-main);letter-spacing:.015em; }
+
+html.rhw-focus-pass :is(.rhw-full-audit>header strong,.rhw-full-audit-result strong,#rhwFullAuditStatus) { font:500 14px/1.5 var(--font-main);letter-spacing:.025em; }
+
+html.rhw-focus-pass .rhw-full-audit-actions button { min-height:var(--rhw-control-height);border:1px solid var(--rhw-border);background:var(--rhw-control-fill);color:var(--text);font:500 var(--rhw-control-size)/1.4 var(--font-main);letter-spacing:.025em; }
+
+html.rhw-focus-pass .rhw-full-audit-actions button:first-child { border-color:var(--rhw-control-border);background:var(--rhw-action-fill);color:var(--gold); }
+
+html.rhw-focus-pass .rhw-full-audit-actions button:is(:hover,:focus-visible) { border-color:var(--gold);background:var(--rhw-control-hover);color:var(--gold); }
 
 html.rhw-focus-pass .rhw-focus-tool-card { min-height: 80px;background: var(--rhw-head-fill);border-color: var(--line);grid-template-columns: 1fr auto; }
 
@@ -635,16 +670,16 @@ html.rhw-focus-pass .app-workspace button, html.rhw-focus-pass .app-workspace su
 html.rhw-focus-pass #commandGlobalSearch { font-size: 16px !important; }
 html.rhw-focus-pass .workspace-heading { margin-bottom: 12px;padding: 8px 0; }
 html.rhw-focus-pass .workspace-heading p { display: none; }
-html.rhw-focus-pass :is(.panel-title,.shipyard-control-title) { font-size: 27px; }
+html.rhw-focus-pass :is(.panel-title,.shipyard-control-title) { font-size: var(--rhw-title-size); }
 html.rhw-focus-pass .logistics-subhead { padding: 13px 10px; }
-html.rhw-focus-pass .logistics-subhead-title { font-size: 29px; }
+html.rhw-focus-pass .logistics-subhead-title { font-size: var(--rhw-title-size); }
 html.rhw-focus-pass .market-scan-grid { padding: 10px;gap: 13px; }
 html.rhw-focus-pass #marketScanGrid { grid-template-columns: minmax(0,1fr); }
 html.rhw-focus-pass .market-card .remote-facility-head { padding: 12px;gap: 9px; }
 html.rhw-focus-pass .market-material-card .remote-facility-head { grid-template-columns: 38px minmax(0,1fr); }
 html.rhw-focus-pass .market-material-card .remote-link-pill { grid-column: 2;justify-self: start; }
 html.rhw-focus-pass .market-material-symbol { width: 38px;height: 42px;font-size: 29px; }
-html.rhw-focus-pass .market-card .supplier-title { font-size: 27px; }
+html.rhw-focus-pass .market-card .supplier-title { font-size: var(--rhw-product-title-size); }
 html.rhw-focus-pass .market-card .supplier-commodity-row { gap: 8px 12px;padding: 12px; }
 html.rhw-focus-pass .market-card .supplier-commodity-name strong { font-size: 22px; }
 html.rhw-focus-pass .market-card[data-market-kind="ore"] .remote-facility-head { grid-template-columns: 31px minmax(0,1fr); }
