@@ -89,7 +89,7 @@ coverage is an alternative use of the shared inventory, never a reservation or
 a sum of concurrently buildable ships. Unknown stock remains unknown; cached
 stock is labelled. Selection is a local preference and is included in backups.
 
-`js/command/config.js` selects the six installed Production modules by recipe
+`js/command/config.js` selects eight reference Production modules by recipe
 ID. `js/command/production-model.js` derives their consumed inputs, batch yields,
 byproducts and non-consumed prerequisites from the same corrected BMM plan used
 by the Calculator. The registry contains no duplicate recipe quantities. The

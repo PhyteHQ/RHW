@@ -94,7 +94,7 @@ const DASHBOARD_CONFIG = Object.freeze({
     export: ['multi-mode focusing chamber', 'multi-mode focusing chambers', 'superstructure systems', 'reactor systems'],
     reserve: ['gold', 'wildcat gold', 'niobium', 'prototype components'],
     byproduct: ['toxic waste'],
-    procurement: ['ablative armor plating', 'avionics systems', 'energy field equipment', 'exotic systems', 'gold ore', 'hull panels', 'hydrocarbons', 'interior systems', 'prototype components', 'propulsion systems', 'mox', 'super alloy', 'titanium', 'industrial materials', 'niobium ore', 'scrap metal', 'military salvage'],
+    procurement: ['ablative armor plating', 'avionics systems', 'energy field equipment', 'exotic systems', 'gold ore', 'hull panels', 'hydrocarbons', 'interior systems', 'prototype components', 'propulsion systems', 'mox', 'uranium', 'super alloy', 'titanium', 'industrial materials', 'niobium ore', 'scrap metal', 'military salvage'],
     shipyard: ['avionics systems', 'interior systems', 'propulsion systems', 'superstructure systems', 'reactor systems', 'exotic systems'],
     feedstock: ['gold ore', 'niobium ore', 'scrap metal', 'military salvage'],
     confiscated: []
@@ -214,7 +214,8 @@ const DASHBOARD_CONFIG = Object.freeze({
     Object.freeze({ product: 'Basic Alloy', recipeId: 'recipe_scrap_advanced' }),
     Object.freeze({ product: 'Gold', recipeId: 'recipe_gold_advanced' }),
     Object.freeze({ product: 'Niobium', recipeId: 'recipe_niobium_advanced' }),
-    Object.freeze({ product: 'Prototype Components', recipeId: 'recipe_milsal' })
+    Object.freeze({ product: 'Prototype Components', recipeId: 'recipe_milsal' }),
+    Object.freeze({ product: 'MOX', recipeId: 'recipe_mox_fuel_basic' })
   ]),
   alerts: Object.freeze({
     'basic alloy': { type: 'min', red: 2500, yellow: 15000 },
@@ -347,7 +348,7 @@ const numFormatter = new Intl.NumberFormat('de-DE');
 const CANONICAL_NAMES = {
   'ablative armor plating': 'Ablative Armor Plating', 'energy field equipment': 'Energy Field Equipment',
   'gold ore': 'Gold Ore', 'hull panels': 'Hull Panels', 'hydrocarbons': 'Hydrocarbons',
-  'military salvage': 'Military Salvage', 'mox': 'MOX', 'niobium': 'Niobium',
+  'military salvage': 'Military Salvage', 'mox': 'MOX', 'uranium': 'Uranium', 'niobium': 'Niobium',
   'super alloy': 'Super Alloy', 'titanium': 'Titanium', 'multi-mode focusing chamber': 'Multi-Mode Focusing Chamber',
   'multi-mode focusing chambers': 'Multi-Mode Focusing Chamber', 'superstructure systems': 'Superstructure Systems',
   'reactor systems': 'Reactor Systems', 'gold': 'Gold', 'prototype components': 'Prototype Components',
@@ -762,7 +763,9 @@ function progressMeta(item, roleOverride = null) {
   let cls = state;
   if (role === 'byproduct') cls = 'waste';
   if (role === 'confiscated' && state === 'ok') cls = 'confiscated-bar';
-  return { percent: Math.max(0, Math.round(percent)), cls, max };
+  const reportedMax = firstFiniteApiStockValue(item, ['max_stock', 'max', 'maxStock', 'max_quantity', 'maxQuantity']);
+  return { percent: Math.max(0, Math.round(percent)), cls, max, reportedMax,
+    actualMaximum: reportedMax > 0 && reportedMax === max };
 }
 
 function renderProgress(item, options = {}) {
@@ -777,7 +780,8 @@ function renderProgress(item, options = {}) {
   const boundary = showApiReserve ? apiStockBoundary(item) : { min: null, max: null, valid: false };
 
   if (!boundary.valid) {
-    const tooltip = `${meta.percent}% OF MAX ${number(meta.max)}`;
+    const tooltip = meta.actualMaximum ? `${meta.percent}% OF API MAX ${number(meta.max)}`
+      : `STOCK ${number(q)} // DISPLAY SCALE ${number(meta.max)} // ${meta.reportedMax > 0 ? `API MAX ${number(meta.reportedMax)}` : 'API MAX NOT REPORTED'}`;
     return `<div class="progress-wrap" data-tooltip="${tooltip}" aria-label="${tooltip}"><div class="progress-fill ${fillClass}" style="width:${meta.percent}%"></div></div>`;
   }
 
@@ -799,7 +803,7 @@ function renderProgress(item, options = {}) {
 function renderFeedstockProgress(item, state, fallbackKey) {
   if (item) return renderProgress(item, { role: 'procurement', stateOverride: state, showApiReserve: true });
   const max = BAR_MAX_FALLBACKS[fallbackKey] || 1;
-  return `<div class="progress-wrap" data-tooltip="0% OF MAX ${number(max)}" aria-label="0% OF MAX ${number(max)}"><div class="progress-fill ${state}" style="width:0%"></div></div>`;
+  return `<div class="progress-wrap" data-tooltip="DISPLAY SCALE ${number(max)} // STOCK NOT REPORTED" aria-label="DISPLAY SCALE ${number(max)} // STOCK NOT REPORTED"><div class="progress-fill ${state}" style="width:0%"></div></div>`;
 }
 
 function formatBaseHealth(value) {
@@ -822,6 +826,76 @@ function formatPosition(value) {
   }
   return String(value);
 }
+
+;
+
+/* SOURCE: js/data/telemetry-cache.js */
+/* Persist public stock snapshots separately from private drafts and backups. */
+(function initRhwTelemetryCache() {
+  'use strict';
+  const DB_NAME = 'rhw-public-stock-v1';
+  const STORE = 'snapshots';
+  const KEY = 'pobs';
+  let database;
+
+  function valid(snapshot) {
+    if (snapshot?.schemaVersion !== 1 || !Array.isArray(snapshot.bases)) return false;
+    const timestamp = Date.parse(snapshot.fetchedAt);
+    if (!Number.isFinite(timestamp) || timestamp <= 0 || timestamp > Date.now() + 60000) return false;
+    const base = snapshot.bases.find(entry => String(entry?.name || entry?.nickname || '').trim().toLowerCase() === DASHBOARD_CONFIG.baseName);
+    return Boolean(base && Array.isArray(base.shop_items) && base.shop_items.every(item => item && typeof item === 'object' && !Array.isArray(item)));
+  }
+
+  function open() {
+    if (!globalThis.indexedDB) return Promise.resolve(null);
+    if (database) return database;
+    database = new Promise(resolve => {
+      let request;
+      try { request = indexedDB.open(DB_NAME, 1); }
+      catch { resolve(null); return; }
+      request.onupgradeneeded = () => {
+        if (!request.result.objectStoreNames.contains(STORE)) request.result.createObjectStore(STORE);
+      };
+      request.onsuccess = () => {
+        const db = request.result;
+        db.onversionchange = () => { db.close(); database = null; };
+        resolve(db);
+      };
+      request.onerror = request.onblocked = () => { database = null; resolve(null); };
+    });
+    return database;
+  }
+
+  async function read() {
+    const db = await open();
+    if (!db) return null;
+    return new Promise(resolve => {
+      try {
+        const transaction = db.transaction(STORE, 'readonly');
+        const request = transaction.objectStore(STORE).get(KEY);
+        request.onsuccess = () => resolve(valid(request.result) ? request.result : null);
+        request.onerror = transaction.onabort = () => resolve(null);
+      } catch { resolve(null); }
+    });
+  }
+
+  async function write({ bases, fetchedAt }) {
+    const snapshot = { schemaVersion: 1, bases, fetchedAt };
+    if (!valid(snapshot)) return false;
+    const db = await open();
+    if (!db) return false;
+    return new Promise(resolve => {
+      try {
+        const transaction = db.transaction(STORE, 'readwrite');
+        transaction.objectStore(STORE).put(snapshot, KEY);
+        transaction.oncomplete = () => resolve(true);
+        transaction.onerror = transaction.onabort = () => resolve(false);
+      } catch { resolve(false); }
+    });
+  }
+
+  globalThis.RHWTelemetryCache = { read, write, valid };
+})();
 
 ;
 
@@ -1276,6 +1350,15 @@ function ensureProductionModuleTools() {
   }
   if (els.productionGrid.dataset.cardDetailsBound !== 'true') {
     els.productionGrid.dataset.cardDetailsBound = 'true';
+    els.productionGrid.addEventListener('change', event => {
+      if (!event.target.matches('[data-production-mox]')) return;
+      if (!window.RHWV4.production.selectMoxRecipe(event.target.value)) {
+        window.RHWV4.notify?.('Recipe selection could not be saved on this device.', 'warn');
+      }
+      renderAll();
+      window.RHWV4.requestUiUpdate?.();
+      els.productionGrid.querySelector('[data-production-mox]')?.focus({ preventScroll: true });
+    });
     els.productionGrid.addEventListener('click', event => {
       const button = event.target.closest('.production-card-toggle');
       if (!button) return;
@@ -1295,20 +1378,24 @@ function ensureProductionModuleTools() {
 function renderProductionModules() {
   if (!els.productionGrid) return;
   const materialFocus = document.activeElement?.closest?.('.production-card-toggle')?.closest('.production-card')?.dataset.productionRecipe;
+  const moxFocus = document.activeElement?.matches?.('[data-production-mox]');
   ensureProductionModuleTools();
   if (!hasVerifiedTelemetry()) {
     const failed = Boolean(lastSyncError);
     els.productionGrid.innerHTML = `<div class="feature-empty production-empty">${failed ? 'TELEMETRY UNAVAILABLE' : 'AWAITING FIRST TELEMETRY BURST'}<small>${failed ? 'NO VERIFIED RHW INVENTORY IS AVAILABLE' : 'PRODUCTION ANALYSIS WILL APPEAR AFTER THE FIRST SUCCESSFUL SYNC'}</small></div>`;
     return;
   }
-  const recipes = productionRecipes();
-  if (!recipes.length) {
+  const model = window.RHWV4.production;
+  if (!window.RHWV4.operationsCore.state.catalog) {
     els.productionGrid.innerHTML = '<div class="feature-empty production-empty">PRODUCTION RECIPES UNAVAILABLE<small>CAPACITY REQUIRES THE VERIFIED RECIPE CATALOG</small></div>';
     applyProductionModuleFilters();
     return;
   }
 
-  els.productionGrid.innerHTML = recipes.map((recipe, index) => {
+  els.productionGrid.innerHTML = model.modules().map((module, index) => {
+    const recipe = model.requirements(module);
+    const variant = module.product === 'MOX' ? `<label class="production-variant"><span>MOX RECIPE</span><select data-production-mox aria-label="MOX recipe">${model.moxRecipes.map(option => `<option value="${option.recipeId}"${option.recipeId === module.recipeId ? ' selected' : ''}>${option.label}</option>`).join('')}</select></label>` : '';
+    if (!recipe) return `<div class="production-card waiting production-unavailable" data-production-recipe="${escapeHTML(module.recipeId)}" data-production-state="waiting" data-production-product="${escapeHTML(normalize(module.product))}"><div class="production-kicker">MODULE-${String(index + 1).padStart(2, '0')}</div><div class="production-title">${escapeHTML(module.product)}</div>${variant}<strong>RECIPE UNAVAILABLE</strong><p>Material coverage is unknown. Other modules remain available.</p></div>`;
     const analysis = analyzeRecipe(recipe);
     const cycle = window.RHWV4.production.cycleSeconds(recipe.recipeId);
     const runtime = analysis.possibleCycles === null || cycle === null ? null : analysis.possibleCycles * cycle;
@@ -1325,7 +1412,7 @@ function renderProductionModules() {
               </li>`;
     }).join('');
 
-    const bottleneckDisplay = analysis.bottleneck ? escapeHTML(analysis.bottleneck.name).toUpperCase() : '';
+    const bottleneckDisplay = analysis.bottleneck ? escapeHTML(analysis.bottleneck.displayName).toUpperCase() : '';
     const nextGapText = analysis.bottleneck
       ? `<div class="next-gap ${analysis.cardState}">NEXT +1 CYCLE: <strong>${bottleneckDisplay} +${number(analysis.nextCycleGap)}</strong></div>`
       : '';
@@ -1348,19 +1435,20 @@ function renderProductionModules() {
                 <div>
                   <div class="production-kicker">MODULE-${String(index + 1).padStart(2, '0')}</div>
                   <div class="production-title">${escapeHTML(displayRecipeName(recipe.product))}</div>
+                  ${variant}
                   <div class="footnote production-batch-time">${number(recipe.output)} / BATCH <span class="production-cycle-time">${cycle === null ? 'CYCLE TIME UNKNOWN' : `~${productionDuration(cycle)} / CYCLE`}</span></div>
                 </div>
                 <div class="production-card-controls"><span class="module-state ${analysis.cardState}" title="Standalone input coverage, before competition or incoming production">${inputStatus}</span></div>
               </div>
               <div class="production-stats">
                 <div class="production-stat production-stock-primary"><small>IN STOCK</small><strong>${number(analysis.productStock)}</strong></div>
-                <div class="production-stat production-capacity"><small>PRODUCIBLE FROM STOCK</small><strong>${number(analysis.possibleOutput)}</strong><span class="production-runtime">${runtime === null ? 'TIME UNKNOWN' : `~${productionDuration(runtime)}`}</span><span class="production-capacity-context">CURRENT INPUTS · THIS MODULE</span></div>
+                <div class="production-stat production-capacity"><small>MATERIAL COVERAGE</small><strong>${number(analysis.possibleOutput)}</strong><span class="production-runtime">${runtime === null ? 'TIME UNKNOWN' : `~${productionDuration(runtime)}`}</span><span class="production-capacity-context">OUTPUT FROM CURRENT INPUTS</span></div>
               </div>
               <div class="production-limit"><span>LIMITED BY</span><strong>${escapeHTML(analysis.bottleneck?.displayName || 'Input stock unknown')}</strong></div>
               ${analysis.possibleCycles === null ? '<div class="production-stock-note">INPUT STOCK UNKNOWN</div>' : ''}
               <button type="button" class="production-card-toggle" aria-controls="${escapeHTML(materialId)}" aria-expanded="${!collapsed}"><span>${collapsed ? 'SHOW MATERIALS' : 'HIDE MATERIALS'}</span></button>
               <div class="production-materials" id="${escapeHTML(materialId)}">
-              <div class="production-coverage-summary"><span>MATERIAL COVERAGE</span><strong>MATERIAL CYCLES ${number(analysis.possibleCycles)} · OUTPUT ${number(analysis.possibleOutput)}</strong><small>${runtime === null ? 'TIME UNKNOWN' : `~${productionDuration(runtime)}`} · Other modules may use the same stock.</small></div>
+              <div class="production-coverage-summary"><span>INPUT DETAILS</span><strong>MATERIAL CYCLES ${number(analysis.possibleCycles)} · OUTPUT ${number(analysis.possibleOutput)}</strong><small>Materials only; prerequisites and module activity are not checked. Other modules may use the same stock.</small></div>
               ${nextGapText}
               <div class="recipe-column-head" aria-hidden="true">
                 <span>Material</span><span>Required / Cycle</span><span>Current Stock</span>
@@ -1373,6 +1461,7 @@ function renderProductionModules() {
   }).join('');
   if (materialFocus) [...els.productionGrid.querySelectorAll('.production-card')]
     .find(card => card.dataset.productionRecipe === materialFocus)?.querySelector('.production-card-toggle')?.focus({ preventScroll: true });
+  if (moxFocus) els.productionGrid.querySelector('[data-production-mox]')?.focus({ preventScroll: true });
   applyProductionModuleFilters();
   window.RHWRuntime?.rendered('production');
 }
@@ -1953,6 +2042,7 @@ function overviewDetail(item, state, role) {
     if (state !== 'ok') return state === 'low' ? 'REVIEW REQUIRED' : 'VAULT OVERFLOW';
     return reference ? `${number(Math.max(0, reference.value - quantity(item)))} UNTIL REVIEW` : 'EVIDENCE SECURED';
   }
+  if (state === 'ok' && (role === 'maintenance' || role === 'export')) return '';
   return readinessText(state, role);
 }
 
@@ -2110,6 +2200,18 @@ function findRemoteFacility(data, facility) {
 ;
 
 /* SOURCE: js/data/refresh.js */
+function acceptTelemetry(data, fetchedAt, stale = false) {
+  const base = data.find(entry => normalize(entry?.name) === BASE_NAME || normalize(entry?.nickname) === BASE_NAME);
+  if (!base || !Array.isArray(base.shop_items)) throw new Error('INVALID RHW SHOP DATA.');
+  rhwBase = base;
+  allBases = data;
+  remoteBases = new Map(REMOTE_FACILITIES.map(facility => [facility.key, findRemoteFacility(data, facility)]));
+  items = base.shop_items.map(item => ({ ...item }));
+  rebuildItemCaches();
+  lastLoaded = new Date(fetchedAt);
+  dataIsStale = stale;
+}
+
 async function loadData() {
   if (isLoading) return;
   isLoading = true;
@@ -2120,6 +2222,13 @@ async function loadData() {
   }
 
   document.body.classList.add('syncing');
+  if (!hasVerifiedTelemetry() && window.RHWTelemetryCache) {
+    const cached = await window.RHWTelemetryCache.read().catch(() => null);
+    if (cached) {
+      try { acceptTelemetry(cached.bases, cached.fetchedAt, true); renderAll(); }
+      catch { /* A damaged cache cannot prevent a fresh network request. */ }
+    }
+  }
   if (!hasVerifiedTelemetry()) {
     lastSyncError = '';
     renderAll();
@@ -2153,21 +2262,8 @@ async function loadData() {
     const data = await response.json();
     if (!Array.isArray(data)) throw new Error('INVALID TELEMETRY RESPONSE.');
 
-    const nextRhwBase = data.find(base => normalize(base?.name) === BASE_NAME || normalize(base?.nickname) === BASE_NAME);
-    const nextRemoteBases = new Map(
-      REMOTE_FACILITIES.map(facility => [facility.key, findRemoteFacility(data, facility)])
-    );
-
-    if (!nextRhwBase || typeof nextRhwBase !== 'object') throw new Error('RHW NOT FOUND IN DATASTREAM.');
-    if (!Array.isArray(nextRhwBase.shop_items)) throw new Error('INVALID RHW SHOP DATA.');
-
-    rhwBase = nextRhwBase;
-    allBases = data;
-    remoteBases = nextRemoteBases;
-    items = rhwBase.shop_items.map(item => ({ ...item }));
-    rebuildItemCaches();
-    lastLoaded = new Date();
-    dataIsStale = false;
+    acceptTelemetry(data, new Date().toISOString());
+    window.RHWTelemetryCache?.write({ bases: data, fetchedAt: lastLoaded.toISOString() }).catch(() => {});
     lastSyncError = '';
 
     setTelemetryState('LIVE', 'good');

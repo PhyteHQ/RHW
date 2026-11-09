@@ -18,7 +18,19 @@ ctx.__RHW_RECIPE_CATALOG__ = JSON.parse(zlib.gunzipSync(Buffer.from(ctx.__RHW_RE
   const model = ctx.RHWV4.production;
   assert.equal(model.cycleSeconds('recipe_milsal'), null, 'Unavailable recipes have no guessed timing');
   await ctx.RHWV4.operationsCore.loadCatalog();
-  assert.equal(model.recipes().length, 7);
+  assert.equal(model.recipes().length, 8);
+  let mox = model.recipes().find(recipe => recipe.product === 'MOX');
+  assert.equal(mox.recipeId, 'recipe_mox_fuel_basic');
+  assert.equal(mox.output, 333);
+  assert.deepEqual(Array.from(mox.ingredients, row => Array.from(row)), [['Toxic Waste', 1000]]);
+  assert.equal(model.cycleSeconds(mox.recipeId), 1000 / 11 * 60);
+  assert.equal(model.selectMoxRecipe('recipe_mox_fuel_efficient'), false, 'HazMat is not offered as a production mode');
+  assert.equal(model.selectMoxRecipe('recipe_mox_fuel_advanced'), true);
+  mox = model.recipes().find(recipe => recipe.product === 'MOX');
+  assert.equal(mox.output, 500);
+  assert.deepEqual(Array.from(mox.ingredients, row => Array.from(row)), [['Toxic Waste', 1000], ['Uranium', 100]]);
+  assert.equal(model.cycleSeconds(mox.recipeId), 1100 / 12 * 60);
+  assert.equal(model.selectMoxRecipe('recipe_mox_fuel_basic'), true);
   assert.equal(model.cycleSeconds('recipe_milsal'), 7500, 'PC uses the general MS volume, never a hauler override');
   assert.equal(model.cycleSeconds('recipe_weapon_part_focusing_chamber'), 1800);
   assert.equal(model.cycleSeconds('ship_part_reactor'), 120);
@@ -30,5 +42,5 @@ ctx.__RHW_RECIPE_CATALOG__ = JSON.parse(zlib.gunzipSync(Buffer.from(ctx.__RHW_RE
   assert.equal(model.cycleSeconds('recipe_milsal'), null, 'Missing volume is unknown rather than zero time');
   ctx.RHW_PRODUCTION_VOLUMES = volumes;
   assert.equal(model.cycleSeconds('recipe_milsal'), 7500);
-  console.log('Production capacity passed: seven independent recipes, reference times, general volumes and unknown data.');
+  console.log('Production capacity passed: eight independent modules, Basic/Advanced MOX, reference times and unknown data.');
 })().catch(error => { console.error(error); process.exitCode = 1; });

@@ -3,7 +3,7 @@ import { normalize } from './planner.mjs';
 const categories = [
   ['SHIP SYSTEMS', []],
   ['PRODUCTION MATERIALS', ['Ablative Armor Plating', 'Energy Field Equipment', 'Hull Panels', 'Industrial Materials', 'Mining Machinery', 'Multi-Mode Focusing Chamber', 'Prototype Components', 'Super Alloy']],
-  ['METALS & ORES', ['Copper', 'Gold', 'Iron', 'Molybdenum', 'Niobium', 'Silver', 'Titanium', 'Wildcat Gold']],
+  ['METALS & ORES', ['Copper', 'Gold', 'Iron', 'Molybdenum', 'Niobium', 'Silver', 'Titanium', 'Uranium', 'Wildcat Gold']],
   ['FUELS & CHEMICALS', ['H-Fuel', 'MOX', 'Promethene', 'Hydrocarbons']],
   ['BASE SUPPLIES', ['Basic Alloy', 'Consumer Goods', 'Food Rations', 'Hangar Provisions']],
   ['RECYCLING & BYPRODUCTS', ['Military Salvage', 'Scrap Metal', 'Toxic Waste']],

@@ -1,3 +1,15 @@
+function acceptTelemetry(data, fetchedAt, stale = false) {
+  const base = data.find(entry => normalize(entry?.name) === BASE_NAME || normalize(entry?.nickname) === BASE_NAME);
+  if (!base || !Array.isArray(base.shop_items)) throw new Error('INVALID RHW SHOP DATA.');
+  rhwBase = base;
+  allBases = data;
+  remoteBases = new Map(REMOTE_FACILITIES.map(facility => [facility.key, findRemoteFacility(data, facility)]));
+  items = base.shop_items.map(item => ({ ...item }));
+  rebuildItemCaches();
+  lastLoaded = new Date(fetchedAt);
+  dataIsStale = stale;
+}
+
 async function loadData() {
   if (isLoading) return;
   isLoading = true;
@@ -8,6 +20,13 @@ async function loadData() {
   }
 
   document.body.classList.add('syncing');
+  if (!hasVerifiedTelemetry() && window.RHWTelemetryCache) {
+    const cached = await window.RHWTelemetryCache.read().catch(() => null);
+    if (cached) {
+      try { acceptTelemetry(cached.bases, cached.fetchedAt, true); renderAll(); }
+      catch { /* A damaged cache cannot prevent a fresh network request. */ }
+    }
+  }
   if (!hasVerifiedTelemetry()) {
     lastSyncError = '';
     renderAll();
@@ -41,21 +60,8 @@ async function loadData() {
     const data = await response.json();
     if (!Array.isArray(data)) throw new Error('INVALID TELEMETRY RESPONSE.');
 
-    const nextRhwBase = data.find(base => normalize(base?.name) === BASE_NAME || normalize(base?.nickname) === BASE_NAME);
-    const nextRemoteBases = new Map(
-      REMOTE_FACILITIES.map(facility => [facility.key, findRemoteFacility(data, facility)])
-    );
-
-    if (!nextRhwBase || typeof nextRhwBase !== 'object') throw new Error('RHW NOT FOUND IN DATASTREAM.');
-    if (!Array.isArray(nextRhwBase.shop_items)) throw new Error('INVALID RHW SHOP DATA.');
-
-    rhwBase = nextRhwBase;
-    allBases = data;
-    remoteBases = nextRemoteBases;
-    items = rhwBase.shop_items.map(item => ({ ...item }));
-    rebuildItemCaches();
-    lastLoaded = new Date();
-    dataIsStale = false;
+    acceptTelemetry(data, new Date().toISOString());
+    window.RHWTelemetryCache?.write({ bases: data, fetchedAt: lastLoaded.toISOString() }).catch(() => {});
     lastSyncError = '';
 
     setTelemetryState('LIVE', 'good');

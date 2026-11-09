@@ -1,4 +1,5 @@
 /* General commodity volumes from Darkstat /api/commodities, verified snapshot 28 October 2026.
+   Uranium volume 1 is also checked against the public select_equip.ini reference.
    Ship-specific volume overrides are excluded. Unknown future items stay unknown. */
 globalThis.RHW_PRODUCTION_VOLUMES = Object.freeze({
   "commodity_ablativearmor": 1,
@@ -29,5 +30,6 @@ globalThis.RHW_PRODUCTION_VOLUMES = Object.freeze({
   "commodity_super_alloys": 1,
   "commodity_titanium": 1,
   "commodity_toxic_waste": 1,
+  "commodity_uranium": 1,
   "commodity_weapon_part_focusing_chamber": 10
 });

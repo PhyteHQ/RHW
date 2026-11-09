@@ -93,7 +93,17 @@
       const detail = typeof window.overviewDetail === 'function' ? window.overviewDetail(item, severity.state, severity.role) : '';
       const meta = detail && detail !== 'TRACKED' ? detail : `${severity.state.toUpperCase()} STOCK`;
       const node = severity.role === 'shipyard' ? 'shipyard' : 'inventory';
-      actions.push({ state: severity.state, node, target: name, title: `${String(severity.role || 'asset').toUpperCase()} // ${String(name).toUpperCase()}`, meta });
+      const action = { state: severity.state, node, target: name, title: `${String(severity.role || 'asset').toUpperCase()} // ${String(name).toUpperCase()}`, meta };
+      const reserve = severity.role === 'reserve' ? app.inventoryModel?.reserve(window.commodityKey(item)) : null;
+      const stock = reserve ? reserve.stock : window.firstFiniteApiStockValue?.(item, ['quantity', 'amount', 'stock']);
+      const warning = DASHBOARD_CONFIG.alerts[window.commodityKey(item)];
+      const desired = reserve?.required > 0 ? reserve.required * 2 : warning?.type === 'min' ? warning.yellow : null;
+      if (stock !== null && desired > stock && ['maintenance', 'reserve'].includes(severity.role)) {
+        action.supply = reserve ? reserve.members[0] : item.name;
+        action.quantity = Math.ceil(desired - stock);
+        action.meta = `${app.util.number(stock)} IN STOCK · RESTOCK +${app.util.number(action.quantity)} TO ${app.util.number(desired)} WARNING LEVEL`;
+      }
+      actions.push(action);
     });
 
     const constrained = productionAnalysis().find(entry => entry.cardState !== 'ok');
@@ -102,7 +112,8 @@
       node: 'production',
       target: constrained.recipe.product,
       title: `PRODUCTION // ${String(constrained.recipe.product).toUpperCase()}`,
-      meta: `BOTTLENECK ${String(constrained.bottleneck.displayName || constrained.bottleneck.name).toUpperCase()} // NEXT CYCLE +${app.util.number(constrained.nextCycleGap)}`
+      meta: `NEXT +1 CYCLE · +${app.util.number(constrained.nextCycleGap)} ${String(constrained.bottleneck.displayName || constrained.bottleneck.name).toUpperCase()}`,
+      supply: constrained.bottleneck.name, quantity: Math.ceil(constrained.nextCycleGap)
     });
 
     const yard = shipyardAnalysis();
@@ -111,7 +122,8 @@
       node: 'shipyard',
       target: yard.bottleneck.name,
       title: `SHIPYARD // MATERIAL FOR ${yard.buildable} ${yard.hull.label.toUpperCase()}`,
-      meta: `SHIP #${yard.nextHull} NEEDS +${app.util.number(yard.bottleneck.gap)} ${String(yard.bottleneck.name).toUpperCase()}`
+      meta: `SHIP #${yard.nextHull} NEEDS +${app.util.number(yard.bottleneck.gap)} ${String(yard.bottleneck.name).toUpperCase()}`,
+      supply: yard.bottleneck.name, quantity: Math.ceil(yard.bottleneck.gap)
     });
 
     const order = { critical: 0, low: 1, ok: 2 };
@@ -126,7 +138,7 @@
     const countText = `${actions.length} ACTIVE`;
     if (count.textContent !== countText) count.textContent = countText;
     const markup = actions.length
-      ? actions.map(action => `<button type="button" class="command-priority-item state-${action.state}" data-priority-jump="${action.node}" data-priority-target="${app.util.escape(action.target || '')}" data-priority-action="${action.action || 'stock'}"><span class="priority-state">${action.state.toUpperCase()}</span><span><strong>${app.util.escape(action.title)}</strong><small>${app.util.escape(action.meta)}</small></span><b>OPEN</b></button>`).join('')
+      ? actions.map(action => `<div class="command-priority-entry state-${action.state}"><button type="button" class="command-priority-item state-${action.state}" data-priority-jump="${action.node}" data-priority-target="${app.util.escape(action.target || '')}" data-priority-action="${action.action || 'stock'}"><span class="priority-state">${action.state.toUpperCase()}</span><span><strong>${app.util.escape(action.title)}</strong><small>${app.util.escape(action.meta)}</small></span><b>OPEN</b></button>${action.supply && Number.isSafeInteger(action.quantity) && action.quantity > 0 ? `<button type="button" class="priority-supply-button" data-supply-commodity="${app.util.escape(action.supply)}" data-supply-quantity="${action.quantity}" aria-label="Source ${app.util.number(action.quantity)} ${app.util.escape(action.supply)}">SOURCE +${app.util.number(action.quantity)} ↗</button>` : ''}</div>`).join('')
       : '<div class="command-priority-empty"><strong>NO PRIORITY ACTIONS</strong><span>ALL MONITORED COMMAND THRESHOLDS ARE NOMINAL</span></div>';
     // Preserve the focused action during unchanged background refreshes.
     const signature = JSON.stringify(actions);

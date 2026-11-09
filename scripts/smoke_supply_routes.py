@@ -165,7 +165,7 @@ def main():
         facts = base.ev(cdp, "(()=>({target:document.getElementById('supplyCommodity').value,text:document.getElementById('supplyResults').innerText,first:document.querySelector('.supply-result')?.innerText,reason:document.querySelector('.supply-recommendation-reason')?.innerText,count:document.querySelectorAll('.supply-result').length,choices:document.querySelectorAll('[data-production-alternative]').length,open:document.getElementById('rhwSupplyDialog').open}))()")
         imported = base.ev(cdp, "(()=>({mode:supplyMode.selectedOptions[0].textContent,header:document.querySelector('.header-trade-button small').textContent,groups:[...supplyCommodity.querySelectorAll('optgroup')].map(g=>({label:g.label,names:[...g.querySelectorAll('option')].map(o=>o.value)})),names:[...supplyCommodity.options].map(o=>o.value)}))()")
         systems = next((g['names'] for g in imported['groups'] if g['label'] == 'SHIP SYSTEMS'), [])
-        if imported['mode'] != 'IMPORT' or imported['header'] != 'IMPORT / EXPORT' or 'Toxic Waste' in imported['names'] or 'Multi-Mode Focusing Chamber' in imported['names'] or not all(name in imported['names'] for name in ['Gold', 'Wildcat Gold', 'Niobium', 'Ablative Armor Plating']) or systems != sorted(systems) or len(systems) != 6:
+        if imported['mode'] != 'IMPORT' or imported['header'] != 'IMPORT / EXPORT' or 'Multi-Mode Focusing Chamber' in imported['names'] or not all(name in imported['names'] for name in ['Gold', 'Wildcat Gold', 'Niobium', 'Ablative Armor Plating', 'Toxic Waste', 'Uranium']) or systems != sorted(systems) or len(systems) != 6:
             raise RuntimeError(f'Imports must contain only import goods with dual-role inputs and grouped systems: {imported}')
         if not facts['open'] or facts['target'] != 'Ablative Armor Plating' or facts['count'] > 3 or facts['choices'] != 0 or 'Waterloo Station' not in facts['text'] or 'Oder Shipyard' not in facts['text'] or '2,500' not in facts['text']:
             raise RuntimeError(f'Supply context/worker result failed: {facts}')
@@ -312,7 +312,7 @@ def main():
             raise RuntimeError('POB OFF must also exclude export buyers')
         base.ev(cdp, "(()=>{supplyMode.value='supply';supplyMode.dispatchEvent(new Event('change',{bubbles:true}));return true})()")
         wait_for(cdp, "!supplySearch.disabled && supplySearch.textContent==='CALCULATE IMPORT ROUTE'")
-        if not base.ev(cdp, "supplyCommodity.value==='Ablative Armor Plating' && ![...supplyCommodity.options].some(o=>o.value==='Toxic Waste')"):
+        if not base.ev(cdp, "supplyCommodity.value==='Ablative Armor Plating' && ![...supplyCommodity.options].some(o=>o.value==='Multi-Mode Focusing Chamber') && [...supplyCommodity.options].some(o=>o.value==='Toxic Waste')"):
             raise RuntimeError('Import mode must restore its own last selection and hide export-only goods')
         base.ev(cdp, "(()=>{supplyMode.value='export';supplyMode.dispatchEvent(new Event('change',{bubbles:true}));return true})()")
         wait_for(cdp, "!supplySearch.disabled && supplyCommodity.value==='Multi-Mode Focusing Chamber'")
@@ -421,6 +421,11 @@ def main():
         wait_for(cdp, "!!document.getElementById('supplyResults') && supplyResults.dataset.stale==='false'")
         if not base.ev(cdp, "!supplyRequests.includes('systems') && supplyRequests.includes('pobs') && supplySource.textContent.includes('SAVED MAP') && !supplySource.textContent.includes('BUNDLED SNAPSHOT') && !!supplyResults.querySelector('.supply-result')"):
             raise RuntimeError('Reload must restore a recent checked map without contacting the map endpoint, while refreshing stock')
+        base.ev(cdp, "supplyClose.click()")
+        base.ev(cdp, "RHWV4.supplyRoutes.open('Ablative Armor Plating',document.querySelector('.header-trade-button'),'supply',{quantity:123})")
+        wait_for(cdp, "rhwSupplyDialog.open && !supplySearch.disabled && supplyResults.dataset.stale==='false'")
+        if not base.ev(cdp, "supplyQuantity.value==='123' && !!supplyResults.querySelector('.supply-result') && [...supplyResults.querySelectorAll('.supply-metrics>div:first-child strong')].every(n=>Number(n.textContent.replace(/[^0-9]/g,''))<=123)"):
+            raise RuntimeError('Restock entry quantity must reach the real route form and cap the delivery')
         print('Trade Desk browser passed: independent background map updates, cold/warm/reload persistence, map outages and cancellation, fresh stock, route-first ranking, compatible IDs, four haulers, import/export, focus and 360/390/1440px layouts.')
     finally:
         if cdp:

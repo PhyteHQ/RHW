@@ -285,13 +285,34 @@ def main():
           rebuildItemCaches();app.navigate('command','production');renderProductionModules();
           const cards=[...productionGrid.querySelectorAll('.production-card')];
           const noPlan=!document.querySelector('[data-production-plan],[data-production-hull-plan],#productionPlanSummary,#productionShipPlan')&&!app.productionPlan&&!app.productionScenario;
-          const compact=cards.length===7&&cards.every(card=>card.querySelectorAll('.production-stats>.production-stat').length===2);
+          const compact=cards.length===8&&cards.every(card=>card.querySelectorAll('.production-stats>.production-stat').length===2);
           const timing=cards.every(card=>card.querySelector('.production-cycle-time')?.textContent.includes('/ CYCLE')&&card.querySelector('.production-runtime'));
           const pc=cards.find(card=>card.dataset.productionRecipe==='recipe_milsal');
           const pcTime=pc.querySelector('.production-cycle-time').textContent.includes('2h 5m');
           return {noPlan,compact,timing,pcTime};
         })()""")
         assert all(independent.values()), independent
+        # Recipe choice changes the exact MOX calculation; one unavailable
+        # recipe leaves all other module cards and their quantities intact.
+        mox_and_failure = base.ev(cdp, """(()=>{
+          const app=RHWV4,core=app.operationsCore;
+          items.push({name:'Uranium',quantity:10000});rebuildItemCaches();
+          let select=productionGrid.querySelector('[data-production-mox]');
+          select.value='recipe_mox_fuel_advanced';select.dispatchEvent(new Event('change',{bubbles:true}));
+          const advanced=app.production.recipes().find(r=>r.product==='MOX');
+          const exact=advanced.recipeId==='recipe_mox_fuel_advanced'&&advanced.output===500
+            &&app.productionPricing.findRecipeForLabel('MOX').id===advanced.recipeId;
+          select=productionGrid.querySelector('[data-production-mox]');
+          select.value='recipe_mox_fuel_basic';select.dispatchEvent(new Event('change',{bubbles:true}));
+          const basic=app.production.recipes().find(r=>r.product==='MOX').output===333;
+          const saved=core.state.recipesById.get('recipe_milsal');core.state.recipesById.delete(saved.id);renderProductionModules();
+          const isolated=productionGrid.querySelectorAll('.production-card').length===8
+            &&productionGrid.querySelectorAll('.production-unavailable').length===1
+            &&productionGrid.querySelectorAll('.production-capacity').length===7;
+          core.state.recipesById.set(saved.id,saved);renderProductionModules();
+          return {exact,basic,isolated};
+        })()""")
+        assert all(mox_and_failure.values()), mox_and_failure
         for width in [1366,390,360]:
             cdp.call('Emulation.setDeviceMetricsOverride', {'width':width,'height':1100,'deviceScaleFactor':1,'mobile':width<760})
             base.ev(cdp, 'renderProductionModules()')
@@ -312,6 +333,14 @@ def main():
             capture_card(cdp, '#productionModuleTools', f'{width}-production-controls')
             capture_card(cdp, '.production-card', f'{width}-production-capacity')
         base.ev(cdp, "(()=>{items=window.__capacityRestore;delete window.__capacityRestore;rebuildItemCaches();renderAll();return true;})()")
+        restock_action = base.ev(cdp, """(()=>{
+          const food=findCommodity('Food Rations'),quantity=food.quantity;
+          food.quantity=1000;renderAll();RHWV4.command.updateOverview();
+          const action=document.querySelector('[data-supply-commodity="Food Rations"][data-supply-quantity]');
+          const correct=action?.dataset.supplyQuantity==='14000'&&action.closest('.command-priority-entry').textContent.includes('WARNING LEVEL');
+          food.quantity=quantity;renderAll();return correct;
+        })()""")
+        assert restock_action, 'ATTENTION must expose the real warning-level restock quantity'
 
         # Deliberately long names and seven-digit amounts exercise the actual
         # card boundaries, not just document overflow (cards can clip internally).
@@ -435,13 +464,13 @@ def main():
           const production={cards:cards.length,crew:cards.filter(card=>card.querySelector('.production-prerequisites')?.textContent.includes('Crew')).length,
             materialCoverage:cards.every(card=>{
               const coverage=card.querySelector('.production-coverage-summary');
-              return coverage?.textContent.includes('MATERIAL COVERAGE')&&coverage.textContent.includes('MATERIAL CYCLES')&&coverage.textContent.includes('OUTPUT');
+              return coverage?.textContent.includes('INPUT DETAILS')&&coverage.textContent.includes('MATERIAL CYCLES')&&coverage.textContent.includes('OUTPUT');
             })};
           const core=RHWV4.operationsCore,catalog=core.state.catalog;
           core.state.catalog=null;renderProductionModules();
           production.unavailable=productionGrid.textContent.includes('PRODUCTION RECIPES UNAVAILABLE')&&!productionGrid.querySelector('.production-card');
           core.state.catalog=catalog;renderProductionModules();
-          production.restored=productionGrid.querySelectorAll('.production-card').length===7;
+          production.restored=productionGrid.querySelectorAll('.production-card').length===8;
           const costing=document.querySelector('[data-production-product="basic alloy"] .production-calc-button');
           if(!costing)return {production,debug:{titles:[...productionGrid.querySelectorAll('.production-title')].map(n=>n.textContent),buttons:productionGrid.querySelectorAll('.production-calc-button').length,bridge:!!RHWV4.productionPricing,installed:productionGrid.dataset.v40ProductionCalculatorBridge,selfTest:RHWV4.productionPricing?.selfTest()}};
           costing.click();
@@ -449,7 +478,7 @@ def main():
             quantity:1,affiliationId:'br_m_grp',useInventory:false,recursive:false,routingPolicy:'first'}).actualOutput,
             materialNames:document.getElementById('opsMaterialPanel').textContent};
         })()""")
-        assert production_recipe['production']['cards'] == 7 and production_recipe['production']['crew'] >= 3 and all(production_recipe['production'][key] for key in ('materialCoverage','unavailable','restored')), production_recipe
+        assert production_recipe['production']['cards'] == 8 and production_recipe['production']['crew'] >= 3 and all(production_recipe['production'][key] for key in ('materialCoverage','unavailable','restored')), production_recipe
         assert production_recipe['recipe'] == 'recipe_scrap_advanced' and production_recipe['output'] == 750, production_recipe
         assert 'Scrap Metal' in production_recipe['materialNames'] and 'Sealed Container' not in production_recipe['materialNames'], production_recipe
         # A rejected named-save must leave the old archive and the newly typed
@@ -477,6 +506,8 @@ def main():
         focused = base.ev(cdp, """(()=>{const e=document.activeElement,r=e.getBoundingClientRect();return {price:e.value,kind:!!e.dataset.materialPrice,top:r.top,bottom:r.bottom,nav:rhwAppNav.getBoundingClientRect().bottom};})()""")
         assert focused['kind'] and focused['price'] == '123' and focused['top'] >= focused['nav'] and focused['bottom'] <= 430, focused
         # Offline reload must boot the same bundles and retain local font access.
+        stored_snapshot = base.ev(cdp, 'RHWTelemetryCache.read().then(snapshot=>snapshot?.fetchedAt)')
+        assert stored_snapshot, 'A successful live response must persist a public stock snapshot'
         previous_document = base.ev(cdp, 'performance.timeOrigin')
         cdp.call('Network.emulateNetworkConditions', {'offline': True, 'latency': 0, 'downloadThroughput': 0, 'uploadThroughput': 0})
         time.sleep(.15)
@@ -491,9 +522,10 @@ def main():
         cdp.call('Page.reload')
         wait_ready(cdp, previous_document)
         offline = base.ev(cdp, """(()=>{RHWV4.navigate('command','inventory');scrollTo(0,0);return {revision:RHW_BUILD.revision,
-          unknown:!telemetrySnapshot().available,notice:!telemetryNotice.hidden,
-          font:document.fonts.check('16px Barlow'),body:document.body.textContent.includes('Stock unknown')};})()""")
-        assert offline['unknown'] and offline['notice'] and offline['font'] and offline['body'], offline
+          available:telemetrySnapshot().available,stale:telemetrySnapshot().stale,notice:!telemetryNotice.hidden,
+          at:telemetrySnapshot().fetchedAt,stock:stockFor('Basic Alloy'),font:document.fonts.check('16px Barlow')};})()""")
+        assert offline['available'] and offline['stale'] and offline['notice'] and offline['font'], offline
+        assert offline['at'] == stored_snapshot and offline['stock'] == STOCK['Basic Alloy'], offline
         capture(cdp, '390-inventory-offline')
         # The Forum preview is local/offline; exported BBCode stays portable.
         cdp.call('Emulation.setDeviceMetricsOverride', {'width': 1366, 'height': 940, 'deviceScaleFactor': 1, 'mobile': False})

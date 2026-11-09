@@ -1,5 +1,8 @@
 name: Discovery Catalog Sync
 
+# Keep source validation reviewable even when an individual Production recipe
+# becomes unavailable; the remaining module cards continue to work independently.
+
 on:
   push:
     branches: [main]
