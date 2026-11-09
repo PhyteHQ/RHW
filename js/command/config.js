@@ -21,7 +21,7 @@ const DASHBOARD_CONFIG = Object.freeze({
   roles: Object.freeze({
     maintenance: ['basic alloy', 'food rations', 'consumer goods'],
     export: ['multi-mode focusing chamber', 'multi-mode focusing chambers', 'superstructure systems', 'reactor systems'],
-    reserve: ['gold', 'wildcat gold', 'niobium', 'prototype components'],
+    reserve: ['gold', 'wildcat gold', 'niobium', 'prototype components', 'mox'],
     byproduct: ['toxic waste'],
     procurement: ['ablative armor plating', 'avionics systems', 'energy field equipment', 'exotic systems', 'gold ore', 'hull panels', 'hydrocarbons', 'interior systems', 'prototype components', 'propulsion systems', 'mox', 'uranium', 'super alloy', 'titanium', 'industrial materials', 'niobium ore', 'scrap metal', 'military salvage'],
     shipyard: ['avionics systems', 'interior systems', 'propulsion systems', 'superstructure systems', 'reactor systems', 'exotic systems'],
@@ -133,7 +133,8 @@ const DASHBOARD_CONFIG = Object.freeze({
   reserveCards: Object.freeze([
     Object.freeze({ key: 'gold', label: 'Gold Supply', members: ['Gold', 'Wildcat Gold'], recipeId: 'recipe_gold_advanced', input: 'Gold Ore' }),
     Object.freeze({ key: 'niobium', label: 'Niobium', members: ['Niobium'], recipeId: 'recipe_niobium_advanced', input: 'Niobium Ore' }),
-    Object.freeze({ key: 'prototype components', label: 'Prototype Components', members: ['Prototype Components'], recipeId: 'recipe_milsal', input: 'Military Salvage' })
+    Object.freeze({ key: 'prototype components', label: 'Prototype Components', members: ['Prototype Components'], recipeId: 'recipe_milsal', input: 'Military Salvage' }),
+    Object.freeze({ key: 'mox', label: 'MOX', members: ['MOX'], recipeId: 'recipe_mox_fuel_basic', input: 'Toxic Waste' })
   ]),
   exportOrder: ['Multi-Mode Focusing Chamber', 'Reactor Systems', 'Superstructure Systems'],
   productionModules: Object.freeze([
@@ -162,7 +163,7 @@ const DASHBOARD_CONFIG = Object.freeze({
   barMaxFallbacks: Object.freeze({
     'basic alloy': 45000, 'food rations': 45000, 'consumer goods': 45000,
     'reactor systems': 1000, 'superstructure systems': 1000, 'multi-mode focusing chamber': 2000,
-    'gold': 60000, 'niobium': 30000, 'prototype components': 25000,
+    'gold': 60000, 'niobium': 30000, 'prototype components': 25000, 'mox': 10000,
     'gold ore': 50000, 'niobium ore': 50000, 'scrap metal': 30000, 'toxic waste': 50000,
     'wildcat gold': 30000
   })

@@ -34,7 +34,7 @@ def main():
           items=[stock('Basic Alloy',43675),stock('Consumer Goods',32568),stock('Food Rations',33277),
             stock('Gold',0),stock('Wildcat Gold',8600),stock('Niobium',9519),stock('Prototype Components',40),
             stock('Gold Ore',0),stock('Niobium Ore',0),stock('Military Salvage',250),stock('Scrap Metal',7978),
-            stock('Multi-Mode Focusing Chamber',50),stock('Reactor Systems',564),stock('Superstructure Systems',523),stock('Toxic Waste',10200),
+            stock('Multi-Mode Focusing Chamber',50),stock('Reactor Systems',564),stock('Superstructure Systems',523),stock('Toxic Waste',10200),stock('MOX',8381),stock('Uranium',100),
             {nickname:'medium_miner_package',name:'Archon Modular Miner',quantity:2},{name:'Archon Design Schematics',quantity:99},
             {nickname:'dsy_cargobarge_1_package',name:'Barge',quantity:3},stock('Crew',2400),stock('Scientists',500)];
           rhwBase={cargospace:1000000,money:50000000};lastLoaded=new Date();dataIsStale=false;lastSyncError='';
@@ -47,13 +47,13 @@ def main():
           ships:[...shipStockList.querySelectorAll(':scope>.inventory-ship-row button')].map(n=>n.textContent),
           phantom:[...v40PriorityList.querySelectorAll('strong')].some(n=>n.textContent.startsWith('EXPORT // GOLD')||n.textContent.startsWith('SEIZED // WILDCAT')),
           exports:[...exportList.querySelectorAll('[data-export-commodity]')].map(n=>n.dataset.exportCommodity)}))()""")
-        assert state['counts'] == [3, 3, 3], state
-        assert state['stocks'] == ['8.600', '9.519', '40'], state
+        assert state['counts'] == [3, 4, 3], state
+        assert state['stocks'] == ['8.600', '9.519', '40', '8.381'], state
         assert 'Wildcat Gold' in state['gold'] and 'NO BATCH READY' in state['gold'], state
         assert not state['phantom'] and state['bars'] == 0, state
-        assert sorted(state['inputs']) == sorted(['Gold Ore', 'Niobium Ore', 'Military Salvage', 'Scrap Metal']), state
+        assert sorted(state['inputs']) == sorted(['Gold Ore', 'Niobium Ore', 'Military Salvage', 'Scrap Metal', 'Toxic Waste']), state
         assert len(state['ships']) == 2 and any('Archon' in n and '2' in n for n in state['ships']), state
-        assert not any(n in state['exports'] for n in ['Gold', 'Wildcat Gold', 'Niobium', 'Prototype Components']), state
+        assert not any(n in state['exports'] for n in ['Gold', 'Wildcat Gold', 'Niobium', 'Prototype Components', 'MOX']), state
         out = Path(__file__).resolve().parents[1] / 'artifacts/interface'
         out.mkdir(parents=True, exist_ok=True)
         for width in [360, 390, 820, 1440]:
@@ -73,7 +73,7 @@ def main():
             (out / f'inventory-reserves-{width}.png').write_bytes(base64.b64decode(cdp.call('Page.captureScreenshot', {'format': 'png'})['data']))
         # Raw manifest entries stay separate, including a real zero Gold stock.
         base.ev(cdp, "(()=>{inventoryManifestTab.click();roleFilter.value='reserve';roleFilter.dispatchEvent(new Event('change'));return true;})()")
-        assert base.ev(cdp, "itemsBody.querySelectorAll('tr').length===4 && [...itemsBody.querySelectorAll('tr')].some(n=>n.textContent.includes('Wildcat Gold'))")
+        assert base.ev(cdp, "itemsBody.querySelectorAll('tr').length===5 && [...itemsBody.querySelectorAll('tr')].some(n=>n.textContent.includes('Wildcat Gold'))")
         base.ev(cdp, "(()=>{inventoryStatusTab.click();window.inventoryBefore=JSON.stringify(items);reserveList.querySelector('button[data-inventory-material]').click();return true;})()")
         wait(cdp, "!!document.querySelector('.inventory-uses-dialog[open]')")
         base.ev(cdp, "document.querySelector('[data-inventory-choice=\"recipe_weapon_part_focusing_chamber\"]').click()")
@@ -82,6 +82,13 @@ def main():
         base.ev(cdp, '(()=>{RHWV4.navigate(\'command\',\'inventory\');reserveList.querySelector(\'[data-input-name="Military Salvage"] button\').click();return true;})()')
         wait(cdp, "!!document.querySelector('.inventory-target[data-production-recipe=\"recipe_milsal\"]')")
         assert base.ev(cdp, "document.querySelector('.inventory-target .production-cycle-time').textContent.includes('2h 5m') && JSON.stringify(items)===inventoryBefore")
+        # MOX reserve inputs, navigation and calculator stay on the same variant.
+        base.ev(cdp, "(()=>{const s=document.querySelector('[data-production-mox]');s.value='recipe_mox_fuel_advanced';s.dispatchEvent(new Event('change',{bubbles:true}));RHWV4.navigate('command','inventory');return true;})()")
+        assert base.ev(cdp, "(()=>{const r=reserveList.lastElementChild;return r.dataset.inventoryRecipe==='recipe_mox_fuel_advanced'&&r.textContent.includes('INTERNAL USE')&&r.querySelectorAll('[data-input-name]').length===2&&!!r.querySelector('[data-input-name=\"Uranium\"]')})()")
+        base.ev(cdp, "reserveList.lastElementChild.querySelector('.inventory-production-link').click()")
+        wait(cdp, "!!document.querySelector('.inventory-target[data-production-recipe=\"recipe_mox_fuel_advanced\"]')")
+        assert base.ev(cdp, "JSON.stringify(items)===inventoryBefore&&RHWV4.productionPricing.findRecipeForLabel('MOX').id==='recipe_mox_fuel_advanced'")
+        base.ev(cdp, "(()=>{const s=document.querySelector('[data-production-mox]');s.value='recipe_mox_fuel_basic';s.dispatchEvent(new Event('change',{bubbles:true}));return true})()")
         assert base.ev(cdp, "!document.querySelector('[data-production-plan],[data-production-hull-plan],#productionPlanSummary') && !RHWV4.productionPlan && !RHWV4.productionScenario")
         # A stock click opens the matching ship preview without any plan controls.
         base.ev(cdp, '(()=>{RHWV4.navigate(\'command\',\'inventory\');shipStockList.querySelector(\'[data-inventory-hull="barge"]\').click();return true;})()')
@@ -102,7 +109,7 @@ def main():
           rebuildItemCaches();renderAll();RHWV4.navigate('command','production');return true;
         })()""")
         assert base.ev(cdp, "findCommodity('Wildcat Gold').missing && Number.isFinite(analyzeRecipe(RHWV4.production.recipes().find(r=>r.recipeId==='ship_part_superstructure')).possibleCycles) && !document.querySelector('[data-production-recipe=\"ship_part_superstructure\"]').textContent.includes('INPUT STOCK UNKNOWN')"), 'Synthetic alternate rows must not invalidate reported Gold'
-        print('Inventory browser passed: 3–3–3, pooled Gold, attached inputs, exact ship counts, raw manifest, view-only navigation, independent recipe capacity, unknown stock and mobile/desktop layouts.')
+        print('Inventory browser passed: 3–4–3, internal MOX and variant-aware input links, pooled Gold, exact ship counts, view-only navigation, unknown stock and responsive layouts.')
     finally:
         if cdp:
             cdp.close()

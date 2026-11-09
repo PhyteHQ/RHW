@@ -2,7 +2,7 @@
 
 The Status Board has three columns: Facility Maintenance (Basic Alloy, Consumer
 Goods, Food Rations), Production Reserves (Gold Supply, Niobium, Prototype
-Components), and Export Inventory (Chambers, Reactors, Superstructures). Waste
+Components, MOX), and Export Inventory (Chambers, Reactors, Superstructures). Waste
 and a compact Ship Stock list follow. Tablets stack the export panel below the
 first two columns; phones use the same reading order in one column.
 
@@ -24,6 +24,12 @@ recipe. It does not add ore/salvage to finished stock, add another progress
 bar, or claim the factory is active. Finished material remains usable when its
 raw input runs out. The raw feedstock classifier remains available to imports
 and stock checks, but has no standalone inventory panel.
+
+MOX is an internal reserve, never an ordinary export. Its stock link and input
+lines follow the selected production variant: Toxic Waste for Basic, plus
+Uranium for Advanced. Each input line describes that input's batches, without
+claiming the other inputs or Scientists are available. Recipe selection never
+changes the API stock or market configuration.
 
 PC reclamation is a seventh recipe card. The verified recipe consumes 250
 Military Salvage for 25 PC and 450 Scrap Metal, requiring 100 Scientists.

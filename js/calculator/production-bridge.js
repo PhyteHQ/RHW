@@ -127,13 +127,13 @@
       if (!title) return;
       const label = title.textContent.trim();
       if (!findRecipeForLabel(label)) return;
-      const host = card.querySelector('.production-card-head > div') || title.parentElement;
+      const host = card.querySelector('.production-card-actions') || title.parentElement;
       if (!host) return;
       const button = document.createElement('button');
       button.type = 'button';
       button.className = 'production-calc-button';
       button.dataset.productionCostTarget = label;
-      button.textContent = 'COST / CALCULATE';
+      button.textContent = 'CALCULATOR';
       button.title = `Open ${label} in the RHW Item Calculator`;
       button.addEventListener('click', event => {
         event.preventDefault();

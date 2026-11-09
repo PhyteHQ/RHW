@@ -6,8 +6,8 @@
   if (!core || typeof PRODUCTION_MODULES === 'undefined') return;
   const plans = new Map();
   const moxRecipes = Object.freeze([
-    Object.freeze({ recipeId: 'recipe_mox_fuel_basic', label: 'BASIC · WASTE ONLY' }),
-    Object.freeze({ recipeId: 'recipe_mox_fuel_advanced', label: 'ADVANCED · + URANIUM' })
+    Object.freeze({ recipeId: 'recipe_mox_fuel_basic', label: 'BASIC · WASTE ONLY', shortLabel: 'BASIC' }),
+    Object.freeze({ recipeId: 'recipe_mox_fuel_advanced', label: 'ADVANCED · + URANIUM', shortLabel: 'ADVANCED' })
   ]);
   const moxKey = app.config.storageKeys?.moxRecipe;
   let moxRecipe = moxKey ? app.store?.get(moxKey, moxRecipes[0].recipeId) : moxRecipes[0].recipeId;

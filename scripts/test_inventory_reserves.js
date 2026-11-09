@@ -28,7 +28,7 @@ ctx.__RHW_RECIPE_CATALOG__ = JSON.parse(zlib.gunzipSync(Buffer.from(ctx.__RHW_RE
   model.input('Niobium Ore','recipe_niobium_advanced');
   model.input('Military Salvage','recipe_milsal');
   assert.deepEqual(Array.from(app.production.recipes(), r=>r.product),['Multi-Mode Focusing Chamber','Reactor Systems','Superstructure Systems','Basic Alloy','Gold','Niobium','Prototype Components','MOX'], 'Reading inputs before the first production render must never overwrite the cached product identities');
-  ctx.items = [raw('Gold',0),raw('Wildcat Gold',8600),raw('Niobium',9519),raw('Prototype Components',40),raw('Gold Ore',0),raw('Military Salvage',250)];
+  ctx.items = [raw('Gold',0),raw('Wildcat Gold',8600),raw('Niobium',9519),raw('Prototype Components',40),raw('Gold Ore',0),raw('Military Salvage',250),raw('MOX',8381),raw('Toxic Waste',17550),raw('Uranium',100)];
   const untouched = JSON.stringify(ctx.items);
   assert.equal(model.reserve('Gold').stock, 8600);
   assert.equal(model.reserve('Wildcat Gold').stock, 8600);
@@ -38,6 +38,17 @@ ctx.__RHW_RECIPE_CATALOG__ = JSON.parse(zlib.gunzipSync(Buffer.from(ctx.__RHW_RE
   assert.equal(model.input('Military Salvage','recipe_milsal').cycles,1);
   assert.equal(model.reserve('Prototype Components').required,10);
   assert.equal(model.reserve('Niobium').required,25, 'Thresholds use the largest single recipe input without a manual plan');
+  assert.equal(model.reserve('MOX').stock,8381);
+  assert.ok(model.reserve('MOX').required>0,'Internal MOX coverage is based on consuming production recipes');
+  assert.equal(model.reserve('MOX').recipeId,'recipe_mox_fuel_basic');
+  assert.deepEqual(Array.from(model.reserve('MOX').inputs),['Toxic Waste']);
+  assert.equal(model.input('Toxic Waste','recipe_mox_fuel_basic').cycles,17);
+  assert.equal(app.production.selectMoxRecipe('recipe_mox_fuel_advanced'),true);
+  assert.equal(model.definition('MOX').recipeId,'recipe_mox_fuel_advanced','Inventory links follow the selected producing recipe');
+  assert.deepEqual(Array.from(model.reserve('MOX').inputs),['Toxic Waste','Uranium']);
+  assert.equal(model.input('Uranium','recipe_mox_fuel_advanced').cycles,1);
+  assert.equal(model.reserve('MOX').stock,8381,'Changing recipe never changes real product stock');
+  app.production.selectMoxRecipe('recipe_mox_fuel_basic');
   assert.equal(JSON.stringify(ctx.items),untouched,'Inventory analysis never changes real stock');
   ctx.items.find(i=>i.name==='Wildcat Gold').quantity=260;
   assert.equal(model.reserve('Gold').state,'low','The warning means only one full next-input round is covered');
@@ -61,6 +72,6 @@ ctx.__RHW_RECIPE_CATALOG__ = JSON.parse(zlib.gunzipSync(Buffer.from(ctx.__RHW_RE
   assert.equal(app.shipyard.selectHull('barge'), true);
   assert.equal(app.shipyard.selectedHull().key, 'barge');
   assert.equal(JSON.stringify(ctx.items), stockBefore, 'Opening a hull only changes the preview');
-  assert.equal(vm.runInContext("DASHBOARD_CONFIG.roles.export.some(n=>['gold','niobium','prototype components','wildcat gold'].includes(n))",ctx),false);
-  console.log('Inventory reserves passed: pooled Gold, unknown stock, single-recipe thresholds, raw inputs, exact ship stock, internal roles and navigation without inventory changes.');
+  assert.equal(vm.runInContext("DASHBOARD_CONFIG.roles.export.some(n=>['gold','niobium','prototype components','wildcat gold','mox'].includes(n))",ctx),false);
+  console.log('Inventory reserves passed: pooled Gold, internal MOX with selected-recipe inputs, unknown stock, single-recipe thresholds, exact ship stock and view-only navigation.');
 })().catch(error=>{console.error(error);process.exit(1);});

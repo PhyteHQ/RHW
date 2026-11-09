@@ -20,6 +20,21 @@ Verification includes dependency-free model/cache checks and the packaged
 browser suite: isolated recipe failures, both MOX variants, exact costing,
 restock handoff, responsive controls and stock restoration after offline reload.
 
+## Compact production and MOX inventory follow-up
+
+- MOX is the fourth internal Production Reserve, with inputs and navigation
+  following its saved Basic/Advanced recipe. Its status uses consuming recipes,
+  never a sales target.
+- Production uses four columns from 1280 px, two on smaller desktop/tablet
+  windows and one on phones. Stable order: three export products plus Basic
+  Alloy, then Gold, Niobium, Prototype Components and MOX.
+- Equal-height collapsed cards show role/status, product, real stock, material
+  coverage and limiting input. Details contain batch quantities, reference
+  times, input stocks, byproducts and prerequisites. Details and Calculator
+  share one action row; the compact MOX selector stays visible in the header.
+- Tests cover the MOX input/navigation handoff and responsive geometry,
+  including four/two/one columns, consistent heights and disclosure retention.
+
 Source review: the accessible calculator mirror was last updated in August
 and differs from the verified 2 November catalog. It was compared and rejected
 as a catalog replacement. Basic/Advanced MOX amounts agree. The primary source

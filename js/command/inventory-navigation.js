@@ -16,7 +16,10 @@
       card.classList.remove('production-card-collapsed'); card.classList.add('production-card-expanded');
       const button = card.querySelector('.production-card-toggle');
       button?.setAttribute('aria-expanded', 'true');
-      if (button) button.querySelector('span').textContent = 'HIDE MATERIALS';
+      if (button) {
+        button.querySelector('span').textContent = 'CLOSE DETAILS';
+        button.setAttribute('aria-label', `Hide details for ${card.querySelector('.production-title').textContent}`);
+      }
       card.tabIndex = -1; card.focus({ preventScroll: true });
       card.scrollIntoView({ block: 'start', behavior: 'instant' });
       clearTimeout(highlightTimer);

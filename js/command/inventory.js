@@ -60,7 +60,8 @@ function renderOverviewTelemetryState(message, state = 'low') {
 
 function renderOverviewRow({ state, role, name, item = null, detail = '', quantityValue = 0, progress = '', extraClass = '', breakdown = '', input = '', actions = '' }) {
   const reference = overviewStockReference(item, role);
-  const recipeId = DASHBOARD_CONFIG.productionModules.find(module => keyFromName(module.product) === keyFromName(name))?.recipeId;
+  const modules = globalThis.RHWV4?.production?.modules?.() || DASHBOARD_CONFIG.productionModules;
+  const recipeId = modules.find(module => keyFromName(module.product) === keyFromName(name))?.recipeId;
   const navigation = recipeId ? `data-inventory-recipe="${escapeHTML(recipeId)}"` : role === 'reserve' || role === 'byproduct' ? `data-inventory-material="${escapeHTML(item?.name || name)}"` : '';
   const title = navigation ? `<button type="button" class="inventory-production-link" ${navigation}>${escapeHTML(name)}</button>` : `<strong>${escapeHTML(name)}</strong>`;
   const trade = role === 'export' && typeof exportRouteButton === 'function' ? exportRouteButton(name)
@@ -180,7 +181,8 @@ function renderOverview() {
     const progress = reserve.stock === null ? '' : renderProgress(reserve.item, { role: 'reserve', stateOverride: reserve.state, showApiReserve: false });
     const actions = spec.key === 'prototype components' ? '<button type="button" class="rhw-supply-button rhw-supply-icon" data-surplus-commodity="Prototype Components" aria-label="Check surplus export buyers for Prototype Components" title="Check surplus buyers · Internal production first"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M14 4h6v6M20 4l-9 9M10 5H4v15h15v-6"/></svg></button>' : '';
     return renderOverviewRow({ role: 'reserve', name: spec.label, item: reserve.item, state: reserve.state,
-      quantityValue: reserve.stock, detail, breakdown, progress, input: inventoryInputRow(spec.input, spec.recipeId), actions });
+      quantityValue: reserve.stock, detail, breakdown, progress,
+      input: (reserve.inputs || [reserve.input]).map(name => inventoryInputRow(name, reserve.recipeId)).join(''), actions });
   }).join('');
   renderShipStock();
 }

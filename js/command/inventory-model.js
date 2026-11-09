@@ -5,7 +5,12 @@
   const definitions = DASHBOARD_CONFIG.reserveCards;
   function definition(name) {
     const key = keyFromName(name);
-    return definitions.find(d => d.key === key || d.members.some(n => keyFromName(n) === key));
+    const spec = definitions.find(d => d.key === key || d.members.some(n => keyFromName(n) === key));
+    if (spec?.key !== 'mox') return spec;
+    const module = app.production?.modules().find(entry => entry.product === 'MOX');
+    const batch = module && app.production.requirements(module);
+    return { ...spec, recipeId: module?.recipeId || spec.recipeId,
+      inputs: batch ? batch.ingredients.map(([ingredient]) => ingredient) : [spec.input] };
   }
   function record(name) {
     const item = findCommodity(name);
@@ -42,7 +47,7 @@
   }
   function input(name, recipeId) {
     const value = record(name);
-    const module = DASHBOARD_CONFIG.productionModules.find(entry => entry.recipeId === recipeId);
+    const module = (app.production?.modules() || DASHBOARD_CONFIG.productionModules).find(entry => entry.recipeId === recipeId);
     const recipe = module ? app.production?.requirements(module) : null;
     const required = recipe?.ingredients.find(([n]) => keyFromName(n) === keyFromName(name))?.[1] ?? null;
     return { ...value, required, cycles: value.stock !== null && required > 0 ? Math.floor(value.stock / required) : null };

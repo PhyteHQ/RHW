@@ -349,7 +349,8 @@ function ensureProductionModuleTools() {
       const expanded = card.classList.toggle('production-card-expanded');
       card.classList.toggle('production-card-collapsed', !expanded);
       button.setAttribute('aria-expanded', expanded ? 'true' : 'false');
-      button.querySelector('span').textContent = expanded ? 'HIDE MATERIALS' : 'SHOW MATERIALS';
+      button.querySelector('span').textContent = expanded ? 'CLOSE DETAILS' : 'DETAILS';
+      button.setAttribute('aria-label', `${expanded ? 'Hide' : 'Show'} details for ${card.querySelector('.production-title').textContent}`);
       if (expanded) productionExpandedModules.add(key);
       else productionExpandedModules.delete(key);
     });
@@ -375,7 +376,7 @@ function renderProductionModules() {
 
   els.productionGrid.innerHTML = model.modules().map((module, index) => {
     const recipe = model.requirements(module);
-    const variant = module.product === 'MOX' ? `<label class="production-variant"><span>MOX RECIPE</span><select data-production-mox aria-label="MOX recipe">${model.moxRecipes.map(option => `<option value="${option.recipeId}"${option.recipeId === module.recipeId ? ' selected' : ''}>${option.label}</option>`).join('')}</select></label>` : '';
+    const variant = module.product === 'MOX' ? `<label class="production-variant"><span class="visually-hidden">MOX recipe</span><select data-production-mox aria-label="MOX recipe" title="MOX recipe: Basic uses Toxic Waste; Advanced also uses Uranium">${model.moxRecipes.map(option => `<option value="${option.recipeId}"${option.recipeId === module.recipeId ? ' selected' : ''}>${option.shortLabel}</option>`).join('')}</select></label>` : '';
     if (!recipe) return `<div class="production-card waiting production-unavailable" data-production-recipe="${escapeHTML(module.recipeId)}" data-production-state="waiting" data-production-product="${escapeHTML(normalize(module.product))}"><div class="production-kicker">MODULE-${String(index + 1).padStart(2, '0')}</div><div class="production-title">${escapeHTML(module.product)}</div>${variant}<strong>RECIPE UNAVAILABLE</strong><p>Material coverage is unknown. Other modules remain available.</p></div>`;
     const analysis = analyzeRecipe(recipe);
     const cycle = window.RHWV4.production.cycleSeconds(recipe.recipeId);
@@ -411,25 +412,29 @@ function renderProductionModules() {
     const materialId = `production-materials-${recipe.recipeId}`;
     const inputStatus = { ok: 'INPUTS READY', low: 'INPUTS LOW', critical: 'INPUTS MISSING', waiting: 'INPUTS UNKNOWN' }[analysis.cardState];
 
+    const role = DASHBOARD_CONFIG.roles.export.includes(keyFromName(module.product)) ? 'EXPORT'
+      : DASHBOARD_CONFIG.roles.maintenance.includes(keyFromName(module.product)) ? 'FACILITY' : 'INTERNAL';
+
     return `<div class="production-card ${analysis.cardState}${collapsed ? ' production-card-collapsed' : ' production-card-expanded'}" data-production-recipe="${escapeHTML(recipe.recipeId)}" data-production-state="${analysis.cardState}" data-production-product="${escapeHTML(productKey)}">
               <div class="production-card-head">
-                <div>
-                  <div class="production-kicker">MODULE-${String(index + 1).padStart(2, '0')}</div>
-                  <div class="production-title">${escapeHTML(displayRecipeName(recipe.product))}</div>
+                <div class="production-card-meta">
+                  <span class="production-kicker">${role}</span>
                   ${variant}
-                  <div class="footnote production-batch-time">${number(recipe.output)} / BATCH <span class="production-cycle-time">${cycle === null ? 'CYCLE TIME UNKNOWN' : `~${productionDuration(cycle)} / CYCLE`}</span></div>
+                  <span class="module-state ${analysis.cardState}" title="Standalone input coverage, before competition or incoming production">${inputStatus}</span>
                 </div>
-                <div class="production-card-controls"><span class="module-state ${analysis.cardState}" title="Standalone input coverage, before competition or incoming production">${inputStatus}</span></div>
+                <div class="production-title">${escapeHTML(displayRecipeName(recipe.product))}</div>
               </div>
               <div class="production-stats">
                 <div class="production-stat production-stock-primary"><small>IN STOCK</small><strong>${number(analysis.productStock)}</strong></div>
-                <div class="production-stat production-capacity"><small>MATERIAL COVERAGE</small><strong>${number(analysis.possibleOutput)}</strong><span class="production-runtime">${runtime === null ? 'TIME UNKNOWN' : `~${productionDuration(runtime)}`}</span><span class="production-capacity-context">OUTPUT FROM CURRENT INPUTS</span></div>
+                <div class="production-stat production-capacity" title="Output covered by current materials; prerequisites and module activity are not checked"><small>MATERIAL COVERAGE</small><strong>${number(analysis.possibleOutput)}</strong></div>
               </div>
-              <div class="production-limit"><span>LIMITED BY</span><strong>${escapeHTML(analysis.bottleneck?.displayName || 'Input stock unknown')}</strong></div>
-              ${analysis.possibleCycles === null ? '<div class="production-stock-note">INPUT STOCK UNKNOWN</div>' : ''}
-              <button type="button" class="production-card-toggle" aria-controls="${escapeHTML(materialId)}" aria-expanded="${!collapsed}"><span>${collapsed ? 'SHOW MATERIALS' : 'HIDE MATERIALS'}</span></button>
+              <div class="production-limit" title="${escapeHTML(analysis.bottleneck?.displayName || 'Input stock unknown')}"><span>LIMITED BY</span><strong>${escapeHTML(analysis.bottleneck?.displayName || 'Input stock unknown')}</strong></div>
+              <div class="production-card-actions"><button type="button" class="production-card-toggle" aria-label="${collapsed ? 'Show' : 'Hide'} details for ${escapeHTML(displayRecipeName(recipe.product))}" aria-controls="${escapeHTML(materialId)}" aria-expanded="${!collapsed}"><span>${collapsed ? 'DETAILS' : 'CLOSE DETAILS'}</span></button></div>
               <div class="production-materials" id="${escapeHTML(materialId)}">
+              <div class="footnote production-batch-time">${number(recipe.output)} / BATCH <span class="production-cycle-time">${cycle === null ? 'CYCLE TIME UNKNOWN' : `~${productionDuration(cycle)} / CYCLE`}</span></div>
               <div class="production-coverage-summary"><span>INPUT DETAILS</span><strong>MATERIAL CYCLES ${number(analysis.possibleCycles)} · OUTPUT ${number(analysis.possibleOutput)}</strong><small>Materials only; prerequisites and module activity are not checked. Other modules may use the same stock.</small></div>
+              <span class="production-runtime">${runtime === null ? 'TIME UNKNOWN' : `~${productionDuration(runtime)}`} · AT REFERENCE CYCLE TIME</span>
+              ${analysis.possibleCycles === null ? '<div class="production-stock-note">INPUT STOCK UNKNOWN</div>' : ''}
               ${nextGapText}
               <div class="recipe-column-head" aria-hidden="true">
                 <span>Material</span><span>Required / Cycle</span><span>Current Stock</span>

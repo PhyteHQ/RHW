@@ -313,10 +313,21 @@ def main():
           return {exact,basic,isolated};
         })()""")
         assert all(mox_and_failure.values()), mox_and_failure
-        for width in [1366,390,360]:
+        for width in [1366,1024,390,360]:
             cdp.call('Emulation.setDeviceMetricsOverride', {'width':width,'height':1100,'deviceScaleFactor':1,'mobile':width<760})
             base.ev(cdp, 'renderProductionModules()')
             assert base.ev(cdp, 'document.documentElement.scrollWidth<=innerWidth+1'), width
+            overview = base.ev(cdp, """(()=>{
+              const cards=[...productionGrid.querySelectorAll('.production-card')];
+              const heights=cards.map(c=>c.getBoundingClientRect().height);
+              return {columns:getComputedStyle(productionGrid).gridTemplateColumns.split(' ').length,
+                height:Math.max(...heights),even:Math.max(...heights)-Math.min(...heights)<2,
+                actions:cards.every(c=>c.querySelectorAll('.production-card-actions>button').length===2),
+                order:cards.map(c=>c.querySelector('.production-title').textContent)};
+            })()""")
+            assert overview['columns'] == (4 if width>=1280 else 2 if width>760 else 1), (width, overview)
+            assert overview['height']<320 and overview['even'] and overview['actions'], (width, overview)
+            assert overview['order']==['Multi-Mode Focusing Chamber','Reactor Systems','Superstructure Systems','Basic Alloy','Gold','Niobium','Prototype Components','MOX'], overview
             disclosure = base.ev(cdp, """(()=>{
               const card=productionGrid.querySelector('.production-card'),toggle=card.querySelector('.production-card-toggle');
               if(toggle.getAttribute('aria-expanded')==='true')toggle.click();
