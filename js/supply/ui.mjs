@@ -490,6 +490,8 @@ function mount() {
   $('supplySource').insertAdjacentHTML('beforebegin', '<section id="supplyMapState" class="supply-map-state" aria-label="Route map"><div><strong id="supplyMapSummary"></strong><p id="supplyMapNote" role="status" aria-live="polite"></p></div><div class="supply-actions"><button type="button" id="supplyMapApply" hidden>RECALCULATE WITH UPDATED MAP</button><button type="button" id="supplyMapRefresh">UPDATE MAP</button></div></section>');
   $('supplyClose').addEventListener('click', () => dialog.close());
   dialog.addEventListener('close', () => {
+    // A queued close event from the previous opening must not cancel a new search.
+    if (dialog.open) return;
     stop();
     // Wait for the native modal's focus/inert restoration before restoring the
     // context button (which may have been replaced by a telemetry render).
