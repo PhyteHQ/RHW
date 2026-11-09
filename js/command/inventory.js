@@ -111,7 +111,7 @@ function overviewDetail(item, state, role) {
   }
   if (role === 'reserve') {
     const reserve = window.RHWV4?.inventoryModel?.reserve(commodityKey(item));
-    return reserve?.required > 0 ? `NEXT PLANNED INPUTS · ${number(reserve.required)}` : 'AVAILABLE FOR PRODUCTION';
+    return reserve?.required > 0 ? `LARGEST RECIPE INPUT · ${number(reserve.required)}` : 'AVAILABLE FOR PRODUCTION';
   }
   if (role === 'confiscated') {
     if (state !== 'ok') return state === 'low' ? 'REVIEW REQUIRED' : 'VAULT OVERFLOW';
@@ -174,8 +174,8 @@ function renderOverview() {
   els.reserveList.innerHTML = DASHBOARD_CONFIG.reserveCards.map(spec => {
     const reserve = window.RHWV4.inventoryModel.reserve(spec.key);
     const breakdown = spec.members.length > 1 ? `<div class="inventory-pool-parts">${reserve.parts.map(part => `<span><span>${escapeHTML(part.name)}</span><strong>${number(reserve.stock === null ? part.stock : part.stock ?? 0)}</strong></span>`).join('')}</div>` : '';
-    const detail = reserve.required === null ? 'PLAN REQUIREMENTS UNKNOWN' : reserve.required > 0
-      ? `NEXT PLANNED INPUTS · ${number(reserve.required)}` : 'AVAILABLE FOR PRODUCTION';
+    const detail = reserve.required === null ? 'RECIPE REQUIREMENTS UNKNOWN' : reserve.required > 0
+      ? `LARGEST RECIPE INPUT · ${number(reserve.required)}` : 'AVAILABLE FOR PRODUCTION';
     const progress = reserve.stock === null ? '' : renderProgress(reserve.item, { role: 'reserve', stateOverride: reserve.state, showApiReserve: false });
     const actions = spec.key === 'prototype components' ? '<button type="button" class="rhw-supply-button rhw-supply-icon" data-surplus-commodity="Prototype Components" aria-label="Check surplus export buyers for Prototype Components" title="Check surplus buyers · Internal production first"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M14 4h6v6M20 4l-9 9M10 5H4v15h15v-6"/></svg></button>' : '';
     return renderOverviewRow({ role: 'reserve', name: spec.label, item: reserve.item, state: reserve.state,

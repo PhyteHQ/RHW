@@ -12,15 +12,10 @@ An absent alternative contributes zero only when another pool member is
 reported. Malformed reported stock, or a wholly unreported pool, stays unknown.
 Neither the pool nor role assignment modifies API stock, prices or reserves.
 
-Reserve status checks this material against the sum of the next input batches
-of the manually selected jobs. Below one such input round is critical; enough
-for one but not two rounds is low. With no selected consumer, no export-style
-stock threshold is imposed. Unknown plan requirements/stock remain unknown.
-This describes material coverage only, not complete production capacity or a
-time horizon: other ingredients, factory timing and byproduct replenishment
-still belong to the detailed production simulation. Existing export stock
-thresholds no longer classify Gold, WCG, Niobium or PC. Priority actions group
-Gold / WCG once and label them as internal resources.
+Reserve status compares stock with the largest single recipe-batch input
+among the displayed recipes. Below one batch is critical; one but fewer than
+two batches is low. These are independent reference thresholds, not selected
+jobs or an export target. Unknown recipe data or stock stays unknown.
 
 Gold Ore, Niobium Ore and Military Salvage appear as INPUT lines on their
 respective reserve cards; Scrap Metal appears under Basic Alloy. Each input
@@ -30,14 +25,11 @@ bar, or claim the factory is active. Finished material remains usable when its
 raw input runs out. The raw feedstock classifier remains available to imports
 and stock checks, but has no standalone inventory panel.
 
-PC reclamation is a seventh production card and an optional Advanced Materials
-Complex job in the manual staffing/production plan. It starts unplanned, since
-the page cannot observe whether the new module has actually been installed or
-started. The verified recipe consumes 250 Military Salvage for 25 PC and 450
-Scrap Metal, reserving 100 Scientists. It has no BMM input discount. General
-Military Salvage volume is 1 (the checked public commodity snapshot); hauler
-overrides must not shorten factory timing. The reference cycle is 125 minutes.
-Existing always-on Chambers / Basic Alloy and refinery/shipyard choices remain.
+PC reclamation is a seventh recipe card. The verified recipe consumes 250
+Military Salvage for 25 PC and 450 Scrap Metal, requiring 100 Scientists.
+It has no BMM input discount. General Military Salvage volume is 1; the
+reference cycle is 125 minutes. The page does not infer module installation
+or activation.
 
 Ordinary exports contain only the three export products and waste. CHECK
 SURPLUS on PC opts that material into the current Trade Desk dialog, explains
@@ -57,10 +49,8 @@ quantities cannot become finished hulls. Known positive stocks lead, and other
 known-zero/unreported hulls are collapsed with their actual zero/unknown value.
 Unknown stocks never become an assumed zero.
 
-Opening a hull selects its Shipyard preview without changing an already
-planned hull. Staffing schema v4 preserves explicit pinned hull recipes while
-migrating older follow-hull selections. New production activation remains an
-explicit PLAN action. All data remain local planning/display choices.
+Opening a hull selects its Shipyard preview. There are no manual factory or
+ship planning controls, saved jobs or shared production forecasts.
 
 Checks: `node scripts/test_inventory_reserves.js`,
 `node scripts/test_production_plan.js`,

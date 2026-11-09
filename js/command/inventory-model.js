@@ -21,11 +21,16 @@
     const known = parts.some(p => p.stock !== null) && parts.every(p => !p.item || p.item.missing || p.stock !== null);
     const stock = known ? parts.reduce((sum, p) => sum + (p.stock ?? 0), 0) : null;
     let required = null;
-    if (app.operationsCore?.state.catalog && app.productionScenario && app.productionPlan) {
+    const batches = app.operationsCore?.state.catalog ? app.production?.recipes() || [] : [];
+    if (batches.length) {
       required = 0;
-      for (const row of app.productionScenario.analyze().rows.filter(r => r.enabled)) {
-        const batch = app.productionPlan.batch(row);
-        for (const group of batch?.inputs || []) if (group.names.some(n => spec.members.some(member => keyFromName(member) === keyFromName(n)))) required += group.qty;
+      for (const batch of batches) {
+        for (const [name, quantity] of batch.ingredients) {
+          const names = batch.inputOptions[name] || [name];
+          if (names.some(n => spec.members.some(member => keyFromName(member) === keyFromName(n)))) {
+            required = Math.max(required, quantity);
+          }
+        }
       }
     }
     const state = stock === null || required === null ? 'waiting' : required === 0 ? 'ok'

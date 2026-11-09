@@ -70,13 +70,9 @@
     return { hull, snapshot, recipeReady: true, recipe: needs.recipe, materials, prerequisites, buildable, nextHull, bottleneck };
   }
 
-  function selectHull(hullKey, { preservePlan = false } = {}) {
+  function selectHull(hullKey) {
     const hull = config.hulls.find(entry => entry.key === hullKey);
     if (!hull) return false;
-    const planned = app.productionScenario?.analyze().rows.find(row => row.key === 'shipyard');
-    if (preservePlan && planned?.enabled && planned.followHull && planned.recipeId !== hull.recipeId) {
-      if (!app.productionScenario.setModule('shipyard', { recipeId: planned.recipeId, followHull: false })) return false;
-    }
     app.state.shipyardHull = hull.key;
     lastHulls[hull.division] = hull.key;
     app.store.set(key, hull.key);
@@ -124,6 +120,12 @@
   }
 
   app.shipyard = { selectedHull, selectedDivision, selectDivision, restoreSelection, requirements, stockRecord, analyze, selectHull, openCalculator };
+  window.addEventListener?.('rhw:transfer-imported', event => {
+    if (!event.detail?.sections?.includes('preferences')) return;
+    restoreSelection();
+    window.renderAll?.();
+    app.requestUiUpdate?.();
+  });
   app.lifecycle.on('command:ready', 'shipyard-selection', 60, bind);
   app.lifecycle.on('catalog:loaded', 'shipyard-requirements', 40, () => {
     plans.clear();

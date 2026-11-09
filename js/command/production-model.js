@@ -1,4 +1,4 @@
-/* Production batch quantities come from the shared, corrected BMM planner. */
+/* Independent recipe quantities and reference cycle times from the BMM catalog. */
 (function initRhwProductionModel() {
   'use strict';
   const app = window.RHWV4;
@@ -43,7 +43,23 @@
     return batches.length && batches.every(Boolean) ? batches : [];
   }
 
-  app.production = { requirements, recipes };
+  function cycleSeconds(recipeId) {
+    const recipe = core.recipe(recipeId);
+    if (!recipe || !core.authorizedFor(recipe, app.config.operations.defaultAffiliation)
+      || !(recipe.cookingRate > 0)) return null;
+    let volume = 0;
+    for (const group of recipe.inputs || []) {
+      const first = group.options[0];
+      if (!first || group.options.some(option => option.qty !== first.qty)) return null;
+      const unitVolume = globalThis.RHW_PRODUCTION_VOLUMES?.[first.id];
+      if (!Number.isFinite(unitVolume) || unitVolume < 0) return null;
+      volume += first.qty * unitVolume;
+    }
+    const seconds = volume / recipe.cookingRate * 60;
+    return Number.isFinite(seconds) && seconds > 0 ? seconds : null;
+  }
+
+  app.production = { requirements, recipes, cycleSeconds };
   // Semantics are normalized at order 10; the shared Command render follows
   // at order 40. Invalidate derived batches before that render.
   app.lifecycle.on('catalog:loaded', 'production-recipes', 30, () => { plans.clear(); });
