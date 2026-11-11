@@ -265,6 +265,24 @@ def main():
         assert shipyard['stored'] == 'archon' and shipyard['route'] == '#operations/calculator', shipyard
         assert shipyard['recipe'] == 'ship_assembly_medium_miner' and shipyard['iff'] == 'br_m_grp' and shipyard['quantity'] == 1, shipyard
 
+        cruiser = base.ev(cdp, """(()=>{
+          const app=RHWV4;
+          app.navigate('command','shipyard');
+          document.querySelector('[data-shipyard-division="civilian"]').click();
+          const button=document.querySelector('[data-shipyard-select="civilian-cruiser"]');
+          button.focus();button.click();renderAll();
+          const rows=[...document.querySelectorAll('.shipyard-material-row')];
+          const ready=rows.length===6&&rows.some(row=>row.dataset.shipyardMaterial==='commodity_ship_part_exotic');
+          const focused=document.activeElement?.dataset.shipyardSelect==='civilian-cruiser';
+          document.querySelector('[data-shipyard-calculate]').click();
+          const calc=app.state.calculator;
+          return {ready,focused,route:location.hash,recipe:calc.recipeId,product:calc.productId,
+            iff:calc.affiliationId,quantity:calc.quantity,fits:document.documentElement.scrollWidth<=innerWidth+1};
+        })()""")
+        assert cruiser == {'ready':True,'focused':True,'route':'#operations/calculator',
+                           'recipe':'ship_assembly_cv_cruiser','product':'cv_cruiser_package',
+                           'iff':'br_m_grp','quantity':1,'fits':True}, cruiser
+
         # The retired planner and its Shipyard links are absent in both views.
         retired = base.ev(cdp, """(()=>{
           const app=RHWV4;
@@ -280,7 +298,7 @@ def main():
           app.shipyard.selectHull('archon');
           return {civilians,crew,noLinks,noPlanner,fits};
         })()""")
-        assert retired == {'civilians':4,'crew':200,'noLinks':True,'noPlanner':True,'fits':True}, retired
+        assert retired == {'civilians':5,'crew':200,'noLinks':True,'noPlanner':True,'fits':True}, retired
 
         # Production uses current stock only; manual planning is fully retired.
         independent = base.ev(cdp, """(()=>{

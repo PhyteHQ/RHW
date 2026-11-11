@@ -84,6 +84,8 @@ The Shipyard's hull registry in `js/command/config.js` contains identities and
 recipe IDs, not a separate set of component quantities. `shipyard-model.js`
 uses the Calculator's direct material plan with RHW's BMM affiliation for each
 selected ship. The Archon uses the civilian recipe, including its blueprint.
+The Civilian Escort Cruiser uses the restored `ship_assembly_cv_cruiser` recipe
+and recognizes both Civilian Cruiser and Civilian Escort Cruiser inventory names.
 Reusable catalysts are displayed separately from consumed materials. Material
 coverage is an alternative use of the shared inventory, never a reservation or
 a sum of concurrently buildable ships. Unknown stock remains unknown; cached

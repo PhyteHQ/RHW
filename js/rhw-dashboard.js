@@ -196,6 +196,10 @@ const DASHBOARD_CONFIG = Object.freeze({
       Object.freeze({ key: 'starfliers-explorer', division: 'civilian', label: 'Starfliers Explorer', plural: 'Starfliers Explorers',
         name: 'Starfliers Compact Explorer', subtitle: 'Compact Explorer', recipeId: 'ship_assembly_starfliers_explorer',
         productId: 'zoner_exploration_fr_package', apiCode: 'zoner_exploration_fr', matches: ['starfliers compact explorer'], sellPrice: null }),
+      Object.freeze({ key: 'civilian-cruiser', division: 'civilian', label: 'Escort Cruiser', plural: 'Escort Cruisers',
+        name: 'Civilian Escort Cruiser', subtitle: 'Civilian Cruiser', recipeId: 'ship_assembly_cv_cruiser',
+        productId: 'cv_cruiser_package', apiCode: 'cv_cruiser',
+        matches: ['civilian cruiser', 'civilian escort cruiser'], sellPrice: null }),
       Object.freeze({ key: 'halberd', division: 'civilian', label: 'Halberd', plural: 'Halberds',
         name: 'Halberd Border Worlds Gunship', subtitle: 'Border Worlds Gunship', recipeId: 'ship_assembly_ex_hacker_gunship',
         productId: 'ex_hacker_gunship_package', apiCode: 'ex_hacker_gunship', matches: ['halberd', 'halberd border worlds gunship', 'border worlds gunship'], sellPrice: null })
