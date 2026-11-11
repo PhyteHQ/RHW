@@ -82,9 +82,9 @@ ctx.__RHW_RECIPE_CATALOG__ = JSON.parse(zlib.gunzipSync(Buffer.from(ctx.__RHW_RE
 
   const inventoryBefore = JSON.stringify(ctx.items);
   const hulls = vm.runInContext('CAPITAL_SHIPYARD.hulls', ctx);
-  assert.equal(hulls.length, 8);
-  assert.ok(!hulls.some(hull => hull.recipeId === 'ship_assembly_cv_cruiser'), 'Do not offer the removed Civilian Cruiser recipe');
-  assert.deepEqual(['naval', 'mining', 'civilian'].map(key => hulls.filter(h=>h.division===key).length), [2, 2, 4]);
+  assert.equal(hulls.length, 9);
+  assert.ok(hulls.some(hull => hull.recipeId === 'ship_assembly_cv_cruiser'), 'The restored Civilian Cruiser recipe is available in Shipyard');
+  assert.deepEqual(['naval', 'mining', 'civilian'].map(key => hulls.filter(h=>h.division===key).length), [2, 2, 5]);
   for (const { key } of hulls) {
     assert.ok(yard.selectHull(key));
     const current = yard.selectedHull(), needs = yard.requirements();
@@ -99,6 +99,40 @@ ctx.__RHW_RECIPE_CATALOG__ = JSON.parse(zlib.gunzipSync(Buffer.from(ctx.__RHW_RE
     assert.equal(memory.get('selection'), key);
   }
   assert.equal(JSON.stringify(ctx.items), inventoryBefore, 'Ship selections never reserve or spend shared inventory');
+
+  yard.selectHull('civilian-cruiser');
+  const cruiser = yard.selectedHull(), cruiserNeeds = yard.requirements();
+  assert.equal(yard.selectedDivision().key, 'civilian');
+  assert.equal(cruiserNeeds.recipe.restricted, false);
+  assert.deepEqual(Array.from(cruiserNeeds.materials, row => [row.id, row.required]), [
+    ['commodity_ship_part_avionics', 300], ['commodity_ship_part_interior', 300],
+    ['commodity_ship_part_propulsion', 300], ['commodity_ship_part_superstructure', 300],
+    ['commodity_ship_part_reactor', 300], ['commodity_ship_part_exotic', 30]
+  ]);
+  assert.deepEqual(Array.from(cruiserNeeds.prerequisites, row => [row.id, row.qty]), [['commodity_crew', 400]]);
+  const savedItems = ctx.items;
+  ctx.items = cruiserNeeds.materials.map(row => ({ nickname: row.id, name: row.name,
+    quantity: row.id === 'commodity_ship_part_exotic' ? 59 : row.required * 2 }));
+  ctx.items.push({ name: 'Crew', quantity: 400 });
+  const cruiserAnalysis = yard.analyze();
+  assert.equal(cruiserAnalysis.buildable, 1);
+  assert.equal(cruiserAnalysis.bottleneck.id, 'commodity_ship_part_exotic');
+  assert.equal(cruiserAnalysis.bottleneck.gap, 1);
+  assert.equal(cruiserAnalysis.prerequisites[0].state, 'ok');
+  const cruiserStock = { nickname: 'cv_cruiser_package', name: 'Civilian Escort Cruiser', quantity: 2 };
+  ctx.items.push(cruiserStock);
+  assert.equal(yard.stockRecord(cruiser).stock, 2, 'The exact recipe package identifies the finished cruiser');
+  cruiserStock.nickname = 'cv_cruiser'; cruiserStock.name = '';
+  assert.equal(yard.stockRecord(cruiser).stock, 2, 'The ship API code identifies the same cruiser');
+  cruiserStock.nickname = '';
+  for (const name of ['Civilian Cruiser', 'Civilian Escort Cruiser']) {
+    cruiserStock.name = name;
+    assert.equal(yard.stockRecord(cruiser).stock, 2, 'Both exact public names identify the finished cruiser');
+  }
+  cruiserStock.name = 'Civilian Escort Cruiser Blueprint';
+  assert.equal(yard.stockRecord(cruiser).stock, null, 'A similarly named blueprint is not a finished cruiser');
+  ctx.items = savedItems;
+
   assert.equal(yard.selectHull('not-a-ship'), false);
   assert.ok(yard.selectHull('archon'));
   assert.equal(yard.selectedDivision().key, 'mining');
