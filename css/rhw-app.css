@@ -5735,7 +5735,9 @@ html.rhw-focus-pass.rhw-workbench .comms-frame { container:communications / inli
  html.rhw-focus-pass.rhw-workbench .command-brand { grid-template-columns:104px minmax(0,1fr); }
  html.rhw-focus-pass.rhw-workbench .header-operations { grid-template-columns:140px minmax(0,1fr);gap:12px; }
  html.rhw-focus-pass.rhw-workbench .header-operations .uplink-panel:is(.online,.offline,.polling,:not(.online):not(.offline)) { grid-template-columns:minmax(0,1fr) auto 44px;align-items:center; }
- html.rhw-focus-pass.rhw-workbench .header-operations .uplink-panel :is(.uplink-header,#headerRefreshBtn,.uplink-details) { grid-column:auto;grid-row:auto; }
+ html.rhw-focus-pass.rhw-workbench .header-operations .uplink-panel .uplink-header,
+ html.rhw-focus-pass.rhw-workbench .header-operations .uplink-panel #headerRefreshBtn,
+ html.rhw-focus-pass.rhw-workbench .header-operations .uplink-panel .uplink-details { grid-column:auto;grid-row:auto; }
 }
 @media(max-width:760px){
  html.rhw-focus-pass.rhw-workbench .command-header-inner { padding:16px 14px;gap:12px; }
@@ -5755,10 +5757,12 @@ html.rhw-focus-pass.rhw-workbench .comms-frame { container:communications / inli
  html.rhw-focus-pass.rhw-workbench .header-operations { grid-template-columns:96px minmax(0,1fr);gap:8px; }
  html.rhw-focus-pass.rhw-workbench .header-trade-button { gap:6px;padding:8px; }
  html.rhw-focus-pass.rhw-workbench .header-trade-button strong { font-size:12px; }
- html.rhw-focus-pass.rhw-workbench .header-operations .uplink-panel:is(.online,.offline,.polling,:not(.online):not(.offline)) { padding:7px;gap:5px; }
- html.rhw-focus-pass.rhw-workbench .header-operations #headerRefreshBtn { width:auto;padding:6px;font-size:11px; }
+ html.rhw-focus-pass.rhw-workbench .header-operations .uplink-panel:is(.online,.offline,.polling,:not(.online):not(.offline)) { grid-template-columns:minmax(0,1fr) 44px;padding:7px;gap:6px; }
+ html.rhw-focus-pass.rhw-workbench .header-operations .uplink-panel .uplink-header { grid-column:1/-1;grid-row:1; }
+ html.rhw-focus-pass.rhw-workbench .header-operations .uplink-panel #headerRefreshBtn { grid-column:1;grid-row:2;width:auto;padding:6px;font-size:11px; }
+ html.rhw-focus-pass.rhw-workbench .header-operations .uplink-panel .uplink-details { grid-column:2;grid-row:2; }
  html.rhw-focus-pass.rhw-workbench .uplink-label { display:none; }
- html.rhw-focus-pass.rhw-workbench .uplink-value { font-size:11px; }
+ html.rhw-focus-pass.rhw-workbench .uplink-value { font-size:11px;white-space:nowrap; }
  html.rhw-focus-pass.rhw-workbench .rhw-page-heading { padding:18px var(--layout-gutter) 16px; }
  .rhw-page-heading h2 { font-size:32px; }
  .rhw-page-heading p { font-size:13px; }
