@@ -361,6 +361,13 @@ function ensureProductionModuleTools() {
 
 function renderProductionModules() {
   if (!els.productionGrid) return;
+  // A fast first response or restored cache can arrive before deferred workspaces.
+  const app = window.RHWV4;
+  const model = app?.production;
+  if (!model) {
+    els.productionGrid.innerHTML = '<div class="feature-empty production-empty">LOADING RECIPE CATALOG<small>MATERIAL COVERAGE WILL APPEAR WHEN THE CATALOG IS READY</small></div>';
+    return;
+  }
   const materialFocus = document.activeElement?.closest?.('.production-card-toggle')?.closest('.production-card')?.dataset.productionRecipe;
   const moxFocus = document.activeElement?.matches?.('[data-production-mox]');
   ensureProductionModuleTools();
@@ -369,8 +376,7 @@ function renderProductionModules() {
     els.productionGrid.innerHTML = `<div class="feature-empty production-empty">${failed ? 'TELEMETRY UNAVAILABLE' : 'AWAITING FIRST TELEMETRY BURST'}<small>${failed ? 'NO VERIFIED RHW INVENTORY IS AVAILABLE' : 'PRODUCTION ANALYSIS WILL APPEAR AFTER THE FIRST SUCCESSFUL SYNC'}</small></div>`;
     return;
   }
-  const model = window.RHWV4.production;
-  if (!window.RHWV4.operationsCore.state.catalog) {
+  if (!app.operationsCore?.state.catalog) {
     els.productionGrid.innerHTML = '<div class="feature-empty production-empty">PRODUCTION RECIPES UNAVAILABLE<small>CAPACITY REQUIRES THE VERIFIED RECIPE CATALOG</small></div>';
     applyProductionModuleFilters();
     return;

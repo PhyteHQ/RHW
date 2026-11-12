@@ -3109,7 +3109,7 @@ globalThis.RHW_PRODUCTION_VOLUMES = Object.freeze({
     dialog.id = 'rhwItemDetails';
     dialog.className = 'rhw-item-detail inventory-uses-dialog';
     dialog.setAttribute('aria-labelledby', 'rhwItemDetailTitle');
-    dialog.innerHTML = '<header class="rhw-item-detail-head"><span>STOCK &amp; RECIPE</span><button type="button" data-item-detail-close aria-label="Close item details">CLOSE ×</button></header><div id="rhwItemDetailBody"></div>';
+    dialog.innerHTML = '<header class="rhw-item-detail-head"><span>STOCK &amp; RECIPE</span><button type="button" data-item-detail-close aria-label="Close item details">CLOSE ×</button></header><div id="rhwItemDetailBody"><h2 id="rhwItemDetailTitle">ITEM DETAILS</h2></div>';
     document.body.appendChild(dialog);
     dialog.addEventListener('click', event => {
       if (event.target.closest('[data-item-detail-close]')) dialog.close();
@@ -3217,6 +3217,7 @@ globalThis.RHW_PRODUCTION_VOLUMES = Object.freeze({
   }
   function openMaterial(name, trigger) { selected = { type: 'material', name }; show(trigger); }
   app.itemDetails = { openRecipe, openMaterial, refresh, close: () => dialog?.close() };
+  ensureDialog();
   app.onRender('production', refresh);
   app.onUiUpdate(refresh);
   app.lifecycle.on('catalog:loaded', 'item-details', 90, refresh);

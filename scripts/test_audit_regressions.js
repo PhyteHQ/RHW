@@ -12,6 +12,17 @@ const node = () => ({ textContent: '', value: '', dataset: {}, innerHTML: '', li
   addEventListener(type, fn) { this.listeners[type] = fn; }, setAttribute() {}, focus() {}, setSelectionRange() {},
   classList: { remove() {}, add() {} } });
 
+function earlyProductionResponse() {
+  const ctx = vm.createContext({ els: { productionGrid: { innerHTML: '' } } });
+  ctx.window = ctx;
+  run(ctx, 'js/command/production.js');
+  assert.doesNotThrow(() => ctx.renderProductionModules(), 'Verified stock may arrive before deferred workspaces');
+  assert.match(ctx.els.productionGrid.innerHTML, /LOADING RECIPE CATALOG/);
+  ctx.RHWV4 = {};
+  assert.doesNotThrow(() => ctx.renderProductionModules(), 'Partially installed workspaces must also wait for the model');
+}
+earlyProductionResponse();
+
 async function models() {
   const memory = new Map();
   let uid = 0;

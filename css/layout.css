@@ -534,7 +534,8 @@ html.rhw-focus-pass.rhw-workbench .command-header h1 { grid-column:2;margin:0;fo
 html.rhw-focus-pass.rhw-workbench .base-telemetry-bar { grid-column:1/-1;gap:8px; }
 html.rhw-focus-pass.rhw-workbench .base-telemetry-stat strong { font-size:17px; }
 html.rhw-focus-pass.rhw-workbench .base-telemetry-stat small { font-size:11px; }
-html.rhw-focus-pass.rhw-workbench .header-trade-button { flex-shrink:0;max-width:112px;padding:8px; }
+html.rhw-focus-pass.rhw-workbench .header-trade-button { flex:0 0 88px;max-width:88px;padding:8px; }
+html.rhw-focus-pass.rhw-workbench .header-trade-button strong { font-size:11px; }
 html.rhw-focus-pass.rhw-workbench .header-operations .uplink-panel:is(.online,.offline,.polling,:not(.online):not(.offline)) { flex:1;max-width:none;gap:5px; }
 html.rhw-focus-pass.rhw-workbench #headerRefreshBtn { padding:7px;font-size:10px; }
 html.rhw-focus-pass.rhw-workbench .uplink-header { min-width:0; }
