@@ -8,6 +8,8 @@ const DASHBOARD_CONFIG = Object.freeze({
   baseHealthMax: 24000000,
   autoRefreshMs: 300000,
   fetchTimeoutMs: 18000,
+  // Owner-reported upkeep after the Basic Alloy consumption rollback.
+  maintenanceDailyReference: Object.freeze({ 'basic alloy': 4300 }),
   storageKeys: Object.freeze({
     view: 'rhw-dashboard-v3.5:view',
     eco: 'rhw-dashboard-v3.5:eco'
@@ -161,7 +163,6 @@ const DASHBOARD_CONFIG = Object.freeze({
     'superstructure systems': { type: 'min', red: 200, yellow: 500 },
     'multi-mode focusing chamber': { type: 'min', red: 500, yellow: 1000 },
     'multi-mode focusing chambers': { type: 'min', red: 500, yellow: 1000 },
-    'toxic waste': { type: 'max', yellow: 15000, red: 30000, max: 50000 },
     'wildcat gold': { type: 'max', yellow: 25000, red: 30000 }
   }),
   barMaxFallbacks: Object.freeze({

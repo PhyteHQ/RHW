@@ -91,7 +91,7 @@ def test_mobile_forum_controls(cdp):
         })()""")
     finally:
         cdp.call("Emulation.clearDeviceMetricsOverride")
-    if result.get("error") or result.get("mode") != "true" or result.get("dock", {}).get("position") != "sticky" or not 47.5 <= result.get("dock", {}).get("height", 0) <= 54:
+    if result.get("error") or result.get("mode") != "true" or result.get("dock", {}).get("position") != "sticky" or not 47.5 <= result.get("dock", {}).get("height", 0) <= 60:
         raise RuntimeError(f"Mobile workspace dock failed: {result}")
     if result.get("context", {}).get("position") == "sticky" or result.get("touch") or result.get("operations") != "operations" or result.get("comms") != "comms":
         raise RuntimeError(f"Mobile navigation / touch targets failed: {result}")
@@ -337,7 +337,9 @@ def test_pr3_decision_ui(cdp, workspace, node):
               const card=grid.querySelector('.production-card'),toggle=card?.querySelector('.production-card-toggle'),list=card?.querySelector('.recipe-list');
               const before={collapsed:card?.classList.contains('production-card-collapsed'),visible:Boolean(list?.getClientRects().length)};
               toggle?.click();
-              const after={expanded:card?.classList.contains('production-card-expanded'),visible:Boolean(list?.getClientRects().length),aria:toggle?.getAttribute('aria-expanded')};
+              const dialog=document.getElementById('rhwItemDetails');
+              const after={expanded:dialog?.open,visible:Boolean(dialog?.querySelector('.recipe-list')?.getClientRects().length),aria:toggle?.getAttribute('aria-expanded')};
+              dialog.close();
               const touch=[...tools.querySelectorAll('button,input'),...grid.querySelectorAll('.production-card-toggle')].filter(visible).map(x=>x.getBoundingClientRect().height);
               return{
                 total,filters:tools.querySelectorAll('[data-production-filter]').length,

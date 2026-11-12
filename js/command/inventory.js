@@ -105,8 +105,18 @@ function renderOverviewEmptyRow(text, statusText = 'SECURE') {
 
 function overviewDetail(item, state, role) {
   if (state === 'waiting') return 'STOCK UNKNOWN';
+  const daily = role === 'maintenance' && DASHBOARD_CONFIG.maintenanceDailyReference?.[commodityKey(item)];
+  if (daily > 0) {
+    const days = new Intl.NumberFormat('de-DE', { maximumFractionDigits: 1 }).format(quantity(item) / daily);
+    return `~${days} DAYS · ESTIMATED USE ${number(daily)} / DAY`;
+  }
   const reference = overviewStockReference(item, role);
   if (role === 'byproduct') {
+    if (commodityKey(item) === 'toxic waste') {
+      const feed = window.RHWV4?.inventoryModel?.moxFeedstock();
+      return feed?.cycles === null || !feed ? 'MOX RECIPE COVERAGE UNKNOWN'
+        : `TW FOR ${number(feed.cycles)} ${feed.variant} MOX BATCHES`;
+    }
     if (state !== 'ok') return state === 'low' ? 'DISPOSAL REQUIRED' : 'CONTAINMENT CRITICAL';
     return reference ? `${number(Math.max(0, reference.value - quantity(item)))} UNTIL DISPOSAL` : readinessText(state, role);
   }
@@ -172,7 +182,7 @@ function renderOverview() {
   const alloy = [...els.maintenanceList.children].find(row => row.dataset.inventoryRecipe === 'recipe_scrap_advanced');
   alloy?.insertAdjacentHTML('beforeend', inventoryInputRow('Scrap Metal', 'recipe_scrap_advanced'));
   renderList(els.exportList, exports, 'NO EXPORT ASSETS DETECTED', 'export');
-  renderList(els.byproductList, byproducts, 'NO WASTE DETECTED', 'byproduct');
+  renderList(els.byproductList, byproducts, 'NO REPORTED MOX FEEDSTOCK', 'byproduct');
   els.reserveList.innerHTML = DASHBOARD_CONFIG.reserveCards.map(spec => {
     const reserve = window.RHWV4.inventoryModel.reserve(spec.key);
     const breakdown = spec.members.length > 1 ? `<div class="inventory-pool-parts">${reserve.parts.map(part => `<span><span>${escapeHTML(part.name)}</span><strong>${number(reserve.stock === null ? part.stock : part.stock ?? 0)}</strong></span>`).join('')}</div>` : '';

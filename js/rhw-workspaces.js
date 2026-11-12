@@ -600,7 +600,7 @@ const RHW_APP_CONFIG = Object.freeze({
       const button = event.target.closest('.app-tabs [data-workspace]');
       if (!button || !['ArrowLeft', 'ArrowRight'].includes(event.key)) return;
       event.preventDefault();
-      const buttons = [...nav.querySelectorAll('.app-tabs [data-workspace]')];
+      const buttons = [...nav.querySelectorAll('.app-tabs [data-workspace]')].filter(item => item.getClientRects().length);
       const current = buttons.indexOf(button);
       if (current < 0 || !buttons.length) return;
       const next = buttons[(current + (event.key === 'ArrowRight' ? 1 : -1) + buttons.length) % buttons.length];
@@ -625,8 +625,9 @@ const RHW_APP_CONFIG = Object.freeze({
     document.querySelectorAll('.app-tabs [data-workspace]').forEach(button => {
       const active = button.dataset.workspace === safe;
       button.classList.toggle('active', active);
-      button.setAttribute('aria-selected', active ? 'true' : 'false');
-      button.tabIndex = active ? 0 : -1;
+      button.removeAttribute('aria-selected');
+      button.setAttribute('aria-pressed', active ? 'true' : 'false');
+      button.tabIndex = 0;
     });
     app.rendered('workspace');
   };
@@ -3069,6 +3070,17 @@ globalThis.RHW_PRODUCTION_VOLUMES = Object.freeze({
     const required = recipe?.ingredients.find(([n]) => keyFromName(n) === keyFromName(name))?.[1] ?? null;
     return { ...value, required, cycles: value.stock !== null && required > 0 ? Math.floor(value.stock / required) : null };
   }
+  function moxFeedstock() {
+    const module = app.production?.modules().find(entry => entry.product === 'MOX');
+    const recipe = module && app.production.requirements(module);
+    const entry = input('Toxic Waste', module?.recipeId);
+    const state = entry.stock === null || entry.required === null ? 'waiting'
+      : entry.cycles < 1 ? 'critical' : entry.cycles < 2 ? 'low' : 'ok';
+    return { ...entry, state, recipeId: module?.recipeId || 'recipe_mox_fuel_basic',
+      outputPerBatch: recipe?.output ?? null,
+      potentialOutput: entry.cycles === null || !recipe ? null : entry.cycles * recipe.output,
+      variant: module?.recipeId === 'recipe_mox_fuel_advanced' ? 'ADVANCED' : 'BASIC' };
+  }
   function ships() {
     return CAPITAL_SHIPYARD.hulls.map(hull => {
       const item = hasVerifiedTelemetry() ? findShipyardItem(hull) : null;
@@ -3076,7 +3088,138 @@ globalThis.RHW_PRODUCTION_VOLUMES = Object.freeze({
       return { hull, stock: Number.isSafeInteger(value) ? value : null };
     });
   }
-  app.inventoryModel = { definition, record, reserve, input, ships };
+  app.inventoryModel = { definition, record, reserve, input, moxFeedstock, ships };
+})();
+
+;
+
+/* SOURCE: js/command/item-details.js */
+/* One recipe/material detail surface, fed by the live stock and shared catalog. */
+(function initItemDetails() {
+  'use strict';
+  const app = window.RHWV4;
+  if (!app || app.itemDetails) return;
+  let dialog, selected, openedBy, focusRecipe, signature = '';
+  const esc = value => app.util.escape(String(value ?? ''));
+
+  function visible(element) { return Boolean(element?.isConnected && element.getClientRects().length); }
+  function ensureDialog() {
+    if (dialog) return dialog;
+    dialog = document.createElement('dialog');
+    dialog.id = 'rhwItemDetails';
+    dialog.className = 'rhw-item-detail inventory-uses-dialog';
+    dialog.setAttribute('aria-labelledby', 'rhwItemDetailTitle');
+    dialog.innerHTML = '<header class="rhw-item-detail-head"><span>STOCK &amp; RECIPE</span><button type="button" data-item-detail-close aria-label="Close item details">CLOSE ×</button></header><div id="rhwItemDetailBody"></div>';
+    document.body.appendChild(dialog);
+    dialog.addEventListener('click', event => {
+      if (event.target.closest('[data-item-detail-close]')) dialog.close();
+      if (event.target.closest('[data-purchase-source]')) dialog.close('navigate');
+      const choice = event.target.closest('[data-inventory-choice]');
+      if (choice) app.inventoryNavigation.recipe(choice.dataset.inventoryChoice);
+      const calculate = event.target.closest('[data-detail-calculator]');
+      if (calculate) {
+        const label = calculate.dataset.detailCalculator;
+        dialog.close('navigate');
+        app.productionPricing.openProductionTarget(label, 1);
+      }
+    });
+    dialog.addEventListener('change', event => {
+      if (!event.target.matches('[data-detail-mox]')) return;
+      if (!app.production.selectMoxRecipe(event.target.value)) app.notify('Recipe selection could not be saved on this device.', 'warn');
+      signature = '';
+      renderAll(); app.requestUiUpdate(); refresh();
+      dialog.querySelector('[data-detail-mox]')?.focus({ preventScroll: true });
+    });
+    dialog.addEventListener('close', () => {
+      if (dialog.open) return;
+      document.querySelectorAll('.production-card-toggle').forEach(button => button.setAttribute('aria-expanded', 'false'));
+      if (dialog.returnValue !== 'navigate') {
+        const fallback = [...document.querySelectorAll('.production-card')].find(card => card.dataset.productionRecipe === focusRecipe)?.querySelector('.production-card-toggle');
+        const target = visible(openedBy) ? openedBy : fallback;
+        if (visible(target)) target.focus({ preventScroll: true });
+      }
+      selected = null; signature = '';
+    });
+    return dialog;
+  }
+
+  function recipeContent() {
+    const module = app.production.modules().find(entry => entry.product === selected.product);
+    if (!module) return '<h2 id="rhwItemDetailTitle">RECIPE UNAVAILABLE</h2><p>This recipe is not available in the current catalog.</p>';
+    const batch = app.production.requirements(module);
+    const card = [...document.querySelectorAll('.production-card')].find(node => node.dataset.productionRecipe === module.recipeId);
+    focusRecipe = module.recipeId;
+    dialog.dataset.recipeId = module.recipeId;
+    card?.querySelector('.production-card-toggle')?.setAttribute('aria-expanded', 'true');
+    const variant = module.product === 'MOX' ? `<label class="production-variant detail-variant">MOX recipe<select data-detail-mox aria-label="MOX recipe in details">${app.production.moxRecipes.map(option => `<option value="${option.recipeId}"${option.recipeId === module.recipeId ? ' selected' : ''}>${option.label}</option>`).join('')}</select></label>` : '';
+    const snapshot = telemetrySnapshot();
+    const stock = findCommodity(module.product);
+    const quantity = snapshot.available ? firstFiniteApiStockValue(stock, ['quantity', 'amount', 'stock']) : null;
+    const body = card?.querySelector('.production-materials')?.innerHTML || '<p class="rhw-detail-empty">Material coverage is unknown until verified stock and this recipe are available.</p>';
+    return `<div class="rhw-item-detail-title"><small>${snapshot.stale ? 'CACHED STOCK' : snapshot.available ? 'CURRENT STOCK' : 'STOCK UNKNOWN'}</small><h2 id="rhwItemDetailTitle">${esc(displayRecipeName(module.product))}</h2><strong>${number(quantity)} <small>IN STOCK</small></strong></div>${variant}<div class="rhw-item-detail-materials">${body}</div>${batch ? `<button type="button" class="rhw-detail-calculator" data-detail-calculator="${esc(module.product)}">OPEN IN CALCULATOR ↗</button>` : ''}`;
+  }
+
+  function materialContent() {
+    const name = selected.name;
+    const spec = app.inventoryModel.definition(name);
+    const entry = app.inventoryModel.record(name);
+    const keys = (spec?.members || [name]).map(keyFromName);
+    const options = [];
+    if (spec) options.push({ id: spec.recipeId, label: 'PRODUCE · ' + spec.members[0] });
+    for (const recipe of app.production.recipes()) {
+      const consumed = recipe.ingredients.some(([n]) => keys.includes(keyFromName(n)))
+        || Object.values(recipe.inputOptions || {}).some(group => group.some(n => keys.includes(keyFromName(n))));
+      const produced = recipe.byproducts.some(([n]) => keys.includes(keyFromName(n)));
+      if (consumed || produced) options.push({ id: recipe.recipeId, label: `${consumed ? 'USED BY' : 'PRODUCED BY'} · ${recipe.product}` });
+    }
+    const feed = keyFromName(name) === 'toxic waste' ? app.inventoryModel.moxFeedstock() : null;
+    const context = feed ? `<div class="rhw-feedstock-conversion"><strong>${number(feed.required)} TW → ${number(feed.outputPerBatch)} MOX</strong><span>${feed.cycles === null ? 'TW stock unknown' : `${number(feed.cycles)} full ${feed.variant} batches covered by TW`}</span><small>TW coverage only. Other inputs, scientists and module activity are checked separately.</small><button type="button" data-inventory-choice="${esc(feed.recipeId)}">OPEN MOX RECIPE ↗</button></div>` : '';
+    const quantity = spec ? app.inventoryModel.reserve(spec.key)?.stock : entry.stock;
+    return `<div class="rhw-item-detail-title"><small>${telemetrySnapshot().stale ? 'CACHED STOCK' : 'MATERIAL CONNECTIONS'}</small><h2 id="rhwItemDetailTitle">${esc(spec?.label || name)}</h2><strong>${number(quantity)} <small>IN STOCK</small></strong></div>${context}<div class="rhw-material-connections"><h3>CONNECTED RECIPES</h3>${options.map(option => `<button type="button" data-inventory-choice="${esc(option.id)}">${esc(option.label)} ↗</button>`).join('') || '<p>No connected production recipes are available.</p>'}</div>`;
+  }
+
+  function refresh() {
+    if (!dialog?.open || !selected) return;
+    // A nested supply/source dialog must keep its original trigger connected.
+    const nested = [...document.querySelectorAll('dialog[open],[role="dialog"][aria-modal="true"]')]
+      .some(element => element !== dialog && element.getClientRects().length);
+    if (nested) return;
+    const markup = selected.type === 'recipe' ? recipeContent() : materialContent();
+    if (signature === markup) return;
+    const active = document.activeElement;
+    const body = document.getElementById('rhwItemDetailBody');
+    const focusedInside = body.contains(active);
+    const attributes = ['data-detail-mox', 'data-detail-calculator', 'data-inventory-choice', 'data-supply-commodity', 'data-purchase-source'];
+    const focusAttribute = focusedInside && attributes.find(name => active.hasAttribute(name));
+    const focusValue = focusAttribute ? active.getAttribute(focusAttribute) : null;
+    body.innerHTML = markup;
+    signature = markup;
+    if (focusedInside) {
+      const replacement = focusAttribute && [...body.querySelectorAll('button,select')].find(node => node.getAttribute(focusAttribute) === focusValue);
+      (replacement || dialog.querySelector('[data-item-detail-close]')).focus({ preventScroll: true });
+    }
+  }
+
+  function show(trigger) {
+    ensureDialog(); openedBy = trigger || document.activeElement; signature = '';
+    dialog.returnValue = '';
+    if (!dialog.open) dialog.showModal();
+    refresh();
+    dialog.querySelector('[data-item-detail-close]')?.focus({ preventScroll: true });
+  }
+  function openRecipe(recipeId, trigger) {
+    const module = app.production.modules().find(entry => entry.recipeId === recipeId);
+    if (!module) { app.notify('Production recipe is not available in this view.', 'warn'); return false; }
+    selected = { type: 'recipe', product: module.product };
+    focusRecipe = recipeId;
+    show(trigger);
+    return true;
+  }
+  function openMaterial(name, trigger) { selected = { type: 'material', name }; show(trigger); }
+  app.itemDetails = { openRecipe, openMaterial, refresh, close: () => dialog?.close() };
+  app.onRender('production', refresh);
+  app.onUiUpdate(refresh);
+  app.lifecycle.on('catalog:loaded', 'item-details', 90, refresh);
 })();
 
 ;
@@ -3086,7 +3229,7 @@ globalThis.RHW_PRODUCTION_VOLUMES = Object.freeze({
 (function initInventoryNavigation() {
   'use strict';
   const app = window.RHWV4;
-  let usesDialog, returnFocus, highlightTimer;
+  let highlightTimer;
   function recipe(recipeId) {
     productionModuleFilter = 'all'; productionModuleQuery = '';
     app.navigate('command', 'production');
@@ -3096,15 +3239,9 @@ globalThis.RHW_PRODUCTION_VOLUMES = Object.freeze({
     requestAnimationFrame(() => {
       const card = [...document.querySelectorAll('.production-card')].find(node => node.dataset.productionRecipe === recipeId);
       if (!card) { app.notify('Production recipe is not available in this view.', 'warn'); return; }
-      productionExpandedModules.add(card.dataset.productionProduct);
-      card.classList.remove('production-card-collapsed'); card.classList.add('production-card-expanded');
       const button = card.querySelector('.production-card-toggle');
-      button?.setAttribute('aria-expanded', 'true');
-      if (button) {
-        button.querySelector('span').textContent = 'CLOSE DETAILS';
-        button.setAttribute('aria-label', `Hide details for ${card.querySelector('.production-title').textContent}`);
-      }
-      card.tabIndex = -1; card.focus({ preventScroll: true });
+      app.itemDetails.openRecipe(recipeId, button);
+      card.tabIndex = -1;
       card.scrollIntoView({ block: 'start', behavior: 'instant' });
       clearTimeout(highlightTimer);
       document.querySelectorAll('.inventory-target').forEach(node => node.classList.remove('inventory-target'));
@@ -3123,34 +3260,9 @@ globalThis.RHW_PRODUCTION_VOLUMES = Object.freeze({
     });
   }
   function material(name, trigger) {
-    const spec = app.inventoryModel.definition(name);
-    const options = [];
-    if (spec) options.push({ id: spec.recipeId, label: 'PRODUCE · ' + spec.members[0] });
-    const names = (spec?.members || [name]).map(keyFromName);
-    for (const r of app.production.recipes()) {
-      const consumed = r.ingredients.some(([n]) => names.includes(keyFromName(n)))
-        || Object.values(r.inputOptions || {}).some(group => group.some(n => names.includes(keyFromName(n))));
-      const produced = r.byproducts.some(([n]) => names.includes(keyFromName(n)));
-      if (consumed || produced) options.push({ id: r.recipeId, label: `${consumed ? 'USED BY' : 'PRODUCED BY'} · ${r.product}` });
-    }
-    if (options.length === 1) { recipe(options[0].id); return; }
-    if (!options.length) return;
-    if (!usesDialog) {
-      usesDialog = document.createElement('dialog'); usesDialog.className = 'inventory-uses-dialog';
-      usesDialog.setAttribute('aria-labelledby', 'inventoryUsesTitle'); document.body.append(usesDialog);
-      usesDialog.addEventListener('click', event => {
-        const target = event.target.closest('[data-inventory-choice]');
-        if (target) { usesDialog.close('navigate'); recipe(target.dataset.inventoryChoice); }
-        else if (event.target.closest('[data-inventory-close]')) usesDialog.close();
-      });
-      usesDialog.addEventListener('close', () => {
-        if (usesDialog.returnValue !== 'navigate' && returnFocus?.isConnected) returnFocus.focus({ preventScroll: true });
-      });
-    }
-    returnFocus = trigger;
-    usesDialog.innerHTML = `<h2 id="inventoryUsesTitle">${escapeHTML(spec?.label || name)}</h2><p>OPEN PRODUCTION</p>${options.map(option => `<button type="button" data-inventory-choice="${escapeHTML(option.id)}">${escapeHTML(option.label)}</button>`).join('')}<button type="button" data-inventory-close>CLOSE</button>`;
-    usesDialog.returnValue = ''; usesDialog.showModal();
+    app.itemDetails.openMaterial(name, trigger);
   }
+
   document.addEventListener('click', event => {
     const explicit = event.target.closest('button[data-inventory-recipe],button[data-inventory-material],button[data-inventory-hull],[data-inventory-yard]');
     const card = event.target.closest('li[data-inventory-recipe],li[data-inventory-material]');
@@ -3830,7 +3942,26 @@ globalThis.RHW_PRODUCTION_VOLUMES = Object.freeze({
       slot.setAttribute('aria-label', 'Active workspace navigation');
       cluster.appendChild(slot);
     }
-    // Keep Tools beside the main tabs. Only COMMAND needs a context row.
+    document.documentElement.classList.add('rhw-workbench');
+    document.querySelectorAll('.app-workspace').forEach(panel => panel.setAttribute('role', 'region'));
+    tabs.setAttribute('role', 'group');
+    tabs.setAttribute('aria-label', 'RHW workspaces');
+    tabs.querySelectorAll('[data-workspace]').forEach(button => {
+      button.setAttribute('role', 'button');
+      button.removeAttribute('aria-selected');
+      button.setAttribute('aria-pressed', String(button.dataset.workspace === app.state.activeWorkspace));
+      button.tabIndex = 0;
+    });
+    let primary = document.getElementById('appCommandNavSlot');
+    if (!primary) {
+      primary = document.createElement('div');
+      primary.id = 'appCommandNavSlot';
+      primary.className = 'app-command-nav-slot';
+      tabs.querySelector('[data-workspace="command"]').insertAdjacentElement('afterend', primary);
+    }
+    const commandNav = document.getElementById('commandNodeNav');
+    if (commandNav && commandNav.parentElement !== primary) primary.appendChild(commandNav);
+    // Daily destinations stay visible while secondary workspaces are open.
     let secondary = document.getElementById('appSecondaryNav');
     if (!secondary) {
       secondary = document.createElement('div');
@@ -3869,7 +4000,8 @@ globalThis.RHW_PRODUCTION_VOLUMES = Object.freeze({
   function updateStickyOffset() {
     const rootNav = document.getElementById('rhwAppNav');
     const height = rootNav ? Math.ceil(rootNav.getBoundingClientRect().height) : 0;
-    document.documentElement.style.setProperty('--rhw-sticky-nav-offset', `${Math.max(0, height) + 12}px`);
+    const desktop = window.matchMedia('(min-width: 1101px)').matches;
+    document.documentElement.style.setProperty('--rhw-sticky-nav-offset', `${desktop ? 16 : Math.max(0, height) + 12}px`);
   }
 
   function installBbcodeCollapse() {
@@ -3902,6 +4034,11 @@ globalThis.RHW_PRODUCTION_VOLUMES = Object.freeze({
   function sync(workspace = app.state.activeWorkspace || document.body.dataset.workspace || 'command') {
     if (!ensureShell()) return false;
     const active = safeWorkspace(workspace);
+    document.querySelectorAll('#commandNodeNav [data-command-node]').forEach(button => {
+      const selected = active === 'command' && button.dataset.commandNode === app.state.commandNode;
+      button.classList.toggle('active', selected);
+      button.setAttribute('aria-current', selected ? 'page' : 'false');
+    });
     const slot = document.getElementById('appContextNavSlot');
     const target = document.getElementById(SUBNAV_IDS[active]);
     if (!slot) return false;
@@ -3912,14 +4049,15 @@ globalThis.RHW_PRODUCTION_VOLUMES = Object.freeze({
 
     /* data-workspace is reserved for the actual workspace tabs. */
     slot.dataset.activeWorkspace = active;
-    document.getElementById('appSecondaryNav').hidden = active !== 'command';
+    document.getElementById('appSecondaryNav').hidden = true;
     if (!target) {
       requestAnimationFrame(updateStickyOffset);
       return SUBNAV_IDS[active] === null;
     }
 
-    ensureHome(target, active);
-    if (target.parentElement !== slot) slot.appendChild(target);
+    const mount = active === 'command' ? document.getElementById('appCommandNavSlot') : slot;
+    if (active !== 'command') ensureHome(target, active);
+    if (target.parentElement !== mount) mount.appendChild(target);
     target.classList.add('app-mounted-subnav');
     requestAnimationFrame(updateStickyOffset);
     return true;
@@ -3930,7 +4068,8 @@ globalThis.RHW_PRODUCTION_VOLUMES = Object.freeze({
     const active = safeWorkspace(app.state.activeWorkspace || document.body.dataset.workspace || 'command');
     const slot = document.getElementById('appContextNavSlot');
     const expectedId = SUBNAV_IDS[active];
-    const mounted = slot?.querySelector(':scope > .workspace-subnav');
+    const mount = active === 'command' ? document.getElementById('appCommandNavSlot') : slot;
+    const mounted = mount?.querySelector(':scope > .workspace-subnav');
 
     if (!document.getElementById('appNavigationCluster')) failures.push('missing-cluster');
     if (!slot) failures.push('missing-context-slot');
@@ -6045,7 +6184,7 @@ globalThis.RHW_PRODUCTION_VOLUMES = Object.freeze({
       comms: ['commsNode', 'data-comms-panel']
     }[workspace];
     const workspaces = [...document.querySelectorAll('.app-workspace')].filter(element => !element.hidden);
-    const selected = [...document.querySelectorAll('.app-tabs [data-workspace][aria-selected="true"]')];
+    const selected = [...document.querySelectorAll('.app-tabs [data-workspace][aria-pressed="true"]')];
     const activeNode = meta ? app.state[meta[0]] : '';
     const nodePanels = meta ? [...document.querySelectorAll(`[${meta[1]}]`)].filter(element => !element.hidden) : [];
     const route = app.route?.parse?.() || {};
@@ -6349,9 +6488,9 @@ globalThis.RHW_PRODUCTION_VOLUMES = Object.freeze({
   if (!app?.command || app.commandStatus) return;
 
   const MODULES = Object.freeze([
-    Object.freeze({ key: 'inventory', label: 'INVENTORY', sub: 'STATUS + MANIFEST', index: '01' }),
-    Object.freeze({ key: 'shipyard', label: 'SHIPYARD', sub: 'HULLS + COMPONENTS', index: '02' }),
-    Object.freeze({ key: 'production', label: 'PRODUCTION', sub: 'MODULES + CAPACITY + BOTTLENECKS', index: '03' }),
+    Object.freeze({ key: 'inventory', label: 'OVERVIEW', sub: 'STATUS + MANIFEST', index: '01' }),
+    Object.freeze({ key: 'production', label: 'PRODUCTION', sub: 'RECIPES + MATERIALS', index: '02' }),
+    Object.freeze({ key: 'shipyard', label: 'SHIPYARD', sub: 'HULLS + COMPONENTS', index: '03' }),
     Object.freeze({ key: 'logistics', label: 'LOGISTICS', sub: 'REMOTE BASES + MARKET + SUPPLY', index: '04' })
   ]);
   let unsubscribeStatus = null;
@@ -7366,8 +7505,8 @@ globalThis.RHW_PRODUCTION_VOLUMES = Object.freeze({
     const calculator = document.querySelector('.app-tabs [data-workspace="operations"]');
     const forum = document.querySelector('.app-tabs [data-workspace="comms"]');
     if (command) {
-      const title = tabTitle(command); if (title) title.textContent = 'COMMAND';
-      const sub = command.querySelector('small'); if (sub) sub.textContent = 'RHW STATUS';
+      const title = tabTitle(command); if (title) title.textContent = 'RHW';
+      const sub = command.querySelector('small'); if (sub) sub.textContent = 'NEW LONDON · CORE 4';
       command.setAttribute('aria-label', 'Command');
     }
     if (calculator) {
@@ -7385,13 +7524,15 @@ globalThis.RHW_PRODUCTION_VOLUMES = Object.freeze({
   }
 
   function toolsMarkup() {
+    const shortcuts = [['operations/calculator', 'CALCULATOR'], ['pricecheck/routes', 'PRICE CHECK'], ['comms/forum', 'FORUM']]
+      .map(([route, label]) => `<button type="button" data-rhw-shortcut="${route}">${label} ↗</button>`).join('');
     const cards = [
       ['backup', '01'], ['senders', '02'], ['system', '03']
     ].map(([key, index]) => {
       const tool = TOOL_META[key];
       return `<button type="button" class="rhw-focus-tool-card" data-rhw-tool="${key}"><span class="rhw-focus-tool-index">${index}</span><span class="rhw-focus-tool-copy"><strong>${tool.label}</strong><small>${tool.sub}</small></span><span class="rhw-focus-tool-arrow" aria-hidden="true">›</span></button>`;
     }).join('');
-    return `<aside class="rhw-focus-tools-overlay" id="rhwFocusToolsPanel" role="dialog" aria-modal="true" aria-labelledby="rhwFocusToolsTitle" data-focus-trap="true" hidden><section class="rhw-focus-tools-sheet"><header class="rhw-focus-tools-head"><div><strong id="rhwFocusToolsTitle">TOOLS</strong></div><button type="button" id="rhwFocusToolsClose">CLOSE</button></header><div class="rhw-focus-tools-grid">${cards}</div><div id="rhwToolsInstallSlot" class="rhw-tools-install-slot"></div></section></aside>`;
+    return `<aside class="rhw-focus-tools-overlay" id="rhwFocusToolsPanel" role="dialog" aria-modal="true" aria-labelledby="rhwFocusToolsTitle" data-focus-trap="true" hidden><section class="rhw-focus-tools-sheet"><header class="rhw-focus-tools-head"><div><strong id="rhwFocusToolsTitle">TOOLS</strong></div><button type="button" id="rhwFocusToolsClose">CLOSE</button></header><div class="rhw-mobile-workspaces">${shortcuts}</div><div class="rhw-focus-tools-grid">${cards}</div><div id="rhwToolsInstallSlot" class="rhw-tools-install-slot"></div></section></aside>`;
   }
 
   function toolsFocusable(panel = document.getElementById('rhwFocusToolsPanel')) {
@@ -7457,6 +7598,8 @@ globalThis.RHW_PRODUCTION_VOLUMES = Object.freeze({
       document.getElementById('rhwFocusToolsClose')?.addEventListener('click', closeTools);
       panel?.addEventListener('click', event => {
         if (event.target.id === 'rhwFocusToolsPanel') closeTools();
+        const shortcut = event.target.closest('[data-rhw-shortcut]');
+        if (shortcut) { const [workspace, node] = shortcut.dataset.rhwShortcut.split('/'); closeTools(); app.navigate(workspace, node); }
         const tool = event.target.closest('[data-rhw-tool]');
         if (tool) openTool(tool.dataset.rhwTool);
       });

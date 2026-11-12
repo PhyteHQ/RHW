@@ -42,7 +42,26 @@
       slot.setAttribute('aria-label', 'Active workspace navigation');
       cluster.appendChild(slot);
     }
-    // Keep Tools beside the main tabs. Only COMMAND needs a context row.
+    document.documentElement.classList.add('rhw-workbench');
+    document.querySelectorAll('.app-workspace').forEach(panel => panel.setAttribute('role', 'region'));
+    tabs.setAttribute('role', 'group');
+    tabs.setAttribute('aria-label', 'RHW workspaces');
+    tabs.querySelectorAll('[data-workspace]').forEach(button => {
+      button.setAttribute('role', 'button');
+      button.removeAttribute('aria-selected');
+      button.setAttribute('aria-pressed', String(button.dataset.workspace === app.state.activeWorkspace));
+      button.tabIndex = 0;
+    });
+    let primary = document.getElementById('appCommandNavSlot');
+    if (!primary) {
+      primary = document.createElement('div');
+      primary.id = 'appCommandNavSlot';
+      primary.className = 'app-command-nav-slot';
+      tabs.querySelector('[data-workspace="command"]').insertAdjacentElement('afterend', primary);
+    }
+    const commandNav = document.getElementById('commandNodeNav');
+    if (commandNav && commandNav.parentElement !== primary) primary.appendChild(commandNav);
+    // Daily destinations stay visible while secondary workspaces are open.
     let secondary = document.getElementById('appSecondaryNav');
     if (!secondary) {
       secondary = document.createElement('div');
@@ -81,7 +100,8 @@
   function updateStickyOffset() {
     const rootNav = document.getElementById('rhwAppNav');
     const height = rootNav ? Math.ceil(rootNav.getBoundingClientRect().height) : 0;
-    document.documentElement.style.setProperty('--rhw-sticky-nav-offset', `${Math.max(0, height) + 12}px`);
+    const desktop = window.matchMedia('(min-width: 1101px)').matches;
+    document.documentElement.style.setProperty('--rhw-sticky-nav-offset', `${desktop ? 16 : Math.max(0, height) + 12}px`);
   }
 
   function installBbcodeCollapse() {
@@ -114,6 +134,11 @@
   function sync(workspace = app.state.activeWorkspace || document.body.dataset.workspace || 'command') {
     if (!ensureShell()) return false;
     const active = safeWorkspace(workspace);
+    document.querySelectorAll('#commandNodeNav [data-command-node]').forEach(button => {
+      const selected = active === 'command' && button.dataset.commandNode === app.state.commandNode;
+      button.classList.toggle('active', selected);
+      button.setAttribute('aria-current', selected ? 'page' : 'false');
+    });
     const slot = document.getElementById('appContextNavSlot');
     const target = document.getElementById(SUBNAV_IDS[active]);
     if (!slot) return false;
@@ -124,14 +149,15 @@
 
     /* data-workspace is reserved for the actual workspace tabs. */
     slot.dataset.activeWorkspace = active;
-    document.getElementById('appSecondaryNav').hidden = active !== 'command';
+    document.getElementById('appSecondaryNav').hidden = true;
     if (!target) {
       requestAnimationFrame(updateStickyOffset);
       return SUBNAV_IDS[active] === null;
     }
 
-    ensureHome(target, active);
-    if (target.parentElement !== slot) slot.appendChild(target);
+    const mount = active === 'command' ? document.getElementById('appCommandNavSlot') : slot;
+    if (active !== 'command') ensureHome(target, active);
+    if (target.parentElement !== mount) mount.appendChild(target);
     target.classList.add('app-mounted-subnav');
     requestAnimationFrame(updateStickyOffset);
     return true;
@@ -142,7 +168,8 @@
     const active = safeWorkspace(app.state.activeWorkspace || document.body.dataset.workspace || 'command');
     const slot = document.getElementById('appContextNavSlot');
     const expectedId = SUBNAV_IDS[active];
-    const mounted = slot?.querySelector(':scope > .workspace-subnav');
+    const mount = active === 'command' ? document.getElementById('appCommandNavSlot') : slot;
+    const mounted = mount?.querySelector(':scope > .workspace-subnav');
 
     if (!document.getElementById('appNavigationCluster')) failures.push('missing-cluster');
     if (!slot) failures.push('missing-context-slot');

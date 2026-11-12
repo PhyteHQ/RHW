@@ -145,8 +145,8 @@ def main():
             cdp.call('Emulation.setDeviceMetricsOverride', {'width': width, 'height': height, 'deviceScaleFactor': 1, 'mobile': width < 760})
             compact = base.ev(cdp, """(()=>{
               document.getElementById('productionPanel').classList.add('production-expanded');
-              document.querySelectorAll('.production-card-collapsed .production-card-toggle').forEach(b=>b.click());
-              const buttons=[...document.querySelectorAll('.production-card .rhw-supply-icon')].filter(b=>b.getClientRects().length);
+              document.querySelector('.production-card').querySelector('.production-card-toggle').click();
+              const buttons=[...document.querySelectorAll('#rhwItemDetails .rhw-supply-icon')].filter(b=>b.getClientRects().length);
               return {count:buttons.length,overflow:document.documentElement.scrollWidth>innerWidth+1,
                 controls:buttons.map(b=>{const r=b.getBoundingClientRect(),name=b.previousElementSibling.getBoundingClientRect();
                   return {width:r.width,height:r.height,inline:r.left>=name.right-1,
@@ -160,7 +160,7 @@ def main():
             shot = cdp.call('Page.captureScreenshot', {'format': 'png'})
             (out / f'supply-controls-{width}.png').write_bytes(base64.b64decode(shot['data']))
         cdp.call('Emulation.setDeviceMetricsOverride', {'width': 390, 'height': 844, 'deviceScaleFactor': 1, 'mobile': True})
-        base.ev(cdp, "(()=>{const b=document.querySelector('.production-card [data-supply-commodity=\"Ablative Armor Plating\"]');const card=b.closest('.production-card');if(card.classList.contains('production-card-collapsed'))card.querySelector('.production-card-toggle').click();if(!b.getClientRects().length)throw Error('Supply trigger is not visible');b.focus();b.click();return true})()")
+        base.ev(cdp, "(()=>{const b=document.querySelector('#rhwItemDetails [data-supply-commodity=\"Ablative Armor Plating\"]');if(!b.getClientRects().length)throw Error('Supply trigger is not visible');b.focus();b.click();return true})()")
         wait_for(cdp, "document.querySelectorAll('#rhwSupplyDialog .supply-result').length>=2")
         facts = base.ev(cdp, "(()=>({target:document.getElementById('supplyCommodity').value,text:document.getElementById('supplyResults').innerText,first:document.querySelector('.supply-result')?.innerText,reason:document.querySelector('.supply-recommendation-reason')?.innerText,count:document.querySelectorAll('.supply-result').length,choices:document.querySelectorAll('[data-production-alternative]').length,open:document.getElementById('rhwSupplyDialog').open}))()")
         imported = base.ev(cdp, "(()=>({mode:supplyMode.selectedOptions[0].textContent,header:document.querySelector('.header-trade-button small').textContent,groups:[...supplyCommodity.querySelectorAll('optgroup')].map(g=>({label:g.label,names:[...g.querySelectorAll('option')].map(o=>o.value)})),names:[...supplyCommodity.options].map(o=>o.value)}))()")
@@ -270,15 +270,15 @@ def main():
             raise RuntimeError('A failed stock feed must promptly abort unrelated hanging reference refreshes')
         base.ev(cdp, "window.supplyHoldReferences=false")
         base.ev(cdp, "document.getElementById('supplyClose').click()")
-        wait_for(cdp, "!document.getElementById('rhwSupplyDialog').open && !!document.activeElement.closest('.production-card')", 3)
+        wait_for(cdp, "!document.getElementById('rhwSupplyDialog').open && !!document.activeElement.closest('#rhwItemDetails')", 3)
         # A desktop resize hides mobile material lists. Keep focus in the source
         # module, then separately verify exact trigger restoration on the phone.
         cdp.call('Emulation.setDeviceMetricsOverride', {'width': 390, 'height': 844, 'deviceScaleFactor': 1, 'mobile': True})
-        base.ev(cdp, "(()=>{window.supplyOffline=false;const b=document.querySelector('.production-card [data-supply-commodity=\"Ablative Armor Plating\"]');b.focus();b.click();return true})()")
+        base.ev(cdp, "(()=>{window.supplyOffline=false;const b=document.querySelector('#rhwItemDetails [data-supply-commodity=\"Ablative Armor Plating\"]');b.focus();b.click();return true})()")
         wait_for(cdp, "document.getElementById('rhwSupplyDialog').open && !document.getElementById('supplySearch').disabled && document.querySelectorAll('.supply-result').length>0")
         base.ev(cdp, "document.getElementById('supplyClose').click()")
         wait_for(cdp, "!document.getElementById('rhwSupplyDialog').open && document.activeElement.dataset.supplyCommodity==='Ablative Armor Plating'", 3)
-        base.ev(cdp, "(()=>{document.getElementById('supplyPobs').checked=true;location.hash='#command/inventory';return true})()")
+        base.ev(cdp, "(()=>{document.getElementById('rhwItemDetails').close('navigate');document.getElementById('supplyPobs').checked=true;location.hash='#command/inventory';return true})()")
         wait_for(cdp, "document.querySelector('#exportList [data-export-commodity=\"Multi-Mode Focusing Chamber\"]')?.getClientRects().length>0")
         base.ev(cdp, "document.querySelector('#exportList [data-export-commodity=\"Multi-Mode Focusing Chamber\"]').click()")
         wait_for(cdp, "document.getElementById('supplyMode').value==='export' && !document.getElementById('supplySearch').disabled && document.querySelectorAll('.supply-result').length>0")

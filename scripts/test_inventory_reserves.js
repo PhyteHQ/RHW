@@ -43,6 +43,9 @@ ctx.__RHW_RECIPE_CATALOG__ = JSON.parse(zlib.gunzipSync(Buffer.from(ctx.__RHW_RE
   assert.equal(model.reserve('MOX').recipeId,'recipe_mox_fuel_basic');
   assert.deepEqual(Array.from(model.reserve('MOX').inputs),['Toxic Waste']);
   assert.equal(model.input('Toxic Waste','recipe_mox_fuel_basic').cycles,17);
+  assert.equal(model.moxFeedstock().cycles,17);
+  assert.equal(model.moxFeedstock().potentialOutput,5661);
+  assert.equal(model.moxFeedstock().state,'ok');
   assert.equal(app.production.selectMoxRecipe('recipe_mox_fuel_advanced'),true);
   assert.equal(model.definition('MOX').recipeId,'recipe_mox_fuel_advanced','Inventory links follow the selected producing recipe');
   assert.deepEqual(Array.from(model.reserve('MOX').inputs),['Toxic Waste','Uranium']);
@@ -60,6 +63,11 @@ ctx.__RHW_RECIPE_CATALOG__ = JSON.parse(zlib.gunzipSync(Buffer.from(ctx.__RHW_RE
   assert.equal(model.reserve('Gold').stock,8600,'An absent alternate does not hide a reported usable stock');
   assert.equal(model.reserve('Prototype Components').stock,null);
   assert.equal(model.input('Military Salvage','recipe_milsal').stock,null,'Absent feedstock is not invented as zero');
+  for (const [stock, state, cycles] of [[0,'critical',0],[500,'critical',0],[1500,'low',1],[50000,'ok',50],[null,'waiting',null]]) {
+    ctx.items=[raw('Toxic Waste',stock)];
+    assert.equal(model.moxFeedstock().state,state,'TW state describes selected-recipe coverage, not waste disposal');
+    assert.equal(model.moxFeedstock().cycles,cycles);
+  }
 
   ctx.items = [raw('Archon Design Schematics',99),{nickname:'medium_miner_package',name:'Archon Modular Miner',quantity:2},
     {nickname:'dsy_cargobarge_1_package',name:'Barge',quantity:3},{name:'Asteroid Miner',quantity:'bad'}];

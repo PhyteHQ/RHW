@@ -246,10 +246,17 @@ are simply Import / Export; internal
 NPC markets, physical docking, BMM ID exclusions, unknown personal access,
 snapshot provenance and cancellation retain the existing supply contracts.
 
-On wide desktop headers, the wordmark occupies the left column and the crest
-is centered absolutely inside a reserved middle column. Its height follows the
-existing header bounds, so the primary navigation is not pushed down. Narrower
-layouts keep the compact crest and accessible header actions.
+The compact header groups a small crest, telemetry and accessible actions.
+`js/core/navigation.js` keeps daily destinations in `appCommandNavSlot`, inside
+the persistent sidebar or compact sticky row. Auxiliary context navigation stays
+mounted for route contracts but hidden. Desktop uses a 16 px scroll offset;
+compact layouts measure only the sticky navigation row.
+
+`js/command/item-details.js` owns the shared native recipe/material dialog. It
+reads the same rendered requirements and inventory model as the comparison list,
+refreshes through named render/lifecycle hooks, and delegates costing and supply
+actions to the existing bridges. It does not infer production jobs or module
+installation. Toxic Waste status derives from selected-recipe input batches.
 
 `js/command/supply-routes.js` owns compact, labelled route icons beside commodity
 names and the lazy dialog entry. Their SVGs are decorative; the buttons carry

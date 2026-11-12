@@ -2,7 +2,7 @@
 (function initInventoryNavigation() {
   'use strict';
   const app = window.RHWV4;
-  let usesDialog, returnFocus, highlightTimer;
+  let highlightTimer;
   function recipe(recipeId) {
     productionModuleFilter = 'all'; productionModuleQuery = '';
     app.navigate('command', 'production');
@@ -12,15 +12,9 @@
     requestAnimationFrame(() => {
       const card = [...document.querySelectorAll('.production-card')].find(node => node.dataset.productionRecipe === recipeId);
       if (!card) { app.notify('Production recipe is not available in this view.', 'warn'); return; }
-      productionExpandedModules.add(card.dataset.productionProduct);
-      card.classList.remove('production-card-collapsed'); card.classList.add('production-card-expanded');
       const button = card.querySelector('.production-card-toggle');
-      button?.setAttribute('aria-expanded', 'true');
-      if (button) {
-        button.querySelector('span').textContent = 'CLOSE DETAILS';
-        button.setAttribute('aria-label', `Hide details for ${card.querySelector('.production-title').textContent}`);
-      }
-      card.tabIndex = -1; card.focus({ preventScroll: true });
+      app.itemDetails.openRecipe(recipeId, button);
+      card.tabIndex = -1;
       card.scrollIntoView({ block: 'start', behavior: 'instant' });
       clearTimeout(highlightTimer);
       document.querySelectorAll('.inventory-target').forEach(node => node.classList.remove('inventory-target'));
@@ -39,34 +33,9 @@
     });
   }
   function material(name, trigger) {
-    const spec = app.inventoryModel.definition(name);
-    const options = [];
-    if (spec) options.push({ id: spec.recipeId, label: 'PRODUCE · ' + spec.members[0] });
-    const names = (spec?.members || [name]).map(keyFromName);
-    for (const r of app.production.recipes()) {
-      const consumed = r.ingredients.some(([n]) => names.includes(keyFromName(n)))
-        || Object.values(r.inputOptions || {}).some(group => group.some(n => names.includes(keyFromName(n))));
-      const produced = r.byproducts.some(([n]) => names.includes(keyFromName(n)));
-      if (consumed || produced) options.push({ id: r.recipeId, label: `${consumed ? 'USED BY' : 'PRODUCED BY'} · ${r.product}` });
-    }
-    if (options.length === 1) { recipe(options[0].id); return; }
-    if (!options.length) return;
-    if (!usesDialog) {
-      usesDialog = document.createElement('dialog'); usesDialog.className = 'inventory-uses-dialog';
-      usesDialog.setAttribute('aria-labelledby', 'inventoryUsesTitle'); document.body.append(usesDialog);
-      usesDialog.addEventListener('click', event => {
-        const target = event.target.closest('[data-inventory-choice]');
-        if (target) { usesDialog.close('navigate'); recipe(target.dataset.inventoryChoice); }
-        else if (event.target.closest('[data-inventory-close]')) usesDialog.close();
-      });
-      usesDialog.addEventListener('close', () => {
-        if (usesDialog.returnValue !== 'navigate' && returnFocus?.isConnected) returnFocus.focus({ preventScroll: true });
-      });
-    }
-    returnFocus = trigger;
-    usesDialog.innerHTML = `<h2 id="inventoryUsesTitle">${escapeHTML(spec?.label || name)}</h2><p>OPEN PRODUCTION</p>${options.map(option => `<button type="button" data-inventory-choice="${escapeHTML(option.id)}">${escapeHTML(option.label)}</button>`).join('')}<button type="button" data-inventory-close>CLOSE</button>`;
-    usesDialog.returnValue = ''; usesDialog.showModal();
+    app.itemDetails.openMaterial(name, trigger);
   }
+
   document.addEventListener('click', event => {
     const explicit = event.target.closest('button[data-inventory-recipe],button[data-inventory-material],button[data-inventory-hull],[data-inventory-yard]');
     const card = event.target.closest('li[data-inventory-recipe],li[data-inventory-material]');

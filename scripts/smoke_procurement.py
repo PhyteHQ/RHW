@@ -57,7 +57,7 @@ def main() -> int:
           const analysis=analyzeRecipe(batch),gold=analysis.ingredientData.find(row=>row.name==='Gold');
           const card=[...document.querySelectorAll('.production-card')].find(node=>node.querySelector('.production-title')?.textContent==='Superstructure Systems');
           if(card.classList.contains('production-card-collapsed'))card.querySelector('.production-card-toggle').click();
-          return {stock:gold.stock,cycles:analysis.possibleCycles,text:card.textContent,
+          return {stock:gold.stock,cycles:analysis.possibleCycles,text:document.getElementById('rhwItemDetails').textContent,
             selectors:document.querySelectorAll('[data-production-alternative]').length,
             preferences:RHWV4.store.get(RHWV4.config.storageKeys.calculatorState).altSelections};
         })()""")
@@ -66,9 +66,10 @@ def main() -> int:
         for width, height in [(360, 800), (390, 844), (1440, 1000)]:
             cdp.call('Emulation.setDeviceMetricsOverride', {'width': width, 'height': height, 'deviceScaleFactor': 1, 'mobile': width < 760})
             fit = base.ev(cdp, """(()=>{
-              document.querySelectorAll('.production-card-collapsed .production-card-toggle').forEach(button=>button.click());
+              const card=[...document.querySelectorAll('.production-card')].find(node=>node.querySelector('.production-title')?.textContent==='Superstructure Systems');
+              card.querySelector('.production-card-toggle').click();
               return {overflow:document.documentElement.scrollWidth>innerWidth+1,
-                stacked:[...document.querySelectorAll('.recipe-stock-breakdown')].every(group=>{const rows=[...group.children];return rows.every((row,i)=>i===0||row.getBoundingClientRect().top>=rows[i-1].getBoundingClientRect().bottom-1);}),
+                stacked:[...document.querySelectorAll('#rhwItemDetails .recipe-stock-breakdown')].every(group=>{const rows=[...group.children];return rows.every((row,i)=>i===0||row.getBoundingClientRect().top>=rows[i-1].getBoundingClientRect().bottom-1);}),
                 selectors:document.querySelectorAll('[data-production-alternative]').length};
             })()""")
             if fit['overflow'] or not fit['stacked'] or fit['selectors'] != 0:
@@ -80,6 +81,7 @@ def main() -> int:
             (out / f'pooled-production-{width}.png').write_bytes(base64.b64decode(shot['data']))
 
         target_recipe = base.ev(cdp, """(()=>{
+          document.getElementById('rhwItemDetails').close('navigate');
           const card=[...document.querySelectorAll('.production-card')].find(node=>node.querySelector('.production-title')?.textContent==='Basic Alloy');
           card.querySelector('.production-calc-button').click();
           return {recipe:RHWV4.state.calculator.recipeId,

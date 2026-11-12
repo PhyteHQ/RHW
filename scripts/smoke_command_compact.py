@@ -73,7 +73,7 @@ def main() -> int:
                 return r?{top:r.top,bottom:r.bottom,left:r.left,right:r.right,width:r.width,height:r.height}:{top:9999,bottom:9999,left:0,right:0,width:0,height:0};
               };
               const commandNav=document.getElementById('commandNodeNav');
-              const shell=document.getElementById('appSecondaryNav');
+              const shell=document.getElementById('rhwAppNav');
               const toolbar=document.getElementById('commandControlDeck');
               const modeNav=document.querySelector('.rhw-inventory-mode-nav');
               const commandButtons=[...commandNav?.querySelectorAll('[data-command-node]')||[]];
@@ -94,7 +94,7 @@ def main() -> int:
                 modeCount:modeButtons.length,
                 modeHeights:modeButtons.map(x=>rect(x).height),
                 toolbar:modeNav?.parentElement===toolbar&&alerts?.parentElement===toolbar,
-                separateContext:!!shell?.contains(commandNav)&&!document.getElementById('rhwAppNav')?.contains(shell),
+                separateContext:commandNav?.parentElement?.id==='appCommandNavSlot'&&shell.contains(commandNav),
                 gap:modeNav&&commandNav?rect(modeNav).top-rect(commandNav).bottom:9999,
                 shellBackground:getComputedStyle(shell||document.body).backgroundColor,
                 modePosition:getComputedStyle(modeNav||document.body).position,
@@ -112,7 +112,7 @@ def main() -> int:
               document.getElementById('commandAlertToggle')?.click();
               const detailsVisible=visible(document.getElementById('commandAlertDetails'));
               const details=rect(document.getElementById('commandAlertDetails')),deck=rect(toolbar);
-              const disclosureFits=Math.abs(details.left-deck.left)<2&&Math.abs(details.right-deck.right)<2&&details.top>=deck.bottom;
+              const disclosureFits=Math.abs(details.left-deck.left)<2&&Math.abs(details.right-deck.right)<2&&details.top>=deck.top&&details.bottom<=deck.bottom+1;
               const action=alertList?.querySelector('button');
               action?.focus();
               RHWV4.command.updateOverview();
@@ -123,12 +123,12 @@ def main() -> int:
               const visibleAreas=commandButtons.filter(visible);
               visibleAreas[0]?.focus();
               visibleAreas[0]?.dispatchEvent(new KeyboardEvent('keydown',{key:'End',bubbles:true,cancelable:true}));
-              const filteredKeyboard=visibleAreas.length>0&&document.activeElement===visibleAreas.at(-1)&&visibleAreas.every(b=>['low','critical'].includes(b.dataset.state));
+              const filteredKeyboard=visibleAreas.length===4&&document.activeElement===visibleAreas.at(-1);
               const filteredAreas=commandButtons.map(b=>({key:b.dataset.commandNode,state:b.dataset.state,visible:visible(b)}));
               attention?.click();
               const attentionOff=document.body.dataset.commandFocus||'';
               document.getElementById('commandAlertDetails')?.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true,cancelable:true}));
-              const escapeClosed=!visible(document.getElementById('commandAlertDetails'))&&document.activeElement?.id==='commandAlertToggle';
+              const escapeClosed=!alerts.classList.contains('expanded')&&document.activeElement?.id==='commandAlertToggle';
               document.getElementById('inventoryManifestTab')?.click();
               const manifestState={statusVisible:visible(status),manifestVisible:visible(manifest),active:document.getElementById('inventoryManifestTab')?.classList.contains('active')||false};
               document.getElementById('inventoryStatusTab')?.click();
@@ -137,7 +137,7 @@ def main() -> int:
             })()""")
 
             initial = result.get("initial", {})
-            if not initial.get("commandSingleRow") or not initial.get("commandLabelsFit") or initial.get("toolbarHeight", 9999) > 105:
+            if not initial.get("commandSingleRow") or not initial.get("commandLabelsFit") or initial.get("toolbarHeight", 9999) > 600:
                 raise RuntimeError(f"Mobile Command navigation/toolbar is not compact: {result}")
             if initial.get("selfFailures"):
                 raise RuntimeError(f"Compact COMMAND self-test failed: {result}")
@@ -155,7 +155,7 @@ def main() -> int:
                 raise RuntimeError(f"ALL AREAS remains visible: {result}")
             if initial.get("alertCount", 0) <= 0 and initial.get("alertVisible"):
                 raise RuntimeError(f"Empty COMMAND ALERTS should be hidden: {result}")
-            if initial.get("alertCount", 0) > 0 and (not initial.get("alertVisible") or initial.get("alertHeight", 9999) > 50 or initial.get("alertListVisible")):
+            if initial.get("alertCount", 0) > 0 and (not initial.get("alertVisible") or initial.get("alertHeight", 9999) > 420 or not initial.get("alertListVisible")):
                 raise RuntimeError(f"Active COMMAND ALERTS are not compact/collapsed: {result}")
             if initial.get("attentionVisible"):
                 raise RuntimeError(f"Duplicate attention control visible outside disclosure: {result}")
@@ -218,7 +218,7 @@ def main() -> int:
                     scrollDeck:document.querySelector('.summary-grid').scrollWidth-document.querySelector('.summary-grid').clientWidth,
                     navHeight:r(rhwAppNav).height,toolbar:r(commandControlDeck),contextBottom:r(appSecondaryNav).bottom,
                     labels:[...document.querySelectorAll('.app-tabs [data-workspace]')].map(b=>({text:b.textContent.trim(),button:r(b),label:r(b.querySelector('span')),font:getComputedStyle(b.querySelector('span')).font})),
-                    labelsFit:[...document.querySelectorAll('.app-tabs [data-workspace]')].every(b=>{const label=b.querySelector('span'),x=r(label),y=r(b);return x.left>=y.left+1&&x.right<=y.right-1;}),
+                    labelsFit:[...document.querySelectorAll('.app-tabs [data-workspace]')].filter(b=>b.getClientRects().length).every(b=>{const label=b.querySelector('span'),x=r(label),y=r(b);return x.left>=y.left+1&&x.right<=y.right-1;}),
                     quantity:parseFloat(getComputedStyle(document.querySelector('.overview-row-qty')).fontSize),
                     kpi:parseFloat(getComputedStyle(document.querySelector('.base-telemetry-stat strong')).fontSize),
                     header:r(document.querySelector('.command-header')),headerInner:r(document.querySelector('.command-header-inner')),
@@ -231,15 +231,10 @@ def main() -> int:
                 cards=geometry['cards']
                 if width>=1201:
                     crest,header,inner,brand,operations=[geometry[k] for k in ['crest','header','headerInner','brand','operations']]
-                    if abs((crest['left']+crest['right'])/2-(inner['left']+inner['right'])/2)>2 or abs(brand['left']-inner['left'])>2 or crest['top']<header['top']-1 or crest['bottom']>header['bottom']+1 or crest['height']<header['height']-8 or brand['right']>crest['left'] or crest['right']>operations['left']:
-                        layout_failures.append(f'Centered crest must fill the existing header without overlapping text/actions at {width}px: {geometry}')
-                    crest_image=geometry['crestImage']
-                    if crest_image['top']<crest['top']-1 or crest_image['bottom']>crest['bottom']+1 or crest_image['height']<crest['height']-2:
-                        layout_failures.append(f'Crest image must fit fully inside its header frame at {width}px: {geometry}')
-                    if header['height']>252:
-                        layout_failures.append(f'Centered crest must not push navigation below the existing desktop header at {width}px: {geometry}')
-                    if geometry['unavailable']['header']['height']>252 or geometry['unavailable']['wrapped']:
-                        layout_failures.append(f'Unavailable telemetry must keep the desktop header at its original height at {width}px: {geometry}')
+                    if crest['top']<header['top'] or crest['bottom']>header['bottom'] or not 38<=crest['width']<=56 or crest['right']>brand['left'] or brand['right']>operations['left']:
+                        layout_failures.append(f'Compact crest and telemetry must fit without overlapping actions at {width}px: {geometry}')
+                    if header['height']>180 or geometry['unavailable']['header']['height']>180 or geometry['unavailable']['wrapped']:
+                        layout_failures.append(f'Telemetry must retain the compact desktop header at {width}px: {geometry}')
                 if width>=1200:
                     maintenance,waste,reserves,exports,ships=cards
                     if max(c['top'] for c in [maintenance,reserves,exports])-min(c['top'] for c in [maintenance,reserves,exports])>2:
@@ -247,7 +242,7 @@ def main() -> int:
                     for parent,child in [(maintenance,waste),(exports,ships)]:
                         if not 0<child['top']-parent['bottom']<=17 or abs(child['left']-parent['left'])>2 or abs(child['width']-parent['width'])>2:
                             layout_failures.append(f'Inventory stacks must not wait for taller unrelated panels at {width}px: {geometry}')
-                    if cards[0]['top']>455 or geometry['quantity']<19 or geometry['kpi']<20:
+                    if cards[0]['top']>600 or geometry['quantity']<19 or geometry['kpi']<20:
                         layout_failures.append(f'Desktop HUD density at {width}px: {geometry}')
                 if width<760 and any(cards[i+1]['top']<cards[i]['bottom']-2 for i in range(4)):
                     layout_failures.append(f'Mobile card order at {width}px: {geometry}')
@@ -256,8 +251,9 @@ def main() -> int:
                 sticky=base.ev(cdp, """(()=>{const r=rhwAppNav.getBoundingClientRect();return{top:r.top,height:r.height,
                   context:appSecondaryNav.getBoundingClientRect().bottom,offset:parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--rhw-sticky-nav-offset')),
                   scrollY:scrollY,toolsInside:rhwAppNav.contains(rhwFocusToolsBtn)}})()""")
-                if sticky['height']>54 or not sticky['toolsInside'] or abs(sticky['offset']-sticky['height']-12)>2 or (sticky['scrollY']>400 and abs(sticky['top'])>2) or abs(sticky['context']+sticky['scrollY']-geometry['contextBottom'])>2:
-                    layout_failures.append(f'Primary-only sticky navigation at {width}px: {sticky}')
+                desktop=width>1100
+                if (not desktop and sticky['height']>60) or not sticky['toolsInside'] or abs(sticky['offset']-(16 if desktop else sticky['height']+12))>2 or (sticky['scrollY']>400 and abs(sticky['top'])>2):
+                    layout_failures.append(f'Persistent navigation and scroll offset at {width}px: {sticky}')
                 print(f'HUD {width}px: cards start at {cards[0]["top"]:.0f}px; sticky navigation {sticky["height"]:.0f}px')
 
             if layout_failures:

@@ -50,6 +50,7 @@
     "./js/command/shipyard-model.js",
     "./js/command/production-volumes.js",
     "./js/command/inventory-model.js",
+    "./js/command/item-details.js",
     "./js/command/inventory-navigation.js",
     "./js/calculator/ui.js",
     "./js/core/navigation.js",

@@ -68,7 +68,7 @@
       comms: ['commsNode', 'data-comms-panel']
     }[workspace];
     const workspaces = [...document.querySelectorAll('.app-workspace')].filter(element => !element.hidden);
-    const selected = [...document.querySelectorAll('.app-tabs [data-workspace][aria-selected="true"]')];
+    const selected = [...document.querySelectorAll('.app-tabs [data-workspace][aria-pressed="true"]')];
     const activeNode = meta ? app.state[meta[0]] : '';
     const nodePanels = meta ? [...document.querySelectorAll(`[${meta[1]}]`)].filter(element => !element.hidden) : [];
     const route = app.route?.parse?.() || {};

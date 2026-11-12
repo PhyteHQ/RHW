@@ -383,6 +383,8 @@ function overviewReferences(recipes) {
     statusPill: () => '<span class="pill">STABLE</span>',
     readinessText: () => 'READY', productionRecipes: () => recipes
   });
+  ctx.window = ctx;
+  ctx.RHWV4 = { inventoryModel: { moxFeedstock: () => ({ cycles: 17, variant: 'BASIC' }) } };
   run(ctx, 'js/command/config.js');
   vm.runInContext('const CUSTOM_ALERTS=DASHBOARD_CONFIG.alerts, FEEDSTOCK=DASHBOARD_CONFIG.roles.feedstock;', ctx);
   run(ctx, 'js/command/inventory.js');
@@ -394,9 +396,10 @@ function overviewReferences(recipes) {
   assert.equal(ref({name:'Basic Alloy',quantity:350,min_stock:1000},'maintenance'), null);
   assert.equal(ref({name:'Unconfigured Material',quantity:50,min_stock:500},'export'), null);
   assert.equal(evaluate(`overviewDetail(${JSON.stringify(reactor)},'low','export')`), 'READY');
-  assert.deepEqual(ref({name:'Toxic Waste',quantity:17000,max_stock:50000},'byproduct'), {value:15000,label:'DISPOSAL AT'});
+  assert.equal(ref({name:'Toxic Waste',quantity:17000,max_stock:50000},'byproduct'), null, 'MOX feedstock has no disposal threshold');
   assert.deepEqual(ref({name:'Wildcat Gold',quantity:0},'confiscated'), {value:25000,label:'REVIEW AT'});
-  assert.equal(evaluate("overviewDetail({name:'Toxic Waste',quantity:17000},'low','byproduct')"), 'DISPOSAL REQUIRED');
+  assert.equal(evaluate("overviewDetail({name:'Toxic Waste',quantity:17000},'ok','byproduct')"), 'TW FOR 17 BASIC MOX BATCHES');
+  assert.equal(evaluate("overviewDetail({name:'Toxic Waste',quantity:null},'waiting','byproduct')"), 'STOCK UNKNOWN');
   assert.deepEqual(ref({name:'Gold Ore',quantity:400},'procurement'), {value:425,label:'BATCH INPUT'});
   assert.deepEqual(ref({name:'Scrap Metal',quantity:0,missing:true},'procurement'), {value:750,label:'BATCH INPUT'});
   assert.equal(ref(null,'export'), null);
