@@ -68,6 +68,7 @@
     "./js/command/status-navigation.js",
     "./js/shared/workspaces.js",
     "./js/shared/workspace-surfaces.js",
+    "./js/shared/presentation.js",
     "./js/command/logistics-navigation.js",
     "./js/command/inventory-toolbar.js",
     "./js/core/tools-navigation.js",

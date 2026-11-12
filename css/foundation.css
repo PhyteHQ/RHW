@@ -100,7 +100,7 @@
 
 :root {
   --bg: var(--palette-canvas);
-  --panel: #101115;
+  --panel: var(--rhw-panel-fill);
   --line: var(--palette-line);
   --line-soft: #23242a;
   --text: var(--palette-text);
@@ -114,10 +114,10 @@
   --remote: #b5bbc9;
   --waste: #b7afa0;
   --waste-soft: rgba(183,175,160,.15);
-  --surface-input: #090a0d;
-  --surface-raised: #18191f;
+  --surface-input: var(--rhw-inset-fill);
+  --surface-raised: var(--rhw-head-surface);
   --surface-hover: #22232b;
-  --rhw-head-fill: linear-gradient(110deg,#26221b,#121318 76%);
+  --rhw-head-fill: var(--rhw-head-surface);
   --rhw-space-sm: 8px;
   --rhw-space-md: 16px;
   --rhw-space-lg: 24px;

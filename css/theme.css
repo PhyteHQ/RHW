@@ -582,7 +582,7 @@ html.rhw-focus-pass .rhw-full-audit-actions button:first-child { border-color:va
 
 html.rhw-focus-pass .rhw-full-audit-actions button:is(:hover,:focus-visible) { border-color:var(--gold);background:var(--rhw-control-hover);color:var(--gold); }
 
-html.rhw-focus-pass .rhw-focus-tool-card { min-height: 80px;background: var(--rhw-head-fill);border-color: var(--line);grid-template-columns: 1fr auto; }
+html.rhw-focus-pass .rhw-focus-tool-card { min-height: 80px;background: var(--rhw-head-fill);border-color: var(--line);grid-template-columns: minmax(0,1fr) auto;grid-template-areas:"copy arrow"; }
 
 html.rhw-focus-pass .rhw-focus-tool-copy strong { font: 500 21px/1.2 var(--font-title); }
 
@@ -703,4 +703,172 @@ html.rhw-focus-pass .market-card .supplier-commodity-row:not(.market-empty-row) 
 html.rhw-focus-pass .market-card .supplier-commodity-name { grid-column: 1 / -1; }
 html.rhw-focus-pass .market-card .supplier-commodity-metric { display: flex;flex-direction: column;align-items: flex-start;gap: 4px;text-align: left; }
 html.rhw-focus-pass .market-card .supplier-commodity-metric.price { align-items: flex-end;text-align: right; }
+}
+
+/* Shared application surfaces. The forum document keeps its own content styling. */
+html.rhw-focus-pass.rhw-workbench { --rhw-surface-radius:4px; }
+html.rhw-focus-pass.rhw-workbench :is(.alert-card,.panel,.ops-panel,.comms-panel,.market-card,.remote-card,.capital-shipyard-control,.sender-registry-card,.sender-editor,.rhw-transfer-center,.rhw-diagnostics-card,.discovery-data-grid article) { border:1px solid var(--line);border-radius:var(--rhw-surface-radius);background:var(--panel);box-shadow:none;clip-path:none; }
+html.rhw-focus-pass.rhw-workbench :is(.panel-head,.ops-panel-head,.comms-panel-head,.logistics-subhead,.rhw-focus-tools-head,.rhw-diagnostics-head,.rhw-transfer-sheet>header,.discovery-data-head,.sender-editor-head) { min-height:56px;padding:14px 18px;background:var(--surface-raised);border-bottom:1px solid var(--line);box-shadow:none; }
+html.rhw-focus-pass.rhw-workbench :is(.ops-panel-head,.comms-panel-head)>div>strong { color:var(--gold);font:500 24px/1.15 var(--font-title);letter-spacing:.025em; }
+html.rhw-focus-pass.rhw-workbench :is(.ops-panel-head,.comms-panel-head)>div>span { display:inline-flex;align-items:center;justify-content:center;min-width:26px;min-height:26px;padding:3px;border:1px solid var(--line);border-radius:3px;background:var(--surface-input);color:var(--muted);font:11px/1.3 var(--font-tech);letter-spacing:0; }
+html.rhw-focus-pass.rhw-workbench :is(.ops-panel-head,.comms-panel-head)>small { color:var(--muted);font:11px/1.4 var(--font-main);letter-spacing:.025em; }
+html.rhw-focus-pass.rhw-workbench :is(.comms-actions button,.comms-draft-actions button,.sender-registry-actions button,.sender-editor-head button,.comms-surface-actions button,.comms-mini-action,.comms-panel-head-actions button,.ops-quantity-control button,.ops-mobile-jumps button,.ops-mobile-quote-jump,.comms-mobile-view-switch button,.comms-bbcode-toggle,.rhw-focus-tool-card,.rhw-mobile-workspaces button) { min-height:44px;padding:9px 12px;border:1px solid var(--line);border-radius:var(--rhw-surface-radius);background:var(--rhw-control-fill);color:var(--text);box-shadow:none;clip-path:none;font:500 13px/1.4 var(--font-main);letter-spacing:0; }
+html.rhw-focus-pass.rhw-workbench :is(.comms-actions button,.comms-draft-actions button,.sender-registry-actions button,.sender-editor-head button,.comms-surface-actions button,.comms-mini-action,.comms-panel-head-actions button,.ops-quantity-control button,.ops-mobile-jumps button,.ops-mobile-quote-jump,.comms-mobile-view-switch button,.comms-bbcode-toggle,.rhw-focus-tool-card):not(:disabled):hover { border-color:var(--gold);background:var(--rhw-control-hover);color:var(--gold); }
+html.rhw-focus-pass.rhw-workbench :is(.comms-actions,.comms-surface-actions) button.comms-primary { background:var(--rhw-action-fill);border-color:var(--rhw-control-border);color:var(--gold); }
+html.rhw-focus-pass.rhw-workbench :is(.comms-field,.ops-field,.ops-form-grid label,.supply-fields label) { gap:7px; }
+html.rhw-focus-pass.rhw-workbench :is(.comms-field>span,.message-field>label,.ops-field>span,.sender-editor label>span) { color:var(--muted);font:500 12px/1.5 var(--font-main);letter-spacing:.025em; }
+html.rhw-focus-pass.rhw-workbench :is(input,select,textarea) { border-color:var(--line);background:var(--surface-input);color:var(--text);box-shadow:none; }
+html.rhw-focus-pass.rhw-workbench :is(input,select,textarea):hover { border-color:var(--palette-line-bright); }
+html.rhw-focus-pass.rhw-workbench :is(input,select,textarea):focus { border-color:var(--gold); }
+html.rhw-focus-pass.rhw-workbench :is(.ops-material-table,.ops-comparison-table,.pricecheck-table,.shipyard-material-table) { background:transparent;color:var(--text); }
+html.rhw-focus-pass.rhw-workbench :is(.ops-material-table,.ops-comparison-table,.pricecheck-table,.shipyard-material-table) thead th { color:var(--muted);background:var(--surface-raised);border-color:var(--line);font:500 12px/1.4 var(--font-main);letter-spacing:.025em;box-shadow:none; }
+html.rhw-focus-pass.rhw-workbench :is(.ops-material-table,.ops-comparison-table,.pricecheck-table,.shipyard-material-table) tbody :is(th,td) { border-color:var(--line); }
+
+/* Shipyard: selection cards, material summary and prerequisites share the same surfaces. */
+html.rhw-focus-pass.rhw-workbench #shipyardControl .shipyard-control-grid { gap:20px;padding:20px; }
+html.rhw-focus-pass.rhw-workbench #shipyardControl .shipyard-divisions button { border:1px solid var(--line);border-bottom:2px solid var(--line);border-radius:4px;background:var(--surface-input);box-shadow:none;color:var(--muted); }
+html.rhw-focus-pass.rhw-workbench #shipyardControl .shipyard-divisions button[aria-pressed="true"] { background:var(--rhw-selected-fill);border-color:var(--rhw-control-border);border-bottom-color:var(--gold);color:var(--gold); }
+html.rhw-focus-pass.rhw-workbench #shipyardControl .shipyard-division-count { color:var(--muted);font:11px/1.4 var(--font-main); }
+html.rhw-focus-pass.rhw-workbench #shipyardControl .shipyard-hull-card { min-height:148px;padding:16px;border:1px solid var(--line);border-radius:4px;background:var(--surface-input);box-shadow:none; }
+html.rhw-focus-pass.rhw-workbench #shipyardControl .shipyard-hull-card[aria-pressed="true"] { border-color:var(--rhw-control-border);background:var(--rhw-selected-fill);box-shadow:inset 3px 0 var(--gold); }
+html.rhw-focus-pass.rhw-workbench #shipyardControl .shipyard-hull-card::after { display:none; }
+html.rhw-focus-pass.rhw-workbench #shipyardControl .shipyard-hull-name { font:500 24px/1.15 var(--font-title);letter-spacing:.02em;text-shadow:none; }
+html.rhw-focus-pass.rhw-workbench #shipyardControl .shipyard-hull-type { font:12px/1.4 var(--font-main);color:var(--muted); }
+html.rhw-focus-pass.rhw-workbench #shipyardControl :is(.shipyard-hull-stock-label,.shipyard-hull-price-label,.shipyard-registry-heading,.shipyard-eyebrow) { font:12px/1.5 var(--font-main);color:var(--muted);letter-spacing:0; }
+html.rhw-focus-pass.rhw-workbench #shipyardControl .shipyard-hull-stock { font:26px/1.3 var(--font-tech); }
+html.rhw-focus-pass.rhw-workbench #shipyardControl .shipyard-hull-price { font:20px/1.3 var(--font-tech); }
+html.rhw-focus-pass.rhw-workbench #shipyardControl .shipyard-hull-indicator { box-shadow:none; }
+html.rhw-focus-pass.rhw-workbench #shipyardControl .shipyard-decision-strip { border-color:var(--line);border-radius:4px;background:var(--surface-input);box-shadow:none; }
+html.rhw-focus-pass.rhw-workbench #shipyardControl .shipyard-decision-metric { padding:16px;min-height:100px;background:transparent; }
+html.rhw-focus-pass.rhw-workbench #shipyardControl .shipyard-decision-metric small { color:var(--muted);font:12px/1.4 var(--font-main);letter-spacing:.02em; }
+html.rhw-focus-pass.rhw-workbench #shipyardControl .shipyard-decision-metric strong { font:500 18px/1.4 var(--font-main); }
+html.rhw-focus-pass.rhw-workbench #shipyardControl .shipyard-coverage strong { font:32px/1.2 var(--font-tech); }
+html.rhw-focus-pass.rhw-workbench #shipyardControl .shipyard-next-ship strong { font:26px/1.3 var(--font-tech); }
+html.rhw-focus-pass.rhw-workbench #shipyardControl :is(.shipyard-coverage,.shipyard-next-ship) strong span { font:14px/1.5 var(--font-main); }
+html.rhw-focus-pass.rhw-workbench #shipyardControl .shipyard-prerequisites { padding:16px;background:var(--surface-input);border:1px solid var(--line);border-radius:4px;box-shadow:none; }
+html.rhw-focus-pass.rhw-workbench #shipyardControl .shipyard-prerequisites h3 { font:500 24px/1.2 var(--font-title);letter-spacing:.025em; }
+html.rhw-focus-pass.rhw-workbench #shipyardControl .shipyard-prerequisite-status { font:11px/1.4 var(--font-main);letter-spacing:0; }
+html.rhw-focus-pass.rhw-workbench #shipyardControl .shipyard-shortage { background:var(--rhw-selected-fill);border-color:var(--rhw-control-border);color:var(--gold); }
+
+/* Logistics and Price Check keep their data-specific meaning within common frames. */
+html.rhw-focus-pass.rhw-workbench .market-card { --market-header:var(--surface-raised);border-top:1px solid var(--line);background:var(--panel);box-shadow:none; }
+html.rhw-focus-pass.rhw-workbench .market-card:is([data-market-family="gold"],[data-market-family="components"]) { --market-header:var(--surface-raised);border-top-color:var(--line); }
+html.rhw-focus-pass.rhw-workbench .market-card[data-market-kind="ore"] { border-left:2px solid var(--line); }
+html.rhw-focus-pass.rhw-workbench .market-card::after,html.rhw-focus-pass.rhw-workbench .market-card .supplier-scanline { display:none; }
+html.rhw-focus-pass.rhw-workbench .market-card::before { height:2px;box-shadow:none; }
+html.rhw-focus-pass.rhw-workbench .market-card:hover { transform:none;box-shadow:none; }
+html.rhw-focus-pass.rhw-workbench .market-card .remote-facility-head { background:var(--surface-raised);border-color:var(--line); }
+html.rhw-focus-pass.rhw-workbench .market-card .market-material-symbol { border-color:var(--line);background:var(--surface-input);box-shadow:none; }
+html.rhw-focus-pass.rhw-workbench .market-card .supplier-title { color:var(--text);text-shadow:none; }
+html.rhw-focus-pass.rhw-workbench .market-card .supplier-commodity-row { border-left:0;background:transparent;border-bottom:1px solid var(--line); }
+html.rhw-focus-pass.rhw-workbench .market-card .supplier-commodity-row:hover { background:var(--surface-raised); }
+html.rhw-focus-pass.rhw-workbench .market-card .supplier-commodity-metric strong { font:20px/1.3 var(--font-tech); }
+html.rhw-focus-pass.rhw-workbench .market-card .supplier-commodity-metric.price strong { color:var(--gold); }
+html.rhw-focus-pass.rhw-workbench .pricecheck-status-grid { gap:0;border:1px solid var(--line);border-radius:4px;overflow:hidden;background:var(--surface-input); }
+html.rhw-focus-pass.rhw-workbench .pricecheck-status { padding:16px;border:0;border-right:1px solid var(--line);border-radius:0;background:transparent;box-shadow:none; }
+html.rhw-focus-pass.rhw-workbench .pricecheck-status:last-child { border-right:0; }
+html.rhw-focus-pass.rhw-workbench .pricecheck-status strong { margin-top:6px;font:26px/1.3 var(--font-tech); }
+html.rhw-focus-pass.rhw-workbench .pricecheck-table-wrap { border-color:var(--line);background:var(--panel); }
+html.rhw-focus-pass.rhw-workbench .pricecheck-row { border-color:var(--line);border-radius:4px;background:var(--panel);box-shadow:none; }
+html.rhw-focus-pass.rhw-workbench .pricecheck-difference strong { box-shadow:none;background:transparent; }
+html.rhw-focus-pass.rhw-workbench :is(.pricecheck-source-price,.pricecheck-payout strong) { font:18px/1.4 var(--font-tech); }
+
+/* Calculator: common form fields, a quiet quote flow and consistent comparison tables. */
+html.rhw-focus-pass.rhw-workbench .ops-quote-panel { container:quote / inline-size;border-top:1px solid var(--line); }
+html.rhw-focus-pass.rhw-workbench .ops-recipe-meta { margin:0 16px 16px;padding:12px 0;border:1px solid var(--line);background:var(--surface-input); }
+html.rhw-focus-pass.rhw-workbench .ops-recipe-meta>div { padding:0 12px;border-right:1px solid var(--line); }
+html.rhw-focus-pass.rhw-workbench .ops-recipe-meta>div:last-child { border-right:0; }
+html.rhw-focus-pass.rhw-workbench .ops-recipe-meta strong { font:26px/1.3 var(--font-tech); }
+html.rhw-focus-pass.rhw-workbench .ops-pricing-flow { display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0;border:1px solid var(--line);border-radius:4px;background:var(--surface-input);overflow:hidden; }
+html.rhw-focus-pass.rhw-workbench .ops-flow-arrow { display:none; }
+html.rhw-focus-pass.rhw-workbench .ops-flow-card { min-width:0;min-height:0;padding:16px;border:0;border-left:1px solid var(--line);border-radius:0;background:transparent;box-shadow:none; }
+html.rhw-focus-pass.rhw-workbench .ops-flow-cost { border-left:0; }
+html.rhw-focus-pass.rhw-workbench .ops-flow-card>strong { font:30px/1.3 var(--font-tech); }
+html.rhw-focus-pass.rhw-workbench .ops-flow-sell { background:var(--rhw-selected-fill);box-shadow:inset 0 2px var(--gold); }
+html.rhw-focus-pass.rhw-workbench .ops-flow-card :is(p,span,em,b) { letter-spacing:0;font-family:var(--font-main); }
+html.rhw-focus-pass.rhw-workbench .ops-margin-input { min-width:0; }
+html.rhw-focus-pass.rhw-workbench .ops-profit-strip>div { border-color:var(--line);background:var(--surface-input); }
+html.rhw-focus-pass.rhw-workbench .ops-profit-strip strong { font:24px/1.3 var(--font-tech); }
+html.rhw-focus-pass.rhw-workbench :is(.ops-price-profiles,.ops-price-profile-tools,.ops-rhw-prices,.ops-comparison-prices) { border-color:var(--line);background:var(--surface-input); }
+html.rhw-focus-pass.rhw-workbench :is(.ops-price-profiles-head,.ops-comparison-table thead th) { border-color:var(--line);background:var(--surface-raised); }
+html.rhw-focus-pass.rhw-workbench .ops-comparison-best { background:var(--rhw-selected-fill); }
+html.rhw-focus-pass.rhw-workbench .ops-comparison-table tbody th { color:var(--text);font-family:var(--font-main); }
+@container quote (max-width:620px){
+ html.rhw-focus-pass.rhw-workbench .ops-pricing-flow { grid-template-columns:minmax(0,1fr); }
+ html.rhw-focus-pass.rhw-workbench .ops-flow-card { border-left:0;border-top:1px solid var(--line); }
+ html.rhw-focus-pass.rhw-workbench .ops-flow-cost { border-top:0; }
+}
+
+/* Forum, drafts and senders: content-sized typography and the same control hierarchy. */
+html.rhw-focus-pass.rhw-workbench .comms-workflow-status { margin:16px;padding:12px;border:1px solid var(--line);background:var(--surface-input);font:13px/1.5 var(--font-main); }
+html.rhw-focus-pass.rhw-workbench .comms-context-tools { padding:0 16px 16px;gap:8px; }
+html.rhw-focus-pass.rhw-workbench .comms-editor-toolbar { padding:8px;background:var(--surface-raised);border-color:var(--line);gap:6px; }
+html.rhw-focus-pass.rhw-workbench .comms-editor-toolbar button { background:var(--rhw-control-fill);border-color:var(--line);font:500 13px/1.4 var(--font-main) !important; }
+html.rhw-focus-pass.rhw-workbench .comms-advanced { margin-top:16px;border:1px solid var(--line);border-radius:4px;background:var(--surface-input); }
+html.rhw-focus-pass.rhw-workbench .comms-advanced>summary { padding:12px 14px;color:var(--text);font:13px/1.5 var(--font-main); }
+html.rhw-focus-pass.rhw-workbench .comms-advanced[open] { padding-bottom:14px; }
+html.rhw-focus-pass.rhw-workbench .comms-advanced .comms-field-grid { padding:0 14px; }
+html.rhw-focus-pass.rhw-workbench .comms-message-help { font:12px/1.5 var(--font-main); }
+html.rhw-focus-pass.rhw-workbench .bbcode-panel textarea { background:var(--surface-input);border-color:var(--line);font:13px/1.65 var(--font-tech); }
+html.rhw-focus-pass.rhw-workbench .sender-registry { gap:16px;padding:16px; }
+html.rhw-focus-pass.rhw-workbench .sender-registry-intro { padding:16px;color:var(--muted);font:14px/1.6 var(--font-main);letter-spacing:0; }
+html.rhw-focus-pass.rhw-workbench .sender-registry-head { border-color:var(--line); }
+html.rhw-focus-pass.rhw-workbench .sender-registry-head small { color:var(--muted);font:12px/1.5 var(--font-main);letter-spacing:0; }
+html.rhw-focus-pass.rhw-workbench .sender-registry-head strong { font:500 26px/1.2 var(--font-title);letter-spacing:.025em; }
+html.rhw-focus-pass.rhw-workbench .sender-registry-head>span { color:var(--muted);background:var(--surface-input);border-color:var(--line);font:11px/1.4 var(--font-main);letter-spacing:0; }
+html.rhw-focus-pass.rhw-workbench .sender-registry-card dl>div { grid-template-columns:100px minmax(0,1fr);padding:8px 0;border-bottom:1px solid var(--line); }
+html.rhw-focus-pass.rhw-workbench .sender-registry-card dt { color:var(--muted);font:12px/1.5 var(--font-main);letter-spacing:0; }
+html.rhw-focus-pass.rhw-workbench .sender-registry-card dd { color:var(--text);font:14px/1.5 var(--font-main); }
+html.rhw-focus-pass.rhw-workbench .sender-editor-head small { color:var(--muted);font:12px/1.4 var(--font-main);letter-spacing:0; }
+html.rhw-focus-pass.rhw-workbench .sender-editor-head strong { color:var(--gold);font:500 24px/1.2 var(--font-title);letter-spacing:.025em; }
+html.rhw-focus-pass.rhw-workbench .comms-draft-card { padding:16px;border:1px solid var(--line);border-left:2px solid var(--rhw-control-border);border-radius:4px;background:var(--surface-input); }
+html.rhw-focus-pass.rhw-workbench .comms-draft-card strong { color:var(--text);font:500 24px/1.2 var(--font-title);white-space:normal; }
+html.rhw-focus-pass.rhw-workbench .comms-draft-card small { color:var(--muted);font:12px/1.5 var(--font-main);white-space:normal;letter-spacing:0; }
+html.rhw-focus-pass.rhw-workbench .comms-archive-summary>div { background:var(--surface-input);border-color:var(--line); }
+html.rhw-focus-pass.rhw-workbench .comms-archive-summary strong { font:24px/1.4 var(--font-tech); }
+
+/* Every utility sheet uses the same inner cards, labels, fields and separators. */
+html.rhw-focus-pass.rhw-workbench :is(.rhw-focus-tool-card,.rhw-transfer-section,.rhw-transfer-section:hover,.rhw-transfer-privacy,.rhw-transfer-intro,.rhw-transfer-file-meta,.rhw-diagnostics-overall,.rhw-diagnostics-events,.discovery-source-details,.rhw-full-audit-summary>div) { border-color:var(--line);background:var(--surface-input);box-shadow:none; }
+html.rhw-focus-pass.rhw-workbench :is(.rhw-transfer-sheet>footer,.rhw-transfer-section-list,.rhw-diagnostics-grid,.rhw-diagnostics-actions,.rhw-diagnostics-card,.rhw-full-audit-result) { border-color:var(--line);background:var(--panel); }
+html.rhw-focus-pass.rhw-workbench .rhw-transfer-section-copy strong { color:var(--text);font:500 14px/1.5 var(--font-main);letter-spacing:0; }
+html.rhw-focus-pass.rhw-workbench .rhw-transfer-section-copy small { color:var(--muted);font:12px/1.5 var(--font-main); }
+html.rhw-focus-pass.rhw-workbench .rhw-transfer-section input:checked+.rhw-transfer-check { border-color:var(--gold);background:var(--rhw-selected-fill); }
+html.rhw-focus-pass.rhw-workbench .rhw-transfer-section input:checked+.rhw-transfer-check::after { color:var(--gold); }
+html.rhw-focus-pass.rhw-workbench :is(.rhw-transfer-intro>strong,.rhw-diagnostics-card strong,.discovery-data-grid strong) { font:500 20px/1.3 var(--font-title);color:var(--text); }
+html.rhw-focus-pass.rhw-workbench .rhw-transfer-privacy { border-left:2px solid var(--warn); }
+html.rhw-focus-pass.rhw-workbench .rhw-focus-tools-grid { gap:12px;padding:16px; }
+html.rhw-focus-pass.rhw-workbench .rhw-focus-tool-copy strong { color:var(--gold);font:500 24px/1.2 var(--font-title); }
+html.rhw-focus-pass.rhw-workbench .rhw-full-audit-result { padding:12px;border-bottom:1px solid var(--line); }
+@media(max-width:760px){
+ html.rhw-focus-pass.rhw-workbench :is(.panel-head,.ops-panel-head,.comms-panel-head,.logistics-subhead) { padding:12px 14px;flex-wrap:wrap; }
+ html.rhw-focus-pass.rhw-workbench #shipyardControl .shipyard-control-grid { padding:12px;gap:16px; }
+ html.rhw-focus-pass.rhw-workbench #shipyardControl .shipyard-hull-card { padding:12px; }
+ html.rhw-focus-pass.rhw-workbench #shipyardControl .shipyard-hull-price { font-size:17px; }
+ html.rhw-focus-pass.rhw-workbench #shipyardControl .shipyard-decision-metric { padding:12px;min-height:86px; }
+ html.rhw-focus-pass.rhw-workbench #shipyardControl .shipyard-decision-metric strong { font-size:16px; }
+ html.rhw-focus-pass.rhw-workbench #shipyardControl .shipyard-coverage strong { font-size:30px; }
+ html.rhw-focus-pass.rhw-workbench #shipyardControl .shipyard-next-ship { min-height:0; }
+ html.rhw-focus-pass.rhw-workbench .pricecheck-status { padding:12px;border-bottom:1px solid var(--line); }
+ html.rhw-focus-pass.rhw-workbench .pricecheck-status strong { font-size:22px; }
+ html.rhw-focus-pass.rhw-workbench .sender-registry { grid-template-columns:minmax(0,1fr);padding:12px; }
+ html.rhw-focus-pass.rhw-workbench .sender-registry-card dl>div { grid-template-columns:80px minmax(0,1fr); }
+ html.rhw-focus-pass.rhw-workbench :is(.rhw-transfer-sheet>header button,.rhw-transfer-sheet>footer button,.rhw-full-audit-actions button) { min-height:48px; }
+}
+
+html.rhw-focus-pass.rhw-workbench #shipyardControl .shipyard-divisions button { display:flex;flex-direction:row;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:4px 12px;min-height:60px;padding:12px 14px; }
+html.rhw-focus-pass.rhw-workbench #shipyardControl :is(.shipyard-division-title,.shipyard-divisions small) { display:none; }
+html.rhw-focus-pass.rhw-workbench #shipyardControl .shipyard-division-short { display:block;font:500 22px/1.2 var(--font-title);letter-spacing:.02em; }
+html.rhw-focus-pass.rhw-workbench #shipyardControl .shipyard-division-count { margin:0; }
+html.rhw-focus-pass.rhw-workbench .comms-signature-auto { padding:12px;border:1px solid var(--line);border-radius:4px;background:var(--surface-input); }
+html.rhw-focus-pass.rhw-workbench .comms-signature-auto small { color:var(--muted);font:12px/1.4 var(--font-main);letter-spacing:0; }
+html.rhw-focus-pass.rhw-workbench .comms-signature-auto strong { color:var(--text);font:500 24px/1.2 var(--font-title); }
+html.rhw-focus-pass.rhw-workbench .comms-signature-auto span { color:var(--muted);font:13px/1.5 var(--font-main);letter-spacing:0; }
+html.rhw-focus-pass.rhw-workbench .comms-workflow-status { grid-template-columns:repeat(4,minmax(0,1fr));gap:8px; }
+html.rhw-focus-pass.rhw-workbench .comms-workflow-score { grid-column:1/-1;display:flex;flex-direction:row;align-items:center;justify-content:space-between;gap:12px;min-height:0;padding:0 0 10px;border-bottom:1px solid var(--line);background:none; }
+html.rhw-focus-pass.rhw-workbench .comms-workflow-score small { font:12px/1.5 var(--font-main);letter-spacing:0; }
+html.rhw-focus-pass.rhw-workbench .comms-workflow-score strong { margin:0;font:18px/1.5 var(--font-tech);letter-spacing:0; }
+html.rhw-focus-pass.rhw-workbench .comms-workflow-status>span { min-height:32px;padding:4px 0;background:none;font:11px/1.4 var(--font-main);letter-spacing:0; }
+html.rhw-focus-pass.rhw-workbench :is(.comms-actions,.comms-draft-actions,.sender-registry-actions) button.danger { color:var(--danger); }
+@media(max-width:760px){
+ html.rhw-focus-pass.rhw-workbench #shipyardControl .shipyard-divisions button { flex-direction:column;justify-content:center;gap:4px;min-height:64px;padding:8px 4px; }
 }
