@@ -3134,7 +3134,9 @@ globalThis.RHW_PRODUCTION_VOLUMES = Object.freeze({
       if (dialog.open) return;
       document.querySelectorAll('.production-card-toggle').forEach(button => button.setAttribute('aria-expanded', 'false'));
       if (dialog.returnValue !== 'navigate') {
-        const fallback = [...document.querySelectorAll('.production-card')].find(card => card.dataset.productionRecipe === focusRecipe)?.querySelector('.production-card-toggle');
+        const fallback = selected?.type === 'material'
+          ? [...document.querySelectorAll('button[data-inventory-material]')].find(button => button.dataset.inventoryMaterial === selected.name)
+          : [...document.querySelectorAll('.production-card')].find(card => card.dataset.productionRecipe === focusRecipe)?.querySelector('.production-card-toggle');
         const target = visible(openedBy) ? openedBy : fallback;
         if (visible(target)) target.focus({ preventScroll: true });
       }
@@ -3900,9 +3902,9 @@ globalThis.RHW_PRODUCTION_VOLUMES = Object.freeze({
 
 /* SOURCE: js/core/navigation.js */
 /* ==========================================================================
-   RHW WEB APP · V4.0 NAVIGATION HIERARCHY
-   Mounts the active workspace's real sub-navigation directly below the global
-   COMMAND / OPERATIONS / COMMS switcher without duplicating controls.
+   RHW WEB APP · NAVIGATION HIERARCHY
+   Keeps daily destinations in one persistent desktop sidebar or compact row.
+   Auxiliary navigation stays mounted for route contracts without duplicate UI.
    ========================================================================== */
 (function initRhwV4NavigationHierarchy() {
   'use strict';

@@ -38,7 +38,9 @@
       if (dialog.open) return;
       document.querySelectorAll('.production-card-toggle').forEach(button => button.setAttribute('aria-expanded', 'false'));
       if (dialog.returnValue !== 'navigate') {
-        const fallback = [...document.querySelectorAll('.production-card')].find(card => card.dataset.productionRecipe === focusRecipe)?.querySelector('.production-card-toggle');
+        const fallback = selected?.type === 'material'
+          ? [...document.querySelectorAll('button[data-inventory-material]')].find(button => button.dataset.inventoryMaterial === selected.name)
+          : [...document.querySelectorAll('.production-card')].find(card => card.dataset.productionRecipe === focusRecipe)?.querySelector('.production-card-toggle');
         const target = visible(openedBy) ? openedBy : fallback;
         if (visible(target)) target.focus({ preventScroll: true });
       }

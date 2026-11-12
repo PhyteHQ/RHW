@@ -1,7 +1,7 @@
 /* ==========================================================================
-   RHW WEB APP · V4.0 NAVIGATION HIERARCHY
-   Mounts the active workspace's real sub-navigation directly below the global
-   COMMAND / OPERATIONS / COMMS switcher without duplicating controls.
+   RHW WEB APP · NAVIGATION HIERARCHY
+   Keeps daily destinations in one persistent desktop sidebar or compact row.
+   Auxiliary navigation stays mounted for route contracts without duplicate UI.
    ========================================================================== */
 (function initRhwV4NavigationHierarchy() {
   'use strict';

@@ -87,6 +87,11 @@ def main():
         assert base.ev(cdp, "itemsBody.querySelectorAll('tr').length===5 && [...itemsBody.querySelectorAll('tr')].some(n=>n.textContent.includes('Wildcat Gold'))")
         base.ev(cdp, "(()=>{inventoryStatusTab.click();window.inventoryBefore=JSON.stringify(items);reserveList.querySelector('button[data-inventory-material]').click();return true;})()")
         wait(cdp, "!!document.querySelector('.inventory-uses-dialog[open]')")
+        # A telemetry repaint can replace the original overview trigger while
+        # material details are open; close must find its current replacement.
+        base.ev(cdp, "(()=>{renderAll();RHWV4.itemDetails.close();return true})()")
+        wait(cdp, "document.activeElement?.dataset.inventoryMaterial==='Gold'")
+        base.ev(cdp, "reserveList.querySelector('button[data-inventory-material]').click()")
         base.ev(cdp, "document.querySelector('[data-inventory-choice=\"recipe_weapon_part_focusing_chamber\"]').click()")
         wait(cdp, "document.body.dataset.commandNode==='production' && !!document.querySelector('.inventory-target')")
         assert base.ev(cdp, "JSON.stringify(items)===inventoryBefore && document.querySelector('.inventory-target').dataset.productionRecipe==='recipe_weapon_part_focusing_chamber'")
