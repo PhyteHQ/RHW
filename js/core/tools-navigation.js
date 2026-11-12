@@ -37,8 +37,8 @@
     const calculator = document.querySelector('.app-tabs [data-workspace="operations"]');
     const forum = document.querySelector('.app-tabs [data-workspace="comms"]');
     if (command) {
-      const title = tabTitle(command); if (title) title.textContent = 'COMMAND';
-      const sub = command.querySelector('small'); if (sub) sub.textContent = 'RHW STATUS';
+      const title = tabTitle(command); if (title) title.textContent = 'RHW';
+      const sub = command.querySelector('small'); if (sub) sub.textContent = 'NEW LONDON · CORE 4';
       command.setAttribute('aria-label', 'Command');
     }
     if (calculator) {
@@ -56,13 +56,15 @@
   }
 
   function toolsMarkup() {
+    const shortcuts = [['operations/calculator', 'CALCULATOR'], ['pricecheck/routes', 'PRICE CHECK'], ['comms/forum', 'FORUM']]
+      .map(([route, label]) => `<button type="button" data-rhw-shortcut="${route}">${label} ↗</button>`).join('');
     const cards = [
       ['backup', '01'], ['senders', '02'], ['system', '03']
     ].map(([key, index]) => {
       const tool = TOOL_META[key];
       return `<button type="button" class="rhw-focus-tool-card" data-rhw-tool="${key}"><span class="rhw-focus-tool-index">${index}</span><span class="rhw-focus-tool-copy"><strong>${tool.label}</strong><small>${tool.sub}</small></span><span class="rhw-focus-tool-arrow" aria-hidden="true">›</span></button>`;
     }).join('');
-    return `<aside class="rhw-focus-tools-overlay" id="rhwFocusToolsPanel" role="dialog" aria-modal="true" aria-labelledby="rhwFocusToolsTitle" data-focus-trap="true" hidden><section class="rhw-focus-tools-sheet"><header class="rhw-focus-tools-head"><div><strong id="rhwFocusToolsTitle">TOOLS</strong></div><button type="button" id="rhwFocusToolsClose">CLOSE</button></header><div class="rhw-focus-tools-grid">${cards}</div><div id="rhwToolsInstallSlot" class="rhw-tools-install-slot"></div></section></aside>`;
+    return `<aside class="rhw-focus-tools-overlay" id="rhwFocusToolsPanel" role="dialog" aria-modal="true" aria-labelledby="rhwFocusToolsTitle" data-focus-trap="true" hidden><section class="rhw-focus-tools-sheet"><header class="rhw-focus-tools-head"><div><strong id="rhwFocusToolsTitle">TOOLS</strong></div><button type="button" id="rhwFocusToolsClose">CLOSE</button></header><div class="rhw-mobile-workspaces">${shortcuts}</div><div class="rhw-focus-tools-grid">${cards}</div><div id="rhwToolsInstallSlot" class="rhw-tools-install-slot"></div></section></aside>`;
   }
 
   function toolsFocusable(panel = document.getElementById('rhwFocusToolsPanel')) {
@@ -128,6 +130,8 @@
       document.getElementById('rhwFocusToolsClose')?.addEventListener('click', closeTools);
       panel?.addEventListener('click', event => {
         if (event.target.id === 'rhwFocusToolsPanel') closeTools();
+        const shortcut = event.target.closest('[data-rhw-shortcut]');
+        if (shortcut) { const [workspace, node] = shortcut.dataset.rhwShortcut.split('/'); closeTools(); app.navigate(workspace, node); }
         const tool = event.target.closest('[data-rhw-tool]');
         if (tool) openTool(tool.dataset.rhwTool);
       });

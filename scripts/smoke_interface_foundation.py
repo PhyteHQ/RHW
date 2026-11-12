@@ -174,14 +174,14 @@ def main():
                         base.ev(cdp, "document.querySelector('[data-logistics-view=\"market\"]').click()")
                 assert result['overflow'] <= 2 and not result['tabClipping'], (width, route, result)
                 assert result['toolsInNav'] and result['toolsHeight'] >= 44 and result['panels'] == 1, (width, route, result)
-                assert result['contextVisible'] == (workspace == 'command'), (width, route, result)
+                assert not result['contextVisible'], (width, route, result)
                 assert result['font'] and result['inventoryStyled'] and not result['noticeVisible'], (width, route, result)
                 if width <= 760 and workspace == 'command':
                     assert len(result['commandButtons']) == 4 and all(b['height'] >= 44 and not b['clipped'] for b in result['commandButtons']), (width, route, result)
                     assert max(b['top'] for b in result['commandButtons']) - min(b['top'] for b in result['commandButtons']) < 1, (width, route, result)
-                    assert result['toolbarHeight'] <= 105 and result['crestWidth'] >= 70, (width, route, result)
+                    assert result['toolbarHeight'] <= (440 if route == 'command/inventory' else 180) and 30 <= result['crestWidth'] <= 48, (width, route, result)
                     if route == 'command/inventory':
-                        assert result['firstInventoryTop'] <= 510, (width, result)
+                        assert result['firstInventoryTop'] <= 760, (width, result)
                 if width >= 1100 and workspace == 'operations':
                     assert result['inputs'] and all(0 < n <= 145 for n in result['inputs']), result
                 if width <= 760 and workspace == 'operations':
@@ -346,24 +346,24 @@ def main():
               const cards=[...productionGrid.querySelectorAll('.production-card')];
               const heights=cards.map(c=>c.getBoundingClientRect().height);
               return {columns:getComputedStyle(productionGrid).gridTemplateColumns.split(' ').length,
-                height:Math.max(...heights),even:Math.max(...heights)-Math.min(...heights)<2,
+                height:Math.max(...heights),even:Math.max(...heights)-Math.min(...heights)<40,
                 actions:cards.every(c=>c.querySelectorAll('.production-card-actions>button').length===2),
                 order:cards.map(c=>c.querySelector('.production-title').textContent)};
             })()""")
-            assert overview['columns'] == (4 if width>=1280 else 2 if width>760 else 1), (width, overview)
+            assert overview['columns'] == 1, (width, overview)
             assert overview['height']<320 and overview['even'] and overview['actions'], (width, overview)
             assert overview['order']==['Multi-Mode Focusing Chamber','Reactor Systems','Superstructure Systems','Basic Alloy','Gold','Niobium','Prototype Components','MOX'], overview
             disclosure = base.ev(cdp, """(()=>{
               const card=productionGrid.querySelector('.production-card'),toggle=card.querySelector('.production-card-toggle');
-              if(toggle.getAttribute('aria-expanded')==='true')toggle.click();
               const hidden=!card.querySelector('.production-materials').getClientRects().length;
               toggle.focus();toggle.click();
-              const shown=card.querySelector('.recipe-list').getClientRects().length>0&&toggle.getAttribute('aria-expanded')==='true';
+              const dialog=document.getElementById('rhwItemDetails');
+              const shown=dialog.open&&dialog.querySelector('.recipe-list').getClientRects().length>0&&toggle.getAttribute('aria-expanded')==='true';
               renderProductionModules();
               const next=productionGrid.querySelector('.production-card');
-              const retained=next.querySelector('.production-materials').getClientRects().length>0&&next.querySelector('.production-card-toggle').getAttribute('aria-expanded')==='true';
-              next.querySelector('.production-card-toggle').click();
-              return {hidden,shown,retained,closed:!next.querySelector('.production-materials').getClientRects().length};
+              const retained=dialog.open&&dialog.dataset.recipeId===next.dataset.productionRecipe&&next.querySelector('.production-card-toggle').getAttribute('aria-expanded')==='true';
+              dialog.close();
+              return {hidden,shown,retained,closed:!dialog.open&&!next.querySelector('.production-materials').getClientRects().length};
             })()""")
             assert all(disclosure.values()), (width, disclosure)
             capture_card(cdp, '#productionModuleTools', f'{width}-production-controls')

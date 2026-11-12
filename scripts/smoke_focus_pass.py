@@ -75,7 +75,7 @@ def main() -> int:
                 overflow:Math.max(document.documentElement.scrollWidth,document.body.scrollWidth)-innerWidth
               }};
             }})()""")
-            if primary.get("labels") != ["COMMAND", "CALCULATOR", "PRICE CHECK", "FORUM"] or primary.get("count") != 4:
+            if primary.get("labels") != ["RHW", "CALCULATOR", "PRICE CHECK", "FORUM"] or primary.get("count") != 4:
                 raise RuntimeError(f"Primary navigation failed: {primary}")
             if not primary.get("priceApi") or primary.get("priceFailures") or not primary.get("toolButton") or primary.get("overflow", 0) > 2:
                 raise RuntimeError(f"Price Check shell failed: {primary}")
@@ -180,7 +180,7 @@ def main() -> int:
                 base.ev(cdp, "(()=>{document.querySelector('.app-tabs [data-workspace=\"pricecheck\"]')?.click();return true;})()")
                 settle(.08)
                 geometry = base.ev(cdp, f"""(()=>{{{VISIBLE_HELPER}
-                  const tabs=[...document.querySelectorAll('.app-tabs [data-workspace]')].filter(visible);
+                  const tabs=[...document.querySelectorAll(innerWidth<=1100?'#commandNodeNav [data-command-node]':'.app-tabs [data-workspace]')].filter(visible);
                   return{{overflow:Math.max(document.documentElement.scrollWidth,document.body.scrollWidth)-innerWidth,
                     tabs:tabs.length,touch:tabs.map(x=>x.getBoundingClientRect().height),
                     crestHeight:document.querySelector('.command-header .crest')?.getBoundingClientRect().height||0,
@@ -190,7 +190,7 @@ def main() -> int:
                     raise RuntimeError(f"Price Check geometry at {width}px failed: {geometry}")
                 if width < 760 and any(height < 43.5 for height in geometry.get("touch", [])):
                     raise RuntimeError(f"Primary touch targets at {width}px failed: {geometry}")
-                if geometry.get("crestHeight", 0) < (80 if width < 760 else 110):
+                if not 38 <= geometry.get("crestHeight", 0) <= 60:
                     raise RuntimeError(f"RHW crest is too small at {width}px: {geometry}")
 
             runtime_failures = [

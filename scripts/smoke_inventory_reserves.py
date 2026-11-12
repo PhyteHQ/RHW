@@ -54,6 +54,7 @@ def main():
         assert sorted(state['inputs']) == sorted(['Gold Ore', 'Niobium Ore', 'Military Salvage', 'Scrap Metal', 'Toxic Waste']), state
         assert len(state['ships']) == 2 and any('Archon' in n and '2' in n for n in state['ships']), state
         assert not any(n in state['exports'] for n in ['Gold', 'Wildcat Gold', 'Niobium', 'Prototype Components', 'MOX']), state
+        assert base.ev(cdp, "byproductList.textContent.includes('MOX FEEDSTOCK') && byproductList.textContent.includes('TW FOR 10 BASIC MOX BATCHES') && !byproductList.textContent.includes('DISPOSAL')")
         out = Path(__file__).resolve().parents[1] / 'artifacts/interface'
         out.mkdir(parents=True, exist_ok=True)
         for width in [360, 390, 820, 1440]:
@@ -86,14 +87,19 @@ def main():
         assert base.ev(cdp, "itemsBody.querySelectorAll('tr').length===5 && [...itemsBody.querySelectorAll('tr')].some(n=>n.textContent.includes('Wildcat Gold'))")
         base.ev(cdp, "(()=>{inventoryStatusTab.click();window.inventoryBefore=JSON.stringify(items);reserveList.querySelector('button[data-inventory-material]').click();return true;})()")
         wait(cdp, "!!document.querySelector('.inventory-uses-dialog[open]')")
+        # A telemetry repaint can replace the original overview trigger while
+        # material details are open; close must find its current replacement.
+        base.ev(cdp, "(()=>{renderAll();RHWV4.itemDetails.close();return true})()")
+        wait(cdp, "document.activeElement?.dataset.inventoryMaterial==='Gold'")
+        base.ev(cdp, "reserveList.querySelector('button[data-inventory-material]').click()")
         base.ev(cdp, "document.querySelector('[data-inventory-choice=\"recipe_weapon_part_focusing_chamber\"]').click()")
         wait(cdp, "document.body.dataset.commandNode==='production' && !!document.querySelector('.inventory-target')")
         assert base.ev(cdp, "JSON.stringify(items)===inventoryBefore && document.querySelector('.inventory-target').dataset.productionRecipe==='recipe_weapon_part_focusing_chamber'")
-        base.ev(cdp, '(()=>{RHWV4.navigate(\'command\',\'inventory\');reserveList.querySelector(\'[data-input-name="Military Salvage"] button\').click();return true;})()')
+        base.ev(cdp, '(()=>{RHWV4.itemDetails.close();RHWV4.navigate(\'command\',\'inventory\');reserveList.querySelector(\'[data-input-name="Military Salvage"] button\').click();return true;})()')
         wait(cdp, "!!document.querySelector('.inventory-target[data-production-recipe=\"recipe_milsal\"]')")
         assert base.ev(cdp, "document.querySelector('.inventory-target .production-cycle-time').textContent.includes('2h 5m') && JSON.stringify(items)===inventoryBefore")
         # MOX reserve inputs, navigation and calculator stay on the same variant.
-        base.ev(cdp, "(()=>{const s=document.querySelector('[data-production-mox]');s.value='recipe_mox_fuel_advanced';s.dispatchEvent(new Event('change',{bubbles:true}));RHWV4.navigate('command','inventory');return true;})()")
+        base.ev(cdp, "(()=>{const s=document.querySelector('[data-production-mox]');s.value='recipe_mox_fuel_advanced';s.dispatchEvent(new Event('change',{bubbles:true}));RHWV4.itemDetails.close();RHWV4.navigate('command','inventory');return true;})()")
         assert base.ev(cdp, "(()=>{const r=reserveList.lastElementChild;return r.dataset.inventoryRecipe==='recipe_mox_fuel_advanced'&&r.textContent.includes('INTERNAL USE')&&r.querySelectorAll('[data-input-name]').length===2&&!!r.querySelector('[data-input-name=\"Uranium\"]')})()")
         base.ev(cdp, "reserveList.lastElementChild.querySelector('.inventory-production-link').click()")
         wait(cdp, "!!document.querySelector('.inventory-target[data-production-recipe=\"recipe_mox_fuel_advanced\"]')")
@@ -101,11 +107,11 @@ def main():
         base.ev(cdp, "(()=>{const s=document.querySelector('[data-production-mox]');s.value='recipe_mox_fuel_basic';s.dispatchEvent(new Event('change',{bubbles:true}));return true})()")
         assert base.ev(cdp, "!document.querySelector('[data-production-plan],[data-production-hull-plan],#productionPlanSummary') && !RHWV4.productionPlan && !RHWV4.productionScenario")
         # A stock click opens the matching ship preview without any plan controls.
-        base.ev(cdp, '(()=>{RHWV4.navigate(\'command\',\'inventory\');shipStockList.querySelector(\'[data-inventory-hull="barge"]\').click();return true;})()')
+        base.ev(cdp, '(()=>{RHWV4.itemDetails.close();RHWV4.navigate(\'command\',\'inventory\');shipStockList.querySelector(\'[data-inventory-hull="barge"]\').click();return true;})()')
         wait(cdp, "document.body.dataset.commandNode==='shipyard' && RHWV4.shipyard.selectedHull().key==='barge'")
         assert base.ev(cdp, "!shipyardControl.querySelector('[data-production-hull-plan],.production-pinned-hull')")
         # An unreported PC stock is displayed as unknown, never an invented zero.
-        base.ev(cdp, "(()=>{items.find(n=>n.name==='Prototype Components').quantity=null;RHWV4.navigate('command','inventory');renderOverview();return true;})()")
+        base.ev(cdp, "(()=>{items.find(n=>n.name==='Prototype Components').quantity=null;RHWV4.itemDetails.close();RHWV4.navigate('command','inventory');renderOverview();return true;})()")
         assert base.ev(cdp, "reserveList.children[2].classList.contains('alert-waiting') && reserveList.children[2].querySelector('.overview-row-qty').textContent==='–'")
         base.ev(cdp, "(()=>{items.filter(n=>['Basic Alloy','Toxic Waste'].includes(n.name)).forEach(n=>n.quantity=null);renderOverview();return true;})()")
         assert base.ev(cdp, "maintenanceList.firstElementChild.textContent.includes('STOCK UNKNOWN') && !maintenanceList.firstElementChild.textContent.includes('FACILITY STABLE') && byproductList.textContent.includes('STOCK UNKNOWN') && !byproductList.textContent.includes('CONTAINMENT CRITICAL')"), 'Unknown stock must not claim stability or overflow'
@@ -116,7 +122,7 @@ def main():
           items=[...names].map(name=>stock(name,10000));
           items.find(n=>n.name==='Gold').quantity=8600;
           items=items.filter(n=>n.name!=='Wildcat Gold');
-          rebuildItemCaches();renderAll();RHWV4.navigate('command','production');return true;
+          rebuildItemCaches();renderAll();RHWV4.itemDetails.close();RHWV4.navigate('command','production');return true;
         })()""")
         assert base.ev(cdp, "findCommodity('Wildcat Gold').missing && Number.isFinite(analyzeRecipe(RHWV4.production.recipes().find(r=>r.recipeId==='ship_part_superstructure')).possibleCycles) && !document.querySelector('[data-production-recipe=\"ship_part_superstructure\"]').textContent.includes('INPUT STOCK UNKNOWN')"), 'Synthetic alternate rows must not invalidate reported Gold'
         print('Inventory browser passed: 3–4–3, internal MOX and variant-aware input links, pooled Gold, exact ship counts, view-only navigation, unknown stock and responsive layouts.')

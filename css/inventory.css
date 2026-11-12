@@ -32,12 +32,6 @@ html.rhw-focus-pass #inventoryStatusPanel .inventory-other-ships { display:block
 .inventory-other-ships summary { padding:12px 0;min-height:44px;color:var(--muted);font:11px/1.5 var(--font-tech);cursor:pointer; }
 .inventory-other-ships ul { padding:0;margin:0;list-style:none; }
 .inventory-ship-empty { color:var(--muted);font:12px/1.5 var(--font-main); }
-.inventory-uses-dialog { width:min(460px,calc(100vw - 32px));padding:20px;border:1px solid #9c8050;background:var(--palette-canvas);color:var(--text); }
-.inventory-uses-dialog::backdrop { background:#000b; }
-.inventory-uses-dialog h2 { margin:0;color:var(--gold);font:28px/1.3 var(--font-title); }
-.inventory-uses-dialog p { color:var(--muted);font:12px/1.5 var(--font-tech); }
-.inventory-uses-dialog button { display:block;width:100%;min-height:44px;margin-top:8px;padding:9px 12px;border:1px solid var(--line);background:var(--surface-input);color:var(--text);text-align:left;font:13px/1.5 var(--font-main);cursor:pointer; }
-.inventory-uses-dialog button:focus-visible { outline:2px solid var(--gold);outline-offset:2px; }
 .production-card.inventory-target { outline:2px solid var(--gold);outline-offset:3px; }
 .production-card,.capital-shipyard-control { scroll-margin-top:calc(var(--rhw-sticky-nav-offset,70px) + 12px); }
 .supply-surplus-note { padding:12px;border-left:2px solid #b69b65;background:#b69b650b;color:#dac38a;font:13px/1.6 var(--font-main); }
@@ -46,3 +40,68 @@ html.rhw-focus-pass #inventoryStatusPanel .inventory-other-ships { display:block
   html.rhw-focus-pass #inventoryStatusPanel .inventory-input-row { grid-template-rows:22px 20px; }
   html.rhw-focus-pass #inventoryStatusPanel .inventory-input-row button { min-height:44px; }
 }
+
+/* Quiet stock rows and one shared, accessible recipe/material detail surface. */
+html.rhw-focus-pass.rhw-workbench .alert-card { background:var(--panel);border-color:var(--line);box-shadow:none; }
+html.rhw-focus-pass.rhw-workbench .alert-title { padding:14px 16px;background:transparent;border-color:var(--line);font-size:23px; }
+html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel .alert-list { padding:0 12px; }
+html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel .overview-stock-row { margin:0;padding:12px 2px;border:0;border-bottom:1px solid var(--line);border-radius:0;background:transparent;box-shadow:none; }
+html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel .overview-stock-row:last-child { border-bottom:0; }
+html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel .overview-stock-row .overview-row-qty { font-size:23px; }
+html.rhw-focus-pass.rhw-workbench .overview-item-copy { font:500 14px/1.5 var(--font-main); }
+html.rhw-focus-pass.rhw-workbench .overview-stock-detail { font:12px/1.5 var(--font-main); }
+html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel .overview-stock-row .pill { font:11px/1.4 var(--font-main);letter-spacing:0; }
+html.rhw-focus-pass.rhw-workbench .inventory-input-row { border-top:0;padding-top:6px;font:12px/1.5 var(--font-main); }
+html.rhw-focus-pass.rhw-workbench .inventory-input-row>small { font:11px/1.5 var(--font-main); }
+html.rhw-focus-pass.rhw-workbench .inventory-pool-parts { font:12px/1.5 var(--font-main); }
+html.rhw-focus-pass.rhw-workbench .rhw-item-detail { inset:16px 16px 16px auto;margin:0;width:min(490px,calc(100vw - 32px));max-width:none;max-height:calc(100dvh - 32px);padding:0;border:1px solid var(--line);border-top:2px solid var(--gold);border-radius:4px;background:var(--panel);color:var(--text);box-shadow:0 20px 60px #0008;overflow:auto; }
+html.rhw-focus-pass.rhw-workbench .rhw-item-detail[open] { display:flex;flex-direction:column; }
+html.rhw-focus-pass.rhw-workbench .rhw-item-detail::backdrop { background:#0007; }
+.rhw-item-detail-head { display:flex;justify-content:space-between;align-items:center;gap:12px;position:sticky;top:0;z-index:2;padding:12px 18px;background:var(--panel);border-bottom:1px solid var(--line);font:12px/1.5 var(--font-main); }
+.rhw-item-detail-head>button,.rhw-detail-calculator,.rhw-material-connections>button,.rhw-feedstock-conversion>button { min-height:44px;padding:9px 12px;border:1px solid var(--line);border-radius:3px;background:var(--surface-input);color:var(--text);font:12px/1.5 var(--font-main); }
+.rhw-item-detail-head>button { width:auto;margin:0; }
+#rhwItemDetailBody { padding:18px; }
+.rhw-item-detail-title { margin-bottom:16px; }
+.rhw-item-detail-title>small { color:var(--muted);font:12px/1.5 var(--font-main); }
+.rhw-item-detail-title>h2 { margin:4px 0 12px;font:500 30px/1.15 var(--font-title);letter-spacing:.02em; }
+.rhw-item-detail-title>strong { display:block;font:28px/1.4 var(--font-tech); }
+.rhw-item-detail-title>strong>small { color:var(--muted);font:12px/1.5 var(--font-main); }
+.rhw-item-detail-materials .recipe-column-head { display:none; }
+.rhw-item-detail-materials .recipe-list { margin:14px 0; }
+.rhw-item-detail-materials .recipe-list>li { display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:12px 0; }
+#rhwItemDetails .recipe-name { grid-column:1/-1;font:14px/1.5 var(--font-main); }
+.rhw-item-detail-materials .recipe-required,.rhw-item-detail-materials .recipe-stock { font:16px/1.5 var(--font-tech);min-width:0;overflow-wrap:anywhere; }
+.rhw-item-detail-materials .recipe-stock { text-align:right; }
+.rhw-item-detail-materials .recipe-required::before,.rhw-item-detail-materials .recipe-stock::before { display:block;font:11px/1.5 var(--font-main);color:var(--muted); }
+.rhw-item-detail-materials .recipe-required::before { content:'PER BATCH'; }
+.rhw-item-detail-materials .recipe-stock::before { content:'IN STOCK'; }
+.rhw-item-detail-materials .next-gap { margin:14px 0;padding:10px;line-height:1.5; }
+.rhw-item-detail-materials .next-gap::before { content:none; }
+.rhw-item-detail-materials .byproduct-strip { display:flex;flex-wrap:wrap;gap:8px;margin:14px 0;font:12px/1.5 var(--font-main); }
+.rhw-detail-calculator { display:block;width:100%;margin-top:18px;border-color:var(--rhw-control-border);color:var(--gold);background:var(--rhw-action-fill); }
+.rhw-material-connections { display:grid;gap:8px;margin-top:20px; }
+.rhw-material-connections>h3 { margin:0 0 4px;font:500 22px/1.2 var(--font-title); }
+.rhw-material-connections>button { display:block;width:100%;margin:0;text-align:left; }
+.rhw-feedstock-conversion { display:grid;gap:8px;padding:14px;border:1px solid var(--line);background:var(--surface-raised);font:14px/1.5 var(--font-main); }
+.rhw-feedstock-conversion>strong { color:var(--gold);font-weight:500; }
+.rhw-feedstock-conversion>small { color:var(--muted);font-size:12px; }
+.rhw-feedstock-conversion>button { width:100%;margin:4px 0 0; }
+.detail-variant { display:grid;gap:6px;margin:0 0 16px;font:12px/1.5 var(--font-main);color:var(--muted); }
+.detail-variant>select { min-height:44px;padding:8px;background:var(--surface-input);color:var(--text);border:1px solid var(--line);font:14px/1.5 var(--font-main); }
+@media(min-width:1101px) and (max-width:1279px) {
+ .summary-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+ .inventory-column-market { grid-column:1/-1;display:grid;grid-template-columns:repeat(2,minmax(0,1fr)); }
+}
+@media(max-width:760px) {
+ html.rhw-focus-pass.rhw-workbench .rhw-item-detail { inset:auto 0 0;margin:0;width:100%;max-height:88dvh;border-radius:8px 8px 0 0; }
+ #rhwItemDetailBody { padding:16px; }
+ .rhw-item-detail-head { padding:12px 16px; }
+}
+
+#rhwItemDetails .rhw-supply-button { width:28px;min-width:28px;height:28px;min-height:28px;margin:0;padding:5px;flex-shrink:0; }
+#rhwItemDetails .recipe-name .rhw-supply-material { justify-content:space-between; }
+#rhwItemDetails .recipe-list li.bottleneck.ok :is(.recipe-name,.recipe-stock),#rhwItemDetails .recipe-list li.bottleneck.ok .recipe-name::after { color:var(--text); }
+#rhwItemDetails .recipe-list li.bottleneck.ok { background:transparent; }
+@media(max-width:760px){#rhwItemDetails .rhw-supply-button { width:44px;height:44px;min-height:44px; }}
+
+#rhwItemDetails .recipe-list::before,#rhwItemDetails .recipe-list::after { display:none; }

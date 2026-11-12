@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" class="rhw-loading">
+<html lang="en" class="rhw-loading rhw-focus-pass rhw-workbench">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -14,7 +14,7 @@
   <link rel="icon" type="image/png" href="./assets/favicon.png" />
   <link rel="apple-touch-icon" href="./assets/apple-touch-icon.png" />
   
-  <link rel="stylesheet" href="./css/rhw-app.css?v=sha256-d5073f796342ac45b0a8">
+  <link rel="stylesheet" href="./css/rhw-app.css?v=sha256-9c93b945217facfb1252">
 </head>
 <body>
 
@@ -63,7 +63,7 @@
             <strong class=" uplink-value" id="liveStatus" aria-live="polite">SYNCING TELEMETRY...</strong>
           </div>
         </div>
-        <button id="headerRefreshBtn" class="uplink-button header-uplink-button" type="button"><span>FORCE UPLINK</span></button>
+        <button id="headerRefreshBtn" class="uplink-button header-uplink-button" type="button"><span>REFRESH</span></button>
         <details class="uplink-details" id="uplinkDetails">
           <summary aria-label="Connection details" title="Connection details"><span>CONNECTION DETAILS</span><svg class="connection-details-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 10v7M12 6.5v1"/></svg></summary>
           <div class="uplink-grid">
@@ -94,7 +94,7 @@
     <section class="summary-grid anim-boot delay-4">
       <div class="inventory-column inventory-column-facility">
         <div class="alert-card maintenance-panel"><div class="alert-title"><span>Facility Maintenance</span><span class="section-title-meta"><span class="section-freshness" data-freshness-badge hidden></span><span class="count-badge scramble" id="maintenanceCount">0</span></span></div><ul class="alert-list" id="maintenanceList"></ul></div>
-        <div class="alert-card waste-panel"><div class="alert-title"><span>Waste Management</span><span class="section-title-meta"><span class="section-freshness" data-freshness-badge hidden></span><span class="count-badge scramble" id="byproductCount">0</span></span></div><ul class="alert-list" id="byproductList"></ul></div>
+        <div class="alert-card waste-panel"><div class="alert-title"><span>MOX Feedstock</span><span class="section-title-meta"><span class="section-freshness" data-freshness-badge hidden></span><span class="count-badge scramble" id="byproductCount">0</span></span></div><ul class="alert-list" id="byproductList"></ul></div>
       </div>
       <div class="inventory-column inventory-column-production">
         <div class="alert-card reserve-panel"><div class="alert-title"><span>Production Reserves</span><span class="section-title-meta"><span class="section-freshness" data-freshness-badge hidden></span><span class="count-badge scramble" id="reserveCount">0</span></span></div><ul class="alert-list" id="reserveList"></ul></div>
@@ -142,7 +142,7 @@
     <section class="panel anim-boot delay-4" id="productionPanel"><div class="panel-head"><div class="panel-heading-copy"><div class="section-kicker"><span>06</span> INTERNAL SYSTEMS</div><div class="panel-title">PRODUCTION MODULES</div><div class="footnote">CURRENT STOCK CAPACITY · MODULES CALCULATED SEPARATELY</div><div class="section-freshness" data-freshness-badge hidden></div></div></div><div class="production-grid" id="productionGrid"></div></section>
 
     <section class="panel manifest-panel anim-boot delay-5">
-      <div class="panel-head manifest-panel-head"><div class="panel-heading-copy"><div class="section-kicker"><span>07</span> ASSET CONTROL</div><div class="panel-title">THORNE LOGISTICS MANIFEST</div><div class="footnote">SEARCH, FILTER AND SORT LOCAL INVENTORY</div><div class="section-freshness" data-freshness-badge hidden></div></div><div class="controls manifest-controls"><label class="search-control"><span class="search-icon" aria-hidden="true"></span><input id="search" type="search" placeholder="Query asset..." aria-label="Search assets" /></label><div class="role-segments" role="group" aria-label="Filter assets by role"><button class="role-segment active" type="button" data-role="all">ALL</button><button class="role-segment" type="button" data-role="maintenance">FACILITY</button><button class="role-segment" type="button" data-role="procurement">PROCURE</button><button class="role-segment" type="button" data-role="export">EXPORT</button><button class="role-segment" type="button" data-role="shipyard">SHIPYARD</button><button class="role-segment" type="button" data-role="byproduct">WASTE</button><button class="role-segment" type="button" data-role="reserve">INTERNAL</button></div><select id="roleFilter" class="visually-hidden" aria-label="Filter assets by role"><option value="all">ALL ASSETS</option><option value="maintenance">MAINTENANCE</option><option value="procurement">PROCUREMENT</option><option value="export">EXPORT</option><option value="shipyard">SHIPYARD</option><option value="byproduct">WASTE / BYPROD</option><option value="reserve">INTERNAL RESERVES</option></select><button id="refreshBtn" class="uplink-button" type="button"><span>FORCE UPLINK</span></button></div></div>
+      <div class="panel-head manifest-panel-head"><div class="panel-heading-copy"><div class="section-kicker"><span>07</span> ASSET CONTROL</div><div class="panel-title">THORNE LOGISTICS MANIFEST</div><div class="footnote">SEARCH, FILTER AND SORT LOCAL INVENTORY</div><div class="section-freshness" data-freshness-badge hidden></div></div><div class="controls manifest-controls"><label class="search-control"><span class="search-icon" aria-hidden="true"></span><input id="search" type="search" placeholder="Query asset..." aria-label="Search assets" /></label><div class="role-segments" role="group" aria-label="Filter assets by role"><button class="role-segment active" type="button" data-role="all">ALL</button><button class="role-segment" type="button" data-role="maintenance">FACILITY</button><button class="role-segment" type="button" data-role="procurement">PROCURE</button><button class="role-segment" type="button" data-role="export">EXPORT</button><button class="role-segment" type="button" data-role="shipyard">SHIPYARD</button><button class="role-segment" type="button" data-role="byproduct">FEEDSTOCK</button><button class="role-segment" type="button" data-role="reserve">INTERNAL</button></div><select id="roleFilter" class="visually-hidden" aria-label="Filter assets by role"><option value="all">ALL ASSETS</option><option value="maintenance">MAINTENANCE</option><option value="procurement">PROCUREMENT</option><option value="export">EXPORT</option><option value="shipyard">SHIPYARD</option><option value="byproduct">MOX FEEDSTOCK</option><option value="reserve">INTERNAL RESERVES</option></select><button id="refreshBtn" class="uplink-button" type="button"><span>FORCE UPLINK</span></button></div></div>
       <div class="error-box" id="errorBox" aria-live="polite"></div>
       <div class="table-wrap"><table id="dataTable"><caption class="visually-hidden">RHW logistics assets. Activate a column heading to sort the manifest.</caption><thead><tr><th scope="col" tabindex="0" role="button" aria-sort="none" aria-label="Sort by asset name" data-sort="name">ASSET</th><th scope="col" tabindex="0" role="button" aria-sort="none" aria-label="Sort by asset role" data-sort="role">ROLE</th><th scope="col" tabindex="0" role="button" aria-sort="none" aria-label="Sort by asset status" data-sort="status">STATUS</th><th scope="col" tabindex="0" role="button" aria-sort="none" aria-label="Sort by quantity" data-sort="quantity">QTY</th><th scope="col" tabindex="0" role="button" aria-sort="none" aria-label="Sort by sell price" data-sort="sell">SELL ($)</th><th scope="col" tabindex="0" role="button" aria-sort="none" aria-label="Sort by buy price" data-sort="buy">BUY ($)</th></tr></thead><tbody id="itemsBody"></tbody></table></div>
     </section>
@@ -150,8 +150,8 @@
 
   <footer><hr class="hrc-dark">CONNECTION <span id="footerConnection">SYNCING</span> /// GLORY TO THE QUEEN<br><div class="footer-clock" id="rpFooterTime"></div></footer>
 
-<script src="./js/build-info.js?v=sha256-d5073f796342ac45b0a8"></script>
-<script src="./js/00-bootstrap.js?v=sha256-d5073f796342ac45b0a8"></script>
-<script src="./js/rhw-dashboard.js?v=sha256-d5073f796342ac45b0a8"></script>
+<script src="./js/build-info.js?v=sha256-9c93b945217facfb1252"></script>
+<script src="./js/00-bootstrap.js?v=sha256-9c93b945217facfb1252"></script>
+<script src="./js/rhw-dashboard.js?v=sha256-9c93b945217facfb1252"></script>
 </body>
 </html>

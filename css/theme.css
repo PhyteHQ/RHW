@@ -230,7 +230,7 @@ html.rhw-focus-pass :is(#rhwFocusToolsBtn,#rhwPwaInstallBtn) { min-height: 48px;
 
 html.rhw-focus-pass .app-tabs { grid-template-columns: repeat(4,minmax(0,1fr));background: transparent;border: 0; }
 
-html.rhw-focus-pass .app-tabs button[data-workspace] { --tab-accent: var(--gold);--tab-accent-rgb: var(--rhw-gold-rgb);display: flex !important;align-items: center;justify-content: center;min-height: 48px;padding: 8px 12px;border: 0;border-right: 1px solid #3f3f3f;border-bottom: 2px solid transparent;background: transparent;color: #c5c5c5;box-shadow: none;gap: 0; }
+html.rhw-focus-pass .app-tabs button[data-workspace] { --tab-accent: var(--gold);--tab-accent-rgb: var(--rhw-gold-rgb);display: flex;align-items: center;justify-content: center;min-height: 48px;padding: 8px 12px;border: 0;border-right: 1px solid #3f3f3f;border-bottom: 2px solid transparent;background: transparent;color: #c5c5c5;box-shadow: none;gap: 0; }
 
 html.rhw-focus-pass .app-tabs button[data-workspace]:last-child { border-right: 0; }
 

@@ -52,6 +52,17 @@
     const required = recipe?.ingredients.find(([n]) => keyFromName(n) === keyFromName(name))?.[1] ?? null;
     return { ...value, required, cycles: value.stock !== null && required > 0 ? Math.floor(value.stock / required) : null };
   }
+  function moxFeedstock() {
+    const module = app.production?.modules().find(entry => entry.product === 'MOX');
+    const recipe = module && app.production.requirements(module);
+    const entry = input('Toxic Waste', module?.recipeId);
+    const state = entry.stock === null || entry.required === null ? 'waiting'
+      : entry.cycles < 1 ? 'critical' : entry.cycles < 2 ? 'low' : 'ok';
+    return { ...entry, state, recipeId: module?.recipeId || 'recipe_mox_fuel_basic',
+      outputPerBatch: recipe?.output ?? null,
+      potentialOutput: entry.cycles === null || !recipe ? null : entry.cycles * recipe.output,
+      variant: module?.recipeId === 'recipe_mox_fuel_advanced' ? 'ADVANCED' : 'BASIC' };
+  }
   function ships() {
     return CAPITAL_SHIPYARD.hulls.map(hull => {
       const item = hasVerifiedTelemetry() ? findShipyardItem(hull) : null;
@@ -59,5 +70,5 @@
       return { hull, stock: Number.isSafeInteger(value) ? value : null };
     });
   }
-  app.inventoryModel = { definition, record, reserve, input, ships };
+  app.inventoryModel = { definition, record, reserve, input, moxFeedstock, ships };
 })();

@@ -23,13 +23,9 @@ html.rhw-focus-pass .app-secondary-nav .app-context-nav-slot { grid-column: 1;gr
 
 html.rhw-focus-pass .app-secondary-nav .workspace-subnav { margin: 0;border: 0;background: transparent;box-shadow: none; }
 
-html.rhw-focus-pass #commandNodeNav button, html.rhw-focus-pass body[data-workspace="command"] #commandNodeNav.command-module-nav button[data-command-node] { display: flex;grid-template-columns: none;grid-template-rows: none;align-items: center;justify-content: center;height: 44px;min-height: 44px;max-height: none;padding: 8px 10px;gap: 8px;box-shadow: none;color: var(--muted); }
 
-html.rhw-focus-pass #commandNodeNav .workspace-subnav-tabs { grid-template-columns: repeat(4,minmax(0,1fr));gap: 8px; }
 
-html.rhw-focus-pass body[data-command-focus="attention"]:not([data-command-attention-empty="true"]) #commandNodeNav button:not([data-state="critical"]):not([data-state="low"]) { display:none; }
 
-html.rhw-focus-pass body[data-command-focus="attention"]:not([data-command-attention-empty="true"]) #commandNodeNav .workspace-subnav-tabs { grid-template-columns:repeat(var(--rhw-attention-columns,2),minmax(0,1fr)); }
 
 html.rhw-focus-pass #workspaceCommand main { padding-top: 6px;gap: 0; }
 
@@ -127,9 +123,7 @@ html.rhw-focus-pass #rhwToolsInstallSlot #rhwPwaInstallBtn { width: 100%;min-hei
 
 html.rhw-focus-pass #rhwToolsInstallSlot #rhwPwaInstallBtn small { display: block !important;margin-top: 4px;font: 12px var(--font-main);color: var(--muted); }
 
-@media (min-width: 1001px) {
-html.rhw-focus-pass .command-header { padding-block: 22px; }
-}
+
 
 @media (min-width: 761px) and (max-width: 1100px) {
 html.rhw-focus-pass .app-tabs button[data-workspace] span { font-size: 20px;letter-spacing: .03em; }
@@ -148,9 +142,6 @@ html.rhw-focus-pass .app-tabs button[data-workspace] span { font: 600 11px/1.3 v
 html.rhw-focus-pass #rhwFocusToolsBtn { padding-inline: 8px;font-size: 11px; }
 html.rhw-focus-pass body { padding-bottom: calc(16px + env(safe-area-inset-bottom,0px)); }
 html.rhw-focus-pass .app-secondary-nav { gap: 8px; }
-html.rhw-focus-pass #commandNodeNav .workspace-subnav-tabs { gap: 4px; }
-html.rhw-focus-pass #commandNodeNav button, html.rhw-focus-pass body[data-workspace="command"] #commandNodeNav.command-module-nav button[data-command-node] { gap: 0;padding-inline: 2px; }
-html.rhw-focus-pass body[data-workspace="command"] #commandNodeNav .command-module-copy strong { font-size: 12px;letter-spacing: 0;white-space: nowrap; }
 html.rhw-focus-pass .app-secondary-nav .command-module-index { display: none; }
 html.rhw-focus-pass .app-secondary-nav #rhwFocusToolsBtn { padding-inline: 10px; }
 html.rhw-focus-pass #commandControlDeck, html.rhw-focus-pass body[data-command-node="inventory"] #commandControlDeck, html.rhw-focus-pass body[data-command-node="inventory"] #commandControlDeck:has(#commandGlobalAlerts[hidden]) { grid-template-columns: minmax(0,1fr) minmax(0,1fr);gap: 8px; }
@@ -174,68 +165,27 @@ html.rhw-focus-pass *, html.rhw-focus-pass *::before, html.rhw-focus-pass *::aft
 
 html.rhw-focus-pass { --rhw-border: var(--line); }
 
-html.rhw-focus-pass .command-header { background: radial-gradient(ellipse at 12% 50%,#f0c56b14,transparent 48%),linear-gradient(115deg,#19191b,#0a0b0e 65%,#121319);border-top-color: var(--gold);box-shadow: inset 0 1px #f4dfb520,inset 0 -18px 28px #0005; }
-
-html.rhw-focus-pass .command-brand { grid-template-columns: 146px minmax(0,1fr);gap: 24px; }
-
-html.rhw-focus-pass .command-header-inner { grid-template-columns: minmax(0,1fr) 390px; }
-.header-operations { display: grid;grid-template-columns: 104px minmax(0,1fr);gap: 12px;min-width: 0;align-items: stretch; }
-.header-trade-button { display: flex;flex-direction: column;align-items: center;justify-content: center;gap: 10px;min-width: 0;min-height: 110px;padding: 14px 7px;border: 1px solid #b49a5d66;border-top: 2px solid var(--gold);background: linear-gradient(145deg,#30271a,#141519 75%);color: var(--gold);cursor: pointer;clip-path: none;box-shadow: inset 0 1px #ffffff05; }
-.header-trade-button strong { font: 500 23px/1.1 var(--font-title);letter-spacing: .035em; }
-.header-trade-button small { color: #c4b48e;font: 9px/1.5 var(--font-tech);letter-spacing: .025em; }
-.header-trade-button:hover { border-color: var(--gold);background: #2a241a; }
-.header-trade-button:focus-visible { outline: 2px solid var(--gold);outline-offset: 3px; }
-.connection-details-icon { display: none; }
-html.rhw-focus-pass .header-operations .uplink-panel { grid-template-columns: minmax(0,1fr);min-width: 0; }
-html.rhw-focus-pass .header-operations .uplink-details { grid-column: 1 / -1; }
-html.rhw-focus-pass .header-operations #headerRefreshBtn { display: inline-flex;justify-content: center;grid-column: 1 / -1;width: 100%;margin: 8px 0; }
-
-html.rhw-focus-pass .crest-frame { width: 146px;min-height: 176px;background: radial-gradient(ellipse at center,#f0c56b20,transparent 70%);border-inline: 1px solid #f0c56b2b; }
-
-html.rhw-focus-pass .crest-frame::before { width: 146px;height: 146px;background: radial-gradient(circle,#f0c56b50,transparent 65%); }
-
-html.rhw-focus-pass .crest { width: 128px;height: 172px;filter: drop-shadow(0 5px 12px #000a) drop-shadow(0 0 16px #f0c56b38); }
-
-html.rhw-focus-pass .brand-kicker { color: var(--gold); }
-
-html.rhw-focus-pass .brand-command { color: var(--gold); }
-
-html.rhw-focus-pass .base-telemetry-bar { max-width: 740px;margin-top: 16px;padding: 11px 0;grid-template-columns: minmax(0,1fr) minmax(0,1.2fr) minmax(0,1fr);background: linear-gradient(100deg,#211e19,#0c0d11 65%);border: 1px solid #f0c56b26;border-left: 2px solid var(--gold);border-radius: 0;box-shadow: inset 0 1px #ffffff05,0 5px 14px #0004; }
-
-html.rhw-focus-pass .base-telemetry-stat, html.rhw-focus-pass .base-telemetry-stat:first-child { padding: 0 13px; }
-
-html.rhw-focus-pass .base-telemetry-stat + .telemetry-divider + .base-telemetry-stat { border-left: 1px solid #f0c56b26; }
-
-html.rhw-focus-pass .base-telemetry-stat small { letter-spacing: .055em; }
-
-html.rhw-focus-pass .base-telemetry-stat strong { overflow-wrap: anywhere; }
-
-@media (min-width: 1201px) {
-html.rhw-focus-pass .command-header-inner { grid-template-columns: minmax(0,1fr) clamp(200px,18vw,270px) minmax(0,1fr);min-height: 204px; }
-html.rhw-focus-pass .command-brand { display: contents; }
-html.rhw-focus-pass .brand-copy { grid-column: 1;grid-row: 1; }
-html.rhw-focus-pass .header-operations { grid-column: 3;grid-row: 1;width: min(390px,100%);justify-self: end; }
-html.rhw-focus-pass .command-header-inner .crest-frame { position: absolute;grid-column: 1 / -1;grid-row: 1;top: -22px;bottom: -22px;left: 50%;width: clamp(200px,18vw,270px);min-height: 0;transform: translateX(-50%);border: 0; }
-html.rhw-focus-pass .command-header-inner .crest { position: absolute;inset: 0;display: block;width: 100%;height: 100%;max-height: 100%;object-fit: contain; }
-html.rhw-focus-pass .command-header-inner .crest-frame::before { width: 100%;height: 100%; }
-html.rhw-focus-pass .base-telemetry-bar { max-width: 100%; }
-html.rhw-focus-pass .base-telemetry-stat, html.rhw-focus-pass .base-telemetry-stat:first-child { padding-inline: 8px; }
-html.rhw-focus-pass .base-telemetry-stat small { font-size: clamp(8px,.7vw,10px);white-space: nowrap; }
-html.rhw-focus-pass .base-telemetry-stat strong { font-size: clamp(18px,1.5vw,24px); }
-}
-
-html.rhw-focus-pass .uplink-panel { background: linear-gradient(135deg,#1b1c22,#0b0c10);border-color: var(--line);border-top-color: var(--warn); }
-
-html.rhw-focus-pass .uplink-panel.online:not(:has(.uplink-details[open])) { grid-template-columns: minmax(0,1fr);gap: 8px;padding: 14px;border: 1px solid #83d5ab33;border-top: 2px solid var(--good);background: linear-gradient(135deg,#1b1c22,#0b0c10);box-shadow: inset 0 1px #ffffff05,0 5px 18px #0004; }
-
-html.rhw-focus-pass .uplink-panel.online:not(:has(.uplink-details[open])) .uplink-header { grid-column: 1;align-self: center; }
-
-html.rhw-focus-pass .uplink-panel.online:not(:has(.uplink-details[open])) .uplink-details { grid-column: 1;border-top: 1px dashed #83d5ab33;padding-top: 9px; }
-
-html.rhw-focus-pass .uplink-panel.online:not(:has(.uplink-details[open])) .uplink-details > summary { max-width: none;color: var(--muted);font-family: var(--font-tech);letter-spacing: .04em; }
 
 
-html.rhw-focus-pass .uplink-panel.offline { border-top-color: var(--danger);box-shadow: inset 0 1px #e28a8a12; }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 html.rhw-focus-pass #commandTelemetryStatus { font-size: 12px;line-height: 1.5;overflow-wrap: anywhere; }
 
@@ -249,15 +199,11 @@ html.rhw-focus-pass .app-tabs button[data-workspace].active { background: linear
 
 html.rhw-focus-pass .app-secondary-nav { padding-block: 5px; }
 
-html.rhw-focus-pass #commandNodeNav button, html.rhw-focus-pass body[data-workspace="command"] #commandNodeNav.command-module-nav button[data-command-node] { border: 0;border-bottom: 2px solid transparent;border-radius: 0;background: transparent; }
 
-html.rhw-focus-pass #commandNodeNav button.active, html.rhw-focus-pass body[data-workspace="command"] #commandNodeNav.command-module-nav button[data-command-node].active { color: var(--gold);border-color: transparent;border-bottom-color: var(--gold);background: linear-gradient(0deg,#f0c56b10,transparent 85%);box-shadow: none; }
 
-html.rhw-focus-pass #commandNodeNav button:hover { color: var(--text);background-color: #ffffff04; }
 
 html.rhw-focus-pass .command-module-index { color: var(--muted); }
 
-html.rhw-focus-pass #commandNodeNav button.active .command-module-index { color: var(--gold);border-color: #f0c56b66; }
 
 html.rhw-focus-pass #rhwFocusToolsBtn { background: #1a1a18;border-color: #45453f;box-shadow: none; }
 
@@ -319,36 +265,10 @@ html.rhw-focus-pass #inventoryStatusPanel .section-freshness { font: 11px/1.35 v
 html.rhw-focus-pass #inventoryStatusPanel .alert-list li.overview-stock-row:hover { background: var(--surface-hover);border-top-color: var(--palette-line-bright); }
 }
 
-@media (max-width: 1000px) {
-html.rhw-focus-pass .command-header-inner { grid-template-columns: minmax(0,1fr); }
-.header-operations { width: 100%;grid-template-columns: 104px minmax(0,1fr); }
-html.rhw-focus-pass .uplink-panel.online:not(:has(.uplink-details[open])) { grid-template-columns: minmax(0,1fr);gap: 4px;padding: 10px;border: 1px solid #83d5ab33;border-top: 2px solid var(--good); }
-html.rhw-focus-pass .uplink-panel.online:not(:has(.uplink-details[open])) .uplink-details { grid-column: 1;border-top: 1px dashed #83d5ab33;padding: 0; }
-html.rhw-focus-pass .uplink-panel.online:not(:has(.uplink-details[open])) .uplink-details > summary { max-width: none; }
-}
+
 
 @media (max-width: 760px) {
-html.rhw-focus-pass .header-operations { grid-template-columns: 44px minmax(0,1fr) 80px 44px;gap: 6px;align-items: center; }
-html.rhw-focus-pass .header-operations .header-trade-button { grid-column: 1;grid-row: 1;min-height: 44px;padding: 8px;gap: 0; }
-html.rhw-focus-pass .header-trade-button :is(strong,small) { display: none; }
-html.rhw-focus-pass .header-trade-button svg { width: 22px;height: 22px; }
-html.rhw-focus-pass .header-operations #uplinkPanel { display: contents; }
-html.rhw-focus-pass .header-operations #uplinkPanel .uplink-header { grid-column: 2;grid-row: 1;min-width: 0;margin: 0; }
-html.rhw-focus-pass .header-operations #headerRefreshBtn { grid-column: 3;grid-row: 1;margin: 0;padding: 6px;white-space: normal;font-size: 10px; }
-html.rhw-focus-pass .header-operations #uplinkDetails { grid-column: 4;grid-row: 1;border: 0;padding: 0; }
-html.rhw-focus-pass .header-operations #uplinkDetails>summary { display: flex;align-items: center;justify-content: center;width: 44px;min-height: 44px;max-width: none;padding: 8px;list-style: none;border: 1px solid var(--line); }
 html.rhw-focus-pass #uplinkDetails>summary>span { display: none; }
-html.rhw-focus-pass #uplinkDetails .connection-details-icon { display: block; }
-html.rhw-focus-pass .header-operations #uplinkDetails[open] { grid-column: 1 / -1;grid-row: 2; }
-html.rhw-focus-pass .command-brand { grid-template-columns: 76px minmax(0,1fr);gap: 0 14px; }
-html.rhw-focus-pass .crest-frame { width: 76px;min-height: 102px; }
-html.rhw-focus-pass .crest { width: 71px;height: 96px; }
-html.rhw-focus-pass .crest-frame::before { width: 82px;height: 82px; }
-html.rhw-focus-pass .base-telemetry-bar { padding-block: 9px;margin-top: 10px; }
-html.rhw-focus-pass .base-telemetry-stat, html.rhw-focus-pass .base-telemetry-stat:first-child { padding-inline: 8px; }
-html.rhw-focus-pass .base-telemetry-stat small { font-size: 11px; }
-html.rhw-focus-pass .base-telemetry-stat strong { font-size: 16px; }
-html.rhw-focus-pass .uplink-panel { background: transparent; }
 html.rhw-focus-pass #inventoryStatusPanel .alert-title { padding-inline: 14px; }
 html.rhw-focus-pass #inventoryStatusPanel .alert-list { padding-inline: 14px; }
 }
@@ -497,21 +417,135 @@ html.rhw-focus-pass #inventoryStatusPanel .alert-list { padding-inline: 14px; }
 }
 
 /* Keep operational stock closer to the top without changing RHW's identity. */
-@media (min-width:1001px) {
-html.rhw-focus-pass .command-header { padding-block:16px; }
-html.rhw-focus-pass .command-header-inner { min-height:168px; }
-html.rhw-focus-pass .command-header-inner .crest-frame { top:-16px;bottom:-16px; }
-}
-@media (max-width:760px) {
-html.rhw-focus-pass .command-header { padding:9px 12px; }
-html.rhw-focus-pass .command-header-inner { gap:7px; }
-html.rhw-focus-pass .command-brand { grid-template-columns:72px minmax(0,1fr);gap:0 10px; }
-html.rhw-focus-pass .crest-frame { width:72px;min-height:82px; }
-html.rhw-focus-pass .crest { width:71px;height:82px; }
-html.rhw-focus-pass .command-header h1 { font-size:38px; }
-html.rhw-focus-pass .base-telemetry-bar { padding-block:6px;margin-top:6px; }
-}
+
+
 .command-priority-entry { border:1px solid var(--line);background:var(--surface-input); }
 .command-priority-entry>.command-priority-item { width:100%;border:0; }
 .priority-supply-button { display:block;margin:0 12px 10px auto;min-height:44px;padding:8px 12px;border:1px solid #8f7438;background:#292319;color:#ead7a3;font:12px/1.5 var(--font-main);cursor:pointer; }
 .priority-supply-button:focus-visible { outline:2px solid var(--gold);outline-offset:2px; }
+
+/* Workbench shell: persistent destinations, compact telemetry and inline priorities. */
+html.rhw-focus-pass.rhw-workbench .app-nav-inner { display:grid;grid-template-columns:minmax(0,1fr);gap:18px;align-content:start;padding:20px 14px; }
+html.rhw-focus-pass.rhw-workbench .app-navigation-cluster { border:0;min-width:0; }
+html.rhw-focus-pass.rhw-workbench .app-tabs { display:flex;flex-direction:column;gap:5px;border:0;background:none;min-height:0; }
+html.rhw-focus-pass.rhw-workbench .app-tabs>[data-workspace] { justify-content:flex-start;min-height:44px;width:100%;padding:10px 12px;border:0;border-radius:3px;text-align:left;background:transparent;box-shadow:none; }
+html.rhw-focus-pass.rhw-workbench .app-tabs>[data-workspace] span { font:15px/1.4 var(--font-main);letter-spacing:0; }
+html.rhw-focus-pass.rhw-workbench .app-tabs>[data-workspace] small { display:none; }
+html.rhw-focus-pass.rhw-workbench .app-tabs>[data-workspace="command"] { box-shadow:none;display:block;margin:0 0 15px;padding:0 12px;background:transparent;border:0; }
+html.rhw-focus-pass.rhw-workbench .app-tabs>[data-workspace="command"]::before { display:none; }
+html.rhw-focus-pass.rhw-workbench .app-tabs>[data-workspace="command"] span { display:block;color:var(--gold);font:500 42px/1 var(--font-title);letter-spacing:.04em; }
+html.rhw-focus-pass.rhw-workbench .app-tabs>[data-workspace="command"] small { display:block;margin:8px 0 0;color:var(--muted);font:11px/1.5 var(--font-main);letter-spacing:.04em; }
+html.rhw-focus-pass.rhw-workbench #appCommandNavSlot { padding-bottom:16px;margin-bottom:10px;border-bottom:1px solid var(--line); }
+html.rhw-focus-pass.rhw-workbench #rhwAppNav #commandNodeNav { position:static;margin:0;padding:0;border:0;background:transparent; }
+html.rhw-focus-pass.rhw-workbench #rhwAppNav #commandNodeNav .workspace-subnav-tabs { display:grid;grid-template-columns:minmax(0,1fr);gap:5px; }
+html.rhw-focus-pass.rhw-workbench #rhwAppNav #commandNodeNav button[data-command-node] { display:flex;justify-content:flex-start;height:auto;min-height:46px;padding:10px 12px;border:0;border-left:2px solid transparent;border-radius:3px;box-shadow:none;background:transparent; }
+html.rhw-focus-pass.rhw-workbench #rhwAppNav #commandNodeNav button.active { border-left-color:var(--gold);background:#2c261a;color:var(--gold); }
+html.rhw-focus-pass.rhw-workbench #rhwAppNav #commandNodeNav button strong { font:500 15px/1.5 var(--font-main);letter-spacing:0; }
+html.rhw-focus-pass.rhw-workbench #rhwAppNav #commandNodeNav :is(.command-module-index,.command-module-state,small) { display:none; }
+html.rhw-focus-pass.rhw-workbench .app-nav-inner .app-nav-brand { display:block;grid-column:auto;grid-row:auto;min-height:0;padding:0 12px; }
+html.rhw-focus-pass.rhw-workbench .app-nav-brand>:not(#rhwFocusToolsBtn) { display:none; }
+html.rhw-focus-pass.rhw-workbench #rhwFocusToolsBtn { width:100%;text-align:left;min-height:44px;padding:10px 12px;border-color:var(--line); }
+html.rhw-focus-pass.rhw-workbench #rhwAppNav .rhw-diagnostics-button { display:none; }
+html.rhw-focus-pass.rhw-workbench #appSecondaryNav { display:none !important; }
+html.rhw-focus-pass.rhw-workbench .rhw-mobile-workspaces { display:none; }
+html.rhw-focus-pass.rhw-workbench .command-header { padding:0;border-bottom:1px solid var(--line);background:var(--bg); }
+html.rhw-focus-pass.rhw-workbench .command-header-inner { min-height:0;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:18px;padding:16px 24px;align-items:center; }
+html.rhw-focus-pass.rhw-workbench .command-brand { grid-column:auto;grid-row:auto;display:grid;grid-template-columns:48px minmax(0,1fr);gap:14px;align-items:center; }
+html.rhw-focus-pass.rhw-workbench .command-header-inner .crest-frame { position:relative;inset:auto;transform:none;grid-area:auto;width:48px;height:56px;min-height:0;padding:0;border:0;box-shadow:none;background:transparent; }
+html.rhw-focus-pass.rhw-workbench .command-header-inner .crest { position:static;inset:auto;display:block;width:48px;height:56px;object-fit:contain;filter:none; }
+html.rhw-focus-pass.rhw-workbench .crest-frame::before { display:none !important; }
+html.rhw-focus-pass.rhw-workbench .brand-copy { grid-column:auto;grid-row:auto;display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:12px; }
+html.rhw-focus-pass.rhw-workbench :is(.brand-kicker,.brand-subtitle,.header-watermark) { display:none; }
+html.rhw-focus-pass.rhw-workbench .command-header h1 { grid-column:auto;display:block;margin:0;font:500 27px/1.1 var(--font-title);letter-spacing:.025em;white-space:nowrap;text-shadow:none; }
+html.rhw-focus-pass.rhw-workbench .brand-command { font:inherit;letter-spacing:inherit; }
+html.rhw-focus-pass.rhw-workbench .base-telemetry-bar { grid-column:auto;width:auto;box-shadow:none;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:0;padding:0;border:0;background:transparent; }
+html.rhw-focus-pass.rhw-workbench :is(.base-telemetry-stat,.base-telemetry-stat:first-child) { grid-column:auto;padding:0;border:0;min-width:0; }
+html.rhw-focus-pass.rhw-workbench .base-telemetry-stat small { min-height:0;color:var(--muted);font:11px/1.4 var(--font-main);letter-spacing:0;white-space:normal; }
+html.rhw-focus-pass.rhw-workbench .base-telemetry-stat strong { font:20px/1.5 var(--font-tech);text-shadow:none;overflow:visible;white-space:normal;text-overflow:clip;overflow-wrap:anywhere; }
+html.rhw-focus-pass.rhw-workbench #commandTelemetryStatus { margin:0; }
+html.rhw-focus-pass.rhw-workbench .header-operations { grid-column:auto;grid-row:auto;width:auto;display:flex;align-items:center;gap:12px; }
+html.rhw-focus-pass.rhw-workbench .header-trade-button { flex-direction:row;display:flex;align-items:center;gap:8px;min-height:44px;padding:10px 12px;max-width:150px; }
+html.rhw-focus-pass.rhw-workbench .header-trade-button svg { width:20px;height:20px;flex-shrink:0; }
+html.rhw-focus-pass.rhw-workbench .header-trade-button strong { font:500 12px/1.4 var(--font-main); }
+html.rhw-focus-pass.rhw-workbench .header-trade-button small { display:none; }
+html.rhw-focus-pass.rhw-workbench .header-operations .uplink-panel:is(.online,.offline,.polling,:not(.online):not(.offline)) { position:relative;clip-path:none;display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:8px;max-width:320px;border:0;padding:0;background:transparent;box-shadow:none; }
+html.rhw-focus-pass.rhw-workbench .header-operations .uplink-panel .uplink-header { grid-column:auto; }
+html.rhw-focus-pass.rhw-workbench .uplink-value { font:12px/1.5 var(--font-main); }
+html.rhw-focus-pass.rhw-workbench .header-operations #headerRefreshBtn { grid-column:auto;width:auto;margin:0;min-height:44px;align-self:center;font-size:11px; }
+html.rhw-focus-pass.rhw-workbench .header-operations .uplink-panel .uplink-details { grid-column:auto;border:0;padding:0;align-self:center; }
+html.rhw-focus-pass.rhw-workbench .header-operations .uplink-panel .uplink-details>summary { max-width:none;display:flex;align-items:center;justify-content:center;min-width:44px;padding:0; }
+html.rhw-focus-pass.rhw-workbench .uplink-details>summary span { display:none; }
+html.rhw-focus-pass.rhw-workbench .connection-details-icon { display:block; }
+html.rhw-focus-pass.rhw-workbench .uplink-details[open] { grid-column:auto; }
+html.rhw-focus-pass.rhw-workbench .uplink-details[open]+#headerRefreshBtn { grid-column:auto; }
+html.rhw-focus-pass.rhw-workbench .uplink-details .uplink-grid { position:absolute;right:0;top:calc(100% + 12px);width:min(360px,calc(100vw - 32px));padding:16px;border:1px solid var(--line);background:var(--panel);z-index:140;box-shadow:0 16px 38px #0009; }
+html.rhw-focus-pass.rhw-workbench #commandStrip { display:none; }
+html.rhw-focus-pass.rhw-workbench #workspaceCommand main { padding-top:20px; }
+html.rhw-focus-pass.rhw-workbench #commandControlDeck { margin-bottom:18px; }
+html.rhw-focus-pass.rhw-workbench body[data-command-node="inventory"] #commandControlDeck { grid-template-columns:minmax(280px,320px) minmax(0,1fr); }
+html.rhw-focus-pass.rhw-workbench #commandGlobalAlerts { grid-column:1/-1;background:var(--panel);border:1px solid var(--line);box-shadow:none; }
+html.rhw-focus-pass.rhw-workbench #commandGlobalAlerts .command-alert-toggle { padding:10px 14px;min-height:48px;height:auto; }
+html.rhw-focus-pass.rhw-workbench #commandGlobalAlerts .command-alert-copy small { font-size:12px; }
+html.rhw-focus-pass.rhw-workbench #commandAlertDetails { position:static;width:auto;max-height:none;overflow:visible;border:0;border-top:1px solid var(--line);box-shadow:none;padding:0 14px 10px;background:transparent; }
+html.rhw-focus-pass.rhw-workbench body[data-command-node="inventory"] #commandGlobalAlerts:not(.expanded) #commandAlertDetails { display:block; }
+html.rhw-focus-pass.rhw-workbench body[data-command-node="inventory"] #commandGlobalAlerts:not(.expanded) .command-priority-list { display:grid; }
+html.rhw-focus-pass.rhw-workbench #commandGlobalAlerts:not(.expanded) .command-priority-entry:nth-child(n+3),html.rhw-focus-pass.rhw-workbench #commandGlobalAlerts:not(.expanded) .command-focus-modes { display:none; }
+html.rhw-focus-pass.rhw-workbench .command-priority-entry { display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:12px;border:0;border-bottom:1px solid var(--line);background:none; }
+html.rhw-focus-pass.rhw-workbench .command-priority-entry:last-child { border-bottom:0; }
+html.rhw-focus-pass.rhw-workbench #commandAlertDetails .command-priority-item { border:0;padding:10px 0;min-height:56px;grid-template-columns:60px minmax(0,1fr) auto;gap:12px; }
+html.rhw-focus-pass.rhw-workbench .priority-supply-button { margin:0;min-height:40px;padding:8px 12px;white-space:nowrap;font:12px/1.5 var(--font-main); }
+html.rhw-focus-pass.rhw-workbench .command-priority-item>b { display:none; }
+html.rhw-focus-pass.rhw-workbench #commandAlertDetails .priority-state { grid-column:auto;grid-row:auto; }
+html.rhw-focus-pass.rhw-workbench #commandAlertDetails .command-priority-item>span:nth-child(2) { min-width:0; }
+html.rhw-focus-pass.rhw-workbench .command-priority-item strong { letter-spacing:0;font-family:var(--font-main); }
+@media(min-width:1101px){
+html.rhw-focus-pass.rhw-workbench body { padding-left:216px; }
+html.rhw-focus-pass.rhw-workbench .rhw-app-nav { position:fixed !important;inset:0 auto 0 0 !important;width:216px;height:100dvh;overflow-y:auto;border-right:1px solid var(--line);background:var(--panel); }
+}
+@media(max-width:1279px){
+html.rhw-focus-pass.rhw-workbench .command-header-inner { grid-template-columns:minmax(0,1fr);gap:10px; }
+html.rhw-focus-pass.rhw-workbench .header-operations { justify-content:space-between; }
+}
+@media(max-width:1100px){
+html.rhw-focus-pass.rhw-workbench .rhw-app-nav { position:sticky !important;top:0 !important;background:var(--bg); }
+html.rhw-focus-pass.rhw-workbench .app-nav-inner { display:grid;grid-template-columns:minmax(0,1fr) 48px;gap:8px;padding:6px 12px; }
+html.rhw-focus-pass.rhw-workbench #rhwAppNav .app-tabs>[data-workspace] { display:none; }
+html.rhw-focus-pass.rhw-workbench #appCommandNavSlot { padding:0;margin:0;border:0; }
+html.rhw-focus-pass.rhw-workbench #rhwAppNav #commandNodeNav .workspace-subnav-tabs { grid-template-columns:repeat(4,minmax(0,1fr));gap:3px; }
+html.rhw-focus-pass.rhw-workbench #rhwAppNav #commandNodeNav button[data-command-node] { min-height:44px;height:44px;padding:5px 3px;justify-content:center;border:0;border-bottom:2px solid transparent; }
+html.rhw-focus-pass.rhw-workbench #rhwAppNav #commandNodeNav button.active { border-bottom-color:var(--gold); }
+html.rhw-focus-pass.rhw-workbench #rhwAppNav #commandNodeNav button strong { font:500 20px/1 var(--font-title);letter-spacing:.01em; }
+html.rhw-focus-pass.rhw-workbench .app-nav-inner .app-nav-brand { padding:0; }
+html.rhw-focus-pass.rhw-workbench #rhwFocusToolsBtn { padding:6px;min-width:44px; }
+html.rhw-focus-pass.rhw-workbench .rhw-mobile-workspaces { display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;padding:14px 16px;border-bottom:1px solid var(--line); }
+html.rhw-focus-pass.rhw-workbench .rhw-mobile-workspaces button { min-height:48px;padding:8px;border:1px solid var(--line);color:var(--gold);background:var(--surface-input);font:12px/1.4 var(--font-main); }
+}
+@media(max-width:760px){
+html.rhw-focus-pass.rhw-workbench body[data-command-node="inventory"] #commandControlDeck { grid-template-columns:minmax(0,1fr); }
+html.rhw-focus-pass.rhw-workbench body[data-command-node="inventory"] #commandControlDeck .command-finder { grid-column:1/-1; }
+html.rhw-focus-pass.rhw-workbench .command-header-inner { padding:12px 14px; }
+html.rhw-focus-pass.rhw-workbench .command-brand { grid-template-columns:38px minmax(0,1fr);gap:8px 10px; }
+html.rhw-focus-pass.rhw-workbench .command-header-inner .crest-frame { width:38px;height:48px; }
+html.rhw-focus-pass.rhw-workbench .command-header-inner .crest { width:38px;height:48px; }
+html.rhw-focus-pass.rhw-workbench .brand-copy { display:contents; }
+html.rhw-focus-pass.rhw-workbench #rhwAppNav #commandNodeNav button strong { font-size:16px;letter-spacing:0; }
+html.rhw-focus-pass.rhw-workbench #rhwAppNav #commandNodeNav .workspace-subnav-tabs { grid-template-columns:1fr 1.25fr 1fr 1.15fr; }
+html.rhw-focus-pass.rhw-workbench .command-header h1 { grid-column:2;margin:0;font-size:23px; }
+html.rhw-focus-pass.rhw-workbench .base-telemetry-bar { grid-column:1/-1;gap:8px; }
+html.rhw-focus-pass.rhw-workbench .base-telemetry-stat strong { font-size:17px; }
+html.rhw-focus-pass.rhw-workbench .base-telemetry-stat small { font-size:11px; }
+html.rhw-focus-pass.rhw-workbench .header-trade-button { flex:0 0 88px;max-width:88px;padding:8px; }
+html.rhw-focus-pass.rhw-workbench .header-trade-button strong { font-size:11px; }
+html.rhw-focus-pass.rhw-workbench .header-operations .uplink-panel:is(.online,.offline,.polling,:not(.online):not(.offline)) { flex:1;max-width:none;gap:5px; }
+html.rhw-focus-pass.rhw-workbench #headerRefreshBtn { padding:7px;font-size:10px; }
+html.rhw-focus-pass.rhw-workbench .uplink-header { min-width:0; }
+html.rhw-focus-pass.rhw-workbench .uplink-label { font-size:9px; }
+html.rhw-focus-pass.rhw-workbench .uplink-value { font-size:11px; }
+html.rhw-focus-pass.rhw-workbench .command-priority-entry { grid-template-columns:minmax(0,1fr);gap:0;padding:8px 0; }
+html.rhw-focus-pass.rhw-workbench #commandAlertDetails .command-priority-item { grid-template-columns:48px minmax(0,1fr);gap:8px;padding:4px 0; }
+html.rhw-focus-pass.rhw-workbench .priority-supply-button { justify-self:end;min-height:44px; }
+}
+
+html.rhw-focus-pass.rhw-workbench :is(.panel,.ops-panel,.comms-panel,.remote-card,.v40-tool-panel,.capital-shipyard-control) { background:var(--panel);box-shadow:none;border-color:var(--line); }
+
+html.rhw-focus-pass.rhw-workbench .crest-frame.crest-fallback::after { width:100%;height:100%;font-size:14px;letter-spacing:0; }

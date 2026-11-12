@@ -1,7 +1,7 @@
 # Inventory roles and production links
 
 The Status Board has three independent stacks: Facility Maintenance (Basic
-Alloy, Consumer Goods, Food Rations) with Waste directly below; Production
+Alloy, Consumer Goods, Food Rations) with MOX Feedstock directly below; Production
 Reserves (Gold Supply, Niobium, Prototype Components, MOX); and Export Inventory
 (Chambers, Reactors, Superstructures) with Ship Stock directly below. Taller
 reserves cannot push the two secondary cards down. Tablets put Exports and
@@ -33,7 +33,7 @@ Uranium for Advanced. Each input line describes that input's batches, without
 claiming the other inputs or Scientists are available. Recipe selection never
 changes the API stock or market configuration.
 
-PC reclamation is a seventh recipe card. The verified recipe consumes 250
+PC reclamation is the seventh production row. The verified recipe consumes 250
 Military Salvage for 25 PC and 450 Scrap Metal, requiring 100 Scientists.
 It has no BMM input discount. General Military Salvage volume is 1; the
 reference cycle is 125 minutes. The page does not infer module installation
@@ -48,10 +48,13 @@ fresh quotes still enforce actual sale reserves, stock and buyer limits. Closing
 and reopening the normal desk removes the temporary PC export option and the
 surplus quantity. Nothing changes the in-game market configuration.
 
-Stock-card clicks open the matching production card, reset view filters,
-expand materials, focus and briefly highlight the card. Input lines open their
-consumer. Gold Supply offers its refinery plus its consuming modules. Waste
-offers its producers. Existing route icons act separately. Ship counts use the
+Stock links open the matching recipe in the shared detail modal, reset view
+filters and briefly highlight its production row. Input lines open their consumer.
+Gold Supply offers its refinery plus consuming modules. Toxic Waste opens a
+material detail with the selected MOX conversion, TW batch coverage and connected
+recipes. TW has no disposal or overflow threshold: fewer than one MOX batch is
+critical, one batch is low and at least two are available feedstock. This is TW
+coverage only; other ingredients, Scientists and module activity are not inferred. Existing route icons act separately. Ship counts use the
 same exact aliases/package identities as Shipyard; schematics and malformed
 quantities cannot become finished hulls. Known positive stocks lead, and other
 known-zero/unreported hulls are collapsed with their actual zero/unknown value.
@@ -64,3 +67,5 @@ Checks: `node scripts/test_inventory_reserves.js`,
 `node scripts/test_production_plan.js`,
 `python scripts/smoke_inventory_reserves.py` and the existing Trade Desk and
 responsive Command browser checks.
+
+Basic Alloy coverage is an estimate using the owner-reported upkeep of 4,300 per day after the rollback, stored in `maintenanceDailyReference`. It is not a measured production/consumption rate.

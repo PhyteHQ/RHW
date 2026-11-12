@@ -364,7 +364,7 @@
       const button = event.target.closest('.app-tabs [data-workspace]');
       if (!button || !['ArrowLeft', 'ArrowRight'].includes(event.key)) return;
       event.preventDefault();
-      const buttons = [...nav.querySelectorAll('.app-tabs [data-workspace]')];
+      const buttons = [...nav.querySelectorAll('.app-tabs [data-workspace]')].filter(item => item.getClientRects().length);
       const current = buttons.indexOf(button);
       if (current < 0 || !buttons.length) return;
       const next = buttons[(current + (event.key === 'ArrowRight' ? 1 : -1) + buttons.length) % buttons.length];
@@ -389,8 +389,9 @@
     document.querySelectorAll('.app-tabs [data-workspace]').forEach(button => {
       const active = button.dataset.workspace === safe;
       button.classList.toggle('active', active);
-      button.setAttribute('aria-selected', active ? 'true' : 'false');
-      button.tabIndex = active ? 0 : -1;
+      button.removeAttribute('aria-selected');
+      button.setAttribute('aria-pressed', active ? 'true' : 'false');
+      button.tabIndex = 0;
     });
     app.rendered('workspace');
   };

@@ -19,10 +19,29 @@ sources and regenerate assets with `python3 scripts/build_app_assets.py`.
   larger 48 px phone targets.
 
 The Status Board uses three independent operational stacks on wide screens:
-Maintenance/Waste, Production Reserves and Exports/Ship Stock. It switches to
+Maintenance/MOX Feedstock, Production Reserves and Exports/Ship Stock. It switches to
 two columns on tablets and one on phones, without CSS visual reordering that
 would disagree with keyboard or screen-reader order.
 
 The packaged interface suite exercises all workspaces at phone, tablet and
-desktop widths. Inventory tests additionally check that Waste and Ship Stock
+desktop widths. Inventory tests additionally check that MOX Feedstock and Ship Stock
 sit directly under their own panels regardless of reserve height.
+
+Desktop navigation is one persistent 216 px sidebar. Overview, Production,
+Shipyard and Logistics remain visible on every route; Calculator, Price Check
+and Forum follow them. At 1100 px and below the four daily destinations share
+one sticky row and secondary destinations move into Tools. Navigation buttons
+use pressed/current semantics; the inner Inventory and Logistics view switches
+remain real tablists. Desktop scroll offsets are independent of sidebar height.
+
+The header keeps a small crest, structural integrity, credits and free storage,
+Trade Desk, Refresh and connection details. Overview previews the top two
+priorities inline, including exact shortage sourcing actions. Expanding shows
+all priorities and the attention filter; filtering never hides navigation.
+
+Production is a comparison list with stock, material-covered output and the
+limiting input. Details use one native modal: a right-side panel on desktop and
+a bottom sheet on phones. Recipe timing, materials, byproducts and reusable
+prerequisites share that surface with material connections and TW conversion.
+Stock refreshes preserve the selected item; Escape restores the original action.
+Nested Trade Desk dialogs return focus to their material trigger.
