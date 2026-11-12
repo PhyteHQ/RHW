@@ -582,7 +582,7 @@ html.rhw-focus-pass .rhw-full-audit-actions button:first-child { border-color:va
 
 html.rhw-focus-pass .rhw-full-audit-actions button:is(:hover,:focus-visible) { border-color:var(--gold);background:var(--rhw-control-hover);color:var(--gold); }
 
-html.rhw-focus-pass .rhw-focus-tool-card { min-height: 80px;background: var(--rhw-head-fill);border-color: var(--line);grid-template-columns: 1fr auto; }
+html.rhw-focus-pass .rhw-focus-tool-card { min-height: 80px;background: var(--rhw-head-fill);border-color: var(--line);grid-template-columns: minmax(0,1fr) auto;grid-template-areas:"copy arrow"; }
 
 html.rhw-focus-pass .rhw-focus-tool-copy strong { font: 500 21px/1.2 var(--font-title); }
 
