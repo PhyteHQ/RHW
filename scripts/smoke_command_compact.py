@@ -231,10 +231,11 @@ def main() -> int:
                 cards=geometry['cards']
                 if width>=1201:
                     crest,header,inner,brand,operations=[geometry[k] for k in ['crest','header','headerInner','brand','operations']]
-                    if crest['top']<header['top'] or crest['bottom']>header['bottom'] or not 38<=crest['width']<=56 or crest['right']>brand['left'] or brand['right']>operations['left']:
-                        layout_failures.append(f'Compact crest and telemetry must fit without overlapping actions at {width}px: {geometry}')
-                    if header['height']>180 or geometry['unavailable']['header']['height']>180 or geometry['unavailable']['wrapped']:
-                        layout_failures.append(f'Telemetry must retain the compact desktop header at {width}px: {geometry}')
+                    positioned = brand['right']<=crest['left']+1 if width>=1280 else crest['right']<=brand['left']+1
+                    if crest['top']<header['top'] or crest['bottom']>header['bottom'] or not 100<=crest['width']<=180 or not positioned or max(brand['right'],crest['right'])>operations['left']:
+                        layout_failures.append(f'RHW masthead must retain the large crest without overlapping branding/actions at {width}px: {geometry}')
+                    if header['height']>310 or geometry['unavailable']['header']['height']>310 or geometry['unavailable']['wrapped']:
+                        layout_failures.append(f'Telemetry must fit the branded desktop masthead at {width}px: {geometry}')
                 if width>=1200:
                     maintenance,waste,reserves,exports,ships=cards
                     if max(c['top'] for c in [maintenance,reserves,exports])-min(c['top'] for c in [maintenance,reserves,exports])>2:
@@ -242,7 +243,7 @@ def main() -> int:
                     for parent,child in [(maintenance,waste),(exports,ships)]:
                         if not 0<child['top']-parent['bottom']<=17 or abs(child['left']-parent['left'])>2 or abs(child['width']-parent['width'])>2:
                             layout_failures.append(f'Inventory stacks must not wait for taller unrelated panels at {width}px: {geometry}')
-                    if cards[0]['top']>600 or geometry['quantity']<19 or geometry['kpi']<20:
+                    if cards[0]['top']>740 or geometry['quantity']<19 or geometry['kpi']<20:
                         layout_failures.append(f'Desktop HUD density at {width}px: {geometry}')
                 if width<760 and any(cards[i+1]['top']<cards[i]['bottom']-2 for i in range(4)):
                     layout_failures.append(f'Mobile card order at {width}px: {geometry}')

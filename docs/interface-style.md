@@ -34,8 +34,10 @@ one sticky row and secondary destinations move into Tools. Navigation buttons
 use pressed/current semantics; the inner Inventory and Logistics view switches
 remain real tablists. Desktop scroll offsets are independent of sidebar height.
 
-The header keeps a small crest, structural integrity, credits and free storage,
-Trade Desk, Refresh and connection details. Overview previews the top two
+The masthead carries the full RHW identity: company line, large crest, wordmark
+and facility name. Wide desktop layouts center a 170 × 206 px crest; phones
+keep a 74 × 96 px crest beside the branding. Structural integrity, credits, free
+storage, Trade Desk, Refresh and connection details retain a fixed hierarchy. Overview previews the top two
 priorities inline, including exact shortage sourcing actions. Expanding shows
 all priorities and the attention filter; filtering never hides navigation.
 
@@ -45,3 +47,17 @@ a bottom sheet on phones. Recipe timing, materials, byproducts and reusable
 prerequisites share that surface with material connections and TW conversion.
 Stock refreshes preserve the selected item; Escape restores the original action.
 Nested Trade Desk dialogs return focus to their material trigger.
+
+All nine public routes have one shared page heading and description, followed by
+the same component scale. Shipyard uses compact division tabs, selection cards,
+material metrics and prerequisite panels. Logistics and Price Check share neutral
+frames and table headers; sign colors continue to describe real data. Calculator
+uses the same form controls, summary strips, quote flow and comparison surfaces.
+Forum editor, generated-code controls, drafts, sender cards and their editor use
+readable Barlow labels and common actions. The actual forum document keeps its
+own communication design. Tools, Backup, System and Discovery use matching inner
+cards and separators, rather than only matching outer dialog backgrounds.
+
+Layout responds to available workspace width: Calculator and Forum use container
+queries so the desktop sidebar cannot squeeze their columns. The packaged browser
+suite covers every public route at nine widths, including Backup and Senders.

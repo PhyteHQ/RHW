@@ -190,7 +190,7 @@ def main() -> int:
                     raise RuntimeError(f"Price Check geometry at {width}px failed: {geometry}")
                 if width < 760 and any(height < 43.5 for height in geometry.get("touch", [])):
                     raise RuntimeError(f"Primary touch targets at {width}px failed: {geometry}")
-                if not 38 <= geometry.get("crestHeight", 0) <= 60:
+                if not (90 <= geometry.get("crestHeight", 0) <= 110 if width < 760 else 180 <= geometry.get("crestHeight", 0) <= 220):
                     raise RuntimeError(f"RHW crest is too small at {width}px: {geometry}")
 
             runtime_failures = [

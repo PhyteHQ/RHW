@@ -14,7 +14,7 @@ import smoke_v40_base as base
 OUT = base.ROOT / 'artifacts/interface'
 WIDTHS = (360, 390, 430, 820, 911, 1024, 1093, 1366, 1920)
 ROUTES = ('command/inventory', 'command/shipyard', 'command/production', 'command/logistics',
-          'operations/calculator', 'pricecheck/routes', 'comms/forum')
+          'operations/calculator', 'pricecheck/routes', 'comms/forum', 'comms/drafts', 'comms/senders')
 STOCK = {'Basic Alloy': 19129, 'Consumer Goods': 24793, 'Food Rations': 22451,
          'Gold Ore': 13500, 'Niobium Ore': 42000, 'Scrap Metal': 16020,
          'Gold': 3000, 'Niobium': 5800, 'Prototype Components': 825,
@@ -141,6 +141,9 @@ def main():
                   const panels=[...document.querySelectorAll('.app-workspace')].filter(visible);
                   return {overflow:Math.max(document.documentElement.scrollWidth,document.body.scrollWidth)-innerWidth,
                     toolsInNav:nav.contains(tools),toolsHeight:tools.getBoundingClientRect().height,
+                    pageRoute:document.getElementById('rhwPageHeading')?.dataset.route,
+                    pageTitle:document.getElementById('rhwPageTitle')?.textContent,
+                    pageHeadingVisible:visible(document.getElementById('rhwPageHeading')),
                     contextVisible:visible(document.getElementById('appSecondaryNav')),panels:panels.length,
                     commandButtons:[...document.querySelectorAll('#commandNodeNav [data-command-node]')].filter(visible).map(e=>({top:e.getBoundingClientRect().top,height:e.getBoundingClientRect().height,clipped:e.scrollWidth>e.clientWidth+1})),
                     toolbarHeight:document.getElementById('commandControlDeck').getBoundingClientRect().height,
@@ -161,7 +164,7 @@ def main():
                     inventoryStyled:[...document.querySelectorAll('#inventoryStatusPanel .alert-list')].every(e=>getComputedStyle(e).listStyleType==='none')&&[...document.querySelectorAll('#inventoryStatusPanel .alert-title')].every(e=>getComputedStyle(e).display==='flex'),
                     inputs:[...document.querySelectorAll('#opsMaterialPanel [data-material-price]')].filter(visible).map(e=>e.getBoundingClientRect().width)};
                 })()""")
-                if width in (390, 1366) and route in ('command/inventory', 'command/shipyard', 'command/logistics', 'operations/calculator', 'pricecheck/routes', 'comms/forum'):
+                if width in (390, 1366) and route in ('command/inventory', 'command/shipyard', 'command/logistics', 'operations/calculator', 'pricecheck/routes', 'comms/forum', 'comms/drafts', 'comms/senders'):
                     capture(cdp, f'{width}-{workspace}-{node}')
                     if route == 'command/shipyard':
                         capture_card(cdp, '#shipyardControl', f'{width}-shipyard-detail')
@@ -175,13 +178,14 @@ def main():
                 assert result['overflow'] <= 2 and not result['tabClipping'], (width, route, result)
                 assert result['toolsInNav'] and result['toolsHeight'] >= 44 and result['panels'] == 1, (width, route, result)
                 assert not result['contextVisible'], (width, route, result)
+                assert result['pageRoute'] == route and result['pageTitle'] and result['pageHeadingVisible'], (width, route, result)
                 assert result['font'] and result['inventoryStyled'] and not result['noticeVisible'], (width, route, result)
                 if width <= 760 and workspace == 'command':
                     assert len(result['commandButtons']) == 4 and all(b['height'] >= 44 and not b['clipped'] for b in result['commandButtons']), (width, route, result)
                     assert max(b['top'] for b in result['commandButtons']) - min(b['top'] for b in result['commandButtons']) < 1, (width, route, result)
-                    assert result['toolbarHeight'] <= (440 if route == 'command/inventory' else 180) and 30 <= result['crestWidth'] <= 48, (width, route, result)
+                    assert result['toolbarHeight'] <= (440 if route == 'command/inventory' else 180) and 70 <= result['crestWidth'] <= 90, (width, route, result)
                     if route == 'command/inventory':
-                        assert result['firstInventoryTop'] <= 760, (width, result)
+                        assert result['firstInventoryTop'] <= 940, (width, result)
                 if width >= 1100 and workspace == 'operations':
                     assert result['inputs'] and all(0 < n <= 145 for n in result['inputs']), result
                 if width <= 760 and workspace == 'operations':
@@ -201,6 +205,13 @@ def main():
                     assert yard['cards'] == 2 and yard['rows'] == 5 and yard['selected'] == 'archon' and yard['buildable'] == 0, (width, yard)
                     assert yard['order'] == ['archon', 'asteroid-miner'], (width, yard)
                     assert yard['compact'] and yard['fits'] and yard['touch'] and yard['stockFirst'], (width, yard)
+                if route == 'comms/senders':
+                    senders = base.ev(cdp, """(()=>({
+                      labels:[...document.querySelectorAll('.sender-registry-card dt')].map(e=>parseFloat(getComputedStyle(e).fontSize)),
+                      values:[...document.querySelectorAll('.sender-registry-card dd')].map(e=>parseFloat(getComputedStyle(e).fontSize)),
+                      actions:[...document.querySelectorAll('.sender-registry-actions button')].map(e=>e.getBoundingClientRect().height)
+                    }))()""")
+                    assert senders['labels'] and min(senders['labels'])>=12 and min(senders['values'])>=14 and min(senders['actions'])>=44, (width, senders)
                 if width <= 760 and workspace == 'pricecheck':
                     # A phone must show the result at the start of each compact
                     # card, including unknown prices and the longest route names.

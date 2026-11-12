@@ -25,15 +25,19 @@
   --rhw-title-size: 28px;
   --rhw-panel-title-size: 24px;
   --rhw-product-title-size: 22px;
-  --rhw-control-size: 12px;
+  --rhw-control-size: 13px;
   --rhw-control-height: 44px;
   --rhw-compact-height: 36px;
   --rhw-touch-height: 48px;
-  --rhw-control-fill: #17181c;
-  --rhw-control-hover: #29251d;
+  --rhw-panel-fill: #101216;
+  --rhw-head-surface: #191b21;
+  --rhw-inset-fill: #0c0e12;
+  --rhw-selected-fill: #29251c;
+  --rhw-control-fill: #1a1c22;
+  --rhw-control-hover: #282b33;
   --rhw-control-border: #62553d;
-  --rhw-action-fill: linear-gradient(110deg,#34291a,#1a1919);
-  --rhw-card-shadow: inset 0 1px #eee5cf0c,0 8px 22px #0006;
+  --rhw-action-fill: #2c261c;
+  --rhw-card-shadow: none;
 }
 
 
@@ -140,7 +144,7 @@
 
 :root {
   --bg: var(--palette-canvas);
-  --panel: #101115;
+  --panel: var(--rhw-panel-fill);
   --line: var(--palette-line);
   --line-soft: #23242a;
   --text: var(--palette-text);
@@ -154,10 +158,10 @@
   --remote: #b5bbc9;
   --waste: #b7afa0;
   --waste-soft: rgba(183,175,160,.15);
-  --surface-input: #090a0d;
-  --surface-raised: #18191f;
+  --surface-input: var(--rhw-inset-fill);
+  --surface-raised: var(--rhw-head-surface);
   --surface-hover: #22232b;
-  --rhw-head-fill: linear-gradient(110deg,#26221b,#121318 76%);
+  --rhw-head-fill: var(--rhw-head-surface);
   --rhw-space-sm: 8px;
   --rhw-space-md: 16px;
   --rhw-space-lg: 24px;
@@ -4984,6 +4988,174 @@ html.rhw-focus-pass .market-card .supplier-commodity-metric { display: flex;flex
 html.rhw-focus-pass .market-card .supplier-commodity-metric.price { align-items: flex-end;text-align: right; }
 }
 
+/* Shared application surfaces. The forum document keeps its own content styling. */
+html.rhw-focus-pass.rhw-workbench { --rhw-surface-radius:4px; }
+html.rhw-focus-pass.rhw-workbench :is(.alert-card,.panel,.ops-panel,.comms-panel,.market-card,.remote-card,.capital-shipyard-control,.sender-registry-card,.sender-editor,.rhw-transfer-center,.rhw-diagnostics-card,.discovery-data-grid article) { border:1px solid var(--line);border-radius:var(--rhw-surface-radius);background:var(--panel);box-shadow:none;clip-path:none; }
+html.rhw-focus-pass.rhw-workbench :is(.panel-head,.ops-panel-head,.comms-panel-head,.logistics-subhead,.rhw-focus-tools-head,.rhw-diagnostics-head,.rhw-transfer-sheet>header,.discovery-data-head,.sender-editor-head) { min-height:56px;padding:14px 18px;background:var(--surface-raised);border-bottom:1px solid var(--line);box-shadow:none; }
+html.rhw-focus-pass.rhw-workbench :is(.ops-panel-head,.comms-panel-head)>div>strong { color:var(--gold);font:500 24px/1.15 var(--font-title);letter-spacing:.025em; }
+html.rhw-focus-pass.rhw-workbench :is(.ops-panel-head,.comms-panel-head)>div>span { display:inline-flex;align-items:center;justify-content:center;min-width:26px;min-height:26px;padding:3px;border:1px solid var(--line);border-radius:3px;background:var(--surface-input);color:var(--muted);font:11px/1.3 var(--font-tech);letter-spacing:0; }
+html.rhw-focus-pass.rhw-workbench :is(.ops-panel-head,.comms-panel-head)>small { color:var(--muted);font:11px/1.4 var(--font-main);letter-spacing:.025em; }
+html.rhw-focus-pass.rhw-workbench :is(.comms-actions button,.comms-draft-actions button,.sender-registry-actions button,.sender-editor-head button,.comms-surface-actions button,.comms-mini-action,.comms-panel-head-actions button,.ops-quantity-control button,.ops-mobile-jumps button,.ops-mobile-quote-jump,.comms-mobile-view-switch button,.comms-bbcode-toggle,.rhw-focus-tool-card,.rhw-mobile-workspaces button) { min-height:44px;padding:9px 12px;border:1px solid var(--line);border-radius:var(--rhw-surface-radius);background:var(--rhw-control-fill);color:var(--text);box-shadow:none;clip-path:none;font:500 13px/1.4 var(--font-main);letter-spacing:0; }
+html.rhw-focus-pass.rhw-workbench :is(.comms-actions button,.comms-draft-actions button,.sender-registry-actions button,.sender-editor-head button,.comms-surface-actions button,.comms-mini-action,.comms-panel-head-actions button,.ops-quantity-control button,.ops-mobile-jumps button,.ops-mobile-quote-jump,.comms-mobile-view-switch button,.comms-bbcode-toggle,.rhw-focus-tool-card):not(:disabled):hover { border-color:var(--gold);background:var(--rhw-control-hover);color:var(--gold); }
+html.rhw-focus-pass.rhw-workbench :is(.comms-actions,.comms-surface-actions) button.comms-primary { background:var(--rhw-action-fill);border-color:var(--rhw-control-border);color:var(--gold); }
+html.rhw-focus-pass.rhw-workbench :is(.comms-field,.ops-field,.ops-form-grid label,.supply-fields label) { gap:7px; }
+html.rhw-focus-pass.rhw-workbench :is(.comms-field>span,.message-field>label,.ops-field>span,.sender-editor label>span) { color:var(--muted);font:500 12px/1.5 var(--font-main);letter-spacing:.025em; }
+html.rhw-focus-pass.rhw-workbench :is(input,select,textarea) { border-color:var(--line);background:var(--surface-input);color:var(--text);box-shadow:none; }
+html.rhw-focus-pass.rhw-workbench :is(input,select,textarea):hover { border-color:var(--palette-line-bright); }
+html.rhw-focus-pass.rhw-workbench :is(input,select,textarea):focus { border-color:var(--gold); }
+html.rhw-focus-pass.rhw-workbench :is(.ops-material-table,.ops-comparison-table,.pricecheck-table,.shipyard-material-table) { background:transparent;color:var(--text); }
+html.rhw-focus-pass.rhw-workbench :is(.ops-material-table,.ops-comparison-table,.pricecheck-table,.shipyard-material-table) thead th { color:var(--muted);background:var(--surface-raised);border-color:var(--line);font:500 12px/1.4 var(--font-main);letter-spacing:.025em;box-shadow:none; }
+html.rhw-focus-pass.rhw-workbench :is(.ops-material-table,.ops-comparison-table,.pricecheck-table,.shipyard-material-table) tbody :is(th,td) { border-color:var(--line); }
+
+/* Shipyard: selection cards, material summary and prerequisites share the same surfaces. */
+html.rhw-focus-pass.rhw-workbench #shipyardControl .shipyard-control-grid { gap:20px;padding:20px; }
+html.rhw-focus-pass.rhw-workbench #shipyardControl .shipyard-divisions button { border:1px solid var(--line);border-bottom:2px solid var(--line);border-radius:4px;background:var(--surface-input);box-shadow:none;color:var(--muted); }
+html.rhw-focus-pass.rhw-workbench #shipyardControl .shipyard-divisions button[aria-pressed="true"] { background:var(--rhw-selected-fill);border-color:var(--rhw-control-border);border-bottom-color:var(--gold);color:var(--gold); }
+html.rhw-focus-pass.rhw-workbench #shipyardControl .shipyard-division-count { color:var(--muted);font:11px/1.4 var(--font-main); }
+html.rhw-focus-pass.rhw-workbench #shipyardControl .shipyard-hull-card { min-height:148px;padding:16px;border:1px solid var(--line);border-radius:4px;background:var(--surface-input);box-shadow:none; }
+html.rhw-focus-pass.rhw-workbench #shipyardControl .shipyard-hull-card[aria-pressed="true"] { border-color:var(--rhw-control-border);background:var(--rhw-selected-fill);box-shadow:inset 3px 0 var(--gold); }
+html.rhw-focus-pass.rhw-workbench #shipyardControl .shipyard-hull-card::after { display:none; }
+html.rhw-focus-pass.rhw-workbench #shipyardControl .shipyard-hull-name { font:500 24px/1.15 var(--font-title);letter-spacing:.02em;text-shadow:none; }
+html.rhw-focus-pass.rhw-workbench #shipyardControl .shipyard-hull-type { font:12px/1.4 var(--font-main);color:var(--muted); }
+html.rhw-focus-pass.rhw-workbench #shipyardControl :is(.shipyard-hull-stock-label,.shipyard-hull-price-label,.shipyard-registry-heading,.shipyard-eyebrow) { font:12px/1.5 var(--font-main);color:var(--muted);letter-spacing:0; }
+html.rhw-focus-pass.rhw-workbench #shipyardControl .shipyard-hull-stock { font:26px/1.3 var(--font-tech); }
+html.rhw-focus-pass.rhw-workbench #shipyardControl .shipyard-hull-price { font:20px/1.3 var(--font-tech); }
+html.rhw-focus-pass.rhw-workbench #shipyardControl .shipyard-hull-indicator { box-shadow:none; }
+html.rhw-focus-pass.rhw-workbench #shipyardControl .shipyard-decision-strip { border-color:var(--line);border-radius:4px;background:var(--surface-input);box-shadow:none; }
+html.rhw-focus-pass.rhw-workbench #shipyardControl .shipyard-decision-metric { padding:16px;min-height:100px;background:transparent; }
+html.rhw-focus-pass.rhw-workbench #shipyardControl .shipyard-decision-metric small { color:var(--muted);font:12px/1.4 var(--font-main);letter-spacing:.02em; }
+html.rhw-focus-pass.rhw-workbench #shipyardControl .shipyard-decision-metric strong { font:500 18px/1.4 var(--font-main); }
+html.rhw-focus-pass.rhw-workbench #shipyardControl .shipyard-coverage strong { font:32px/1.2 var(--font-tech); }
+html.rhw-focus-pass.rhw-workbench #shipyardControl .shipyard-next-ship strong { font:26px/1.3 var(--font-tech); }
+html.rhw-focus-pass.rhw-workbench #shipyardControl :is(.shipyard-coverage,.shipyard-next-ship) strong span { font:14px/1.5 var(--font-main); }
+html.rhw-focus-pass.rhw-workbench #shipyardControl .shipyard-prerequisites { padding:16px;background:var(--surface-input);border:1px solid var(--line);border-radius:4px;box-shadow:none; }
+html.rhw-focus-pass.rhw-workbench #shipyardControl .shipyard-prerequisites h3 { font:500 24px/1.2 var(--font-title);letter-spacing:.025em; }
+html.rhw-focus-pass.rhw-workbench #shipyardControl .shipyard-prerequisite-status { font:11px/1.4 var(--font-main);letter-spacing:0; }
+html.rhw-focus-pass.rhw-workbench #shipyardControl .shipyard-shortage { background:var(--rhw-selected-fill);border-color:var(--rhw-control-border);color:var(--gold); }
+
+/* Logistics and Price Check keep their data-specific meaning within common frames. */
+html.rhw-focus-pass.rhw-workbench .market-card { --market-header:var(--surface-raised);border-top:1px solid var(--line);background:var(--panel);box-shadow:none; }
+html.rhw-focus-pass.rhw-workbench .market-card:is([data-market-family="gold"],[data-market-family="components"]) { --market-header:var(--surface-raised);border-top-color:var(--line); }
+html.rhw-focus-pass.rhw-workbench .market-card[data-market-kind="ore"] { border-left:2px solid var(--line); }
+html.rhw-focus-pass.rhw-workbench .market-card::after,html.rhw-focus-pass.rhw-workbench .market-card .supplier-scanline { display:none; }
+html.rhw-focus-pass.rhw-workbench .market-card::before { height:2px;box-shadow:none; }
+html.rhw-focus-pass.rhw-workbench .market-card:hover { transform:none;box-shadow:none; }
+html.rhw-focus-pass.rhw-workbench .market-card .remote-facility-head { background:var(--surface-raised);border-color:var(--line); }
+html.rhw-focus-pass.rhw-workbench .market-card .market-material-symbol { border-color:var(--line);background:var(--surface-input);box-shadow:none; }
+html.rhw-focus-pass.rhw-workbench .market-card .supplier-title { color:var(--text);text-shadow:none; }
+html.rhw-focus-pass.rhw-workbench .market-card .supplier-commodity-row { border-left:0;background:transparent;border-bottom:1px solid var(--line); }
+html.rhw-focus-pass.rhw-workbench .market-card .supplier-commodity-row:hover { background:var(--surface-raised); }
+html.rhw-focus-pass.rhw-workbench .market-card .supplier-commodity-metric strong { font:20px/1.3 var(--font-tech); }
+html.rhw-focus-pass.rhw-workbench .market-card .supplier-commodity-metric.price strong { color:var(--gold); }
+html.rhw-focus-pass.rhw-workbench .pricecheck-status-grid { gap:0;border:1px solid var(--line);border-radius:4px;overflow:hidden;background:var(--surface-input); }
+html.rhw-focus-pass.rhw-workbench .pricecheck-status { padding:16px;border:0;border-right:1px solid var(--line);border-radius:0;background:transparent;box-shadow:none; }
+html.rhw-focus-pass.rhw-workbench .pricecheck-status:last-child { border-right:0; }
+html.rhw-focus-pass.rhw-workbench .pricecheck-status strong { margin-top:6px;font:26px/1.3 var(--font-tech); }
+html.rhw-focus-pass.rhw-workbench .pricecheck-table-wrap { border-color:var(--line);background:var(--panel); }
+html.rhw-focus-pass.rhw-workbench .pricecheck-row { border-color:var(--line);border-radius:4px;background:var(--panel);box-shadow:none; }
+html.rhw-focus-pass.rhw-workbench .pricecheck-difference strong { box-shadow:none;background:transparent; }
+html.rhw-focus-pass.rhw-workbench :is(.pricecheck-source-price,.pricecheck-payout strong) { font:18px/1.4 var(--font-tech); }
+
+/* Calculator: common form fields, a quiet quote flow and consistent comparison tables. */
+html.rhw-focus-pass.rhw-workbench .ops-quote-panel { container:quote / inline-size;border-top:1px solid var(--line); }
+html.rhw-focus-pass.rhw-workbench .ops-recipe-meta { margin:0 16px 16px;padding:12px 0;border:1px solid var(--line);background:var(--surface-input); }
+html.rhw-focus-pass.rhw-workbench .ops-recipe-meta>div { padding:0 12px;border-right:1px solid var(--line); }
+html.rhw-focus-pass.rhw-workbench .ops-recipe-meta>div:last-child { border-right:0; }
+html.rhw-focus-pass.rhw-workbench .ops-recipe-meta strong { font:26px/1.3 var(--font-tech); }
+html.rhw-focus-pass.rhw-workbench .ops-pricing-flow { display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0;border:1px solid var(--line);border-radius:4px;background:var(--surface-input);overflow:hidden; }
+html.rhw-focus-pass.rhw-workbench .ops-flow-arrow { display:none; }
+html.rhw-focus-pass.rhw-workbench .ops-flow-card { min-width:0;min-height:0;padding:16px;border:0;border-left:1px solid var(--line);border-radius:0;background:transparent;box-shadow:none; }
+html.rhw-focus-pass.rhw-workbench .ops-flow-cost { border-left:0; }
+html.rhw-focus-pass.rhw-workbench .ops-flow-card>strong { font:30px/1.3 var(--font-tech); }
+html.rhw-focus-pass.rhw-workbench .ops-flow-sell { background:var(--rhw-selected-fill);box-shadow:inset 0 2px var(--gold); }
+html.rhw-focus-pass.rhw-workbench .ops-flow-card :is(p,span,em,b) { letter-spacing:0;font-family:var(--font-main); }
+html.rhw-focus-pass.rhw-workbench .ops-margin-input { min-width:0; }
+html.rhw-focus-pass.rhw-workbench .ops-profit-strip>div { border-color:var(--line);background:var(--surface-input); }
+html.rhw-focus-pass.rhw-workbench .ops-profit-strip strong { font:24px/1.3 var(--font-tech); }
+html.rhw-focus-pass.rhw-workbench :is(.ops-price-profiles,.ops-price-profile-tools,.ops-rhw-prices,.ops-comparison-prices) { border-color:var(--line);background:var(--surface-input); }
+html.rhw-focus-pass.rhw-workbench :is(.ops-price-profiles-head,.ops-comparison-table thead th) { border-color:var(--line);background:var(--surface-raised); }
+html.rhw-focus-pass.rhw-workbench .ops-comparison-best { background:var(--rhw-selected-fill); }
+html.rhw-focus-pass.rhw-workbench .ops-comparison-table tbody th { color:var(--text);font-family:var(--font-main); }
+@container quote (max-width:620px){
+ html.rhw-focus-pass.rhw-workbench .ops-pricing-flow { grid-template-columns:minmax(0,1fr); }
+ html.rhw-focus-pass.rhw-workbench .ops-flow-card { border-left:0;border-top:1px solid var(--line); }
+ html.rhw-focus-pass.rhw-workbench .ops-flow-cost { border-top:0; }
+}
+
+/* Forum, drafts and senders: content-sized typography and the same control hierarchy. */
+html.rhw-focus-pass.rhw-workbench .comms-workflow-status { margin:16px;padding:12px;border:1px solid var(--line);background:var(--surface-input);font:13px/1.5 var(--font-main); }
+html.rhw-focus-pass.rhw-workbench .comms-context-tools { padding:0 16px 16px;gap:8px; }
+html.rhw-focus-pass.rhw-workbench .comms-editor-toolbar { padding:8px;background:var(--surface-raised);border-color:var(--line);gap:6px; }
+html.rhw-focus-pass.rhw-workbench .comms-editor-toolbar button { background:var(--rhw-control-fill);border-color:var(--line);font:500 13px/1.4 var(--font-main) !important; }
+html.rhw-focus-pass.rhw-workbench .comms-advanced { margin-top:16px;border:1px solid var(--line);border-radius:4px;background:var(--surface-input); }
+html.rhw-focus-pass.rhw-workbench .comms-advanced>summary { padding:12px 14px;color:var(--text);font:13px/1.5 var(--font-main); }
+html.rhw-focus-pass.rhw-workbench .comms-advanced[open] { padding-bottom:14px; }
+html.rhw-focus-pass.rhw-workbench .comms-advanced .comms-field-grid { padding:0 14px; }
+html.rhw-focus-pass.rhw-workbench .comms-message-help { font:12px/1.5 var(--font-main); }
+html.rhw-focus-pass.rhw-workbench .bbcode-panel textarea { background:var(--surface-input);border-color:var(--line);font:13px/1.65 var(--font-tech); }
+html.rhw-focus-pass.rhw-workbench .sender-registry { gap:16px;padding:16px; }
+html.rhw-focus-pass.rhw-workbench .sender-registry-intro { padding:16px;color:var(--muted);font:14px/1.6 var(--font-main);letter-spacing:0; }
+html.rhw-focus-pass.rhw-workbench .sender-registry-head { border-color:var(--line); }
+html.rhw-focus-pass.rhw-workbench .sender-registry-head small { color:var(--muted);font:12px/1.5 var(--font-main);letter-spacing:0; }
+html.rhw-focus-pass.rhw-workbench .sender-registry-head strong { font:500 26px/1.2 var(--font-title);letter-spacing:.025em; }
+html.rhw-focus-pass.rhw-workbench .sender-registry-head>span { color:var(--muted);background:var(--surface-input);border-color:var(--line);font:11px/1.4 var(--font-main);letter-spacing:0; }
+html.rhw-focus-pass.rhw-workbench .sender-registry-card dl>div { grid-template-columns:100px minmax(0,1fr);padding:8px 0;border-bottom:1px solid var(--line); }
+html.rhw-focus-pass.rhw-workbench .sender-registry-card dt { color:var(--muted);font:12px/1.5 var(--font-main);letter-spacing:0; }
+html.rhw-focus-pass.rhw-workbench .sender-registry-card dd { color:var(--text);font:14px/1.5 var(--font-main); }
+html.rhw-focus-pass.rhw-workbench .sender-editor-head small { color:var(--muted);font:12px/1.4 var(--font-main);letter-spacing:0; }
+html.rhw-focus-pass.rhw-workbench .sender-editor-head strong { color:var(--gold);font:500 24px/1.2 var(--font-title);letter-spacing:.025em; }
+html.rhw-focus-pass.rhw-workbench .comms-draft-card { padding:16px;border:1px solid var(--line);border-left:2px solid var(--rhw-control-border);border-radius:4px;background:var(--surface-input); }
+html.rhw-focus-pass.rhw-workbench .comms-draft-card strong { color:var(--text);font:500 24px/1.2 var(--font-title);white-space:normal; }
+html.rhw-focus-pass.rhw-workbench .comms-draft-card small { color:var(--muted);font:12px/1.5 var(--font-main);white-space:normal;letter-spacing:0; }
+html.rhw-focus-pass.rhw-workbench .comms-archive-summary>div { background:var(--surface-input);border-color:var(--line); }
+html.rhw-focus-pass.rhw-workbench .comms-archive-summary strong { font:24px/1.4 var(--font-tech); }
+
+/* Every utility sheet uses the same inner cards, labels, fields and separators. */
+html.rhw-focus-pass.rhw-workbench :is(.rhw-focus-tool-card,.rhw-transfer-section,.rhw-transfer-section:hover,.rhw-transfer-privacy,.rhw-transfer-intro,.rhw-transfer-file-meta,.rhw-diagnostics-overall,.rhw-diagnostics-events,.discovery-source-details,.rhw-full-audit-summary>div) { border-color:var(--line);background:var(--surface-input);box-shadow:none; }
+html.rhw-focus-pass.rhw-workbench :is(.rhw-transfer-sheet>footer,.rhw-transfer-section-list,.rhw-diagnostics-card,.rhw-full-audit-result) { border-color:var(--line);background:var(--panel); }
+html.rhw-focus-pass.rhw-workbench .rhw-transfer-section-copy strong { color:var(--text);font:500 14px/1.5 var(--font-main);letter-spacing:0; }
+html.rhw-focus-pass.rhw-workbench .rhw-transfer-section-copy small { color:var(--muted);font:12px/1.5 var(--font-main); }
+html.rhw-focus-pass.rhw-workbench .rhw-transfer-section input:checked+.rhw-transfer-check { border-color:var(--gold);background:var(--rhw-selected-fill); }
+html.rhw-focus-pass.rhw-workbench .rhw-transfer-section input:checked+.rhw-transfer-check::after { color:var(--gold); }
+html.rhw-focus-pass.rhw-workbench :is(.rhw-transfer-intro>strong,.rhw-diagnostics-card strong,.discovery-data-grid strong) { font:500 20px/1.3 var(--font-title);color:var(--text); }
+html.rhw-focus-pass.rhw-workbench .rhw-transfer-privacy { border-left:2px solid var(--warn); }
+html.rhw-focus-pass.rhw-workbench .rhw-focus-tools-grid { gap:12px;padding:16px; }
+html.rhw-focus-pass.rhw-workbench .rhw-focus-tool-copy strong { color:var(--gold);font:500 24px/1.2 var(--font-title); }
+html.rhw-focus-pass.rhw-workbench .rhw-full-audit-result { padding:12px;border-bottom:1px solid var(--line); }
+@media(max-width:760px){
+ html.rhw-focus-pass.rhw-workbench :is(.panel-head,.ops-panel-head,.comms-panel-head,.logistics-subhead) { padding:12px 14px;flex-wrap:wrap; }
+ html.rhw-focus-pass.rhw-workbench #shipyardControl .shipyard-control-grid { padding:12px;gap:16px; }
+ html.rhw-focus-pass.rhw-workbench #shipyardControl .shipyard-hull-card { padding:12px; }
+ html.rhw-focus-pass.rhw-workbench #shipyardControl .shipyard-hull-price { font-size:17px; }
+ html.rhw-focus-pass.rhw-workbench #shipyardControl .shipyard-decision-metric { padding:12px;min-height:86px; }
+ html.rhw-focus-pass.rhw-workbench #shipyardControl .shipyard-decision-metric strong { font-size:16px; }
+ html.rhw-focus-pass.rhw-workbench #shipyardControl .shipyard-coverage strong { font-size:30px; }
+ html.rhw-focus-pass.rhw-workbench #shipyardControl .shipyard-next-ship { min-height:0; }
+ html.rhw-focus-pass.rhw-workbench .pricecheck-status { padding:12px;border-bottom:1px solid var(--line); }
+ html.rhw-focus-pass.rhw-workbench .pricecheck-status strong { font-size:22px; }
+ html.rhw-focus-pass.rhw-workbench .sender-registry { grid-template-columns:minmax(0,1fr);padding:12px; }
+ html.rhw-focus-pass.rhw-workbench .sender-registry-card dl>div { grid-template-columns:80px minmax(0,1fr); }
+ html.rhw-focus-pass.rhw-workbench :is(.rhw-transfer-sheet>header button,.rhw-transfer-sheet>footer button,.rhw-full-audit-actions button) { min-height:48px; }
+}
+
+html.rhw-focus-pass.rhw-workbench #shipyardControl .shipyard-divisions button { display:flex;flex-direction:row;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:4px 12px;min-height:60px;padding:12px 14px; }
+html.rhw-focus-pass.rhw-workbench #shipyardControl :is(.shipyard-division-title,.shipyard-divisions small) { display:none; }
+html.rhw-focus-pass.rhw-workbench #shipyardControl .shipyard-division-short { display:block;font:500 22px/1.2 var(--font-title);letter-spacing:.02em; }
+html.rhw-focus-pass.rhw-workbench #shipyardControl .shipyard-division-count { margin:0; }
+html.rhw-focus-pass.rhw-workbench .comms-signature-auto { padding:12px;border:1px solid var(--line);border-radius:4px;background:var(--surface-input); }
+html.rhw-focus-pass.rhw-workbench .comms-signature-auto small { color:var(--muted);font:12px/1.4 var(--font-main);letter-spacing:0; }
+html.rhw-focus-pass.rhw-workbench .comms-signature-auto strong { color:var(--text);font:500 24px/1.2 var(--font-title); }
+html.rhw-focus-pass.rhw-workbench .comms-signature-auto span { color:var(--muted);font:13px/1.5 var(--font-main);letter-spacing:0; }
+html.rhw-focus-pass.rhw-workbench .comms-workflow-status { grid-template-columns:repeat(4,minmax(0,1fr));gap:8px; }
+html.rhw-focus-pass.rhw-workbench .comms-workflow-score { grid-column:1/-1;display:flex;flex-direction:row;align-items:center;justify-content:space-between;gap:12px;min-height:0;padding:0 0 10px;border-bottom:1px solid var(--line);background:none; }
+html.rhw-focus-pass.rhw-workbench .comms-workflow-score small { font:12px/1.5 var(--font-main);letter-spacing:0; }
+html.rhw-focus-pass.rhw-workbench .comms-workflow-score strong { margin:0;font:18px/1.5 var(--font-tech);letter-spacing:0; }
+html.rhw-focus-pass.rhw-workbench .comms-workflow-status>span { min-height:32px;padding:4px 0;background:none;font:11px/1.4 var(--font-main);letter-spacing:0; }
+html.rhw-focus-pass.rhw-workbench :is(.comms-actions,.comms-draft-actions,.sender-registry-actions) button.danger { color:var(--danger); }
+@media(max-width:760px){
+ html.rhw-focus-pass.rhw-workbench #shipyardControl .shipyard-divisions button { flex-direction:column;justify-content:center;gap:4px;min-height:64px;padding:8px 4px; }
+}
+
 
 /* SOURCE: css/layout.css */
 /* RHW LAYOUT — edit this owning cascade stage; do not add release override files. */
@@ -5412,7 +5584,7 @@ html.rhw-focus-pass #inventoryStatusPanel .alert-list { padding-inline: 14px; }
 .priority-supply-button { display:block;margin:0 12px 10px auto;min-height:44px;padding:8px 12px;border:1px solid #8f7438;background:#292319;color:#ead7a3;font:12px/1.5 var(--font-main);cursor:pointer; }
 .priority-supply-button:focus-visible { outline:2px solid var(--gold);outline-offset:2px; }
 
-/* Workbench shell: persistent destinations, compact telemetry and inline priorities. */
+/* Workbench shell: persistent destinations, branded telemetry and inline priorities. */
 html.rhw-focus-pass.rhw-workbench .app-nav-inner { display:grid;grid-template-columns:minmax(0,1fr);gap:18px;align-content:start;padding:20px 14px; }
 html.rhw-focus-pass.rhw-workbench .app-navigation-cluster { border:0;min-width:0; }
 html.rhw-focus-pass.rhw-workbench .app-tabs { display:flex;flex-direction:column;gap:5px;border:0;background:none;min-height:0; }
@@ -5428,6 +5600,7 @@ html.rhw-focus-pass.rhw-workbench #rhwAppNav #commandNodeNav { position:static;m
 html.rhw-focus-pass.rhw-workbench #rhwAppNav #commandNodeNav .workspace-subnav-tabs { display:grid;grid-template-columns:minmax(0,1fr);gap:5px; }
 html.rhw-focus-pass.rhw-workbench #rhwAppNav #commandNodeNav button[data-command-node] { display:flex;justify-content:flex-start;height:auto;min-height:46px;padding:10px 12px;border:0;border-left:2px solid transparent;border-radius:3px;box-shadow:none;background:transparent; }
 html.rhw-focus-pass.rhw-workbench #rhwAppNav #commandNodeNav button.active { border-left-color:var(--gold);background:#2c261a;color:var(--gold); }
+html.rhw-focus-pass.rhw-workbench body:not([data-workspace="command"]) #rhwAppNav #commandNodeNav button.active { border-left-color:transparent;background:transparent;color:var(--muted); }
 html.rhw-focus-pass.rhw-workbench #rhwAppNav #commandNodeNav button strong { font:500 15px/1.5 var(--font-main);letter-spacing:0; }
 html.rhw-focus-pass.rhw-workbench #rhwAppNav #commandNodeNav :is(.command-module-index,.command-module-state,small) { display:none; }
 html.rhw-focus-pass.rhw-workbench .app-nav-inner .app-nav-brand { display:block;grid-column:auto;grid-row:auto;min-height:0;padding:0 12px; }
@@ -5436,39 +5609,42 @@ html.rhw-focus-pass.rhw-workbench #rhwFocusToolsBtn { width:100%;text-align:left
 html.rhw-focus-pass.rhw-workbench #rhwAppNav .rhw-diagnostics-button { display:none; }
 html.rhw-focus-pass.rhw-workbench #appSecondaryNav { display:none !important; }
 html.rhw-focus-pass.rhw-workbench .rhw-mobile-workspaces { display:none; }
-html.rhw-focus-pass.rhw-workbench .command-header { padding:0;border-bottom:1px solid var(--line);background:var(--bg); }
-html.rhw-focus-pass.rhw-workbench .command-header-inner { min-height:0;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:18px;padding:16px 24px;align-items:center; }
-html.rhw-focus-pass.rhw-workbench .command-brand { grid-column:auto;grid-row:auto;display:grid;grid-template-columns:48px minmax(0,1fr);gap:14px;align-items:center; }
-html.rhw-focus-pass.rhw-workbench .command-header-inner .crest-frame { position:relative;inset:auto;transform:none;grid-area:auto;width:48px;height:56px;min-height:0;padding:0;border:0;box-shadow:none;background:transparent; }
-html.rhw-focus-pass.rhw-workbench .command-header-inner .crest { position:static;inset:auto;display:block;width:48px;height:56px;object-fit:contain;filter:none; }
+/* The masthead carries RHW identity; workspace content uses the shared scale below. */
+html.rhw-focus-pass.rhw-workbench .command-header { position:relative;z-index:20;padding:0;overflow:visible;border-bottom:1px solid #62553d;background:radial-gradient(ellipse at 35% 0%,#b892481a,transparent 70%),var(--panel); }
+html.rhw-focus-pass.rhw-workbench .command-header-inner { min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 250px;gap:24px;padding:24px var(--layout-gutter);align-items:center; }
+html.rhw-focus-pass.rhw-workbench .command-brand { grid-column:auto;grid-row:auto;display:grid;grid-template-columns:104px minmax(0,1fr);gap:20px;align-items:center; }
+html.rhw-focus-pass.rhw-workbench .command-header-inner .crest-frame { position:relative;inset:auto;transform:none;grid-area:auto;width:104px;height:144px;min-height:0;padding:0;border:0;box-shadow:none;background:transparent; }
+html.rhw-focus-pass.rhw-workbench .command-header-inner .crest { position:static;inset:auto;display:block;width:104px;height:144px;object-fit:contain;filter:drop-shadow(0 6px 15px #0008); }
 html.rhw-focus-pass.rhw-workbench .crest-frame::before { display:none !important; }
-html.rhw-focus-pass.rhw-workbench .brand-copy { grid-column:auto;grid-row:auto;display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:12px; }
-html.rhw-focus-pass.rhw-workbench :is(.brand-kicker,.brand-subtitle,.header-watermark) { display:none; }
-html.rhw-focus-pass.rhw-workbench .command-header h1 { grid-column:auto;display:block;margin:0;font:500 27px/1.1 var(--font-title);letter-spacing:.025em;white-space:nowrap;text-shadow:none; }
-html.rhw-focus-pass.rhw-workbench .brand-command { font:inherit;letter-spacing:inherit; }
-html.rhw-focus-pass.rhw-workbench .base-telemetry-bar { grid-column:auto;width:auto;box-shadow:none;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:0;padding:0;border:0;background:transparent; }
-html.rhw-focus-pass.rhw-workbench :is(.base-telemetry-stat,.base-telemetry-stat:first-child) { grid-column:auto;padding:0;border:0;min-width:0; }
-html.rhw-focus-pass.rhw-workbench .base-telemetry-stat small { min-height:0;color:var(--muted);font:11px/1.4 var(--font-main);letter-spacing:0;white-space:normal; }
-html.rhw-focus-pass.rhw-workbench .base-telemetry-stat strong { font:20px/1.5 var(--font-tech);text-shadow:none;overflow:visible;white-space:normal;text-overflow:clip;overflow-wrap:anywhere; }
+html.rhw-focus-pass.rhw-workbench .brand-copy { grid-column:auto;grid-row:auto;display:block;min-width:0; }
+html.rhw-focus-pass.rhw-workbench .header-watermark { display:none !important; }
+html.rhw-focus-pass.rhw-workbench .brand-kicker { display:block;margin:0 0 8px;color:var(--gold);font:11px/1.4 var(--font-main);letter-spacing:.14em; }
+html.rhw-focus-pass.rhw-workbench .command-header h1 { grid-column:auto;display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 12px;margin:0;color:var(--text);font:600 60px/.95 var(--font-title);letter-spacing:.04em;white-space:normal;text-shadow:none; }
+html.rhw-focus-pass.rhw-workbench .brand-command { color:var(--gold);font:500 30px/1 var(--font-title);letter-spacing:.12em; }
+html.rhw-focus-pass.rhw-workbench .brand-subtitle { display:block;margin:8px 0 16px;color:var(--muted);font:12px/1.4 var(--font-main);letter-spacing:.08em; }
+html.rhw-focus-pass.rhw-workbench .base-telemetry-bar { grid-column:auto;width:100%;box-shadow:none;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0;margin:0;padding:10px 0;border:1px solid var(--line);border-left:2px solid var(--gold);background:var(--surface-input); }
+html.rhw-focus-pass.rhw-workbench :is(.base-telemetry-stat,.base-telemetry-stat:first-child) { grid-column:auto;padding:0 10px;border:0;border-right:1px solid var(--line);min-width:0; }
+html.rhw-focus-pass.rhw-workbench .base-telemetry-stat:last-child { border-right:0; }
+html.rhw-focus-pass.rhw-workbench .base-telemetry-stat small { display:block;min-height:30px;margin:0;color:var(--muted);font:11px/1.4 var(--font-main);letter-spacing:0;white-space:normal; }
+html.rhw-focus-pass.rhw-workbench .base-telemetry-stat strong { font:20px/1.3 var(--font-tech);text-shadow:none;overflow:visible;white-space:normal;text-overflow:clip;overflow-wrap:anywhere; }
 html.rhw-focus-pass.rhw-workbench #commandTelemetryStatus { margin:0; }
-html.rhw-focus-pass.rhw-workbench .header-operations { grid-column:auto;grid-row:auto;width:auto;display:flex;align-items:center;gap:12px; }
-html.rhw-focus-pass.rhw-workbench .header-trade-button { flex-direction:row;display:flex;align-items:center;gap:8px;min-height:44px;padding:10px 12px;max-width:150px; }
-html.rhw-focus-pass.rhw-workbench .header-trade-button svg { width:20px;height:20px;flex-shrink:0; }
-html.rhw-focus-pass.rhw-workbench .header-trade-button strong { font:500 12px/1.4 var(--font-main); }
+html.rhw-focus-pass.rhw-workbench .header-operations { grid-column:auto;grid-row:auto;width:100%;display:grid;grid-template-columns:minmax(0,1fr);align-items:stretch;gap:10px; }
+html.rhw-focus-pass.rhw-workbench .header-trade-button { flex-direction:row;display:flex;align-items:center;justify-content:center;gap:10px;width:100%;min-height:48px;padding:10px 14px;max-width:none;border:1px solid var(--rhw-control-border);background:var(--rhw-action-fill);color:var(--gold);box-shadow:none; }
+html.rhw-focus-pass.rhw-workbench .header-trade-button svg { width:22px;height:22px;flex-shrink:0; }
+html.rhw-focus-pass.rhw-workbench .header-trade-button strong { font:500 14px/1.4 var(--font-main); }
 html.rhw-focus-pass.rhw-workbench .header-trade-button small { display:none; }
-html.rhw-focus-pass.rhw-workbench .header-operations .uplink-panel:is(.online,.offline,.polling,:not(.online):not(.offline)) { position:relative;clip-path:none;display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:8px;max-width:320px;border:0;padding:0;background:transparent;box-shadow:none; }
-html.rhw-focus-pass.rhw-workbench .header-operations .uplink-panel .uplink-header { grid-column:auto; }
-html.rhw-focus-pass.rhw-workbench .uplink-value { font:12px/1.5 var(--font-main); }
-html.rhw-focus-pass.rhw-workbench .header-operations #headerRefreshBtn { grid-column:auto;width:auto;margin:0;min-height:44px;align-self:center;font-size:11px; }
-html.rhw-focus-pass.rhw-workbench .header-operations .uplink-panel .uplink-details { grid-column:auto;border:0;padding:0;align-self:center; }
-html.rhw-focus-pass.rhw-workbench .header-operations .uplink-panel .uplink-details>summary { max-width:none;display:flex;align-items:center;justify-content:center;min-width:44px;padding:0; }
+html.rhw-focus-pass.rhw-workbench .header-operations .uplink-panel:is(.online,.offline,.polling,:not(.online):not(.offline)) { position:relative;clip-path:none;display:grid;grid-template-columns:minmax(0,1fr) 44px;gap:10px;width:100%;max-width:none;border:1px solid var(--line);padding:12px;background:var(--surface-input);box-shadow:none; }
+html.rhw-focus-pass.rhw-workbench .header-operations .uplink-panel .uplink-header { grid-column:1/-1;grid-row:1;margin:0;min-width:0; }
+html.rhw-focus-pass.rhw-workbench .uplink-value { font:13px/1.4 var(--font-main);white-space:normal;overflow-wrap:anywhere; }
+html.rhw-focus-pass.rhw-workbench .uplink-label { font:11px/1.4 var(--font-main);letter-spacing:.04em; }
+html.rhw-focus-pass.rhw-workbench .header-operations #headerRefreshBtn { grid-column:1;grid-row:2;width:100%;margin:0;min-height:44px;padding:8px 12px;align-self:center;font:13px/1.4 var(--font-main);border:1px solid var(--line);background:var(--rhw-control-fill);box-shadow:none; }
+html.rhw-focus-pass.rhw-workbench .header-operations .uplink-panel .uplink-details { grid-column:2;grid-row:2;border:0;padding:0;align-self:center; }
+html.rhw-focus-pass.rhw-workbench .header-operations .uplink-panel .uplink-details>summary { max-width:none;display:flex;align-items:center;justify-content:center;width:44px;min-width:44px;min-height:44px;padding:0;border:1px solid var(--line);background:var(--rhw-control-fill); }
 html.rhw-focus-pass.rhw-workbench .uplink-details>summary span { display:none; }
 html.rhw-focus-pass.rhw-workbench .connection-details-icon { display:block; }
-html.rhw-focus-pass.rhw-workbench .uplink-details[open] { grid-column:auto; }
-html.rhw-focus-pass.rhw-workbench .uplink-details[open]+#headerRefreshBtn { grid-column:auto; }
-html.rhw-focus-pass.rhw-workbench .uplink-details .uplink-grid { position:absolute;right:0;top:calc(100% + 12px);width:min(360px,calc(100vw - 32px));padding:16px;border:1px solid var(--line);background:var(--panel);z-index:140;box-shadow:0 16px 38px #0009; }
+html.rhw-focus-pass.rhw-workbench .uplink-details .uplink-grid { position:absolute;right:0;top:calc(100% + 10px);width:min(360px,calc(100vw - 32px));padding:16px;border:1px solid var(--line);background:var(--panel);z-index:140;box-shadow:0 16px 38px #0009; }
 html.rhw-focus-pass.rhw-workbench #commandStrip { display:none; }
-html.rhw-focus-pass.rhw-workbench #workspaceCommand main { padding-top:20px; }
+html.rhw-focus-pass.rhw-workbench #workspaceCommand main { padding-top:0; }
 html.rhw-focus-pass.rhw-workbench #commandControlDeck { margin-bottom:18px; }
 html.rhw-focus-pass.rhw-workbench body[data-command-node="inventory"] #commandControlDeck { grid-template-columns:minmax(280px,320px) minmax(0,1fr); }
 html.rhw-focus-pass.rhw-workbench #commandGlobalAlerts { grid-column:1/-1;background:var(--panel);border:1px solid var(--line);box-shadow:none; }
@@ -5490,10 +5666,6 @@ html.rhw-focus-pass.rhw-workbench .command-priority-item strong { letter-spacing
 html.rhw-focus-pass.rhw-workbench body { padding-left:216px; }
 html.rhw-focus-pass.rhw-workbench .rhw-app-nav { position:fixed !important;inset:0 auto 0 0 !important;width:216px;height:100dvh;overflow-y:auto;border-right:1px solid var(--line);background:var(--panel); }
 }
-@media(max-width:1279px){
-html.rhw-focus-pass.rhw-workbench .command-header-inner { grid-template-columns:minmax(0,1fr);gap:10px; }
-html.rhw-focus-pass.rhw-workbench .header-operations { justify-content:space-between; }
-}
 @media(max-width:1100px){
 html.rhw-focus-pass.rhw-workbench .rhw-app-nav { position:sticky !important;top:0 !important;background:var(--bg); }
 html.rhw-focus-pass.rhw-workbench .app-nav-inner { display:grid;grid-template-columns:minmax(0,1fr) 48px;gap:8px;padding:6px 12px; }
@@ -5511,24 +5683,8 @@ html.rhw-focus-pass.rhw-workbench .rhw-mobile-workspaces button { min-height:48p
 @media(max-width:760px){
 html.rhw-focus-pass.rhw-workbench body[data-command-node="inventory"] #commandControlDeck { grid-template-columns:minmax(0,1fr); }
 html.rhw-focus-pass.rhw-workbench body[data-command-node="inventory"] #commandControlDeck .command-finder { grid-column:1/-1; }
-html.rhw-focus-pass.rhw-workbench .command-header-inner { padding:12px 14px; }
-html.rhw-focus-pass.rhw-workbench .command-brand { grid-template-columns:38px minmax(0,1fr);gap:8px 10px; }
-html.rhw-focus-pass.rhw-workbench .command-header-inner .crest-frame { width:38px;height:48px; }
-html.rhw-focus-pass.rhw-workbench .command-header-inner .crest { width:38px;height:48px; }
-html.rhw-focus-pass.rhw-workbench .brand-copy { display:contents; }
 html.rhw-focus-pass.rhw-workbench #rhwAppNav #commandNodeNav button strong { font-size:16px;letter-spacing:0; }
 html.rhw-focus-pass.rhw-workbench #rhwAppNav #commandNodeNav .workspace-subnav-tabs { grid-template-columns:1fr 1.25fr 1fr 1.15fr; }
-html.rhw-focus-pass.rhw-workbench .command-header h1 { grid-column:2;margin:0;font-size:23px; }
-html.rhw-focus-pass.rhw-workbench .base-telemetry-bar { grid-column:1/-1;gap:8px; }
-html.rhw-focus-pass.rhw-workbench .base-telemetry-stat strong { font-size:17px; }
-html.rhw-focus-pass.rhw-workbench .base-telemetry-stat small { font-size:11px; }
-html.rhw-focus-pass.rhw-workbench .header-trade-button { flex:0 0 88px;max-width:88px;padding:8px; }
-html.rhw-focus-pass.rhw-workbench .header-trade-button strong { font-size:11px; }
-html.rhw-focus-pass.rhw-workbench .header-operations .uplink-panel:is(.online,.offline,.polling,:not(.online):not(.offline)) { flex:1;max-width:none;gap:5px; }
-html.rhw-focus-pass.rhw-workbench #headerRefreshBtn { padding:7px;font-size:10px; }
-html.rhw-focus-pass.rhw-workbench .uplink-header { min-width:0; }
-html.rhw-focus-pass.rhw-workbench .uplink-label { font-size:9px; }
-html.rhw-focus-pass.rhw-workbench .uplink-value { font-size:11px; }
 html.rhw-focus-pass.rhw-workbench .command-priority-entry { grid-template-columns:minmax(0,1fr);gap:0;padding:8px 0; }
 html.rhw-focus-pass.rhw-workbench #commandAlertDetails .command-priority-item { grid-template-columns:48px minmax(0,1fr);gap:8px;padding:4px 0; }
 html.rhw-focus-pass.rhw-workbench .priority-supply-button { justify-self:end;min-height:44px; }
@@ -5537,6 +5693,77 @@ html.rhw-focus-pass.rhw-workbench .priority-supply-button { justify-self:end;min
 html.rhw-focus-pass.rhw-workbench :is(.panel,.ops-panel,.comms-panel,.remote-card,.v40-tool-panel,.capital-shipyard-control) { background:var(--panel);box-shadow:none;border-color:var(--line); }
 
 html.rhw-focus-pass.rhw-workbench .crest-frame.crest-fallback::after { width:100%;height:100%;font-size:14px;letter-spacing:0; }
+
+/* One content grid and page heading across all nine routes. */
+html.rhw-focus-pass.rhw-workbench .rhw-page-heading { width:min(100%,var(--content-max));margin:0 auto;padding:24px var(--layout-gutter) 20px; }
+.rhw-page-heading small { display:block;margin-bottom:4px;color:var(--gold);font:500 11px/1.5 var(--font-main);letter-spacing:.12em; }
+.rhw-page-heading h2 { margin:0;color:var(--text);font:500 38px/1.1 var(--font-title);letter-spacing:.025em; }
+.rhw-page-heading p { margin:5px 0 0;max-width:76ch;color:var(--muted);font:14px/1.5 var(--font-main); }
+html.rhw-focus-pass.rhw-workbench :is(.operations-workspace,.comms-workspace,.pricecheck-workspace) { padding:0 var(--layout-gutter) 40px;background:transparent; }
+html.rhw-focus-pass.rhw-workbench .workspace-heading { display:none; }
+html.rhw-focus-pass.rhw-workbench .pricecheck-heading { justify-content:flex-end;min-height:0;margin:0 0 16px;padding:0;border:0;background:none;box-shadow:none; }
+html.rhw-focus-pass.rhw-workbench .pricecheck-heading>div { display:none; }
+html.rhw-focus-pass.rhw-workbench #productionPanel>.panel-head { min-height:0;padding:12px 16px;background:var(--surface-raised); }
+html.rhw-focus-pass.rhw-workbench #productionPanel>.panel-head :is(.section-kicker,.panel-title) { display:none; }
+html.rhw-focus-pass.rhw-workbench #shipyardControl .shipyard-control-head { min-height:0;padding:12px 20px;background:var(--surface-raised);box-shadow:none; }
+html.rhw-focus-pass.rhw-workbench #shipyardControl .shipyard-control-title { display:none; }
+html.rhw-focus-pass.rhw-workbench #shipyardControl .shipyard-control-head:not(:has([data-freshness-badge]:not([hidden]))) { display:none; }
+html.rhw-focus-pass.rhw-workbench #shipyardControl .shipyard-control-subline { margin:0;font:12px/1.5 var(--font-main);letter-spacing:.03em; }
+html.rhw-focus-pass.rhw-workbench .operations-frame { container: operations / inline-size; }
+html.rhw-focus-pass.rhw-workbench .operations-layout-simple { display:grid;grid-template-columns:minmax(0,1fr);gap:20px; }
+html.rhw-focus-pass.rhw-workbench :is(.ops-setup-panel,.ops-cost-panel,.ops-quote-panel) { grid-column:auto;grid-row:auto;position:static; }
+html.rhw-focus-pass.rhw-workbench .comms-grid { display:grid;grid-template-columns:minmax(0,1fr);gap:20px; }
+@container operations (min-width:1000px) {
+ html.rhw-focus-pass.rhw-workbench .operations-layout-simple { grid-template-columns:minmax(300px,.9fr) minmax(0,1.5fr); }
+ html.rhw-focus-pass.rhw-workbench .ops-setup-panel { grid-column:1;grid-row:1/span 2;align-self:start; }
+ html.rhw-focus-pass.rhw-workbench :is(.ops-cost-panel,.ops-quote-panel) { grid-column:2; }
+}
+html.rhw-focus-pass.rhw-workbench .comms-frame { container:communications / inline-size; }
+@container communications (min-width:980px){
+ html.rhw-focus-pass.rhw-workbench .comms-grid { grid-template-columns:minmax(0,1fr) minmax(0,1fr); }
+}
+@media(min-width:1280px){
+ html.rhw-focus-pass.rhw-workbench .command-header-inner { grid-template-columns:minmax(0,1fr) 170px minmax(0,1fr);min-height:240px; }
+ html.rhw-focus-pass.rhw-workbench .command-brand { display:contents; }
+ html.rhw-focus-pass.rhw-workbench .brand-copy { grid-column:1;grid-row:1; }
+ html.rhw-focus-pass.rhw-workbench .command-header-inner .crest-frame { grid-column:2;grid-row:1;width:170px;height:206px; }
+ html.rhw-focus-pass.rhw-workbench .command-header-inner .crest { width:170px;height:206px; }
+ html.rhw-focus-pass.rhw-workbench .header-operations { grid-column:3;grid-row:1;max-width:320px;justify-self:end; }
+}
+@media(max-width:1000px){
+ html.rhw-focus-pass.rhw-workbench .command-header-inner { grid-template-columns:minmax(0,1fr);gap:16px; }
+ html.rhw-focus-pass.rhw-workbench .command-brand { grid-template-columns:104px minmax(0,1fr); }
+ html.rhw-focus-pass.rhw-workbench .header-operations { grid-template-columns:140px minmax(0,1fr);gap:12px; }
+ html.rhw-focus-pass.rhw-workbench .header-operations .uplink-panel:is(.online,.offline,.polling,:not(.online):not(.offline)) { grid-template-columns:minmax(0,1fr) auto 44px;align-items:center; }
+ html.rhw-focus-pass.rhw-workbench .header-operations .uplink-panel :is(.uplink-header,#headerRefreshBtn,.uplink-details) { grid-column:auto;grid-row:auto; }
+}
+@media(max-width:760px){
+ html.rhw-focus-pass.rhw-workbench .command-header-inner { padding:16px 14px;gap:12px; }
+ html.rhw-focus-pass.rhw-workbench .command-brand { grid-template-columns:74px minmax(0,1fr);gap:4px 12px; }
+ html.rhw-focus-pass.rhw-workbench .command-header-inner .crest-frame { grid-column:1;grid-row:1/span 3;width:74px;height:96px; }
+ html.rhw-focus-pass.rhw-workbench .command-header-inner .crest { width:74px;height:96px; }
+ html.rhw-focus-pass.rhw-workbench .brand-copy { display:contents; }
+ html.rhw-focus-pass.rhw-workbench .brand-kicker { grid-column:2;margin:0;align-self:end;font-size:10px;letter-spacing:.08em; }
+ html.rhw-focus-pass.rhw-workbench .command-header h1 { grid-column:2;flex-wrap:nowrap;gap:8px;font-size:44px; }
+ html.rhw-focus-pass.rhw-workbench .brand-command { font-size:23px;letter-spacing:.06em; }
+ html.rhw-focus-pass.rhw-workbench .brand-subtitle { grid-column:2;align-self:start;margin:0;font-size:10px;letter-spacing:.025em; }
+ html.rhw-focus-pass.rhw-workbench .base-telemetry-bar { grid-column:1/-1;grid-template-columns:1fr 1.3fr 1fr;margin-top:8px;padding-block:8px; }
+ html.rhw-focus-pass.rhw-workbench :is(.base-telemetry-stat,.base-telemetry-stat:first-child) { padding-inline:8px; }
+ html.rhw-focus-pass.rhw-workbench .base-telemetry-stat small { font-size:10px;min-height:28px; }
+ html.rhw-focus-pass.rhw-workbench .base-telemetry-stat strong { font-size:18px;white-space:nowrap; }
+ html.rhw-focus-pass.rhw-workbench .base-telemetry-stat.credits strong { font-size:16px; }
+ html.rhw-focus-pass.rhw-workbench .header-operations { grid-template-columns:96px minmax(0,1fr);gap:8px; }
+ html.rhw-focus-pass.rhw-workbench .header-trade-button { gap:6px;padding:8px; }
+ html.rhw-focus-pass.rhw-workbench .header-trade-button strong { font-size:12px; }
+ html.rhw-focus-pass.rhw-workbench .header-operations .uplink-panel:is(.online,.offline,.polling,:not(.online):not(.offline)) { padding:7px;gap:5px; }
+ html.rhw-focus-pass.rhw-workbench .header-operations #headerRefreshBtn { width:auto;padding:6px;font-size:11px; }
+ html.rhw-focus-pass.rhw-workbench .uplink-label { display:none; }
+ html.rhw-focus-pass.rhw-workbench .uplink-value { font-size:11px; }
+ html.rhw-focus-pass.rhw-workbench .rhw-page-heading { padding:18px var(--layout-gutter) 16px; }
+ .rhw-page-heading h2 { font-size:32px; }
+ .rhw-page-heading p { font-size:13px; }
+ html.rhw-focus-pass.rhw-workbench #shipyardControl .shipyard-control-head { padding:10px 12px; }
+}
 
 
 /* SOURCE: css/recipes.css */

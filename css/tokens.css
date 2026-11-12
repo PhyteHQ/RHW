@@ -22,13 +22,17 @@
   --rhw-title-size: 28px;
   --rhw-panel-title-size: 24px;
   --rhw-product-title-size: 22px;
-  --rhw-control-size: 12px;
+  --rhw-control-size: 13px;
   --rhw-control-height: 44px;
   --rhw-compact-height: 36px;
   --rhw-touch-height: 48px;
-  --rhw-control-fill: #17181c;
-  --rhw-control-hover: #29251d;
+  --rhw-panel-fill: #101216;
+  --rhw-head-surface: #191b21;
+  --rhw-inset-fill: #0c0e12;
+  --rhw-selected-fill: #29251c;
+  --rhw-control-fill: #1a1c22;
+  --rhw-control-hover: #282b33;
   --rhw-control-border: #62553d;
-  --rhw-action-fill: linear-gradient(110deg,#34291a,#1a1919);
-  --rhw-card-shadow: inset 0 1px #eee5cf0c,0 8px 22px #0006;
+  --rhw-action-fill: #2c261c;
+  --rhw-card-shadow: none;
 }

@@ -246,7 +246,10 @@ are simply Import / Export; internal
 NPC markets, physical docking, BMM ID exclusions, unknown personal access,
 snapshot provenance and cancellation retain the existing supply contracts.
 
-The compact header groups a small crest, telemetry and accessible actions.
+The branded masthead groups the large crest, full RHW identity, telemetry and
+accessible actions. `js/shared/presentation.js` supplies the same page heading
+and route description for all nine public destinations through named lifecycle
+and render subscriptions; it does not alter workspace state or user content.
 `js/core/navigation.js` keeps daily destinations in `appCommandNavSlot`, inside
 the persistent sidebar or compact sticky row. Auxiliary context navigation stays
 mounted for route contracts but hidden. Desktop uses a 16 px scroll offset;
