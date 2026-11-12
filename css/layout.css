@@ -452,7 +452,7 @@ html.rhw-focus-pass.rhw-workbench .command-header { padding:0;border-bottom:1px 
 html.rhw-focus-pass.rhw-workbench .command-header-inner { min-height:0;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:18px;padding:16px 24px;align-items:center; }
 html.rhw-focus-pass.rhw-workbench .command-brand { grid-column:auto;grid-row:auto;display:grid;grid-template-columns:48px minmax(0,1fr);gap:14px;align-items:center; }
 html.rhw-focus-pass.rhw-workbench .command-header-inner .crest-frame { position:relative;inset:auto;transform:none;grid-area:auto;width:48px;height:56px;min-height:0;padding:0;border:0;box-shadow:none;background:transparent; }
-html.rhw-focus-pass.rhw-workbench .command-header-inner .crest { position:static;inset:auto;width:100%;height:100%;object-fit:contain;filter:none; }
+html.rhw-focus-pass.rhw-workbench .command-header-inner .crest { position:static;inset:auto;display:block;width:48px;height:56px;object-fit:contain;filter:none; }
 html.rhw-focus-pass.rhw-workbench .crest-frame::before { display:none !important; }
 html.rhw-focus-pass.rhw-workbench .brand-copy { grid-column:auto;grid-row:auto;display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:12px; }
 html.rhw-focus-pass.rhw-workbench :is(.brand-kicker,.brand-subtitle,.header-watermark) { display:none; }
@@ -526,8 +526,10 @@ html.rhw-focus-pass.rhw-workbench body[data-command-node="inventory"] #commandCo
 html.rhw-focus-pass.rhw-workbench .command-header-inner { padding:12px 14px; }
 html.rhw-focus-pass.rhw-workbench .command-brand { grid-template-columns:38px minmax(0,1fr);gap:8px 10px; }
 html.rhw-focus-pass.rhw-workbench .command-header-inner .crest-frame { width:38px;height:48px; }
+html.rhw-focus-pass.rhw-workbench .command-header-inner .crest { width:38px;height:48px; }
 html.rhw-focus-pass.rhw-workbench .brand-copy { display:contents; }
-html.rhw-focus-pass.rhw-workbench #rhwAppNav #commandNodeNav button strong { font-size:18px; }
+html.rhw-focus-pass.rhw-workbench #rhwAppNav #commandNodeNav button strong { font-size:16px;letter-spacing:0; }
+html.rhw-focus-pass.rhw-workbench #rhwAppNav #commandNodeNav .workspace-subnav-tabs { grid-template-columns:1fr 1.25fr 1fr 1.15fr; }
 html.rhw-focus-pass.rhw-workbench .command-header h1 { grid-column:2;margin:0;font-size:23px; }
 html.rhw-focus-pass.rhw-workbench .base-telemetry-bar { grid-column:1/-1;gap:8px; }
 html.rhw-focus-pass.rhw-workbench .base-telemetry-stat strong { font-size:17px; }
@@ -544,3 +546,5 @@ html.rhw-focus-pass.rhw-workbench .priority-supply-button { justify-self:end;min
 }
 
 html.rhw-focus-pass.rhw-workbench :is(.panel,.ops-panel,.comms-panel,.remote-card,.v40-tool-panel,.capital-shipyard-control) { background:var(--panel);box-shadow:none;border-color:var(--line); }
+
+html.rhw-focus-pass.rhw-workbench .crest-frame.crest-fallback::after { width:100%;height:100%;font-size:14px;letter-spacing:0; }

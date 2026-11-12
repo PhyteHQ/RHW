@@ -208,9 +208,11 @@ def main() -> int:
                   RHWV4.navigate('command',{json.dumps('shipyard' if view=='market' else 'production')});return true;
                 }})()""")
                 clicked = base.ev(cdp, f"""(()=>{{
-                  const source=[...document.querySelectorAll('.production-card [data-purchase-source]')].find(x=>x.dataset.purchaseSource==={json.dumps(material)});
+                  const source=[...document.querySelectorAll('[data-purchase-source]')].find(x=>x.dataset.purchaseSource==={json.dumps(material)});
                   if(!source)return false;
-                  source.closest('.production-card').querySelector('.production-card-toggle').click();
+                  const card=source.closest('.production-card');
+                  if(!card){{source.click();return true;}}
+                  card.querySelector('.production-card-toggle').click();
                   const button=[...document.querySelectorAll('#rhwItemDetails [data-purchase-source]')].find(x=>x.dataset.purchaseSource==={json.dumps(material)});
                   button.click();return true;
                 }})()""")

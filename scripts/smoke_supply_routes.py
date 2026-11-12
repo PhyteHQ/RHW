@@ -145,7 +145,7 @@ def main():
             cdp.call('Emulation.setDeviceMetricsOverride', {'width': width, 'height': height, 'deviceScaleFactor': 1, 'mobile': width < 760})
             compact = base.ev(cdp, """(()=>{
               document.getElementById('productionPanel').classList.add('production-expanded');
-              document.querySelector('.production-card').querySelector('.production-card-toggle').click();
+              document.querySelector('.production-card [data-supply-commodity=\"Ablative Armor Plating\"]').closest('.production-card').querySelector('.production-card-toggle').click();
               const buttons=[...document.querySelectorAll('#rhwItemDetails .rhw-supply-icon')].filter(b=>b.getClientRects().length);
               return {count:buttons.length,overflow:document.documentElement.scrollWidth>innerWidth+1,
                 controls:buttons.map(b=>{const r=b.getBoundingClientRect(),name=b.previousElementSibling.getBoundingClientRect();
