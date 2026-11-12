@@ -5112,7 +5112,7 @@ html.rhw-focus-pass.rhw-workbench .comms-archive-summary strong { font:24px/1.4 
 
 /* Every utility sheet uses the same inner cards, labels, fields and separators. */
 html.rhw-focus-pass.rhw-workbench :is(.rhw-focus-tool-card,.rhw-transfer-section,.rhw-transfer-section:hover,.rhw-transfer-privacy,.rhw-transfer-intro,.rhw-transfer-file-meta,.rhw-diagnostics-overall,.rhw-diagnostics-events,.discovery-source-details,.rhw-full-audit-summary>div) { border-color:var(--line);background:var(--surface-input);box-shadow:none; }
-html.rhw-focus-pass.rhw-workbench :is(.rhw-transfer-sheet>footer,.rhw-transfer-section-list,.rhw-diagnostics-card,.rhw-full-audit-result) { border-color:var(--line);background:var(--panel); }
+html.rhw-focus-pass.rhw-workbench :is(.rhw-transfer-sheet>footer,.rhw-transfer-section-list,.rhw-diagnostics-grid,.rhw-diagnostics-actions,.rhw-diagnostics-card,.rhw-full-audit-result) { border-color:var(--line);background:var(--panel); }
 html.rhw-focus-pass.rhw-workbench .rhw-transfer-section-copy strong { color:var(--text);font:500 14px/1.5 var(--font-main);letter-spacing:0; }
 html.rhw-focus-pass.rhw-workbench .rhw-transfer-section-copy small { color:var(--muted);font:12px/1.5 var(--font-main); }
 html.rhw-focus-pass.rhw-workbench .rhw-transfer-section input:checked+.rhw-transfer-check { border-color:var(--gold);background:var(--rhw-selected-fill); }
