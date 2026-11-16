@@ -593,7 +593,7 @@ const RHW_APP_CONFIG = Object.freeze({
       const button = event.target.closest('.app-tabs [data-workspace]');
       if (!button) return;
       const workspace = button.dataset.workspace;
-      app.navigate(workspace, app.workspaceStoredNode(workspace));
+      app.navigate(workspace, workspace === 'command' ? 'inventory' : app.workspaceStoredNode(workspace));
     });
 
     nav.addEventListener('keydown', event => {
@@ -634,12 +634,12 @@ const RHW_APP_CONFIG = Object.freeze({
 
   app.applyRoute = function applyRoute({ replace = false } = {}) {
     const route = app.route.parse();
-    const workspace = route.workspace || app.store.get(app.config.storageKeys.activeWorkspace, 'command');
+    const workspace = route.workspace || 'command';
     const safeWorkspace = WORKSPACES.includes(workspace) ? workspace : 'command';
     app.activateWorkspace(safeWorkspace);
 
     const meta = WORKSPACE_META[safeWorkspace];
-    const node = route.node || app.workspaceStoredNode(safeWorkspace);
+    const node = route.node || (route.workspace ? app.workspaceStoredNode(safeWorkspace) : 'inventory');
     app.workspaceModule(safeWorkspace)?.activate(node, { updateRoute: false });
     const activeNode = app.state[meta.nodeKey] || meta.fallback;
     const canonicalHash = `#${safeWorkspace}/${activeNode}`;
@@ -1231,8 +1231,10 @@ const RHW_APP_CONFIG = Object.freeze({
       node: 'production',
       target: constrained.recipe.product,
       title: constrained.bottleneck.displayName || constrained.bottleneck.name,
-      meta: `+${app.util.number(constrained.nextCycleGap)} for the next ${constrained.recipe.product} batch`,
-      effect: `${constrained.recipe.product}: next batch`,
+      meta: constrained.possibleCycles > 0
+        ? `${app.util.number(constrained.possibleCycles)} batches covered · +${app.util.number(constrained.nextCycleGap)} for batch ${constrained.possibleCycles + 1}`
+        : `+${app.util.number(constrained.nextCycleGap)} for the next ${constrained.recipe.product} batch`,
+      effect: `${constrained.recipe.product}: batch ${constrained.possibleCycles + 1}`,
       supply: constrained.bottleneck.name, quantity: Math.ceil(constrained.nextCycleGap)
     }));
 

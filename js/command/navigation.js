@@ -114,8 +114,10 @@
       node: 'production',
       target: constrained.recipe.product,
       title: constrained.bottleneck.displayName || constrained.bottleneck.name,
-      meta: `+${app.util.number(constrained.nextCycleGap)} for the next ${constrained.recipe.product} batch`,
-      effect: `${constrained.recipe.product}: next batch`,
+      meta: constrained.possibleCycles > 0
+        ? `${app.util.number(constrained.possibleCycles)} batches covered · +${app.util.number(constrained.nextCycleGap)} for batch ${constrained.possibleCycles + 1}`
+        : `+${app.util.number(constrained.nextCycleGap)} for the next ${constrained.recipe.product} batch`,
+      effect: `${constrained.recipe.product}: batch ${constrained.possibleCycles + 1}`,
       supply: constrained.bottleneck.name, quantity: Math.ceil(constrained.nextCycleGap)
     }));
 

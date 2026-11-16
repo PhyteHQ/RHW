@@ -357,7 +357,7 @@
       const button = event.target.closest('.app-tabs [data-workspace]');
       if (!button) return;
       const workspace = button.dataset.workspace;
-      app.navigate(workspace, app.workspaceStoredNode(workspace));
+      app.navigate(workspace, workspace === 'command' ? 'inventory' : app.workspaceStoredNode(workspace));
     });
 
     nav.addEventListener('keydown', event => {
@@ -398,12 +398,12 @@
 
   app.applyRoute = function applyRoute({ replace = false } = {}) {
     const route = app.route.parse();
-    const workspace = route.workspace || app.store.get(app.config.storageKeys.activeWorkspace, 'command');
+    const workspace = route.workspace || 'command';
     const safeWorkspace = WORKSPACES.includes(workspace) ? workspace : 'command';
     app.activateWorkspace(safeWorkspace);
 
     const meta = WORKSPACE_META[safeWorkspace];
-    const node = route.node || app.workspaceStoredNode(safeWorkspace);
+    const node = route.node || (route.workspace ? app.workspaceStoredNode(safeWorkspace) : 'inventory');
     app.workspaceModule(safeWorkspace)?.activate(node, { updateRoute: false });
     const activeNode = app.state[meta.nodeKey] || meta.fallback;
     const canonicalHash = `#${safeWorkspace}/${activeNode}`;

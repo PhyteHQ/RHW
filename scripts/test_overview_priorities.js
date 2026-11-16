@@ -43,6 +43,8 @@ assert.equal(combined.length, 1);
 assert.equal(combined[0].quantity, 80, 'Independent coverage gaps are not added and do not promise simultaneous jobs');
 assert.equal(combined[0].effects.length, 2);
 assert.equal(JSON.stringify(production), before, 'Summaries never spend or mutate stock');
+production = [{ product: 'Chambers', recipe: { product: 'Chambers' }, cardState: 'low', possibleCycles: 3, nextCycleGap: 50, bottleneck: { name: 'Gold' } }];
+assert.match(tasks()[0].meta, /3 batches covered.*batch 4/, 'Restock planning does not mislabel a covered next batch as blocked');
 production = [{ cardState: 'waiting', possibleCycles: null, nextCycleGap: null }];
 assert.equal(tasks().length, 0, 'Unknown inputs are not fabricated as a zero-stock deficit');
 
