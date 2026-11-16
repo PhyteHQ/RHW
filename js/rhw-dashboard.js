@@ -1029,17 +1029,30 @@ function productionDuration(seconds) {
   return minutes >= 60 ? `${Math.floor(minutes / 60)}h ${minutes % 60}m` : `${minutes}m`;
 }
 
-async function fetchWithTimeout(url, options = {}, timeoutMs = FETCH_TIMEOUT_MS) {
+async function fetchWithTimeout(url, options = {}, timeoutMs = FETCH_TIMEOUT_MS, readResponse = response => response) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    return await fetch(url, { ...options, signal: controller.signal });
+    const response = await fetch(url, { ...options, signal: controller.signal });
+    // Headers can arrive while the body is still downloading. Keep the same
+    // deadline active until the caller has finished consuming the response.
+    return await readResponse(response);
   } catch (error) {
     if (error.name === 'AbortError') throw new Error(`TELEMETRY TIMEOUT AFTER ${Math.round(timeoutMs / 1000)}S`);
     throw error;
   } finally {
     clearTimeout(timeout);
   }
+}
+
+async function fetchJsonWithTimeout(url, options = {}, timeoutMs = FETCH_TIMEOUT_MS) {
+  return fetchWithTimeout(url, options, timeoutMs, async response => {
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    if (response.headers?.get('content-type')?.toLowerCase().includes('text/html')) {
+      throw new Error('SERVICE RETURNED A WEB PAGE INSTEAD OF JSON. CHECK SERVICE AVAILABILITY OR NETWORK ACCESS.');
+    }
+    return response.json();
+  });
 }
 
 function stockState(item) {
@@ -2288,10 +2301,7 @@ async function loadData() {
   if (els.headerRefreshBtn) els.headerRefreshBtn.disabled = true;
 
   try {
-    const response = await fetchWithTimeout(API_URL, { method: 'POST', headers: { 'Accept': 'application/json' } });
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-
-    const data = await response.json();
+    const data = await fetchJsonWithTimeout(API_URL, { method: 'POST', headers: { 'Accept': 'application/json' } });
     if (!Array.isArray(data)) throw new Error('INVALID TELEMETRY RESPONSE.');
 
     acceptTelemetry(data, new Date().toISOString());

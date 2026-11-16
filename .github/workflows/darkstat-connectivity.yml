@@ -1,0 +1,30 @@
+name: Darkstat Connectivity
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - '.github/workflows/darkstat-connectivity.yml'
+      - 'scripts/diagnose_darkstat.py'
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Check public API response and browser origin
+        run: python3 scripts/diagnose_darkstat.py
+
+      - name: Save connection metadata
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: darkstat-connectivity
+          path: artifacts/darkstat-connectivity.json
+          if-no-files-found: warn

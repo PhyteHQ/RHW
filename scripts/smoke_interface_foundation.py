@@ -225,6 +225,26 @@ def main():
                         capture_card(cdp, '[data-route-key="industrial-materials"]', '390-pricecheck-compact-cards')
                 report.append({'width': width, 'route': route, **result})
 
+        # Connection labels must fit even when no inventory has arrived.
+        # A live-data-only fixture previously missed the UNAVAILABLE overflow.
+        base.ev(cdp, "window.__rhwHeaderAudit={base:rhwBase,error:lastSyncError};rhwBase=null;true")
+        header_states = []
+        for unavailable in (False, True):
+            base.ev(cdp, "lastSyncError=%s;updateBaseTelemetry();true" % json.dumps('fixture unavailable' if unavailable else ''))
+            for width in (360, 390, 430):
+                cdp.call('Emulation.setDeviceMetricsOverride', {'width': width, 'height': 844, 'deviceScaleFactor': 1, 'mobile': True})
+                checked = base.ev(cdp, """(()=>{
+                  const values=[...document.querySelectorAll('.base-telemetry-stat strong')];
+                  return {labels:values.map(e=>e.textContent),fits:values.every(e=>e.scrollWidth<=e.clientWidth+1),
+                    overflow:Math.max(document.documentElement.scrollWidth,document.body.scrollWidth)-innerWidth};
+                })()""")
+                assert checked['labels'] == ['UNAVAILABLE' if unavailable else 'CONNECTING'] * 3, checked
+                assert checked['fits'] and checked['overflow'] <= 2, (width, checked)
+                header_states.append({'width': width, **checked})
+                if unavailable and width == 390:
+                    capture(cdp, '390-header-unavailable')
+        base.ev(cdp, "rhwBase=window.__rhwHeaderAudit.base;lastSyncError=window.__rhwHeaderAudit.error;delete window.__rhwHeaderAudit;updateBaseTelemetry();true")
+
         # Row labels must stay attached to their quantities while scrolling.
         # Old global TH styling painted a black slab and made body labels sticky,
         # including on hover and in Eco mode.

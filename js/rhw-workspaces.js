@@ -5510,19 +5510,14 @@ globalThis.RHW_PRODUCTION_VOLUMES = Object.freeze({
     state.checkError = false;
     updateLiveRun();
     try {
-      const response = await fetchWithTimeout(RUNS_API, {
+      const payload = await fetchJsonWithTimeout(RUNS_API, {
         cache: 'no-store',
         headers: { Accept: 'application/vnd.github+json' }
       }, 10000);
-      if (!response.ok) throw new Error(`GitHub status ${response.status}`);
-      const payload = await response.json();
       state.latestRun = Array.isArray(payload.workflow_runs) ? payload.workflow_runs[0] || null : null;
       try {
-        const proposalResponse = await fetchWithTimeout(PROPOSAL_URL, { cache: 'no-store' }, 10000);
-        if (proposalResponse.ok) {
-          const proposal = await proposalResponse.json();
-          state.proposal = validStatus(proposal) ? proposal : null;
-        } else state.proposal = null;
+        const proposal = await fetchJsonWithTimeout(PROPOSAL_URL, { cache: 'no-store' }, 10000);
+        state.proposal = validStatus(proposal) ? proposal : null;
       } catch { state.proposal = null; }
       if (state.latestRun?.html_url && !String(state.latestRun.html_url).startsWith(`https://github.com/${REPOSITORY}/actions/runs/`)) {
         state.latestRun.html_url = null;

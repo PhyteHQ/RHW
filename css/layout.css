@@ -592,7 +592,7 @@ html.rhw-focus-pass.rhw-workbench .comms-frame { container:communications / inli
  html.rhw-focus-pass.rhw-workbench .base-telemetry-bar { grid-column:1/-1;grid-template-columns:1fr 1.3fr 1fr;margin-top:8px;padding-block:8px; }
  html.rhw-focus-pass.rhw-workbench :is(.base-telemetry-stat,.base-telemetry-stat:first-child) { padding-inline:8px; }
  html.rhw-focus-pass.rhw-workbench .base-telemetry-stat small { font-size:10px;min-height:28px; }
- html.rhw-focus-pass.rhw-workbench .base-telemetry-stat strong { font-size:18px;white-space:nowrap; }
+ html.rhw-focus-pass.rhw-workbench .base-telemetry-stat strong { font-size:18px;white-space:normal;overflow-wrap:anywhere; }
  html.rhw-focus-pass.rhw-workbench .base-telemetry-stat.credits strong { font-size:16px; }
  html.rhw-focus-pass.rhw-workbench .header-operations { grid-template-columns:96px minmax(0,1fr);gap:8px; }
  html.rhw-focus-pass.rhw-workbench .header-trade-button { gap:6px;padding:8px; }

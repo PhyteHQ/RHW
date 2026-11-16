@@ -68,9 +68,9 @@ function cache(indexedDB) {
     hasVerifiedTelemetry: () => Boolean(ctx.rhwBase && ctx.lastLoaded),
     renderAll: () => renders.push({ stale: ctx.dataIsStale, at: ctx.lastLoaded?.toISOString() }),
     RHWTelemetryCache: { read: async () => saved, write: async snapshot => { written = snapshot; return true; } },
-    fetchWithTimeout: async () => {
+    fetchJsonWithTimeout: async () => {
       if (failNetwork) throw Error('offline');
-      return { ok: true, json: async () => [{ ...bases[0], shop_items: [{ name: 'Food Rations', quantity: 99 }] }] };
+      return [{ ...bases[0], shop_items: [{ name: 'Food Rations', quantity: 99 }] }];
     }
   });
   ctx.window = ctx;
@@ -87,5 +87,58 @@ function cache(indexedDB) {
   assert.notEqual(ctx.lastLoaded.toISOString(), fetchedAt);
   assert.equal(written.bases[0].shop_items[0].quantity, 99, 'Successful fetch replaces public cached stock');
   assert.ok(renders.some(render => render.stale && render.at === fetchedAt));
-  console.log('Telemetry cache passed: persisted reload, original age, corrupt data, quota failures and live recovery.');
+
+  // Use the shipped transport, not the cache test's stub. Headers may arrive
+  // immediately while a truncated/slow response body never finishes.
+  delete ctx.fetchJsonWithTimeout;
+  ctx.AbortController = AbortController;
+  ctx.FETCH_TIMEOUT_MS = 25;
+  const timers = new Map();
+  let timerId = 0, requestCount = 0;
+  ctx.setTimeout = (callback, delay) => { timers.set(++timerId, { callback, delay }); return timerId; };
+  ctx.clearTimeout = id => timers.delete(id);
+  ctx.els.refreshBtn = {};
+  ctx.els.headerRefreshBtn = {};
+  const originalStock = ctx.items;
+  const originalTime = ctx.lastLoaded;
+  const originalWrite = written;
+  ctx.fetch = async (_url, { signal }) => {
+    requestCount++;
+    return { ok: true, json: () => new Promise((_resolve, reject) => {
+      signal.addEventListener('abort', () => {
+        const error = new Error('Response body aborted'); error.name = 'AbortError'; reject(error);
+      }, { once: true });
+    }) };
+  };
+  const transport = fs.readFileSync(path.join(root, 'js/command/production.js'), 'utf8');
+  vm.runInContext(transport.slice(transport.indexOf('async function fetchWithTimeout'), transport.indexOf('\nfunction stockState')), ctx);
+  const loading = ctx.loadData();
+  for (let i = 0; i < 8; i++) await Promise.resolve();
+  assert.equal(ctx.isLoading, true);
+  const deadline = [...timers.values()].find(timer => timer.delay === 25);
+  assert.ok(deadline, 'The response body must retain the original request deadline');
+  deadline.callback();
+  await loading;
+  assert.equal(ctx.isLoading, false, 'A stalled body releases the loading lock');
+  assert.equal(ctx.els.refreshBtn.disabled, false);
+  assert.equal(ctx.els.headerRefreshBtn.disabled, false);
+  assert.match(ctx.lastSyncError, /TIMEOUT/);
+  assert.equal(ctx.items, originalStock, 'A partial response cannot replace verified stock');
+  assert.equal(ctx.lastLoaded, originalTime);
+  assert.equal(written, originalWrite, 'A partial response cannot overwrite the saved snapshot');
+  assert.equal(ctx.dataIsStale, true);
+
+  ctx.fetch = async () => { requestCount++; return { ok: true, json: async () => bases }; };
+  await ctx.loadData();
+  assert.equal(requestCount, 2, 'Retry starts a new request after the body timeout');
+  assert.equal(ctx.lastSyncError, '');
+  assert.equal(ctx.dataIsStale, false);
+
+  ctx.fetch = async () => ({ ok: true, headers: { get: () => 'text/html; charset=utf-8' },
+    json: async () => { throw Error('HTML must not be parsed as stock'); } });
+  await ctx.loadData();
+  assert.match(ctx.lastSyncError, /WEB PAGE INSTEAD OF JSON/);
+  assert.equal(ctx.isLoading, false);
+  assert.equal(ctx.items[0].quantity, 12);
+  console.log('Telemetry cache passed: persisted reload, original age, corrupt data, quota failures, body deadlines, HTML responses and retry recovery.');
 })().catch(error => { console.error(error); process.exitCode = 1; });
