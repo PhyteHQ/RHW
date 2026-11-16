@@ -7622,12 +7622,13 @@ globalThis.RHW_PRODUCTION_VOLUMES = Object.freeze({
     const snapshot = window.telemetrySnapshot();
     const known = snapshot.available;
     const production = known ? app.command.productionAnalysis() : [];
+    const moduleCount = app.production?.modules?.()?.length || DASHBOARD_CONFIG.productionModules?.length || production.length;
     const covered = production.filter(entry => entry.possibleCycles !== null && entry.possibleCycles >= 1).length;
-    const complete = production.length && production.every(entry => entry.possibleCycles !== null);
+    const complete = moduleCount > 0 && production.length === moduleCount && production.every(entry => entry.possibleCycles !== null);
     const blocked = production.filter(entry => entry.possibleCycles === 0);
     const first = blocked[0] || production.find(entry => entry.cardState === 'low');
-    const productionValue = !known || !complete ? 'Coverage unknown' : `${covered} / ${production.length} covered`;
-    const productionDetail = !known ? 'Waiting for stock data' : !complete ? 'Some recipe inputs are unknown' : first
+    const productionValue = !known || !complete ? 'Coverage unknown' : `${covered} / ${moduleCount} covered`;
+    const productionDetail = !known ? 'Waiting for stock data' : !complete ? 'Some recipes or inputs are unknown' : first
       ? `${first.recipe.product} · ${first.bottleneck?.displayName || first.bottleneck?.name || 'input needed'}`
       : 'Next batches checked separately';
     const yard = known ? app.shipyard?.analyze() : null;
