@@ -7,7 +7,7 @@ const memory = new Map();
 const context = vm.createContext({ console, setTimeout, clearTimeout,
   location: { hash: '' }, history: { replaceState(_state, _title, hash) { context.location.hash = hash; }, pushState(_state, _title, hash) { context.location.hash = hash; } },
   navigator: { onLine: true }, addEventListener() {}, requestAnimationFrame() {},
-  document: { addEventListener() {}, getElementById() { return null; }, documentElement: { dataset: {} } },
+  document: { addEventListener() {}, getElementById() { return null; }, querySelectorAll() { return []; }, documentElement: { dataset: {} } },
   localStorage: { getItem: key => memory.get(key) ?? null, setItem: (key, value) => memory.set(key, value), removeItem: key => memory.delete(key) }
 });
 context.window = context;
@@ -38,6 +38,19 @@ app.store.set(app.config.storageKeys.commandNode, 'overview');
 assert.equal(app.workspaceStoredNode('command'), 'inventory', 'Old saved routes must normalize without a later patch');
 app.route.write('command', 'overview');
 assert.equal(context.location.hash, '#command/inventory');
+context.document.body = { dataset: {} };
+app.command = { activate(node) { app.state.commandNode = node; } };
+app.operations = { activate(node) { app.state.operationsNode = node; } };
+app.store.set(app.config.storageKeys.activeWorkspace, 'operations');
+app.store.set(app.config.storageKeys.commandNode, 'production');
+context.location.hash = '';
+app.applyRoute();
+assert.equal(app.state.activeWorkspace, 'command', 'Opening the root URL starts with the daily POB overview');
+assert.equal(app.state.commandNode, 'inventory');
+assert.equal(context.location.hash, '#command/inventory');
+context.location.hash = '#operations/calculator';
+app.applyRoute();
+assert.equal(app.state.activeWorkspace, 'operations', 'Explicit bookmarks and tool links keep their destination');
 app.store.set(app.config.storageKeys.calculatorState, { quantity: 8, materialPrices: { ore: 10 },
   materialPriceSources: { ore: { kind: 'rhw', price: 10 } }, altSelections: { 'recipe:1': 'ore' } });
 assert.deepEqual(plain(app.store.get(app.config.storageKeys.calculatorState)), { quantity: 8 });

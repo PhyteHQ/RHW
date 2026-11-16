@@ -72,6 +72,11 @@ def main() -> int:
                 const r=el?.getBoundingClientRect();
                 return r?{top:r.top,bottom:r.bottom,left:r.left,right:r.right,width:r.width,height:r.height}:{top:9999,bottom:9999,left:0,right:0,width:0,height:0};
               };
+              const briefing=document.getElementById('commandBriefing');
+              const briefingBeforeControls=rect(briefing).top<rect(document.getElementById('commandControlDeck')).top;
+              const inlineTasksVisible=visible(document.getElementById('overviewNextActions'));
+              // The compact disclosure remains available in the detailed view.
+              document.getElementById('inventoryManifestTab').click();
               const commandNav=document.getElementById('commandNodeNav');
               const shell=document.getElementById('rhwAppNav');
               const toolbar=document.getElementById('commandControlDeck');
@@ -86,6 +91,7 @@ def main() -> int:
               const manifest=document.getElementById('inventoryManifestPanel');
               const initial={
                 selfFailures:RHWV4.inventoryToolbar?.selfTest?.()||[],
+                briefingBeforeControls,inlineTasksVisible,
                 commandCount:commandButtons.length,
                 commandHeights:commandButtons.map(x=>rect(x).height),
                 commandSingleRow:commandButtons.every(x=>Math.abs(rect(x).top-rect(commandButtons[0]).top)<1),
@@ -139,6 +145,8 @@ def main() -> int:
             initial = result.get("initial", {})
             if not initial.get("commandSingleRow") or not initial.get("commandLabelsFit") or initial.get("toolbarHeight", 9999) > 600:
                 raise RuntimeError(f"Mobile Command navigation/toolbar is not compact: {result}")
+            if not initial.get("briefingBeforeControls") or not initial.get("inlineTasksVisible"):
+                raise RuntimeError(f"Daily briefing and tasks must precede detailed controls: {result}")
             if initial.get("selfFailures"):
                 raise RuntimeError(f"Compact COMMAND self-test failed: {result}")
             if not initial.get("searchVisible") or initial.get("searchHeight", 0) < 43.5 or initial.get("searchName") != "Command finder":
@@ -238,9 +246,9 @@ def main() -> int:
                         layout_failures.append(f'Telemetry must fit the branded desktop masthead at {width}px: {geometry}')
                 if width>=1200:
                     maintenance,waste,reserves,exports,ships=cards
-                    if max(c['top'] for c in [maintenance,reserves,exports])-min(c['top'] for c in [maintenance,reserves,exports])>2:
+                    if max(c['top'] for c in [waste,reserves,exports])-min(c['top'] for c in [waste,reserves,exports])>2:
                         layout_failures.append(f'Inventory column alignment at {width}px: {geometry}')
-                    for parent,child in [(maintenance,waste),(exports,ships)]:
+                    for parent,child in [(exports,ships)]:
                         if not 0<child['top']-parent['bottom']<=17 or abs(child['left']-parent['left'])>2 or abs(child['width']-parent['width'])>2:
                             layout_failures.append(f'Inventory stacks must not wait for taller unrelated panels at {width}px: {geometry}')
                     if cards[0]['top']>740 or geometry['quantity']<19 or geometry['kpi']<20:

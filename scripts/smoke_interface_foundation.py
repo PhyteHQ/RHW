@@ -149,7 +149,7 @@ def main():
                     toolbarHeight:document.getElementById('commandControlDeck').getBoundingClientRect().height,
                     firstInventoryTop:document.querySelector('#inventoryStatusPanel .alert-card').getBoundingClientRect().top,
                     crestWidth:document.querySelector('.crest').getBoundingClientRect().width,
-                    headerValuesFit:[...document.querySelectorAll('.base-telemetry-stat strong,.uplink-value')].every(e=>e.scrollWidth<=e.clientWidth+1&&e.getBoundingClientRect().height<=parseFloat(getComputedStyle(e).lineHeight)+1),
+                    headerValuesFit:[...document.querySelectorAll('.base-telemetry-stat strong,.uplink-value,#headerDataAge')].filter(e=>e.getBoundingClientRect().width>2).every(e=>e.scrollWidth<=e.clientWidth+1&&e.getBoundingClientRect().height<=parseFloat(getComputedStyle(e).lineHeight)+1),
                     tabClipping:[...document.querySelectorAll('.app-tabs button')].some(b=>b.scrollWidth>b.clientWidth+2),
                     noticeVisible:visible(document.getElementById('telemetryNotice')),
                     font:document.fonts.check('16px Barlow'),
@@ -187,7 +187,7 @@ def main():
                     assert max(b['top'] for b in result['commandButtons']) - min(b['top'] for b in result['commandButtons']) < 1, (width, route, result)
                     assert result['toolbarHeight'] <= (440 if route == 'command/inventory' else 180) and 70 <= result['crestWidth'] <= 90, (width, route, result)
                     if route == 'command/inventory':
-                        assert result['firstInventoryTop'] <= 940, (width, result)
+                        assert result['firstInventoryTop'] <= 460, (width, result)
                 if width >= 1100 and workspace == 'operations':
                     assert result['inputs'] and all(0 < n <= 145 for n in result['inputs']), result
                 if width <= 760 and workspace == 'operations':
@@ -407,7 +407,7 @@ def main():
           const food=findCommodity('Food Rations'),quantity=food.quantity;
           food.quantity=1000;renderAll();RHWV4.command.updateOverview();
           const action=document.querySelector('[data-supply-commodity="Food Rations"][data-supply-quantity]');
-          const correct=action?.dataset.supplyQuantity==='14000'&&action.closest('.command-priority-entry').textContent.includes('WARNING LEVEL');
+          const correct=action?.dataset.supplyQuantity==='14000'&&action.closest('.command-priority-entry').textContent.toLowerCase().includes('warning threshold');
           food.quantity=quantity;renderAll();return correct;
         })()""")
         assert restock_action, 'ATTENTION must expose the real warning-level restock quantity'

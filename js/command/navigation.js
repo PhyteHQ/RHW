@@ -80,9 +80,9 @@
     const verified = snapshot.available;
     if (!verified) {
       const failed = /UNAVAILABLE|FAILED/i.test(snapshot.label);
-      return [{ state: failed ? 'critical' : 'low', node: 'inventory', action: 'connection', title: failed ? 'STOCK DATA UNAVAILABLE' : 'CONNECTING TO STOCK DATA', meta: 'Stock and coverage are unknown until the uplink succeeds. Open connection details to retry.' }];
+      return [{ state: 'low', label: 'Connection', rank: 0, node: 'inventory', action: 'connection', title: failed ? 'Stock data unavailable' : 'Connecting to stock data', meta: 'Stock and coverage are unknown. Open connection details to retry.' }];
     }
-    if (snapshot.stale) actions.push({ state: 'low', node: 'inventory', action: 'connection', title: 'REFRESH CACHED STOCK', meta: snapshot.detail });
+    if (snapshot.stale) actions.push({ state: 'low', label: 'Saved data', rank: -1, node: 'inventory', action: 'connection', title: 'Refresh saved stock', meta: snapshot.detail });
 
     safeOperationalItems().forEach(item => {
       const severity = roleSeverity(item);
@@ -93,7 +93,10 @@
       const detail = typeof window.overviewDetail === 'function' ? window.overviewDetail(item, severity.state, severity.role) : '';
       const meta = detail && detail !== 'TRACKED' ? detail : `${severity.state.toUpperCase()} STOCK`;
       const node = severity.role === 'shipyard' ? 'shipyard' : 'inventory';
-      const action = { state: severity.state, node, target: name, title: `${String(severity.role || 'asset').toUpperCase()} // ${String(name).toUpperCase()}`, meta };
+      const urgent = severity.role === 'maintenance';
+      const action = { state: urgent ? severity.state : 'advisory', label: urgent ? (severity.state === 'critical' ? 'Supply risk' : 'Restock soon') : 'Plan restock',
+        rank: urgent ? (severity.state === 'critical' ? 0 : 1) : 4, node, target: name, title: name, meta,
+        effect: severity.role === 'export' ? 'Export reserve low' : severity.role === 'reserve' ? 'Production reserve low' : '' };
       const reserve = severity.role === 'reserve' ? app.inventoryModel?.reserve(window.commodityKey(item)) : null;
       const stock = reserve ? reserve.stock : window.firstFiniteApiStockValue?.(item, ['quantity', 'amount', 'stock']);
       const warning = DASHBOARD_CONFIG.alerts[window.commodityKey(item)];
@@ -101,33 +104,55 @@
       if (stock !== null && desired > stock && ['maintenance', 'reserve'].includes(severity.role)) {
         action.supply = reserve ? reserve.members[0] : item.name;
         action.quantity = Math.ceil(desired - stock);
-        action.meta = `${app.util.number(stock)} IN STOCK · RESTOCK +${app.util.number(action.quantity)} TO ${app.util.number(desired)} WARNING LEVEL`;
+        action.meta = `${app.util.number(stock)} in stock · +${app.util.number(action.quantity)} to the warning threshold`;
       }
       actions.push(action);
     });
 
-    const constrained = productionAnalysis().find(entry => entry.cardState !== 'ok');
-    if (constrained?.bottleneck) actions.push({
-      state: constrained.cardState,
+    productionAnalysis().filter(entry => ['critical', 'low'].includes(entry.cardState) && entry.bottleneck && entry.nextCycleGap > 0).forEach(constrained => actions.push({
+      state: 'advisory', label: 'Production', rank: constrained.cardState === 'critical' ? 2 : 3,
       node: 'production',
       target: constrained.recipe.product,
-      title: `PRODUCTION // ${String(constrained.recipe.product).toUpperCase()}`,
-      meta: `NEXT +1 CYCLE · +${app.util.number(constrained.nextCycleGap)} ${String(constrained.bottleneck.displayName || constrained.bottleneck.name).toUpperCase()}`,
+      title: constrained.bottleneck.displayName || constrained.bottleneck.name,
+      meta: constrained.possibleCycles > 0
+        ? `${app.util.number(constrained.possibleCycles)} batches covered · +${app.util.number(constrained.nextCycleGap)} for batch ${constrained.possibleCycles + 1}`
+        : `+${app.util.number(constrained.nextCycleGap)} for the next ${constrained.recipe.product} batch`,
+      effect: `${constrained.recipe.product}: batch ${constrained.possibleCycles + 1}`,
       supply: constrained.bottleneck.name, quantity: Math.ceil(constrained.nextCycleGap)
-    });
+    }));
 
     const yard = shipyardAnalysis();
     if (yard?.buildable !== null && yard?.buildable <= 1 && yard.bottleneck) actions.push({
-      state: yard.buildable <= 0 ? 'critical' : 'low',
+      state: 'advisory', label: 'Shipbuilding', rank: 3,
       node: 'shipyard',
       target: yard.bottleneck.name,
-      title: `SHIPYARD // MATERIAL FOR ${yard.buildable} ${yard.hull.label.toUpperCase()}`,
-      meta: `SHIP #${yard.nextHull} NEEDS +${app.util.number(yard.bottleneck.gap)} ${String(yard.bottleneck.name).toUpperCase()}`,
+      title: yard.bottleneck.name,
+      meta: `+${app.util.number(yard.bottleneck.gap)} for ${yard.hull.label} #${yard.nextHull}`,
+      effect: `${yard.hull.label} #${yard.nextHull}`,
       supply: yard.bottleneck.name, quantity: Math.ceil(yard.bottleneck.gap)
     });
 
-    const order = { critical: 0, low: 1, ok: 2 };
-    return actions.sort((a, b) => (order[a.state] ?? 9) - (order[b.state] ?? 9));
+    // A material shared by several goals is one task. These are independent
+    // coverage targets, so their deficits must never be added together.
+    const grouped = new Map();
+    actions.sort((a, b) => a.rank - b.rank).forEach(action => {
+      const key = action.action === 'connection' ? 'connection' : app.util.normalize(action.supply || action.target || action.title);
+      const current = grouped.get(key);
+      if (!current) { grouped.set(key, { ...action, effects: action.effect ? [action.effect] : [], nodes: [action.node] }); return; }
+      if (action.effect && !current.effects.includes(action.effect)) current.effects.push(action.effect);
+      if (!current.nodes.includes(action.node)) current.nodes.push(action.node);
+      if (action.supply && action.quantity > (current.quantity || 0)) {
+        current.supply = action.supply;
+        current.quantity = action.quantity;
+      }
+    });
+    return [...grouped.values()];
+  }
+
+  function priorityMarkup(action) {
+    const esc = app.util.escape;
+    const effects = action.effects?.length > 1 ? `<small class="priority-effects">Affects: ${esc(action.effects.join(' · '))}</small>` : '';
+    return `<div class="command-priority-entry state-${action.state}"><button type="button" class="command-priority-item state-${action.state}" data-priority-jump="${action.node}" data-priority-nodes="${esc((action.nodes || [action.node]).join(' '))}" data-priority-target="${esc(action.target || '')}" data-priority-action="${action.action || 'stock'}"><span class="priority-state">${esc(action.label || action.state)}</span><span><strong>${esc(action.title)}</strong><small>${esc(action.meta)}</small>${effects}</span><b>Open ↗</b></button>${action.supply && Number.isSafeInteger(action.quantity) && action.quantity > 0 ? `<button type="button" class="priority-supply-button" data-supply-commodity="${esc(action.supply)}" data-supply-quantity="${action.quantity}" aria-label="Find ${app.util.number(action.quantity)} ${esc(action.supply)}">Find +${app.util.number(action.quantity)} ↗</button>` : ''}</div>`;
   }
 
   function renderPriorities() {
@@ -138,7 +163,7 @@
     const countText = `${actions.length} ACTIVE`;
     if (count.textContent !== countText) count.textContent = countText;
     const markup = actions.length
-      ? actions.map(action => `<div class="command-priority-entry state-${action.state}"><button type="button" class="command-priority-item state-${action.state}" data-priority-jump="${action.node}" data-priority-target="${app.util.escape(action.target || '')}" data-priority-action="${action.action || 'stock'}"><span class="priority-state">${action.state.toUpperCase()}</span><span><strong>${app.util.escape(action.title)}</strong><small>${app.util.escape(action.meta)}</small></span><b>OPEN</b></button>${action.supply && Number.isSafeInteger(action.quantity) && action.quantity > 0 ? `<button type="button" class="priority-supply-button" data-supply-commodity="${app.util.escape(action.supply)}" data-supply-quantity="${action.quantity}" aria-label="Source ${app.util.number(action.quantity)} ${app.util.escape(action.supply)}">SOURCE +${app.util.number(action.quantity)} ↗</button>` : ''}</div>`).join('')
+      ? actions.map(priorityMarkup).join('')
       : '<div class="command-priority-empty"><strong>NO PRIORITY ACTIONS</strong><span>ALL MONITORED COMMAND THRESHOLDS ARE NOMINAL</span></div>';
     // Preserve the focused action during unchanged background refreshes.
     const signature = JSON.stringify(actions);
@@ -211,6 +236,7 @@
   function activateInventoryView(view) {
     const valid = ['status', 'manifest'].includes(view) ? view : 'status';
     app.state.inventoryView = valid;
+    document.body.dataset.inventoryView = valid;
     app.store.set(app.config.storageKeys.inventoryView, valid);
     document.querySelectorAll('[data-inventory-panel]').forEach(panel => { panel.hidden = panel.dataset.inventoryPanel !== valid; });
     document.querySelectorAll('[data-inventory-view]').forEach(button => {
@@ -219,6 +245,7 @@
       button.setAttribute('aria-selected', active ? 'true' : 'false');
       button.tabIndex = active ? 0 : -1;
     });
+    app.lifecycle.emit('inventory:view', { view: valid });
   }
 
   function activate(node, { updateRoute = true } = {}) {
@@ -226,6 +253,7 @@
     const context = { node: valid, previous: app.state.commandNode };
     app.lifecycle.emit('command:before-activate', context);
     app.state.commandNode = valid;
+    if (valid === 'inventory') activateInventoryView('status');
     app.store.set(app.config.storageKeys.commandNode, valid);
     document.body.dataset.commandNode = valid;
     document.querySelectorAll('[data-command-panel]').forEach(panel => { panel.hidden = panel.dataset.commandPanel !== valid; });
@@ -306,7 +334,7 @@
       next.focus();
     });
 
-    activateInventoryView(app.store.get(app.config.storageKeys.inventoryView, 'status'));
+    activateInventoryView('status');
     updateOverview();
     app.lifecycle.emit('command:ready');
   }
@@ -322,5 +350,5 @@
     return null;
   }
 
-  app.command = { contextTarget, init, activate, updateOverview, activateInventoryView, nodes: NODES };
+  app.command = { contextTarget, init, activate, updateOverview, activateInventoryView, priorityActions, priorityMarkup, productionAnalysis, nodes: NODES };
 })();

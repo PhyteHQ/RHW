@@ -1,5 +1,12 @@
 function updateBaseTelemetry() {
   const snapshot = telemetrySnapshot();
+  const freshness = document.getElementById('headerDataAge');
+  if (freshness) {
+    const time = typeof lastLoaded !== 'undefined' && lastLoaded ? lastLoaded.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }) : '';
+    freshness.textContent = snapshot.available ? `${snapshot.stale ? 'Saved' : 'Updated'} ${time}` : lastSyncError ? 'Unavailable' : 'Connecting';
+    freshness.title = snapshot.detail;
+    freshness.dataset.stale = String(snapshot.stale);
+  }
   const anchor = els.baseMoneyVal?.closest('.base-telemetry-bar') || document.querySelector('.base-telemetry-bar');
   const connectionDetails = document.querySelector('#uplinkDetails .uplink-grid');
   let status = document.getElementById('commandTelemetryStatus');

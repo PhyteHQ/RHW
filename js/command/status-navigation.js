@@ -92,7 +92,8 @@
     if (!panel || !list) return;
     const items = [...list.querySelectorAll('.command-priority-item')];
     const state = items.some(item => item.classList.contains('state-critical')) ? 'critical'
-      : items.some(item => item.classList.contains('state-low')) ? 'low' : 'clear';
+      : items.some(item => item.classList.contains('state-low')) ? 'low'
+        : items.length ? 'advisory' : 'clear';
     panel.dataset.alertState = state;
     panel.dataset.alertCount = String(items.length);
     const hint = panel.querySelector('.command-alert-copy small');

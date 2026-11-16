@@ -215,14 +215,17 @@ def launch():
         for headless in ("--headless=new","--headless"):
             port=free_port(); folder=tempfile.mkdtemp(prefix="rhw-v40-chrome-"); log_path=str(Path(folder)/"chrome.log"); log=open(log_path,"w+b")
             args=[browser,headless,"--no-sandbox","--disable-gpu","--disable-dev-shm-usage","--disable-background-networking","--disable-component-update","--disable-default-apps","--disable-sync","--no-first-run","--no-zygote",f"--remote-debugging-port={port}","--remote-allow-origins=*",f"--user-data-dir={folder}","about:blank"]
-            proc=subprocess.Popen(args,stdout=log,stderr=log); end=time.time()+5
+            # Cold hosted runners can need more than five seconds before the
+            # debugging endpoint is ready. Keep app boot assertions separate.
+            proc=subprocess.Popen(args,stdout=log,stderr=log); end=time.time()+15
             while time.time()<end and proc.poll() is None:
                 try:
                     get(f"http://127.0.0.1:{port}/json/version",.35); log.close(); return proc,browser,port,folder,log_path
                 except Exception: time.sleep(.12)
             try: proc.terminate(); proc.wait(timeout=1)
             except Exception: proc.kill()
-            log.close(); attempts.append(f"{browser} {headless} exit={proc.poll()}"); shutil.rmtree(folder,ignore_errors=True)
+            log.seek(0); diagnostic=log.read().decode('utf-8',errors='replace')[-700:].replace('\n',' ')
+            log.close(); attempts.append(f"{browser} {headless} exit={proc.poll()} log={diagnostic}"); shutil.rmtree(folder,ignore_errors=True)
     raise RuntimeError("Unable to launch browser: "+"; ".join(attempts))
 
 def main():

@@ -158,8 +158,8 @@
     installAlertDeepLinks(); const storedFocus = app.store.get(COMMAND_FOCUS_KEY, 'all'); applyCommandFocus(storedFocus === 'attention' ? 'attention' : 'all'); return true;
   }
 
-  function installAlertDeepLinks() {
-    const panel = document.getElementById('commandGlobalAlerts'); if (!panel || panel.dataset.rhwDeepLinks === 'true') return;
+  function installAlertDeepLinks(panel = document.getElementById('commandGlobalAlerts')) {
+    if (!panel || panel.dataset.rhwDeepLinks === 'true') return;
     panel.dataset.rhwDeepLinks = 'true';
     panel.addEventListener('click', event => {
       const target = event.target.closest('[data-priority-jump]');
@@ -203,7 +203,19 @@
   function openSearchResult(result) { const input = document.getElementById('commandGlobalSearch'); if (input) input.value = result.label; document.getElementById('commandSearchResults')?.setAttribute('hidden',''); app.navigate('command',result.node); if (result.node === 'inventory' && result.view) app.command.activateInventoryView?.(result.view); window.setTimeout(() => { const candidate = bestTarget(result.node,result.label) || result; highlightElement(candidate.element || result.element); },100); }
   function openCommandTarget(node, query = '', { revealSearch = false } = {}) { const safeNode = COMMAND_NODES.includes(node) ? node : 'inventory'; if (revealSearch && query) { const input = document.getElementById('commandGlobalSearch'); if (input) input.value = query; renderCommandSearch(query); } else document.getElementById('commandSearchResults')?.setAttribute('hidden',''); app.navigate('command',safeNode); window.setTimeout(() => { const target = bestTarget(safeNode,query); if (target) { if (safeNode === 'inventory' && target.view) app.command.activateInventoryView?.(target.view); requestAnimationFrame(() => highlightElement(target.element)); } else document.querySelector(`[data-command-panel="${safeNode}"]`)?.scrollIntoView({ behavior:'smooth',block:'start' }); },110); }
 
-  function commandAttentionCounts() { const counts = Object.fromEntries(COMMAND_NODES.map(node => [node,0])); document.querySelectorAll('#v40PriorityList .command-priority-item').forEach(item => { const node = item.dataset.priorityJump; if (Object.prototype.hasOwnProperty.call(counts,node) && (item.classList.contains('state-critical') || item.classList.contains('state-low'))) counts[node] += 1; }); COMMAND_NODES.forEach(node => { const button = document.querySelector(`#commandNodeNav [data-command-node="${node}"]`); if (button && !counts[node] && ['critical','low'].includes(button.dataset.state)) counts[node] = 1; }); return counts; }
+  function commandAttentionCounts() {
+    const counts = Object.fromEntries(COMMAND_NODES.map(node => [node, 0]));
+    document.querySelectorAll('#v40PriorityList .command-priority-item').forEach(item => {
+      const nodes = (item.dataset.priorityNodes || item.dataset.priorityJump || '').split(' ');
+      nodes.forEach(node => { if (Object.prototype.hasOwnProperty.call(counts, node)) counts[node] += 1; });
+    });
+    COMMAND_NODES.forEach(node => {
+      const button = document.querySelector(`#commandNodeNav [data-command-node="${node}"]`);
+      if (button && !counts[node] && ['critical', 'low'].includes(button.dataset.state)) counts[node] = 1;
+    });
+    return counts;
+  }
+
   function syncCommandAttention() { const counts = commandAttentionCounts(); let total = 0, affected = 0; COMMAND_NODES.forEach(node => { const button = document.querySelector(`#commandNodeNav [data-command-node="${node}"]`); const status = button?.querySelector('.command-module-state'); const count = counts[node] || 0; if (count) affected += 1; total += count; if (status) status.dataset.badge = count ? String(count) : button?.dataset.state === 'ok' ? '✓' : '·'; }); const countEl = document.getElementById('commandAttentionCount'); if (countEl) countEl.textContent = String(total); document.body.dataset.commandAttentionEmpty = total ? 'false' : 'true'; document.body.style.setProperty('--rhw-attention-columns',String(Math.max(1,affected))); return { total,affected,counts }; }
   function applyCommandFocus(mode, { navigate = false } = {}) { const safe = mode === 'attention' ? 'attention' : 'all'; const attention = syncCommandAttention(); document.body.dataset.commandFocus = safe; app.store.set(COMMAND_FOCUS_KEY,safe); document.querySelectorAll('[data-command-focus-mode]').forEach(button => { const active = button.dataset.commandFocusMode === safe; button.classList.toggle('active',active); button.setAttribute('aria-pressed',active ? 'true' : 'false'); }); if (safe === 'attention' && navigate && attention.total && !attention.counts[app.state.commandNode]) { const next = COMMAND_NODES.find(node => attention.counts[node] > 0); if (next) app.navigate('command',next); } }
 
@@ -262,5 +274,5 @@
   });
   app.lifecycle.on('calculator:activated', 'workspace-navigation', 20, () => { requestAnimationFrame(syncWorkspaceStatuses); });
 
-  app.workspaceUi = { workspaces:WORKSPACES, installStyles, installWorkspaceTabs, rebuildWorkspaceNav, installCommandControls, syncWorkspaceStatuses, searchCommand, openCommandTarget, applyCommandFocus, syncCommandAttention, syncContextAction, selfTest };
+  app.workspaceUi = { workspaces:WORKSPACES, installStyles, installWorkspaceTabs, rebuildWorkspaceNav, installCommandControls, installAlertDeepLinks, syncWorkspaceStatuses, searchCommand, openCommandTarget, applyCommandFocus, syncCommandAttention, syncContextAction, selfTest };
 })();
