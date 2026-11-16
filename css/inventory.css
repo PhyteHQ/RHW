@@ -116,11 +116,12 @@ html.rhw-focus-pass.rhw-workbench #commandBriefing #maintenanceList>li.overview-
 html.rhw-focus-pass.rhw-workbench #commandBriefing #maintenanceList>li:last-child { border-right:0; }
 #commandBriefing .maintenance-panel .overview-item-copy { grid-column:1;grid-row:1; }
 html.rhw-focus-pass #commandBriefing .maintenance-panel .inventory-production-link { font:500 14px/1.35 var(--font-main);min-height:38px; }
-html.rhw-focus-pass #commandBriefing .maintenance-panel .overview-row-meta { grid-column:1;grid-row:2;display:flex;flex-direction:column;align-items:flex-start;gap:3px; }
+html.rhw-focus-pass #commandBriefing .maintenance-panel .overview-row-meta { display:contents; }
+html.rhw-focus-pass #commandBriefing .maintenance-panel .overview-stock-value { grid-column:1;grid-row:2;display:block;text-align:left;justify-self:start; }
 html.rhw-focus-pass #commandBriefing .maintenance-panel .overview-row-qty { font:25px/1.3 var(--font-tech); }
 html.rhw-focus-pass #commandBriefing .maintenance-panel .pill { grid-column:1;grid-row:3;justify-self:start;padding:2px 4px;font:11px/1.4 var(--font-main); }
 html.rhw-focus-pass #commandBriefing .maintenance-panel :is(.progress-wrap,.inventory-input-row) { display:none; }
-html.rhw-focus-pass #commandBriefing .maintenance-panel .overview-stock-detail { text-transform:none;font:11px/1.4 var(--font-main); }
+html.rhw-focus-pass #commandBriefing .maintenance-panel .overview-stock-detail { grid-column:1;grid-row:4;order:initial;text-transform:none;font:12px/1.4 var(--font-main); }
 .overview-next { grid-column:2;grid-row:1/span 2;min-width:0;border:1px solid var(--line);border-top:2px solid var(--gold);border-radius:3px;background:var(--panel); }
 .overview-section-head { display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 14px;border-bottom:1px solid var(--line); }
 .overview-section-head h3 { margin:0;color:var(--gold);font:500 23px/1.2 var(--font-title); }

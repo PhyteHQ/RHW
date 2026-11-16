@@ -66,7 +66,9 @@ function renderOverviewRow({ state, role, name, item = null, detail = '', quanti
   const title = navigation ? `<button type="button" class="inventory-production-link" ${navigation}>${escapeHTML(name)}</button>` : `<strong>${escapeHTML(name)}</strong>`;
   const trade = role === 'export' && typeof exportRouteButton === 'function' ? exportRouteButton(name)
     : role === 'reserve' && typeof supplyRouteButton === 'function' ? supplyRouteButton(item?.name || name) : '';
-  const safeDetail = detail ? `<small class="overview-stock-detail">${escapeHTML(detail)}</small>` : '';
+  const daily = role === 'maintenance' && DASHBOARD_CONFIG.maintenanceDailyReference?.[commodityKey(item)];
+  const detailTitle = daily > 0 ? `Stock only · estimated upkeep ${number(daily)} / day` : '';
+  const safeDetail = detail ? `<small class="overview-stock-detail"${detailTitle ? ` title="${escapeHTML(detailTitle)}"` : ''}>${escapeHTML(detail)}</small>` : '';
   const referenceMarkup = reference ? `<span class="overview-stock-reference"><span aria-hidden="true">/</span> ${number(reference.value)} <small>${escapeHTML(reference.label)}</small></span>` : '';
   return `<li class="overview-stock-row alert-${state}${extraClass ? ` ${extraClass}` : ''}" ${navigation}>
             <span class="overview-item-copy"><span class="rhw-supply-material">${title}${trade}${actions}</span></span>
@@ -108,7 +110,7 @@ function overviewDetail(item, state, role) {
   const daily = role === 'maintenance' && DASHBOARD_CONFIG.maintenanceDailyReference?.[commodityKey(item)];
   if (daily > 0) {
     const days = new Intl.NumberFormat('de-DE', { maximumFractionDigits: 1 }).format(quantity(item) / daily);
-    return `~${days} days · ${number(daily)} / day`;
+    return `~${days} days`;
   }
   const reference = overviewStockReference(item, role);
   if (role === 'byproduct') {

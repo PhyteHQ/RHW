@@ -1210,7 +1210,7 @@ const RHW_APP_CONFIG = Object.freeze({
       const detail = typeof window.overviewDetail === 'function' ? window.overviewDetail(item, severity.state, severity.role) : '';
       const meta = detail && detail !== 'TRACKED' ? detail : `${severity.state.toUpperCase()} STOCK`;
       const node = severity.role === 'shipyard' ? 'shipyard' : 'inventory';
-      const urgent = ['maintenance', 'byproduct', 'confiscated'].includes(severity.role);
+      const urgent = severity.role === 'maintenance';
       const action = { state: urgent ? severity.state : 'advisory', label: urgent ? (severity.state === 'critical' ? 'Supply risk' : 'Restock soon') : 'Plan restock',
         rank: urgent ? (severity.state === 'critical' ? 0 : 1) : 4, node, target: name, title: name, meta,
         effect: severity.role === 'export' ? 'Export reserve low' : severity.role === 'reserve' ? 'Production reserve low' : '' };

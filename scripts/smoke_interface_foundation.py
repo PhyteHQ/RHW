@@ -407,7 +407,7 @@ def main():
           const food=findCommodity('Food Rations'),quantity=food.quantity;
           food.quantity=1000;renderAll();RHWV4.command.updateOverview();
           const action=document.querySelector('[data-supply-commodity="Food Rations"][data-supply-quantity]');
-          const correct=action?.dataset.supplyQuantity==='14000'&&action.closest('.command-priority-entry').textContent.includes('WARNING LEVEL');
+          const correct=action?.dataset.supplyQuantity==='14000'&&action.closest('.command-priority-entry').textContent.toLowerCase().includes('warning threshold');
           food.quantity=quantity;renderAll();return correct;
         })()""")
         assert restock_action, 'ATTENTION must expose the real warning-level restock quantity'

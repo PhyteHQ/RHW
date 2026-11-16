@@ -607,6 +607,7 @@ html.rhw-focus-pass.rhw-workbench .comms-frame { container:communications / inli
  html.rhw-focus-pass.rhw-workbench .header-operations .uplink-panel .uplink-details { grid-column:3;grid-row:1; }
  html.rhw-focus-pass.rhw-workbench #headerRefreshBtn span,html.rhw-focus-pass.rhw-workbench #liveStatus { position:absolute;width:1px;height:1px;margin:-1px;padding:0;clip-path:inset(50%);overflow:hidden;white-space:nowrap; }
  html.rhw-focus-pass.rhw-workbench .header-refresh-icon { display:block; }
+ html.rhw-focus-pass.rhw-workbench #headerRefreshBtn::before { display:none; }
  html.rhw-focus-pass.rhw-workbench .header-data-age { margin:0;font:11px/1.4 var(--font-main); }
  html.rhw-focus-pass.rhw-workbench .uplink-label { display:none; }
  html.rhw-focus-pass.rhw-workbench .uplink-value { font-size:11px;white-space:nowrap; }

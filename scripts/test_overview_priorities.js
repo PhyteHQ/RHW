@@ -55,4 +55,27 @@ assert.equal(tasks()[0].label, 'Saved data', 'Saved inventory is explicitly iden
 const html = app.command.priorityMarkup({ state: 'advisory', node: 'production', title: '<ore>', meta: '', supply: 'Gold', quantity: 80 });
 assert.match(html, /&lt;ore>/);
 assert.match(html, /data-supply-quantity="80"/);
+
+// Exercise the actual briefing renderer, including its no-alert empty state.
+const nodes = new Map();
+for (const id of ['overviewNextActions', 'overviewTaskCount', 'overviewOperations', 'overviewMoreTasks']) {
+  nodes.set(id, { dataset: {}, innerHTML: '', textContent: '', hidden: false, attributes: {},
+    getAttribute(key) { return this.attributes[key] || null; } });
+}
+ctx.document.getElementById = id => nodes.get(id) || null;
+app.lifecycle.on = () => {};
+vm.runInContext(fs.readFileSync(__dirname + '/../js/command/overview.js', 'utf8'), ctx);
+snapshot = { available: true, stale: false };
+assets = [{ name: 'Food', role: 'maintenance', state: 'waiting', quantity: null }]; production = [];
+app.pobOverview.render();
+assert.match(nodes.get('overviewNextActions').innerHTML, /Some stock levels are unknown/);
+assert.doesNotMatch(nodes.get('overviewNextActions').innerHTML, /stock look good/);
+assert.match(nodes.get('overviewOperations').innerHTML, /Coverage unknown/);
+assets = [{ name: 'Food', role: 'maintenance', state: 'ok', quantity: 500 }];
+app.pobOverview.render();
+assert.match(nodes.get('overviewNextActions').innerHTML, /Supplies and stock look good/);
+snapshot = { available: false, label: 'UNAVAILABLE' };
+app.pobOverview.render();
+assert.match(nodes.get('overviewOperations').innerHTML, /Ship stock unknown/);
+assert.equal(nodes.get('overviewTaskCount').textContent, 'Stock unknown');
 console.log('Overview priorities passed: supply urgency, grouped material causes, independent gaps, unknown/cached stock and exact restock actions.');
