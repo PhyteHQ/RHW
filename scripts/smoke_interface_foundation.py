@@ -236,10 +236,11 @@ def main():
                 checked = base.ev(cdp, """(()=>{
                   const values=[...document.querySelectorAll('.base-telemetry-stat strong')];
                   return {labels:values.map(e=>e.textContent),fits:values.every(e=>e.scrollWidth<=e.clientWidth+1),
+                    singleLine:values.every(e=>e.getBoundingClientRect().height<=parseFloat(getComputedStyle(e).lineHeight)+1),
                     overflow:Math.max(document.documentElement.scrollWidth,document.body.scrollWidth)-innerWidth};
                 })()""")
                 assert checked['labels'] == ['UNAVAILABLE' if unavailable else 'CONNECTING'] * 3, checked
-                assert checked['fits'] and checked['overflow'] <= 2, (width, checked)
+                assert checked['fits'] and checked['singleLine'] and checked['overflow'] <= 2, (width, checked)
                 header_states.append({'width': width, **checked})
                 if unavailable and width == 390:
                     capture(cdp, '390-header-unavailable')
