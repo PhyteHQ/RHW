@@ -54,10 +54,7 @@ async function loadData() {
   if (els.headerRefreshBtn) els.headerRefreshBtn.disabled = true;
 
   try {
-    const response = await fetchWithTimeout(API_URL, { method: 'POST', headers: { 'Accept': 'application/json' } });
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-
-    const data = await response.json();
+    const data = await fetchJsonWithTimeout(API_URL, { method: 'POST', headers: { 'Accept': 'application/json' } });
     if (!Array.isArray(data)) throw new Error('INVALID TELEMETRY RESPONSE.');
 
     acceptTelemetry(data, new Date().toISOString());
