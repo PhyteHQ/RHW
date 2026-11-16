@@ -227,10 +227,10 @@ def main():
 
         # Connection labels must fit even when no inventory has arrived.
         # A live-data-only fixture previously missed the UNAVAILABLE overflow.
-        base.ev(cdp, "window.__rhwHeaderAudit={base:rhwBase,error:lastSyncError};rhwBase=null;true")
+        base.ev(cdp, "(()=>{window.__rhwHeaderAudit={base:rhwBase,error:lastSyncError};rhwBase=null;return true;})()")
         header_states = []
         for unavailable in (False, True):
-            base.ev(cdp, "lastSyncError=%s;updateBaseTelemetry();true" % json.dumps('fixture unavailable' if unavailable else ''))
+            base.ev(cdp, "(()=>{lastSyncError=%s;updateBaseTelemetry();return true;})()" % json.dumps('fixture unavailable' if unavailable else ''))
             for width in (360, 390, 430):
                 cdp.call('Emulation.setDeviceMetricsOverride', {'width': width, 'height': 844, 'deviceScaleFactor': 1, 'mobile': True})
                 checked = base.ev(cdp, """(()=>{
@@ -243,7 +243,7 @@ def main():
                 header_states.append({'width': width, **checked})
                 if unavailable and width == 390:
                     capture(cdp, '390-header-unavailable')
-        base.ev(cdp, "rhwBase=window.__rhwHeaderAudit.base;lastSyncError=window.__rhwHeaderAudit.error;delete window.__rhwHeaderAudit;updateBaseTelemetry();true")
+        base.ev(cdp, "(()=>{rhwBase=window.__rhwHeaderAudit.base;lastSyncError=window.__rhwHeaderAudit.error;delete window.__rhwHeaderAudit;updateBaseTelemetry();return true;})()")
 
         # Row labels must stay attached to their quantities while scrolling.
         # Old global TH styling painted a black slab and made body labels sticky,
@@ -606,7 +606,7 @@ def main():
             portable:/\\[img\\]https:\\/\\//.test(RHWV4.comms.buildBbcode())};
         })()""")
         assert all(forum_offline.values()), forum_offline
-        (OUT / 'checks.json').write_text(json.dumps({'layouts': report, 'shipyard': shipyard, 'shipyardRowHeaders': row_header_checks, 'marketLayouts': market_layouts, 'disclosure': disclosure, 'commandSearch': command_search, 'retired': retired, 'keyboard': focused, 'priceFocus': price_focus, 'priceEdit': price_edit, 'productionRecipe': production_recipe, 'failedSave': failed_save, 'offlinePrices': offline_prices, 'offline': offline}, indent=2))
+        (OUT / 'checks.json').write_text(json.dumps({'layouts': report, 'connectionHeaders': header_states, 'shipyard': shipyard, 'shipyardRowHeaders': row_header_checks, 'marketLayouts': market_layouts, 'disclosure': disclosure, 'commandSearch': command_search, 'retired': retired, 'keyboard': focused, 'priceFocus': price_focus, 'priceEdit': price_edit, 'productionRecipe': production_recipe, 'failedSave': failed_save, 'offlinePrices': offline_prices, 'offline': offline}, indent=2))
         print(f'Bundled interface passed: {len(report)} layouts, production recipe, rejected save, cached prices, keyboard focus, local fonts and offline reload.')
         return 0
     except Exception:
