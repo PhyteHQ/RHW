@@ -13,7 +13,11 @@ function updateBaseTelemetry() {
   if (status) { status.textContent = snapshot.detail; status.dataset.tone = snapshot.tone; }
   if (!rhwBase) {
     [els.baseMoneyVal, els.baseStorageVal, els.baseHealthVal].forEach(node => {
-      if (node) node.textContent = typeof lastSyncError !== 'undefined' && lastSyncError ? 'UNAVAILABLE' : 'CONNECTING';
+      if (node) {
+        const label = typeof lastSyncError !== 'undefined' && lastSyncError ? 'UNAVAILABLE' : 'CONNECTING';
+        node.textContent = label;
+        node.dataset.finalText = label;
+      }
     });
     return;
   }
