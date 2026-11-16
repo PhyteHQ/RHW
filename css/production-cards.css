@@ -41,10 +41,10 @@
 }
 @media(max-width:760px) {
  .production-list-head { display:none; }
- #productionGrid .production-row { grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 14px;padding:16px 12px; }
+ #productionGrid .production-row { grid-template-columns:repeat(2,minmax(0,1fr));gap:5px 12px;padding:12px; }
  #productionGrid .production-card-head { grid-column:1/-1; }
- #productionGrid .production-title { font-size:23px; }
- #productionGrid .production-card-meta { min-height:28px; }
+ #productionGrid .production-title { font-size:20px; }
+ #productionGrid .production-card-meta { min-height:22px; }
  #productionGrid .production-stat { padding:0;text-align:left; }
  #productionGrid .production-stat small { display:block;font:11px/1.5 var(--font-main);margin-bottom:3px; }
  #productionGrid .production-stat strong { font-size:24px; }

@@ -4,7 +4,7 @@
   const app = window.RHWV4;
   if (!app || app.presentation) return;
   const pages = Object.freeze({
-    'command/inventory': ['COMMAND', 'Overview', 'Facility upkeep, internal reserves and export stock at a glance.'],
+    'command/inventory': ['COMMAND', 'Overview', 'Your POB at a glance. Supplies, stock and next steps.'],
     'command/production': ['COMMAND', 'Production', 'Compare independent material coverage and inspect the exact recipe.'],
     'command/shipyard': ['COMMAND', 'Shipyard', 'Choose a hull, check its requirements and source missing components.'],
     'command/logistics': ['COMMAND', 'Logistics', 'Find component and material offers across player bases.'],

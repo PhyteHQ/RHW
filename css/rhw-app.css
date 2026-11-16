@@ -5635,6 +5635,9 @@ html.rhw-focus-pass.rhw-workbench .header-trade-button strong { font:500 14px/1.
 html.rhw-focus-pass.rhw-workbench .header-trade-button small { display:none; }
 html.rhw-focus-pass.rhw-workbench .header-operations .uplink-panel:is(.online,.offline,.polling,:not(.online):not(.offline)) { position:relative;clip-path:none;display:grid;grid-template-columns:minmax(0,1fr) 44px;gap:10px;width:100%;max-width:none;border:1px solid var(--line);padding:12px;background:var(--surface-input);box-shadow:none; }
 html.rhw-focus-pass.rhw-workbench .header-operations .uplink-panel .uplink-header { grid-column:1/-1;grid-row:1;margin:0;min-width:0; }
+.header-data-age { display:block;margin-top:3px;color:var(--muted);font:12px/1.4 var(--font-main); }
+.header-data-age[data-stale="true"] { color:var(--warn); }
+.header-refresh-icon { display:none; }
 html.rhw-focus-pass.rhw-workbench .uplink-value { font:13px/1.4 var(--font-main);white-space:normal;overflow-wrap:anywhere; }
 html.rhw-focus-pass.rhw-workbench .uplink-label { font:11px/1.4 var(--font-main);letter-spacing:.04em; }
 html.rhw-focus-pass.rhw-workbench .header-operations #headerRefreshBtn { grid-column:1;grid-row:2;width:100%;margin:0;min-height:44px;padding:8px 12px;align-self:center;font:13px/1.4 var(--font-main);border:1px solid var(--line);background:var(--rhw-control-fill);box-shadow:none; }
@@ -5740,7 +5743,7 @@ html.rhw-focus-pass.rhw-workbench .comms-frame { container:communications / inli
  html.rhw-focus-pass.rhw-workbench .header-operations .uplink-panel .uplink-details { grid-column:auto;grid-row:auto; }
 }
 @media(max-width:760px){
- html.rhw-focus-pass.rhw-workbench .command-header-inner { padding:16px 14px;gap:12px; }
+ html.rhw-focus-pass.rhw-workbench .command-header-inner { padding:10px 14px;gap:8px; }
  html.rhw-focus-pass.rhw-workbench .command-brand { grid-template-columns:74px minmax(0,1fr);gap:4px 12px; }
  html.rhw-focus-pass.rhw-workbench .command-header-inner .crest-frame { grid-column:1;grid-row:1/span 3;width:74px;height:96px; }
  html.rhw-focus-pass.rhw-workbench .command-header-inner .crest { width:74px;height:96px; }
@@ -5751,20 +5754,25 @@ html.rhw-focus-pass.rhw-workbench .comms-frame { container:communications / inli
  html.rhw-focus-pass.rhw-workbench .brand-subtitle { grid-column:2;align-self:start;margin:0;font-size:10px;letter-spacing:.025em; }
  html.rhw-focus-pass.rhw-workbench .base-telemetry-bar { grid-column:1/-1;grid-template-columns:1fr 1.3fr 1fr;margin-top:8px;padding-block:8px; }
  html.rhw-focus-pass.rhw-workbench :is(.base-telemetry-stat,.base-telemetry-stat:first-child) { padding-inline:8px; }
- html.rhw-focus-pass.rhw-workbench .base-telemetry-stat small { font-size:10px;min-height:28px; }
+ html.rhw-focus-pass.rhw-workbench .base-telemetry-stat small { font-size:10px;min-height:26px; }
  html.rhw-focus-pass.rhw-workbench .base-telemetry-stat strong { font-size:18px;white-space:normal;overflow-wrap:anywhere; }
  html.rhw-focus-pass.rhw-workbench .base-telemetry-stat.credits strong { font-size:16px; }
  html.rhw-focus-pass.rhw-workbench .base-telemetry-stat strong:is([data-final-text="UNAVAILABLE"],[data-final-text="CONNECTING"]) { font-size:clamp(12px,3.7vw,16px);white-space:nowrap; }
- html.rhw-focus-pass.rhw-workbench .header-operations { grid-template-columns:96px minmax(0,1fr);gap:8px; }
+ html.rhw-focus-pass.rhw-workbench .header-operations { grid-template-columns:100px minmax(0,1fr);gap:8px; }
  html.rhw-focus-pass.rhw-workbench .header-trade-button { gap:6px;padding:8px; }
  html.rhw-focus-pass.rhw-workbench .header-trade-button strong { font-size:12px; }
- html.rhw-focus-pass.rhw-workbench .header-operations .uplink-panel:is(.online,.offline,.polling,:not(.online):not(.offline)) { grid-template-columns:minmax(0,1fr) 44px;padding:7px;gap:6px; }
- html.rhw-focus-pass.rhw-workbench .header-operations .uplink-panel .uplink-header { grid-column:1/-1;grid-row:1; }
- html.rhw-focus-pass.rhw-workbench .header-operations .uplink-panel #headerRefreshBtn { grid-column:1;grid-row:2;width:auto;padding:6px;font-size:11px; }
- html.rhw-focus-pass.rhw-workbench .header-operations .uplink-panel .uplink-details { grid-column:2;grid-row:2; }
+ html.rhw-focus-pass.rhw-workbench .header-operations .uplink-panel:is(.online,.offline,.polling,:not(.online):not(.offline)) { grid-template-columns:minmax(0,1fr) 44px 44px;align-items:center;padding:4px;gap:4px; }
+ html.rhw-focus-pass.rhw-workbench .header-operations .uplink-panel .uplink-header { grid-column:1;grid-row:1;gap:5px; }
+ html.rhw-focus-pass.rhw-workbench .header-operations .uplink-panel #headerRefreshBtn { grid-column:2;grid-row:1;display:flex;align-items:center;justify-content:center;width:44px;padding:6px; }
+ html.rhw-focus-pass.rhw-workbench .header-operations .uplink-panel .uplink-details { grid-column:3;grid-row:1; }
+ html.rhw-focus-pass.rhw-workbench #headerRefreshBtn span,html.rhw-focus-pass.rhw-workbench #liveStatus { position:absolute;width:1px;height:1px;margin:-1px;padding:0;clip-path:inset(50%);overflow:hidden;white-space:nowrap; }
+ html.rhw-focus-pass.rhw-workbench .header-refresh-icon { display:block; }
+ html.rhw-focus-pass.rhw-workbench .header-data-age { margin:0;font:11px/1.4 var(--font-main); }
  html.rhw-focus-pass.rhw-workbench .uplink-label { display:none; }
  html.rhw-focus-pass.rhw-workbench .uplink-value { font-size:11px;white-space:nowrap; }
  html.rhw-focus-pass.rhw-workbench .rhw-page-heading { padding:18px var(--layout-gutter) 16px; }
+ html.rhw-focus-pass.rhw-workbench body[data-workspace="command"][data-command-node="inventory"][data-inventory-view="status"] .rhw-page-heading { padding:12px var(--layout-gutter) 10px; }
+ body[data-workspace="command"][data-command-node="inventory"][data-inventory-view="status"] .rhw-page-heading :is(small,p) { display:none; }
  .rhw-page-heading h2 { font-size:32px; }
  .rhw-page-heading p { font-size:13px; }
  html.rhw-focus-pass.rhw-workbench #shipyardControl .shipyard-control-head { padding:10px 12px; }
@@ -6042,10 +6050,10 @@ html.rhw-focus-pass .app-workspace .rhw-supply-icon:is(:hover,:focus-visible) { 
 }
 @media(max-width:760px) {
  .production-list-head { display:none; }
- #productionGrid .production-row { grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 14px;padding:16px 12px; }
+ #productionGrid .production-row { grid-template-columns:repeat(2,minmax(0,1fr));gap:5px 12px;padding:12px; }
  #productionGrid .production-card-head { grid-column:1/-1; }
- #productionGrid .production-title { font-size:23px; }
- #productionGrid .production-card-meta { min-height:28px; }
+ #productionGrid .production-title { font-size:20px; }
+ #productionGrid .production-card-meta { min-height:22px; }
  #productionGrid .production-stat { padding:0;text-align:left; }
  #productionGrid .production-stat small { display:block;font:11px/1.5 var(--font-main);margin-bottom:3px; }
  #productionGrid .production-stat strong { font-size:24px; }
@@ -6164,4 +6172,70 @@ html.rhw-focus-pass.rhw-workbench .rhw-item-detail::backdrop { background:#0007;
 @media(max-width:760px){#rhwItemDetails .rhw-supply-button { width:44px;height:44px;min-height:44px; }}
 
 #rhwItemDetails .recipe-list::before,#rhwItemDetails .recipe-list::after { display:none; }
+
+/* The first screen answers supplies, next steps and material coverage. */
+html.rhw-focus-pass.rhw-workbench .command-briefing { display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px;margin-bottom:16px;align-items:start; }
+html.rhw-focus-pass.rhw-workbench #commandBriefing .maintenance-panel { grid-column:1;grid-row:1;margin:0;min-width:0; }
+html.rhw-focus-pass.rhw-workbench #commandBriefing .maintenance-panel .alert-title { min-height:44px;padding:10px 14px;font:500 23px/1.2 var(--font-title); }
+html.rhw-focus-pass.rhw-workbench #commandBriefing .maintenance-panel .count-badge { display:none; }
+html.rhw-focus-pass.rhw-workbench #commandBriefing #maintenanceList { display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0;padding:0 12px;list-style:none; }
+html.rhw-focus-pass.rhw-workbench #commandBriefing #maintenanceList>li.overview-stock-row { display:grid;grid-template-columns:minmax(0,1fr);align-content:start;gap:5px;margin:0;padding:10px 8px 12px;border:0;border-right:1px solid var(--line);background:transparent; }
+html.rhw-focus-pass.rhw-workbench #commandBriefing #maintenanceList>li:last-child { border-right:0; }
+#commandBriefing .maintenance-panel .overview-item-copy { grid-column:1;grid-row:1; }
+html.rhw-focus-pass #commandBriefing .maintenance-panel .inventory-production-link { font:500 14px/1.35 var(--font-main);min-height:38px; }
+html.rhw-focus-pass #commandBriefing .maintenance-panel .overview-row-meta { grid-column:1;grid-row:2;display:flex;flex-direction:column;align-items:flex-start;gap:3px; }
+html.rhw-focus-pass #commandBriefing .maintenance-panel .overview-row-qty { font:25px/1.3 var(--font-tech); }
+html.rhw-focus-pass #commandBriefing .maintenance-panel .pill { grid-column:1;grid-row:3;justify-self:start;padding:2px 4px;font:11px/1.4 var(--font-main); }
+html.rhw-focus-pass #commandBriefing .maintenance-panel :is(.progress-wrap,.inventory-input-row) { display:none; }
+html.rhw-focus-pass #commandBriefing .maintenance-panel .overview-stock-detail { text-transform:none;font:11px/1.4 var(--font-main); }
+.overview-next { grid-column:2;grid-row:1/span 2;min-width:0;border:1px solid var(--line);border-top:2px solid var(--gold);border-radius:3px;background:var(--panel); }
+.overview-section-head { display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 14px;border-bottom:1px solid var(--line); }
+.overview-section-head h3 { margin:0;color:var(--gold);font:500 23px/1.2 var(--font-title); }
+.overview-section-head>span { color:var(--muted);font:12px/1.4 var(--font-main); }
+.overview-next-actions { padding:0 12px; }
+html.rhw-focus-pass.rhw-workbench .overview-next .command-priority-entry { grid-template-columns:minmax(0,1fr) auto;gap:8px;padding:4px 0; }
+html.rhw-focus-pass.rhw-workbench .overview-next .command-priority-item { display:flex;flex-direction:column;align-items:flex-start;gap:3px;min-height:60px;width:100%;padding:8px 2px;border:0;background:transparent;box-shadow:none;text-align:left; }
+.overview-next .command-priority-item>span { min-width:0; }
+.overview-next .command-priority-item .priority-state { display:block;font:11px/1.4 var(--font-main);letter-spacing:0; }
+html.rhw-focus-pass.rhw-workbench .overview-next .command-priority-item strong { display:block;color:var(--text);font:500 14px/1.35 var(--font-main);white-space:normal; }
+.overview-next .command-priority-item small { display:block;margin-top:3px;color:var(--muted);font:12px/1.4 var(--font-main);white-space:normal; }
+.overview-next .command-priority-item .priority-effects { font-size:11px; }
+html.rhw-focus-pass.rhw-workbench .overview-next .priority-supply-button { min-height:44px;padding:7px 10px;border:1px solid var(--rhw-control-border);border-radius:3px;background:var(--rhw-action-fill);color:var(--gold);font:12px/1.4 var(--font-main); }
+.state-advisory .priority-state { color:var(--gold); }
+.state-critical .priority-state { color:var(--danger); }
+.state-low .priority-state { color:var(--warn); }
+#commandGlobalAlerts[data-alert-state="advisory"] { --alert-state:var(--gold); }
+html.rhw-focus-pass.rhw-workbench #overviewMoreTasks { display:block;width:100%;min-height:44px;margin:0;padding:10px 14px;border:0;border-top:1px solid var(--line);background:transparent;color:var(--gold);font:12px/1.4 var(--font-main);text-align:left; }
+html.rhw-focus-pass.rhw-workbench #overviewMoreTasks[hidden] { display:none; }
+.overview-clear { display:grid;gap:5px;padding:20px 2px;font:13px/1.5 var(--font-main); }
+.overview-clear strong { color:var(--good);font-weight:500; }
+.overview-incomplete strong { color:var(--muted); }
+.overview-clear span { color:var(--muted); }
+.overview-operations { grid-column:1;grid-row:2;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px; }
+html.rhw-focus-pass.rhw-workbench .overview-operation { display:flex;flex-direction:column;align-items:stretch;gap:6px;padding:12px 14px;min-height:112px;min-width:0;border:1px solid var(--line);border-radius:3px;background:var(--panel);text-align:left;letter-spacing:0; }
+.overview-operation>span { display:flex;justify-content:space-between;gap:6px;color:var(--gold);font:13px/1.4 var(--font-main); }
+.overview-operation>span>b { font-weight:400; }
+.overview-operation>strong { color:var(--text);font:500 23px/1.2 var(--font-title); }
+.overview-operation>small { color:var(--muted);font:12px/1.4 var(--font-main); }
+.overview-operation:is(:hover,:focus-visible) { border-color:var(--gold); }
+html.rhw-focus-pass.rhw-workbench #overviewControlsHost #commandGlobalAlerts { display:none; }
+html.rhw-focus-pass.rhw-workbench #overviewControlsHost #commandControlDeck { grid-template-columns:minmax(240px,300px) minmax(0,1fr);align-items:center;margin-bottom:14px; }
+html.rhw-focus-pass.rhw-workbench #overviewControlsHost .inventory-view-nav { grid-column:1; }
+html.rhw-focus-pass.rhw-workbench #overviewControlsHost .command-finder { grid-column:2; }
+/* Stock for an optional business goal is a planning hint. */
+html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel :is(.export-panel,.reserve-panel) .pill.critical { color:var(--warn);border-color:var(--warn);background:transparent; }
+#inventoryStatusPanel :is(.export-panel,.reserve-panel) .progress-fill.critical { background:var(--warn); }
+@media(max-width:760px) {
+ html.rhw-focus-pass.rhw-workbench .command-briefing { grid-template-columns:minmax(0,1fr);gap:12px; }
+ html.rhw-focus-pass.rhw-workbench #commandBriefing .maintenance-panel { grid-column:1;grid-row:1; }
+ .overview-next { grid-column:1;grid-row:2; }
+ .overview-operations { grid-column:1;grid-row:3; }
+ html.rhw-focus-pass #commandBriefing .maintenance-panel .inventory-production-link { min-height:44px; }
+ html.rhw-focus-pass #commandBriefing .maintenance-panel .overview-row-qty { font-size:23px; }
+ html.rhw-focus-pass.rhw-workbench #commandBriefing #maintenanceList { padding-inline:6px; }
+ html.rhw-focus-pass.rhw-workbench #commandBriefing #maintenanceList>li.overview-stock-row { padding-inline:7px; }
+ html.rhw-focus-pass.rhw-workbench #overviewControlsHost #commandControlDeck { grid-template-columns:minmax(0,1fr);gap:8px; }
+ html.rhw-focus-pass.rhw-workbench #overviewControlsHost :is(.inventory-view-nav,.command-finder) { grid-column:1/-1; }
+ html.rhw-focus-pass.rhw-workbench .overview-operation { padding:12px; }
+}
 

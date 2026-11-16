@@ -14,7 +14,7 @@
   <link rel="icon" type="image/png" href="./assets/favicon.png" />
   <link rel="apple-touch-icon" href="./assets/apple-touch-icon.png" />
   
-  <link rel="stylesheet" href="./css/rhw-app.css?v=sha256-4783e87731388762a810">
+  <link rel="stylesheet" href="./css/rhw-app.css?v=sha256-0a0dd64d487f50aa4e3e">
 </head>
 <body>
 
@@ -61,9 +61,10 @@
           <div>
             <small class="uplink-label">UPLINK STATUS</small>
             <strong class=" uplink-value" id="liveStatus" aria-live="polite">SYNCING TELEMETRY...</strong>
+            <small id="headerDataAge" class="header-data-age">Connecting</small>
           </div>
         </div>
-        <button id="headerRefreshBtn" class="uplink-button header-uplink-button" type="button"><span>REFRESH</span></button>
+        <button id="headerRefreshBtn" class="uplink-button header-uplink-button" type="button" aria-label="Refresh inventory" title="Refresh inventory"><svg class="header-refresh-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M20 7v5h-5M4 17v-5h5"/><path d="M6.1 7a7 7 0 0 1 11.5-1L20 9M4 15l2.4 3A7 7 0 0 0 18 17"/></svg><span>REFRESH</span></button>
         <details class="uplink-details" id="uplinkDetails">
           <summary aria-label="Connection details" title="Connection details"><span>CONNECTION DETAILS</span><svg class="connection-details-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 10v7M12 6.5v1"/></svg></summary>
           <div class="uplink-grid">
@@ -150,8 +151,8 @@
 
   <footer><hr class="hrc-dark">CONNECTION <span id="footerConnection">SYNCING</span> /// GLORY TO THE QUEEN<br><div class="footer-clock" id="rpFooterTime"></div></footer>
 
-<script src="./js/build-info.js?v=sha256-4783e87731388762a810"></script>
-<script src="./js/00-bootstrap.js?v=sha256-4783e87731388762a810"></script>
-<script src="./js/rhw-dashboard.js?v=sha256-4783e87731388762a810"></script>
+<script src="./js/build-info.js?v=sha256-0a0dd64d487f50aa4e3e"></script>
+<script src="./js/00-bootstrap.js?v=sha256-0a0dd64d487f50aa4e3e"></script>
+<script src="./js/rhw-dashboard.js?v=sha256-0a0dd64d487f50aa4e3e"></script>
 </body>
 </html>

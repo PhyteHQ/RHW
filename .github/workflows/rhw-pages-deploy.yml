@@ -86,6 +86,9 @@ jobs:
       - name: Validate Logistics market scans
         run: node scripts/test_logistics_scans.js
 
+      - name: Validate daily overview priorities
+        run: node scripts/test_overview_priorities.js
+
       - name: Validate Full App Audit model
         run: node scripts/test_full_audit.js
 

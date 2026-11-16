@@ -1197,9 +1197,9 @@ const RHW_APP_CONFIG = Object.freeze({
     const verified = snapshot.available;
     if (!verified) {
       const failed = /UNAVAILABLE|FAILED/i.test(snapshot.label);
-      return [{ state: failed ? 'critical' : 'low', node: 'inventory', action: 'connection', title: failed ? 'STOCK DATA UNAVAILABLE' : 'CONNECTING TO STOCK DATA', meta: 'Stock and coverage are unknown until the uplink succeeds. Open connection details to retry.' }];
+      return [{ state: 'low', label: 'Connection', rank: 0, node: 'inventory', action: 'connection', title: failed ? 'Stock data unavailable' : 'Connecting to stock data', meta: 'Stock and coverage are unknown. Open connection details to retry.' }];
     }
-    if (snapshot.stale) actions.push({ state: 'low', node: 'inventory', action: 'connection', title: 'REFRESH CACHED STOCK', meta: snapshot.detail });
+    if (snapshot.stale) actions.push({ state: 'low', label: 'Saved data', rank: -1, node: 'inventory', action: 'connection', title: 'Refresh saved stock', meta: snapshot.detail });
 
     safeOperationalItems().forEach(item => {
       const severity = roleSeverity(item);
@@ -1210,7 +1210,10 @@ const RHW_APP_CONFIG = Object.freeze({
       const detail = typeof window.overviewDetail === 'function' ? window.overviewDetail(item, severity.state, severity.role) : '';
       const meta = detail && detail !== 'TRACKED' ? detail : `${severity.state.toUpperCase()} STOCK`;
       const node = severity.role === 'shipyard' ? 'shipyard' : 'inventory';
-      const action = { state: severity.state, node, target: name, title: `${String(severity.role || 'asset').toUpperCase()} // ${String(name).toUpperCase()}`, meta };
+      const urgent = ['maintenance', 'byproduct', 'confiscated'].includes(severity.role);
+      const action = { state: urgent ? severity.state : 'advisory', label: urgent ? (severity.state === 'critical' ? 'Supply risk' : 'Restock soon') : 'Plan restock',
+        rank: urgent ? (severity.state === 'critical' ? 0 : 1) : 4, node, target: name, title: name, meta,
+        effect: severity.role === 'export' ? 'Export reserve low' : severity.role === 'reserve' ? 'Production reserve low' : '' };
       const reserve = severity.role === 'reserve' ? app.inventoryModel?.reserve(window.commodityKey(item)) : null;
       const stock = reserve ? reserve.stock : window.firstFiniteApiStockValue?.(item, ['quantity', 'amount', 'stock']);
       const warning = DASHBOARD_CONFIG.alerts[window.commodityKey(item)];
@@ -1218,33 +1221,53 @@ const RHW_APP_CONFIG = Object.freeze({
       if (stock !== null && desired > stock && ['maintenance', 'reserve'].includes(severity.role)) {
         action.supply = reserve ? reserve.members[0] : item.name;
         action.quantity = Math.ceil(desired - stock);
-        action.meta = `${app.util.number(stock)} IN STOCK · RESTOCK +${app.util.number(action.quantity)} TO ${app.util.number(desired)} WARNING LEVEL`;
+        action.meta = `${app.util.number(stock)} in stock · +${app.util.number(action.quantity)} to the warning threshold`;
       }
       actions.push(action);
     });
 
-    const constrained = productionAnalysis().find(entry => entry.cardState !== 'ok');
-    if (constrained?.bottleneck) actions.push({
-      state: constrained.cardState,
+    productionAnalysis().filter(entry => ['critical', 'low'].includes(entry.cardState) && entry.bottleneck && entry.nextCycleGap > 0).forEach(constrained => actions.push({
+      state: 'advisory', label: 'Production', rank: constrained.cardState === 'critical' ? 2 : 3,
       node: 'production',
       target: constrained.recipe.product,
-      title: `PRODUCTION // ${String(constrained.recipe.product).toUpperCase()}`,
-      meta: `NEXT +1 CYCLE · +${app.util.number(constrained.nextCycleGap)} ${String(constrained.bottleneck.displayName || constrained.bottleneck.name).toUpperCase()}`,
+      title: constrained.bottleneck.displayName || constrained.bottleneck.name,
+      meta: `+${app.util.number(constrained.nextCycleGap)} for the next ${constrained.recipe.product} batch`,
+      effect: `${constrained.recipe.product}: next batch`,
       supply: constrained.bottleneck.name, quantity: Math.ceil(constrained.nextCycleGap)
-    });
+    }));
 
     const yard = shipyardAnalysis();
     if (yard?.buildable !== null && yard?.buildable <= 1 && yard.bottleneck) actions.push({
-      state: yard.buildable <= 0 ? 'critical' : 'low',
+      state: 'advisory', label: 'Shipbuilding', rank: 3,
       node: 'shipyard',
       target: yard.bottleneck.name,
-      title: `SHIPYARD // MATERIAL FOR ${yard.buildable} ${yard.hull.label.toUpperCase()}`,
-      meta: `SHIP #${yard.nextHull} NEEDS +${app.util.number(yard.bottleneck.gap)} ${String(yard.bottleneck.name).toUpperCase()}`,
+      title: yard.bottleneck.name,
+      meta: `+${app.util.number(yard.bottleneck.gap)} for ${yard.hull.label} #${yard.nextHull}`,
+      effect: `${yard.hull.label} #${yard.nextHull}`,
       supply: yard.bottleneck.name, quantity: Math.ceil(yard.bottleneck.gap)
     });
 
-    const order = { critical: 0, low: 1, ok: 2 };
-    return actions.sort((a, b) => (order[a.state] ?? 9) - (order[b.state] ?? 9));
+    // A material shared by several goals is one task. These are independent
+    // coverage targets, so their deficits must never be added together.
+    const grouped = new Map();
+    actions.sort((a, b) => a.rank - b.rank).forEach(action => {
+      const key = action.action === 'connection' ? 'connection' : app.util.normalize(action.supply || action.target || action.title);
+      const current = grouped.get(key);
+      if (!current) { grouped.set(key, { ...action, effects: action.effect ? [action.effect] : [], nodes: [action.node] }); return; }
+      if (action.effect && !current.effects.includes(action.effect)) current.effects.push(action.effect);
+      if (!current.nodes.includes(action.node)) current.nodes.push(action.node);
+      if (action.supply && action.quantity > (current.quantity || 0)) {
+        current.supply = action.supply;
+        current.quantity = action.quantity;
+      }
+    });
+    return [...grouped.values()];
+  }
+
+  function priorityMarkup(action) {
+    const esc = app.util.escape;
+    const effects = action.effects?.length > 1 ? `<small class="priority-effects">Affects: ${esc(action.effects.join(' · '))}</small>` : '';
+    return `<div class="command-priority-entry state-${action.state}"><button type="button" class="command-priority-item state-${action.state}" data-priority-jump="${action.node}" data-priority-nodes="${esc((action.nodes || [action.node]).join(' '))}" data-priority-target="${esc(action.target || '')}" data-priority-action="${action.action || 'stock'}"><span class="priority-state">${esc(action.label || action.state)}</span><span><strong>${esc(action.title)}</strong><small>${esc(action.meta)}</small>${effects}</span><b>Open ↗</b></button>${action.supply && Number.isSafeInteger(action.quantity) && action.quantity > 0 ? `<button type="button" class="priority-supply-button" data-supply-commodity="${esc(action.supply)}" data-supply-quantity="${action.quantity}" aria-label="Find ${app.util.number(action.quantity)} ${esc(action.supply)}">Find +${app.util.number(action.quantity)} ↗</button>` : ''}</div>`;
   }
 
   function renderPriorities() {
@@ -1255,7 +1278,7 @@ const RHW_APP_CONFIG = Object.freeze({
     const countText = `${actions.length} ACTIVE`;
     if (count.textContent !== countText) count.textContent = countText;
     const markup = actions.length
-      ? actions.map(action => `<div class="command-priority-entry state-${action.state}"><button type="button" class="command-priority-item state-${action.state}" data-priority-jump="${action.node}" data-priority-target="${app.util.escape(action.target || '')}" data-priority-action="${action.action || 'stock'}"><span class="priority-state">${action.state.toUpperCase()}</span><span><strong>${app.util.escape(action.title)}</strong><small>${app.util.escape(action.meta)}</small></span><b>OPEN</b></button>${action.supply && Number.isSafeInteger(action.quantity) && action.quantity > 0 ? `<button type="button" class="priority-supply-button" data-supply-commodity="${app.util.escape(action.supply)}" data-supply-quantity="${action.quantity}" aria-label="Source ${app.util.number(action.quantity)} ${app.util.escape(action.supply)}">SOURCE +${app.util.number(action.quantity)} ↗</button>` : ''}</div>`).join('')
+      ? actions.map(priorityMarkup).join('')
       : '<div class="command-priority-empty"><strong>NO PRIORITY ACTIONS</strong><span>ALL MONITORED COMMAND THRESHOLDS ARE NOMINAL</span></div>';
     // Preserve the focused action during unchanged background refreshes.
     const signature = JSON.stringify(actions);
@@ -1328,6 +1351,7 @@ const RHW_APP_CONFIG = Object.freeze({
   function activateInventoryView(view) {
     const valid = ['status', 'manifest'].includes(view) ? view : 'status';
     app.state.inventoryView = valid;
+    document.body.dataset.inventoryView = valid;
     app.store.set(app.config.storageKeys.inventoryView, valid);
     document.querySelectorAll('[data-inventory-panel]').forEach(panel => { panel.hidden = panel.dataset.inventoryPanel !== valid; });
     document.querySelectorAll('[data-inventory-view]').forEach(button => {
@@ -1336,6 +1360,7 @@ const RHW_APP_CONFIG = Object.freeze({
       button.setAttribute('aria-selected', active ? 'true' : 'false');
       button.tabIndex = active ? 0 : -1;
     });
+    app.lifecycle.emit('inventory:view', { view: valid });
   }
 
   function activate(node, { updateRoute = true } = {}) {
@@ -1343,6 +1368,7 @@ const RHW_APP_CONFIG = Object.freeze({
     const context = { node: valid, previous: app.state.commandNode };
     app.lifecycle.emit('command:before-activate', context);
     app.state.commandNode = valid;
+    if (valid === 'inventory') activateInventoryView('status');
     app.store.set(app.config.storageKeys.commandNode, valid);
     document.body.dataset.commandNode = valid;
     document.querySelectorAll('[data-command-panel]').forEach(panel => { panel.hidden = panel.dataset.commandPanel !== valid; });
@@ -1423,7 +1449,7 @@ const RHW_APP_CONFIG = Object.freeze({
       next.focus();
     });
 
-    activateInventoryView(app.store.get(app.config.storageKeys.inventoryView, 'status'));
+    activateInventoryView('status');
     updateOverview();
     app.lifecycle.emit('command:ready');
   }
@@ -1439,7 +1465,7 @@ const RHW_APP_CONFIG = Object.freeze({
     return null;
   }
 
-  app.command = { contextTarget, init, activate, updateOverview, activateInventoryView, nodes: NODES };
+  app.command = { contextTarget, init, activate, updateOverview, activateInventoryView, priorityActions, priorityMarkup, productionAnalysis, nodes: NODES };
 })();
 
 ;
@@ -6568,7 +6594,8 @@ globalThis.RHW_PRODUCTION_VOLUMES = Object.freeze({
     if (!panel || !list) return;
     const items = [...list.querySelectorAll('.command-priority-item')];
     const state = items.some(item => item.classList.contains('state-critical')) ? 'critical'
-      : items.some(item => item.classList.contains('state-low')) ? 'low' : 'clear';
+      : items.some(item => item.classList.contains('state-low')) ? 'low'
+        : items.length ? 'advisory' : 'clear';
     panel.dataset.alertState = state;
     panel.dataset.alertCount = String(items.length);
     const hint = panel.querySelector('.command-alert-copy small');
@@ -6801,8 +6828,8 @@ globalThis.RHW_PRODUCTION_VOLUMES = Object.freeze({
     installAlertDeepLinks(); const storedFocus = app.store.get(COMMAND_FOCUS_KEY, 'all'); applyCommandFocus(storedFocus === 'attention' ? 'attention' : 'all'); return true;
   }
 
-  function installAlertDeepLinks() {
-    const panel = document.getElementById('commandGlobalAlerts'); if (!panel || panel.dataset.rhwDeepLinks === 'true') return;
+  function installAlertDeepLinks(panel = document.getElementById('commandGlobalAlerts')) {
+    if (!panel || panel.dataset.rhwDeepLinks === 'true') return;
     panel.dataset.rhwDeepLinks = 'true';
     panel.addEventListener('click', event => {
       const target = event.target.closest('[data-priority-jump]');
@@ -6846,7 +6873,19 @@ globalThis.RHW_PRODUCTION_VOLUMES = Object.freeze({
   function openSearchResult(result) { const input = document.getElementById('commandGlobalSearch'); if (input) input.value = result.label; document.getElementById('commandSearchResults')?.setAttribute('hidden',''); app.navigate('command',result.node); if (result.node === 'inventory' && result.view) app.command.activateInventoryView?.(result.view); window.setTimeout(() => { const candidate = bestTarget(result.node,result.label) || result; highlightElement(candidate.element || result.element); },100); }
   function openCommandTarget(node, query = '', { revealSearch = false } = {}) { const safeNode = COMMAND_NODES.includes(node) ? node : 'inventory'; if (revealSearch && query) { const input = document.getElementById('commandGlobalSearch'); if (input) input.value = query; renderCommandSearch(query); } else document.getElementById('commandSearchResults')?.setAttribute('hidden',''); app.navigate('command',safeNode); window.setTimeout(() => { const target = bestTarget(safeNode,query); if (target) { if (safeNode === 'inventory' && target.view) app.command.activateInventoryView?.(target.view); requestAnimationFrame(() => highlightElement(target.element)); } else document.querySelector(`[data-command-panel="${safeNode}"]`)?.scrollIntoView({ behavior:'smooth',block:'start' }); },110); }
 
-  function commandAttentionCounts() { const counts = Object.fromEntries(COMMAND_NODES.map(node => [node,0])); document.querySelectorAll('#v40PriorityList .command-priority-item').forEach(item => { const node = item.dataset.priorityJump; if (Object.prototype.hasOwnProperty.call(counts,node) && (item.classList.contains('state-critical') || item.classList.contains('state-low'))) counts[node] += 1; }); COMMAND_NODES.forEach(node => { const button = document.querySelector(`#commandNodeNav [data-command-node="${node}"]`); if (button && !counts[node] && ['critical','low'].includes(button.dataset.state)) counts[node] = 1; }); return counts; }
+  function commandAttentionCounts() {
+    const counts = Object.fromEntries(COMMAND_NODES.map(node => [node, 0]));
+    document.querySelectorAll('#v40PriorityList .command-priority-item').forEach(item => {
+      const nodes = (item.dataset.priorityNodes || item.dataset.priorityJump || '').split(' ');
+      nodes.forEach(node => { if (Object.prototype.hasOwnProperty.call(counts, node)) counts[node] += 1; });
+    });
+    COMMAND_NODES.forEach(node => {
+      const button = document.querySelector(`#commandNodeNav [data-command-node="${node}"]`);
+      if (button && !counts[node] && ['critical', 'low'].includes(button.dataset.state)) counts[node] = 1;
+    });
+    return counts;
+  }
+
   function syncCommandAttention() { const counts = commandAttentionCounts(); let total = 0, affected = 0; COMMAND_NODES.forEach(node => { const button = document.querySelector(`#commandNodeNav [data-command-node="${node}"]`); const status = button?.querySelector('.command-module-state'); const count = counts[node] || 0; if (count) affected += 1; total += count; if (status) status.dataset.badge = count ? String(count) : button?.dataset.state === 'ok' ? '✓' : '·'; }); const countEl = document.getElementById('commandAttentionCount'); if (countEl) countEl.textContent = String(total); document.body.dataset.commandAttentionEmpty = total ? 'false' : 'true'; document.body.style.setProperty('--rhw-attention-columns',String(Math.max(1,affected))); return { total,affected,counts }; }
   function applyCommandFocus(mode, { navigate = false } = {}) { const safe = mode === 'attention' ? 'attention' : 'all'; const attention = syncCommandAttention(); document.body.dataset.commandFocus = safe; app.store.set(COMMAND_FOCUS_KEY,safe); document.querySelectorAll('[data-command-focus-mode]').forEach(button => { const active = button.dataset.commandFocusMode === safe; button.classList.toggle('active',active); button.setAttribute('aria-pressed',active ? 'true' : 'false'); }); if (safe === 'attention' && navigate && attention.total && !attention.counts[app.state.commandNode]) { const next = COMMAND_NODES.find(node => attention.counts[node] > 0); if (next) app.navigate('command',next); } }
 
@@ -6905,7 +6944,7 @@ globalThis.RHW_PRODUCTION_VOLUMES = Object.freeze({
   });
   app.lifecycle.on('calculator:activated', 'workspace-navigation', 20, () => { requestAnimationFrame(syncWorkspaceStatuses); });
 
-  app.workspaceUi = { workspaces:WORKSPACES, installStyles, installWorkspaceTabs, rebuildWorkspaceNav, installCommandControls, syncWorkspaceStatuses, searchCommand, openCommandTarget, applyCommandFocus, syncCommandAttention, syncContextAction, selfTest };
+  app.workspaceUi = { workspaces:WORKSPACES, installStyles, installWorkspaceTabs, rebuildWorkspaceNav, installCommandControls, installAlertDeepLinks, syncWorkspaceStatuses, searchCommand, openCommandTarget, applyCommandFocus, syncCommandAttention, syncContextAction, selfTest };
 })();
 
 ;
@@ -7054,7 +7093,7 @@ globalThis.RHW_PRODUCTION_VOLUMES = Object.freeze({
   const app = window.RHWV4;
   if (!app || app.presentation) return;
   const pages = Object.freeze({
-    'command/inventory': ['COMMAND', 'Overview', 'Facility upkeep, internal reserves and export stock at a glance.'],
+    'command/inventory': ['COMMAND', 'Overview', 'Your POB at a glance. Supplies, stock and next steps.'],
     'command/production': ['COMMAND', 'Production', 'Compare independent material coverage and inspect the exact recipe.'],
     'command/shipyard': ['COMMAND', 'Shipyard', 'Choose a hull, check its requirements and source missing components.'],
     'command/logistics': ['COMMAND', 'Logistics', 'Find component and material offers across player bases.'],
@@ -7507,6 +7546,135 @@ globalThis.RHW_PRODUCTION_VOLUMES = Object.freeze({
     closeAlerts,
     selfTest
   };
+})();
+
+;
+
+/* SOURCE: js/command/overview.js */
+/* Daily POB briefing: verified supplies, material coverage and the next tasks. */
+(function initPobOverview() {
+  'use strict';
+  const app = window.RHWV4;
+  if (!app?.command || app.pobOverview) return;
+  let unsubscribe;
+  const esc = value => app.util.escape(value);
+
+  function mount() {
+    const status = document.getElementById('inventoryStatusPanel');
+    if (!status) return;
+    let briefing = document.getElementById('commandBriefing');
+    if (!briefing) {
+      briefing = document.createElement('section');
+      briefing.id = 'commandBriefing';
+      briefing.className = 'command-briefing';
+      briefing.setAttribute('aria-label', 'POB at a glance');
+      briefing.innerHTML = `<section class="overview-next" aria-labelledby="overviewNextTitle">
+        <div class="overview-section-head"><h3 id="overviewNextTitle">Next steps</h3><span id="overviewTaskCount"></span></div>
+        <div id="overviewNextActions" class="overview-next-actions"></div>
+        <button type="button" id="overviewMoreTasks" aria-expanded="false" aria-controls="overviewNextActions" hidden></button>
+      </section><div class="overview-operations" id="overviewOperations"></div>`;
+      status.prepend(briefing);
+      const supplies = status.querySelector('.maintenance-panel');
+      if (supplies) {
+        briefing.prepend(supplies);
+        supplies.querySelector('.alert-title>span').textContent = 'Facility supplies';
+      }
+      const controls = document.createElement('div');
+      controls.id = 'overviewControlsHost';
+      briefing.insertAdjacentElement('afterend', controls);
+      document.getElementById('overviewMoreTasks').addEventListener('click', event => {
+        const button = event.currentTarget;
+        button.setAttribute('aria-expanded', String(button.getAttribute('aria-expanded') !== 'true'));
+        render();
+      });
+      briefing.addEventListener('click', event => {
+        const button = event.target.closest('[data-overview-node]');
+        if (!button) return;
+        app.navigate('command', button.dataset.overviewNode);
+        requestAnimationFrame(() => {
+          const panel = document.querySelector(`[data-command-panel="${button.dataset.overviewNode}"]`);
+          panel?.scrollIntoView({ block: 'start', behavior: 'instant' });
+          panel?.querySelector('button,input')?.focus({ preventScroll: true });
+        });
+      });
+      app.workspaceUi.installAlertDeepLinks(document.getElementById('overviewNextActions'));
+    }
+    placeControls();
+  }
+
+  function placeControls() {
+    const deck = document.getElementById('commandControlDeck');
+    const home = document.getElementById('overviewControlsHost');
+    const nodeHost = document.getElementById('commandNodeHost');
+    if (!deck || !home || !nodeHost) return;
+    if (app.state.commandNode === 'inventory' && app.state.inventoryView === 'status') {
+      if (deck.parentElement !== home) home.appendChild(deck);
+    } else if (deck.parentElement !== nodeHost.parentElement) nodeHost.insertAdjacentElement('beforebegin', deck);
+  }
+
+  function operationCard(node, title, value, detail, state) {
+    return `<button type="button" class="overview-operation" data-overview-node="${node}" data-state="${state}"><span>${esc(title)} <b aria-hidden="true">↗</b></span><strong>${esc(value)}</strong><small>${esc(detail)}</small></button>`;
+  }
+
+  function renderOperations() {
+    const snapshot = window.telemetrySnapshot();
+    const known = snapshot.available;
+    const production = known ? app.command.productionAnalysis() : [];
+    const covered = production.filter(entry => entry.possibleCycles !== null && entry.possibleCycles >= 1).length;
+    const complete = production.length && production.every(entry => entry.possibleCycles !== null);
+    const blocked = production.filter(entry => entry.possibleCycles === 0);
+    const first = blocked[0] || production.find(entry => entry.cardState === 'low');
+    const productionValue = !known || !complete ? 'Coverage unknown' : `${covered} / ${production.length} covered`;
+    const productionDetail = !known ? 'Waiting for stock data' : !complete ? 'Some recipe inputs are unknown' : first
+      ? `${first.recipe.product} · ${first.bottleneck?.displayName || first.bottleneck?.name || 'input needed'}`
+      : 'Next batches checked separately';
+    const yard = known ? app.shipyard?.analyze() : null;
+    const ships = known ? app.inventoryModel?.ships() || [] : [];
+    const reportedShips = ships.filter(entry => entry.stock !== null);
+    const shipCount = reportedShips.reduce((sum, entry) => sum + entry.stock, 0);
+    const archon = reportedShips.find(entry => entry.hull.key === 'archon');
+    const yardValue = !known || !reportedShips.length ? 'Ship stock unknown' : `${app.util.number(shipCount)} in stock`;
+    const yardDetail = yard?.buildable !== null && yard?.buildable !== undefined
+      ? `${archon?.stock > 0 ? `${app.util.number(archon.stock)} Archon in stock · ` : ''}Material for ${app.util.number(yard.buildable)} ${yard.hull.label}`
+      : 'Open hulls and requirements';
+    const markup = operationCard('production', 'Production', productionValue, productionDetail, !known || !complete ? 'waiting' : blocked.length ? 'advisory' : 'ok')
+      + operationCard('shipyard', 'Shipyard', yardValue, yardDetail, known && reportedShips.length ? 'ok' : 'waiting');
+    const target = document.getElementById('overviewOperations');
+    if (target && target.innerHTML !== markup) target.innerHTML = markup;
+  }
+
+  function render() {
+    const target = document.getElementById('overviewNextActions');
+    if (!target) return;
+    const snapshot = window.telemetrySnapshot();
+    const actions = app.command.priorityActions();
+    const more = document.getElementById('overviewMoreTasks');
+    const expanded = more.getAttribute('aria-expanded') === 'true';
+    const shown = expanded ? actions : actions.slice(0, 3);
+    const unknownStock = snapshot.available && window.operationalItems().some(item => window.firstFiniteApiStockValue(item, ['quantity', 'amount', 'stock']) === null);
+    const signature = JSON.stringify({ shown, unknownStock });
+    if (target.dataset.signature !== signature) {
+      target.innerHTML = shown.length ? shown.map(app.command.priorityMarkup).join('')
+        : `<div class="overview-clear${unknownStock ? ' overview-incomplete' : ''}"><strong>${unknownStock ? 'No known shortages' : 'Supplies and stock look good'}</strong><span>${unknownStock ? 'Some stock levels are unknown. Check the full inventory.' : 'No monitored threshold needs attention.'}</span></div>`;
+      target.dataset.signature = signature;
+    }
+    document.getElementById('overviewTaskCount').textContent = !snapshot.available ? 'Stock unknown' : `${actions.length} ${actions.length === 1 ? 'task' : 'tasks'}`;
+    more.hidden = actions.length <= 3;
+    more.textContent = expanded ? 'Show fewer tasks' : `Show ${actions.length - 3} more tasks`;
+    renderOperations();
+    placeControls();
+  }
+
+  function install() {
+    mount(); render();
+    unsubscribe?.();
+    unsubscribe = app.onUiUpdate(render);
+  }
+  app.lifecycle.on('command:ready', 'pob-overview', 60, install);
+  app.lifecycle.on('command:activated', 'pob-overview', 60, () => { placeControls(); render(); });
+  app.lifecycle.on('inventory:view', 'pob-overview', 60, placeControls);
+  app.lifecycle.on('catalog:loaded', 'pob-overview', 65, render);
+  app.pobOverview = { render, mount, placeControls };
 })();
 
 ;

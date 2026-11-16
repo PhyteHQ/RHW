@@ -62,7 +62,7 @@ function renderOverviewRow({ state, role, name, item = null, detail = '', quanti
   const reference = overviewStockReference(item, role);
   const modules = globalThis.RHWV4?.production?.modules?.() || DASHBOARD_CONFIG.productionModules;
   const recipeId = modules.find(module => keyFromName(module.product) === keyFromName(name))?.recipeId;
-  const navigation = recipeId ? `data-inventory-recipe="${escapeHTML(recipeId)}"` : role === 'reserve' || role === 'byproduct' ? `data-inventory-material="${escapeHTML(item?.name || name)}"` : '';
+  const navigation = recipeId ? `data-inventory-recipe="${escapeHTML(recipeId)}"` : ['reserve', 'byproduct', 'maintenance'].includes(role) ? `data-inventory-material="${escapeHTML(item?.name || name)}"` : '';
   const title = navigation ? `<button type="button" class="inventory-production-link" ${navigation}>${escapeHTML(name)}</button>` : `<strong>${escapeHTML(name)}</strong>`;
   const trade = role === 'export' && typeof exportRouteButton === 'function' ? exportRouteButton(name)
     : role === 'reserve' && typeof supplyRouteButton === 'function' ? supplyRouteButton(item?.name || name) : '';
@@ -108,7 +108,7 @@ function overviewDetail(item, state, role) {
   const daily = role === 'maintenance' && DASHBOARD_CONFIG.maintenanceDailyReference?.[commodityKey(item)];
   if (daily > 0) {
     const days = new Intl.NumberFormat('de-DE', { maximumFractionDigits: 1 }).format(quantity(item) / daily);
-    return `~${days} DAYS · ESTIMATED USE ${number(daily)} / DAY`;
+    return `~${days} days · ${number(daily)} / day`;
   }
   const reference = overviewStockReference(item, role);
   if (role === 'byproduct') {

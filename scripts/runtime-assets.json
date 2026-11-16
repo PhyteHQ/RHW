@@ -71,6 +71,7 @@
     "./js/shared/presentation.js",
     "./js/command/logistics-navigation.js",
     "./js/command/inventory-toolbar.js",
+    "./js/command/overview.js",
     "./js/core/tools-navigation.js",
     "./js/price-check/workspace.js",
     "./js/command/supply-routes.js",

@@ -67,7 +67,7 @@ def main():
               const waste=r(panel('waste-panel')),ships=r(panel('ship-stock-panel'));
               return {overflow:document.documentElement.scrollWidth>innerWidth+2,
                 internal:inventoryStatusPanel.scrollWidth>inventoryStatusPanel.clientWidth+2,
-                columns:Math.max(maintenance.top,reserve.top,exports.top)-Math.min(maintenance.top,reserve.top,exports.top),
+                columns:Math.max(waste.top,reserve.top,exports.top)-Math.min(waste.top,reserve.top,exports.top),
                 wasteGap:waste.top-maintenance.bottom,shipGap:ships.top-exports.bottom,
                 wasteAligned:Math.abs(waste.left-maintenance.left)<2&&Math.abs(waste.width-maintenance.width)<2,
                 shipsAligned:Math.abs(ships.left-exports.left)<2&&Math.abs(ships.width-exports.width)<2,
@@ -77,8 +77,8 @@ def main():
             assert not geometry['overflow'] and not geometry['internal'] and geometry['touch'], (width, geometry)
             if width > 1100:
                 assert geometry['columns'] < 2, geometry
-                assert geometry['wasteAligned'] and geometry['shipsAligned'], geometry
-                assert 0<geometry['wasteGap']<=17 and 0<geometry['shipGap']<=17, 'Lower cards must follow their own columns without waiting for tall reserves: '+str(geometry)
+                assert geometry['shipsAligned'], geometry
+                assert geometry['wasteGap']>0 and 0<geometry['shipGap']<=17, 'Detailed stock follows the briefing; ships follow exports: '+str(geometry)
             elif width>760:
                 assert geometry['tabletMarketAligned'], geometry
             (out / f'inventory-reserves-{width}.png').write_bytes(base64.b64decode(cdp.call('Page.captureScreenshot', {'format': 'png'})['data']))
