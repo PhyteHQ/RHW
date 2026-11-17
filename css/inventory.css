@@ -104,7 +104,7 @@ html.rhw-focus-pass.rhw-workbench .rhw-item-detail::backdrop { background:#0007;
 
 /* The first screen answers supplies, next steps and material coverage. */
 html.rhw-focus-pass.rhw-workbench .command-briefing { display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:16px;margin-bottom:16px;align-items:stretch; }
-html.rhw-focus-pass.rhw-workbench #commandBriefing .maintenance-panel { grid-column:1;grid-row:1;margin:0;min-width:0; }
+html.rhw-focus-pass.rhw-workbench #commandBriefing .maintenance-panel { grid-column:1;grid-row:1;margin:0;min-width:0;align-self:stretch; }
 html.rhw-focus-pass.rhw-workbench #commandBriefing .maintenance-panel .alert-title { min-height:52px;padding:12px 16px;font:500 var(--rhw-section-size)/1.3 var(--font-title); }
 html.rhw-focus-pass.rhw-workbench #commandBriefing .maintenance-panel .count-badge { display:none; }
 html.rhw-focus-pass.rhw-workbench #commandBriefing #maintenanceList { display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0;padding:0 12px;list-style:none; }
@@ -113,7 +113,7 @@ html.rhw-focus-pass.rhw-workbench #commandBriefing #maintenanceList>li:last-chil
 #commandBriefing .maintenance-panel .overview-item-copy { grid-column:1;grid-row:1; }
 html.rhw-focus-pass #commandBriefing .maintenance-panel .inventory-production-link { font:500 14px/1.35 var(--font-main);min-height:38px; }
 html.rhw-focus-pass #commandBriefing .maintenance-panel .overview-row-meta { display:contents; }
-html.rhw-focus-pass #commandBriefing .maintenance-panel .overview-stock-value { grid-column:1;grid-row:2;display:block;text-align:left;justify-self:start; }
+html.rhw-focus-pass #commandBriefing .maintenance-panel .overview-stock-value { grid-column:1;grid-row:2;display:block;margin:0;text-align:left;justify-self:start; }
 html.rhw-focus-pass #commandBriefing .maintenance-panel .overview-row-qty { font:25px/1.3 var(--font-tech); }
 html.rhw-focus-pass #commandBriefing .maintenance-panel .pill { grid-column:1;grid-row:3;justify-self:start;padding:2px 4px;font:11px/1.4 var(--font-main); }
 html.rhw-focus-pass #commandBriefing .maintenance-panel :is(.progress-wrap,.inventory-input-row) { display:none; }
@@ -122,7 +122,7 @@ html.rhw-focus-pass #commandBriefing .maintenance-panel .overview-stock-detail {
 .overview-section-head { display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 14px;border-bottom:1px solid var(--line); }
 .overview-section-head h3 { margin:0;color:var(--gold);font:500 var(--rhw-section-size)/1.3 var(--font-title); }
 .overview-section-head>span { color:var(--muted);font:12px/1.4 var(--font-main); }
-.overview-next-actions { display:grid;grid-template-columns:repeat(3,minmax(0,1fr));padding:0 16px;gap:16px; }
+.overview-next-actions { display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));padding:0 16px;gap:16px; }
 html.rhw-focus-pass.rhw-workbench .overview-next .command-priority-entry { grid-template-columns:minmax(0,1fr);align-content:start;gap:6px;padding:12px 0;border-bottom:0; }
 html.rhw-focus-pass.rhw-workbench .overview-next .command-priority-item { display:flex;flex-direction:column;align-items:flex-start;gap:3px;min-height:60px;width:100%;padding:8px 2px;border:0;background:transparent;box-shadow:none;text-align:left; }
 .overview-next .command-priority-item>span { min-width:0; }
@@ -181,7 +181,7 @@ html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel :is(#reserveList,#export
 html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel :is(#reserveList,#exportList) .overview-item-copy { min-height:44px; }
 html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel :is(#reserveList,#exportList) .inventory-production-link { min-height:44px;font:600 15px/1.45 var(--font-main); }
 html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel :is(#reserveList,#exportList) .overview-row-meta { display:flex;flex-direction:column;align-items:flex-start;gap:5px;order:0; }
-html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel :is(#reserveList,#exportList) .overview-stock-value { order:0;display:block;text-align:left;align-self:flex-start; }
+html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel :is(#reserveList,#exportList) .overview-stock-value { order:0;display:block;margin:0;text-align:left;align-self:flex-start; }
 html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel :is(#reserveList,#exportList) .overview-stock-detail { order:1;white-space:normal;font:12px/1.5 var(--font-main); }
 html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel :is(#reserveList,#exportList) .pill { align-self:flex-start; }
 html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel #reserveList .inventory-pool-parts { font:12px/1.5 var(--font-main); }

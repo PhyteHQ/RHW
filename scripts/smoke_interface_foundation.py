@@ -168,10 +168,12 @@ def main():
                     inventoryStyled:[...document.querySelectorAll('#inventoryStatusPanel .alert-list')].every(e=>getComputedStyle(e).listStyleType==='none')&&[...document.querySelectorAll('#inventoryStatusPanel .alert-title')].every(e=>getComputedStyle(e).display==='flex'),
                     inputs:[...document.querySelectorAll('#opsMaterialPanel [data-material-price]')].filter(visible).map(e=>e.getBoundingClientRect().width)};
                 })()""")
-                if width in (390, 1366, 1920) and route in ('command/inventory', 'command/shipyard', 'command/logistics', 'operations/calculator', 'pricecheck/routes', 'comms/forum', 'comms/drafts', 'comms/senders'):
+                if width in (390, 1366, 1920) and route in ('command/inventory', 'command/production', 'command/shipyard', 'command/logistics', 'operations/calculator', 'pricecheck/routes', 'comms/forum', 'comms/drafts', 'comms/senders'):
                     capture(cdp, f'{width}-{workspace}-{node}')
                     if route == 'command/inventory':
                         capture_card(cdp, '.reserve-panel', f'{width}-inventory-stocks')
+                    if route == 'command/production':
+                        capture_card(cdp, '#productionPanel', f'{width}-production-table')
                     if route == 'command/shipyard':
                         capture_card(cdp, '#shipyardControl', f'{width}-shipyard-detail')
                     if route == 'command/logistics':
@@ -201,10 +203,11 @@ def main():
                       return cards.map(card=>{const capacity=card.querySelector('.production-capacity'),limit=card.querySelector('.production-limit');
                         const a=capacity.getBoundingClientRect(),b=limit.getBoundingClientRect(),s=getComputedStyle(limit);
                         return {capacityLabel:capacity.querySelector('small').textContent.trim(),units:capacity.querySelector('.production-unit')?.textContent,
+                          valuesFit:[...card.querySelectorAll('.production-stat strong')].every(n=>n.scrollWidth<=n.clientWidth+1),
                           gap:b.left-a.right,separateRow:b.top>=a.bottom-1,divider:parseFloat(s.borderLeftWidth),
                           overflow:card.scrollWidth-card.clientWidth};});
                     })()""")
-                    assert lanes and all(x['capacityLabel']=='Can produce' and x['units']=='additional units' and x['overflow']<=2 for x in lanes), (width, lanes)
+                    assert lanes and all(x['capacityLabel']=='Can produce' and x['units']=='additional units' and x['overflow']<=2 and x['valuesFit'] for x in lanes), (width, lanes)
                     assert all(x['separateRow'] or (x['gap']>=23 and x['divider']>=1) for x in lanes), ('Quantity and limiting material must be visibly separate',width,lanes)
                 if width <= 760 and workspace == 'operations':
                     assert result['priceLabelSizes'] and min(result['priceLabelSizes']) >= 11, result
@@ -400,6 +403,16 @@ def main():
           return {exact,basic,isolated};
         })()""")
         assert all(mox_and_failure.values()), mox_and_failure
+        # Wide quantities must stay on one line in both labelled cards and the
+        # desktop comparison. Do not let a column silently split 1.234.567.
+        base.ev(cdp, """(()=>{
+          for(const recipe of RHWV4.production.recipes()) {
+            const item=findCommodity(recipe.product);
+            if(item)item.quantity=1234567;
+            else items.push({name:recipe.product,quantity:1234567});
+          }
+          rebuildItemCaches();renderProductionModules();return true;
+        })()""")
         for width in [1366,1024,390,360]:
             cdp.call('Emulation.setDeviceMetricsOverride', {'width':width,'height':1100,'deviceScaleFactor':1,'mobile':width<760})
             base.ev(cdp, 'renderProductionModules()')
@@ -408,12 +421,14 @@ def main():
               const cards=[...productionGrid.querySelectorAll('.production-card')];
               const heights=cards.map(c=>c.getBoundingClientRect().height);
               return {columns:getComputedStyle(productionGrid).gridTemplateColumns.split(' ').length,
+                panelWidth:productionPanel.clientWidth,
                 height:Math.max(...heights),even:Math.max(...heights)-Math.min(...heights)<40,
+                valuesFit:cards.every(c=>[...c.querySelectorAll('.production-stat strong')].every(n=>n.scrollWidth<=n.clientWidth+1)),
                 actions:cards.every(c=>c.querySelectorAll('.production-card-actions>button').length===2),
                 order:cards.map(c=>c.querySelector('.production-title').textContent)};
             })()""")
-            assert overview['columns'] == 1, (width, overview)
-            assert overview['height']<320 and overview['even'] and overview['actions'], (width, overview)
+            assert overview['columns'] == (2 if 600 < overview['panelWidth'] <= 1040 else 1), (width, overview)
+            assert overview['height']<320 and overview['even'] and overview['actions'] and overview['valuesFit'], (width, overview)
             assert overview['order']==['Multi-Mode Focusing Chamber','Reactor Systems','Superstructure Systems','Basic Alloy','Gold','Niobium','Prototype Components','MOX'], overview
             disclosure = base.ev(cdp, """(()=>{
               const card=productionGrid.querySelector('.production-card'),toggle=card.querySelector('.production-card-toggle');

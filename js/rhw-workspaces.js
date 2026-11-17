@@ -7627,7 +7627,7 @@ globalThis.RHW_PRODUCTION_VOLUMES = Object.freeze({
   }
 
   function operationCard(node, title, value, detail, state) {
-    return `<button type="button" class="overview-operation" data-overview-node="${node}" data-state="${state}"><span>${esc(title)} <b aria-hidden="true">↗</b></span><strong>${esc(value)}</strong><small>${esc(detail)}</small></button>`;
+    return `<button type="button" class="overview-operation rhw-surface" data-overview-node="${node}" data-state="${state}"><span>${esc(title)} <b aria-hidden="true">↗</b></span><strong>${esc(value)}</strong><small>${esc(detail)}</small></button>`;
   }
 
   function renderOperations() {
