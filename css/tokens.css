@@ -35,4 +35,8 @@
   --rhw-control-border: #62553d;
   --rhw-action-fill: #2c261c;
   --rhw-card-shadow: none;
+  --rhw-body-size: 15px;
+  --rhw-label-size: 12px;
+  --rhw-section-size: 22px;
+  --rhw-surface-radius: 6px;
 }

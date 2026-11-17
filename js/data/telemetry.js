@@ -71,8 +71,8 @@ function readinessText(state, role) {
     return 'EVIDENCE SECURED';
   }
   if (role === 'export') {
-    if (state === 'critical') return 'EXPORT RESERVE CRITICAL';
-    if (state === 'low') return 'LOW EXPORT RESERVE';
+    if (state === 'critical') return 'Restock recommended';
+    if (state === 'low') return 'Export reserve low';
     return 'EXPORT READY';
   }
   if (role === 'maintenance') {

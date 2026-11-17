@@ -38,6 +38,10 @@
   --rhw-control-border: #62553d;
   --rhw-action-fill: #2c261c;
   --rhw-card-shadow: none;
+  --rhw-body-size: 15px;
+  --rhw-label-size: 12px;
+  --rhw-section-size: 22px;
+  --rhw-surface-radius: 6px;
 }
 
 
@@ -4397,7 +4401,7 @@ html.rhw-focus-pass .comms-editor-toolbar button { min-height: 44px;font-size: 1
 html.rhw-focus-pass #rhwDiagnosticsPanel .discovery-data-grid { grid-template-columns: minmax(0,1fr); }
 }
 
-:root { --app-surface: var(--surface-input);--app-surface-soft: var(--surface-raised);--app-blue-line: rgba(181,187,201,.2);--rhw-surface-radius: 2px;--rhw-surface: var(--panel);--rhw-surface-raised: var(--surface-raised);--rhw-border: var(--line);--rhw-label-size: 12px;--rhw-body-size: 15px;--rhw-gold-rgb: 240,197,107;--rhw-steel-rgb: 181,187,201; }
+:root { --app-surface: var(--surface-input);--app-surface-soft: var(--surface-raised);--app-blue-line: rgba(181,187,201,.2);--rhw-surface: var(--panel);--rhw-surface-raised: var(--surface-raised);--rhw-border: var(--line);--rhw-gold-rgb: 240,197,107;--rhw-steel-rgb: 181,187,201; }
 
 html.rhw-focus-pass body { --app-nav-accent: var(--gold);--app-nav-accent-rgb: var(--rhw-gold-rgb);background: radial-gradient(ellipse at 0% 0%,#f0c56b0e,transparent 55%),var(--bg);font-size: var(--rhw-body-size);line-height: 1.5; }
 
@@ -4989,7 +4993,7 @@ html.rhw-focus-pass .market-card .supplier-commodity-metric.price { align-items:
 }
 
 /* Shared application surfaces. The forum document keeps its own content styling. */
-html.rhw-focus-pass.rhw-workbench { --rhw-surface-radius:4px; }
+
 html.rhw-focus-pass.rhw-workbench :is(.alert-card,.panel,.ops-panel,.comms-panel,.market-card,.remote-card,.capital-shipyard-control,.sender-registry-card,.sender-editor,.rhw-transfer-center,.rhw-diagnostics-card,.discovery-data-grid article) { border:1px solid var(--line);border-radius:var(--rhw-surface-radius);background:var(--panel);box-shadow:none;clip-path:none; }
 html.rhw-focus-pass.rhw-workbench :is(.panel-head,.ops-panel-head,.comms-panel-head,.logistics-subhead,.rhw-focus-tools-head,.rhw-diagnostics-head,.rhw-transfer-sheet>header,.discovery-data-head,.sender-editor-head) { min-height:56px;padding:14px 18px;background:var(--surface-raised);border-bottom:1px solid var(--line);box-shadow:none; }
 html.rhw-focus-pass.rhw-workbench :is(.ops-panel-head,.comms-panel-head)>div>strong { color:var(--gold);font:500 24px/1.15 var(--font-title);letter-spacing:.025em; }
@@ -5007,8 +5011,18 @@ html.rhw-focus-pass.rhw-workbench :is(.ops-material-table,.ops-comparison-table,
 html.rhw-focus-pass.rhw-workbench :is(.ops-material-table,.ops-comparison-table,.pricecheck-table,.shipyard-material-table) thead th { color:var(--muted);background:var(--surface-raised);border-color:var(--line);font:500 12px/1.4 var(--font-main);letter-spacing:.025em;box-shadow:none; }
 html.rhw-focus-pass.rhw-workbench :is(.ops-material-table,.ops-comparison-table,.pricecheck-table,.shipyard-material-table) tbody :is(th,td) { border-color:var(--line); }
 
+/* Shared app surfaces are assigned by presentation.js on every workspace. */
+html.rhw-focus-pass.rhw-workbench .rhw-surface { border-radius:var(--rhw-surface-radius);background:var(--panel);box-shadow:none; }
+html.rhw-focus-pass.rhw-workbench .rhw-surface-head { display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:52px;padding:12px 16px;border-bottom:1px solid var(--line);background:var(--surface-raised); }
+html.rhw-focus-pass.rhw-workbench .rhw-surface-head :is(.panel-title,h3,.supplier-title),html.rhw-focus-pass.rhw-workbench .rhw-surface-head>div>strong,html.rhw-focus-pass.rhw-workbench .alert-title>span:first-child { margin:0;color:var(--gold);font:500 var(--rhw-section-size)/1.3 var(--font-title);letter-spacing:.02em;text-transform:none; }
+html.rhw-focus-pass.rhw-workbench .rhw-surface-head>small { color:var(--muted);font:12px/1.5 var(--font-main);letter-spacing:0; }
+html.rhw-focus-pass.rhw-workbench :is(.ops-panel-head,.comms-panel-head)>div>span:first-child { display:none; }
+html.rhw-focus-pass.rhw-workbench .rhw-surface :is(.footnote,.comms-message-help,.ops-recipe-note) { font:13px/1.5 var(--font-main);letter-spacing:0; }
+html.rhw-focus-pass.rhw-workbench .rhw-surface :is(input,select,textarea) { border-radius:4px; }
+html.rhw-focus-pass.rhw-workbench :is(.ops-panel,.comms-panel,.panel,.alert-card) :is(.section-kicker,.panel-head>.panel-heading-copy>.section-kicker) { display:none; }
+
 /* Shipyard: selection cards, material summary and prerequisites share the same surfaces. */
-html.rhw-focus-pass.rhw-workbench #shipyardControl .shipyard-control-grid { gap:20px;padding:20px; }
+html.rhw-focus-pass.rhw-workbench #shipyardControl .shipyard-control-grid { gap:16px;padding:16px; }
 html.rhw-focus-pass.rhw-workbench #shipyardControl .shipyard-divisions button { border:1px solid var(--line);border-bottom:2px solid var(--line);border-radius:4px;background:var(--surface-input);box-shadow:none;color:var(--muted); }
 html.rhw-focus-pass.rhw-workbench #shipyardControl .shipyard-divisions button[aria-pressed="true"] { background:var(--rhw-selected-fill);border-color:var(--rhw-control-border);border-bottom-color:var(--gold);color:var(--gold); }
 html.rhw-focus-pass.rhw-workbench #shipyardControl .shipyard-division-count { color:var(--muted);font:11px/1.4 var(--font-main); }
@@ -5083,7 +5097,7 @@ html.rhw-focus-pass.rhw-workbench .ops-comparison-table tbody th { color:var(--t
 }
 
 /* Forum, drafts and senders: content-sized typography and the same control hierarchy. */
-html.rhw-focus-pass.rhw-workbench .comms-workflow-status { margin:16px;padding:12px;border:1px solid var(--line);background:var(--surface-input);font:13px/1.5 var(--font-main); }
+html.rhw-focus-pass.rhw-workbench .comms-workflow-status { margin:16px;padding:12px;border:1px solid var(--line);border-radius:var(--rhw-surface-radius);background:var(--surface-input);font:13px/1.5 var(--font-main); }
 html.rhw-focus-pass.rhw-workbench .comms-context-tools { padding:0 16px 16px;gap:8px; }
 html.rhw-focus-pass.rhw-workbench .comms-editor-toolbar { padding:8px;background:var(--surface-raised);border-color:var(--line);gap:6px; }
 html.rhw-focus-pass.rhw-workbench .comms-editor-toolbar button { background:var(--rhw-control-fill);border-color:var(--line);font:500 13px/1.4 var(--font-main) !important; }
@@ -5150,7 +5164,7 @@ html.rhw-focus-pass.rhw-workbench .comms-workflow-status { grid-template-columns
 html.rhw-focus-pass.rhw-workbench .comms-workflow-score { grid-column:1/-1;display:flex;flex-direction:row;align-items:center;justify-content:space-between;gap:12px;min-height:0;padding:0 0 10px;border-bottom:1px solid var(--line);background:none; }
 html.rhw-focus-pass.rhw-workbench .comms-workflow-score small { font:12px/1.5 var(--font-main);letter-spacing:0; }
 html.rhw-focus-pass.rhw-workbench .comms-workflow-score strong { margin:0;font:18px/1.5 var(--font-tech);letter-spacing:0; }
-html.rhw-focus-pass.rhw-workbench .comms-workflow-status>span { min-height:32px;padding:4px 0;background:none;font:11px/1.4 var(--font-main);letter-spacing:0; }
+html.rhw-focus-pass.rhw-workbench .comms-workflow-status>span { min-height:32px;padding:6px 8px;border:1px solid var(--line);border-radius:4px;background:var(--panel);font:12px/1.4 var(--font-main);letter-spacing:0; }
 html.rhw-focus-pass.rhw-workbench :is(.comms-actions,.comms-draft-actions,.sender-registry-actions) button.danger { color:var(--danger); }
 @media(max-width:760px){
  html.rhw-focus-pass.rhw-workbench #shipyardControl .shipyard-divisions button { flex-direction:column;justify-content:center;gap:4px;min-height:64px;padding:8px 4px; }
@@ -5713,9 +5727,9 @@ html.rhw-focus-pass.rhw-workbench #shipyardControl .shipyard-control-title { dis
 html.rhw-focus-pass.rhw-workbench #shipyardControl .shipyard-control-head:not(:has([data-freshness-badge]:not([hidden]))) { display:none; }
 html.rhw-focus-pass.rhw-workbench #shipyardControl .shipyard-control-subline { margin:0;font:12px/1.5 var(--font-main);letter-spacing:.03em; }
 html.rhw-focus-pass.rhw-workbench .operations-frame { container: operations / inline-size; }
-html.rhw-focus-pass.rhw-workbench .operations-layout-simple { display:grid;grid-template-columns:minmax(0,1fr);gap:20px; }
+html.rhw-focus-pass.rhw-workbench .operations-layout-simple { display:grid;grid-template-columns:minmax(0,1fr);gap:var(--rhw-space-panel); }
 html.rhw-focus-pass.rhw-workbench :is(.ops-setup-panel,.ops-cost-panel,.ops-quote-panel) { grid-column:auto;grid-row:auto;position:static; }
-html.rhw-focus-pass.rhw-workbench .comms-grid { display:grid;grid-template-columns:minmax(0,1fr);gap:20px; }
+html.rhw-focus-pass.rhw-workbench .comms-grid { display:grid;grid-template-columns:minmax(0,1fr);gap:var(--rhw-space-panel); }
 @container operations (min-width:1000px) {
  html.rhw-focus-pass.rhw-workbench .operations-layout-simple { grid-template-columns:minmax(300px,.9fr) minmax(0,1.5fr); }
  html.rhw-focus-pass.rhw-workbench .ops-setup-panel { grid-column:1;grid-row:1/span 2;align-self:start; }
@@ -6008,35 +6022,39 @@ html.rhw-focus-pass .app-workspace .rhw-supply-icon:is(:hover,:focus-visible) { 
 
 
 /* SOURCE: css/production-cards.css */
-/* One comparison row per recipe; the shared item dialog owns expanded details. */
-#productionGrid { display:grid;grid-template-columns:minmax(0,1fr);gap:0;align-items:start; }
-.production-list-head,#productionGrid .production-row { display:grid;grid-template-columns:minmax(150px,1.7fr) minmax(66px,.65fr) minmax(84px,.85fr) minmax(110px,1.1fr) 150px;gap:14px;align-items:center; }
-.production-list-head { padding:12px 16px;color:var(--muted);font:11px/1.5 var(--font-main);border-bottom:1px solid var(--line); }
-.production-list-head>span:nth-child(2),.production-list-head>span:nth-child(3) { text-align:right; }
-#productionGrid .production-card { margin:0;padding:12px 16px;min-width:0;min-height:76px;border:0;border-bottom:1px solid var(--line);border-left:2px solid transparent;border-radius:0;background:transparent;box-shadow:none; }
+/* Production comparison: quantities have their own lanes, separate from inputs. */
+#productionPanel { container:production / inline-size; }
+#productionGrid { display:grid;grid-template-columns:minmax(0,1fr);gap:0;align-items:stretch; }
+.production-list-head,#productionGrid .production-row { display:grid;grid-template-columns:minmax(160px,1.6fr) minmax(132px,.6fr) minmax(150px,.8fr) minmax(160px,1.1fr) 160px;column-gap:24px;align-items:center; }
+.production-list-head { margin:0;padding:14px 20px;color:var(--muted);font:500 12px/1.5 var(--font-main);border-block:1px solid var(--line);background:var(--surface-raised); }
+.production-list-head>span:nth-child(2),.production-list-head>span:nth-child(3) { text-align:center; }
+.production-list-head>span:nth-child(4) { padding-left:20px;border-left:1px solid var(--line); }
+#productionGrid .production-card { margin:0;padding:16px 20px;min-width:0;min-height:96px;border:0;border-bottom:1px solid var(--line);border-left:3px solid transparent;border-radius:0;background:var(--panel);box-shadow:none; }
 #productionGrid .production-card::before,#productionGrid .production-card::after { display:none; }
 #productionGrid .production-card.low { border-left-color:var(--warn); }
 #productionGrid .production-card.critical { border-left-color:var(--danger); }
 #productionGrid .production-card:hover { background:var(--surface-raised); }
-#productionGrid .production-card-head { display:flex;flex-direction:column;gap:5px;min-width:0; }
-#productionGrid .production-title { order:0;min-height:0;color:var(--text);font:500 21px/1.2 var(--font-title);letter-spacing:.015em;overflow-wrap:anywhere; }
-.production-card-meta { order:1;display:flex;align-items:center;flex-wrap:wrap;gap:6px;min-height:24px;margin:0; }
+#productionGrid .production-card-head { display:flex;flex-direction:column;gap:7px;min-width:0; }
+#productionGrid .production-title { order:0;min-height:0;color:var(--text);font:600 16px/1.45 var(--font-main);letter-spacing:0;overflow-wrap:anywhere; }
+#productionGrid .production-card-meta { order:1;display:flex;align-items:center;flex-wrap:wrap;gap:6px;min-height:22px;margin:0; }
 #productionGrid .production-kicker { display:none; }
-#productionGrid .module-state { position:static;padding:0;border:0;background:transparent;box-shadow:none;font:11px/1.4 var(--font-main);letter-spacing:0; }
+#productionGrid .module-state { position:static;padding:0;border:0;background:transparent;box-shadow:none;font:12px/1.4 var(--font-main);letter-spacing:0; }
 #productionGrid .production-stats { display:contents; }
-#productionGrid .production-stat { order:initial;grid-column:auto;grid-row:auto;display:block;min-width:0;margin:0;padding:0;border:0;background:none;text-align:right; }
+#productionGrid .production-stat { order:initial;grid-column:auto;grid-row:auto;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-width:0;min-height:64px;margin:0;padding:8px;border:0;border-radius:4px;background:var(--surface-input);text-align:center; }
+#productionGrid .production-capacity { border:1px solid var(--rhw-control-border);background:var(--rhw-selected-fill); }
 #productionGrid .production-stat small { display:none; }
-#productionGrid .production-stat strong { display:block;font:22px/1.35 var(--font-tech);overflow-wrap:anywhere;text-shadow:none; }
+#productionGrid .production-stat strong { display:block;color:var(--text);font:24px/1.3 var(--font-tech);font-variant-numeric:tabular-nums;white-space:nowrap;text-shadow:none; }
 #productionGrid .production-capacity strong { color:var(--gold); }
-.production-limit { height:auto;min-width:0;margin:0;white-space:normal;overflow-wrap:anywhere;color:var(--muted);font:13px/1.5 var(--font-main); }
-.production-limit>span { display:none; }
-.production-limit>strong { font-weight:400; }
-.production-card-actions { display:grid;grid-template-columns:1fr 1fr;gap:6px; }
-#productionGrid :is(.production-card-toggle,.production-calc-button) { display:flex;align-items:center;justify-content:center;width:100%;min-height:36px;margin:0;padding:7px 6px;border:1px solid var(--line);border-radius:3px;background:var(--surface-input);color:var(--text);font:11px/1.4 var(--font-main);letter-spacing:0;box-shadow:none; }
+.production-unit { color:var(--muted);font:11px/1.4 var(--font-main); }
+#productionGrid .production-limit { height:auto;min-width:0;min-height:56px;margin:0;padding:12px 0 12px 20px;border-left:1px solid var(--line);white-space:normal;overflow-wrap:anywhere;color:var(--text);font:14px/1.5 var(--font-main); }
+#productionGrid .production-limit>span { display:none; }
+#productionGrid .production-limit>strong { font-weight:500; }
+.production-card-actions { display:grid;grid-template-columns:1fr 1fr;gap:8px; }
+#productionGrid :is(.production-card-toggle,.production-calc-button) { display:flex;align-items:center;justify-content:center;width:100%;min-height:44px;margin:0;padding:8px;border:1px solid var(--line);border-radius:var(--rhw-surface-radius);background:var(--surface-input);color:var(--text);font:500 12px/1.4 var(--font-main);letter-spacing:0;box-shadow:none; }
 #productionGrid :is(.production-card-toggle,.production-calc-button):hover { border-color:var(--gold);color:var(--gold);background:var(--rhw-control-hover); }
 .production-materials[hidden] { display:none !important; }
 .production-variant { flex-shrink:0;margin:0; }
-#productionGrid .production-variant select { width:96px;min-height:28px;border:1px solid var(--line);border-radius:3px;background:var(--surface-input);color:var(--text);padding:3px 6px;font:11px/1.5 var(--font-main); }
+#productionGrid .production-variant select { width:96px;min-height:44px;border:1px solid var(--line);border-radius:4px;background:var(--surface-input);color:var(--text);padding:6px;font:12px/1.5 var(--font-main); }
 .production-batch-time { display:flex;flex-wrap:wrap;gap:4px 12px;font:13px/1.5 var(--font-main); }
 .production-cycle-time { color:var(--muted); }
 .production-runtime { display:block;margin:10px 0;color:var(--muted);font:12px/1.5 var(--font-main); }
@@ -6044,24 +6062,21 @@ html.rhw-focus-pass .app-workspace .rhw-supply-icon:is(:hover,:focus-visible) { 
 .production-coverage-summary>span { color:var(--gold);font-size:12px; }
 .production-coverage-summary>strong { font-weight:500; }
 .production-coverage-summary>small { color:var(--muted);font-size:12px; }
-.production-unavailable>strong,.production-unavailable>p { margin:0;color:var(--muted);font:13px/1.5 var(--font-main); }
-.production-unavailable { grid-column:1/-1; }
-@media(max-width:1400px) and (min-width:1101px) {
- .production-list-head,#productionGrid .production-row { grid-template-columns:minmax(145px,1.7fr) minmax(60px,.65fr) minmax(80px,.8fr) minmax(95px,1fr) 130px;gap:10px; }
-}
-@media(max-width:760px) {
+#productionGrid .production-unavailable { display:block;grid-column:1/-1;padding:18px; }
+.production-unavailable>strong,.production-unavailable>p { margin:8px 0;color:var(--muted);font:13px/1.5 var(--font-main); }
+@container production (max-width:1040px) {
  .production-list-head { display:none; }
- #productionGrid .production-row { grid-template-columns:repeat(2,minmax(0,1fr));gap:5px 12px;padding:12px; }
- #productionGrid .production-card-head { grid-column:1/-1; }
- #productionGrid .production-title { font-size:20px; }
- #productionGrid .production-card-meta { min-height:22px; }
- #productionGrid .production-stat { padding:0;text-align:left; }
- #productionGrid .production-stat small { display:block;font:11px/1.5 var(--font-main);margin-bottom:3px; }
- #productionGrid .production-stat strong { font-size:24px; }
- #productionGrid .production-limit { grid-column:1/-1;display:flex;gap:8px;font-size:12px; }
- #productionGrid .production-limit>span { display:block;flex-shrink:0;color:var(--muted); }
+ #productionGrid { grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;padding:12px; }
+ #productionGrid .production-row { grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;padding:14px;border:1px solid var(--line);border-left:3px solid transparent;border-radius:var(--rhw-surface-radius); }
+ #productionGrid .production-card-head { grid-column:1/-1;gap:4px; }
+ #productionGrid .production-stat small { display:block;min-height:0;margin:0;color:var(--muted);font:12px/1.5 var(--font-main); }
+ #productionGrid .production-stat { min-height:80px;gap:2px;padding:6px; }
+ #productionGrid .production-limit { grid-column:1/-1;display:grid;gap:3px;min-height:0;padding:8px 0 0;border-left:0;border-top:1px solid var(--line); }
+ #productionGrid .production-limit>span { display:block;color:var(--muted);font:12px/1.5 var(--font-main); }
  #productionGrid .production-card-actions { grid-column:1/-1; }
- #productionGrid .production-variant select,#productionGrid :is(.production-card-toggle,.production-calc-button) { min-height:44px;font-size:12px; }
+}
+@container production (max-width:600px) {
+ #productionGrid { grid-template-columns:minmax(0,1fr); }
 }
 
 
@@ -6156,10 +6171,6 @@ html.rhw-focus-pass.rhw-workbench .rhw-item-detail::backdrop { background:#0007;
 .rhw-feedstock-conversion>button { width:100%;margin:4px 0 0; }
 .detail-variant { display:grid;gap:6px;margin:0 0 16px;font:12px/1.5 var(--font-main);color:var(--muted); }
 .detail-variant>select { min-height:44px;padding:8px;background:var(--surface-input);color:var(--text);border:1px solid var(--line);font:14px/1.5 var(--font-main); }
-@media(min-width:1101px) and (max-width:1279px) {
- .summary-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
- .inventory-column-market { grid-column:1/-1;display:grid;grid-template-columns:repeat(2,minmax(0,1fr)); }
-}
 @media(max-width:760px) {
  html.rhw-focus-pass.rhw-workbench .rhw-item-detail { inset:auto 0 0;margin:0;width:100%;max-height:88dvh;border-radius:8px 8px 0 0; }
  #rhwItemDetailBody { padding:16px; }
@@ -6175,9 +6186,9 @@ html.rhw-focus-pass.rhw-workbench .rhw-item-detail::backdrop { background:#0007;
 #rhwItemDetails .recipe-list::before,#rhwItemDetails .recipe-list::after { display:none; }
 
 /* The first screen answers supplies, next steps and material coverage. */
-html.rhw-focus-pass.rhw-workbench .command-briefing { display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px;margin-bottom:16px;align-items:start; }
-html.rhw-focus-pass.rhw-workbench #commandBriefing .maintenance-panel { grid-column:1;grid-row:1;margin:0;min-width:0; }
-html.rhw-focus-pass.rhw-workbench #commandBriefing .maintenance-panel .alert-title { min-height:44px;padding:10px 14px;font:500 23px/1.2 var(--font-title); }
+html.rhw-focus-pass.rhw-workbench .command-briefing { display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:16px;margin-bottom:16px;align-items:stretch; }
+html.rhw-focus-pass.rhw-workbench #commandBriefing .maintenance-panel { grid-column:1;grid-row:1;margin:0;min-width:0;align-self:stretch; }
+html.rhw-focus-pass.rhw-workbench #commandBriefing .maintenance-panel .alert-title { min-height:52px;padding:12px 16px;font:500 var(--rhw-section-size)/1.3 var(--font-title); }
 html.rhw-focus-pass.rhw-workbench #commandBriefing .maintenance-panel .count-badge { display:none; }
 html.rhw-focus-pass.rhw-workbench #commandBriefing #maintenanceList { display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0;padding:0 12px;list-style:none; }
 html.rhw-focus-pass.rhw-workbench #commandBriefing #maintenanceList>li.overview-stock-row { display:grid;grid-template-columns:minmax(0,1fr);align-content:start;gap:5px;margin:0;padding:10px 8px 12px;border:0;border-right:1px solid var(--line);background:transparent; }
@@ -6185,17 +6196,17 @@ html.rhw-focus-pass.rhw-workbench #commandBriefing #maintenanceList>li:last-chil
 #commandBriefing .maintenance-panel .overview-item-copy { grid-column:1;grid-row:1; }
 html.rhw-focus-pass #commandBriefing .maintenance-panel .inventory-production-link { font:500 14px/1.35 var(--font-main);min-height:38px; }
 html.rhw-focus-pass #commandBriefing .maintenance-panel .overview-row-meta { display:contents; }
-html.rhw-focus-pass #commandBriefing .maintenance-panel .overview-stock-value { grid-column:1;grid-row:2;display:block;text-align:left;justify-self:start; }
+html.rhw-focus-pass #commandBriefing .maintenance-panel .overview-stock-value { grid-column:1;grid-row:2;display:block;margin:0;text-align:left;justify-self:start; }
 html.rhw-focus-pass #commandBriefing .maintenance-panel .overview-row-qty { font:25px/1.3 var(--font-tech); }
 html.rhw-focus-pass #commandBriefing .maintenance-panel .pill { grid-column:1;grid-row:3;justify-self:start;padding:2px 4px;font:11px/1.4 var(--font-main); }
 html.rhw-focus-pass #commandBriefing .maintenance-panel :is(.progress-wrap,.inventory-input-row) { display:none; }
 html.rhw-focus-pass #commandBriefing .maintenance-panel .overview-stock-detail { grid-column:1;grid-row:4;order:initial;text-transform:none;font:12px/1.4 var(--font-main); }
-.overview-next { grid-column:2;grid-row:1/span 2;min-width:0;border:1px solid var(--line);border-top:2px solid var(--gold);border-radius:3px;background:var(--panel); }
+.overview-next { grid-column:1/-1;grid-row:2;min-width:0;border:1px solid var(--line);border-top:2px solid var(--gold);border-radius:var(--rhw-surface-radius);background:var(--panel); }
 .overview-section-head { display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 14px;border-bottom:1px solid var(--line); }
-.overview-section-head h3 { margin:0;color:var(--gold);font:500 23px/1.2 var(--font-title); }
+.overview-section-head h3 { margin:0;color:var(--gold);font:500 var(--rhw-section-size)/1.3 var(--font-title); }
 .overview-section-head>span { color:var(--muted);font:12px/1.4 var(--font-main); }
-.overview-next-actions { padding:0 12px; }
-html.rhw-focus-pass.rhw-workbench .overview-next .command-priority-entry { grid-template-columns:minmax(0,1fr) auto;gap:8px;padding:4px 0; }
+.overview-next-actions { display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));padding:0 16px;gap:16px; }
+html.rhw-focus-pass.rhw-workbench .overview-next .command-priority-entry { grid-template-columns:minmax(0,1fr);align-content:start;gap:6px;padding:12px 0;border-bottom:0; }
 html.rhw-focus-pass.rhw-workbench .overview-next .command-priority-item { display:flex;flex-direction:column;align-items:flex-start;gap:3px;min-height:60px;width:100%;padding:8px 2px;border:0;background:transparent;box-shadow:none;text-align:left; }
 .overview-next .command-priority-item>span { min-width:0; }
 .overview-next .command-priority-item .priority-state { display:block;font:11px/1.4 var(--font-main);letter-spacing:0; }
@@ -6213,11 +6224,11 @@ html.rhw-focus-pass.rhw-workbench #overviewMoreTasks[hidden] { display:none; }
 .overview-clear strong { color:var(--good);font-weight:500; }
 .overview-incomplete strong { color:var(--muted); }
 .overview-clear span { color:var(--muted); }
-.overview-operations { grid-column:1;grid-row:2;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px; }
-html.rhw-focus-pass.rhw-workbench .overview-operation { display:flex;flex-direction:column;align-items:stretch;gap:6px;padding:12px 14px;min-height:112px;min-width:0;border:1px solid var(--line);border-radius:3px;background:var(--panel);text-align:left;letter-spacing:0; }
+.overview-operations { grid-column:2;grid-row:1;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px; }
+html.rhw-focus-pass.rhw-workbench .overview-operation { display:flex;flex-direction:column;align-items:stretch;gap:6px;padding:12px 14px;min-height:152px;min-width:0;justify-content:center;border:1px solid var(--line);border-radius:var(--rhw-surface-radius);background:var(--panel);text-align:left;letter-spacing:0; }
 .overview-operation>span { display:flex;justify-content:space-between;gap:6px;color:var(--gold);font:13px/1.4 var(--font-main); }
 .overview-operation>span>b { font-weight:400; }
-.overview-operation>strong { color:var(--text);font:500 23px/1.2 var(--font-title); }
+.overview-operation>strong { color:var(--text);font:500 var(--rhw-section-size)/1.3 var(--font-title); }
 .overview-operation>small { color:var(--muted);font:12px/1.4 var(--font-main); }
 .overview-operation:is(:hover,:focus-visible) { border-color:var(--gold); }
 html.rhw-focus-pass.rhw-workbench #overviewControlsHost #commandGlobalAlerts { display:none; }
@@ -6230,8 +6241,10 @@ html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel :is(.export-panel,.reser
 @media(max-width:760px) {
  html.rhw-focus-pass.rhw-workbench .command-briefing { grid-template-columns:minmax(0,1fr);gap:12px; }
  html.rhw-focus-pass.rhw-workbench #commandBriefing .maintenance-panel { grid-column:1;grid-row:1; }
- .overview-next { grid-column:1;grid-row:2; }
- .overview-operations { grid-column:1;grid-row:3; }
+ .overview-next { grid-column:1;grid-row:3; }
+ .overview-next-actions { grid-template-columns:minmax(0,1fr);gap:0; }
+ html.rhw-focus-pass.rhw-workbench .overview-next .command-priority-entry { grid-template-columns:minmax(0,1fr) auto;border-bottom:1px solid var(--line); }
+ .overview-operations { grid-column:1;grid-row:2; }
  html.rhw-focus-pass #commandBriefing .maintenance-panel .inventory-production-link { min-height:44px; }
  html.rhw-focus-pass #commandBriefing .maintenance-panel .overview-row-qty { font-size:23px; }
  html.rhw-focus-pass.rhw-workbench #commandBriefing #maintenanceList { padding-inline:6px; }
@@ -6240,4 +6253,55 @@ html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel :is(.export-panel,.reser
  html.rhw-focus-pass.rhw-workbench #overviewControlsHost :is(.inventory-view-nav,.command-finder) { grid-column:1/-1; }
  html.rhw-focus-pass.rhw-workbench .overview-operation { padding:12px; }
 }
+
+/* Inventory sections follow one top-to-bottom order, without masonry gaps. */
+html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel .summary-grid { display:grid;grid-template-columns:minmax(0,1fr);gap:16px;width:100%;align-items:stretch; }
+html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel .summary-grid>.alert-card { grid-column:1;width:100%;min-width:0;margin:0;align-self:stretch; }
+html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel :is(#reserveList,#exportList) { display:grid;grid-template-columns:repeat(4,minmax(0,1fr));align-items:stretch;gap:0;padding:0;list-style:none; }
+html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel #exportList { grid-template-columns:repeat(3,minmax(0,1fr)); }
+html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel :is(#reserveList,#exportList)>li.overview-stock-row { display:flex;flex-direction:column;align-items:stretch;gap:8px;padding:16px;border:0;border-right:1px solid var(--line);min-width:0; }
+html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel :is(#reserveList,#exportList)>li:last-child { border-right:0; }
+html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel :is(#reserveList,#exportList) .overview-item-copy { min-height:44px; }
+html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel :is(#reserveList,#exportList) .inventory-production-link { min-height:44px;font:600 15px/1.45 var(--font-main); }
+html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel :is(#reserveList,#exportList) .overview-row-meta { display:flex;flex-direction:column;align-items:flex-start;gap:5px;order:0; }
+html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel :is(#reserveList,#exportList) .overview-stock-value { order:0;display:block;margin:0;text-align:left;align-self:flex-start; }
+html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel :is(#reserveList,#exportList) .overview-stock-detail { order:1;white-space:normal;font:12px/1.5 var(--font-main); }
+html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel :is(#reserveList,#exportList) .pill { align-self:flex-start; }
+html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel #reserveList .inventory-pool-parts { font:12px/1.5 var(--font-main); }
+html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel #reserveList .inventory-input-row { display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-rows:auto auto;gap:2px 8px;margin-top:auto;padding-top:12px;border-top:1px solid var(--line); }
+#reserveList .inventory-input-row>span { display:none; }
+html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel #reserveList .inventory-input-row>button { grid-column:1;grid-row:1/span 2;min-height:44px; }
+#reserveList .inventory-input-row>strong { grid-column:2;grid-row:1; }
+#reserveList .inventory-input-row>small { grid-column:2;grid-row:2; }
+html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel .waste-panel { display:grid;grid-template-columns:200px minmax(0,1fr);align-items:stretch;border-top:1px solid var(--line); }
+html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel .waste-panel .alert-title { border:0;border-right:1px solid var(--line); }
+html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel #byproductList { display:grid;padding:12px 16px;list-style:none; }
+html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel #byproductList>li.overview-stock-row { display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 20px;border:0;padding:0; }
+html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel #byproductList .overview-row-meta { grid-column:1/-1;display:flex;align-items:center;justify-content:space-between; }
+html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel #byproductList .progress-wrap { display:none; }
+html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel #shipStockList { display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0;padding:0 16px; }
+html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel .inventory-ship-row { padding:8px 12px;border-bottom:1px solid var(--line); }
+html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel .inventory-other-ships { grid-column:1/-1;padding:4px 12px; }
+html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel .overview-stock-row .progress-wrap { height:4px;margin-top:4px;box-shadow:none; }
+html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel .overview-stock-row .progress-fill { box-shadow:none;background-image:none; }
+html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel .overview-stock-row .progress-wrap::after { display:none; }
+@media(max-width:1100px) {
+ html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel #reserveList { grid-template-columns:repeat(2,minmax(0,1fr)); }
+ html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel #reserveList>li.overview-stock-row { border-bottom:1px solid var(--line); }
+ html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel #reserveList>li:nth-child(2n) { border-right:0; }
+}
+@media(max-width:760px) {
+ html.rhw-focus-pass.rhw-workbench .overview-operation { min-height:120px; }
+ html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel :is(#reserveList,#exportList) { grid-template-columns:minmax(0,1fr); }
+ html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel :is(#reserveList,#exportList)>li.overview-stock-row { border-right:0;border-bottom:1px solid var(--line); }
+ html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel :is(#reserveList,#exportList) .overview-item-copy { min-height:0; }
+ html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel .waste-panel { grid-template-columns:minmax(0,1fr); }
+ html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel .waste-panel .alert-title { border-right:0;border-bottom:1px solid var(--line); }
+ html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel #shipStockList { grid-template-columns:minmax(0,1fr); }
+}
+
+/* Exact stocks and concise status labels carry the overview; bars stay in details. */
+html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel .overview-stock-row>.progress-wrap { display:none; }
+html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel .overview-row-qty { color:var(--text);text-shadow:none; }
+html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel .overview-next .command-priority-item small { text-transform:none; }
 

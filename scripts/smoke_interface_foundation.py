@@ -21,7 +21,10 @@ STOCK = {'Basic Alloy': 19129, 'Consumer Goods': 24793, 'Food Rations': 22451,
          'Multi-Mode Focusing Chamber': 2000, 'Reactor Systems': 500,
          'Superstructure Systems': 110, 'Avionics Systems': 420, 'Interior Systems': 300,
          'Propulsion Systems': 350, 'Exotic Systems': 250,
-         'Crew': 2400, 'Archon Design Schematics': 1}
+         'Crew': 2400, 'Archon Design Schematics': 1, 'MOX': 5888, 'Toxic Waste': 21065,
+         'Military Salvage': 7300, 'Hull Panels': 25000, 'Energy Field Equipment': 20000,
+         'Industrial Materials': 20000, 'Uranium': 0, 'Super Alloy': 5000,
+         'Hydrocarbons': 20000, 'Titanium': 5000, 'Ablative Armor Plating': 20000}
 DATA = [{'name': 'Resolution Heavy Works', 'system_name': 'New London', 'money': 46385683,
          'cargospace': 63777, 'health': 24000000,
          'shop_items': [{'name': k, 'quantity': v, 'sell_price': 100, 'buy_price': 80} for k, v in STOCK.items()]},
@@ -165,8 +168,12 @@ def main():
                     inventoryStyled:[...document.querySelectorAll('#inventoryStatusPanel .alert-list')].every(e=>getComputedStyle(e).listStyleType==='none')&&[...document.querySelectorAll('#inventoryStatusPanel .alert-title')].every(e=>getComputedStyle(e).display==='flex'),
                     inputs:[...document.querySelectorAll('#opsMaterialPanel [data-material-price]')].filter(visible).map(e=>e.getBoundingClientRect().width)};
                 })()""")
-                if width in (390, 1366) and route in ('command/inventory', 'command/shipyard', 'command/logistics', 'operations/calculator', 'pricecheck/routes', 'comms/forum', 'comms/drafts', 'comms/senders'):
+                if width in (390, 1366, 1920) and route in ('command/inventory', 'command/production', 'command/shipyard', 'command/logistics', 'operations/calculator', 'pricecheck/routes', 'comms/forum', 'comms/drafts', 'comms/senders'):
                     capture(cdp, f'{width}-{workspace}-{node}')
+                    if route == 'command/inventory':
+                        capture_card(cdp, '.reserve-panel', f'{width}-inventory-stocks')
+                    if route == 'command/production':
+                        capture_card(cdp, '#productionPanel', f'{width}-production-table')
                     if route == 'command/shipyard':
                         capture_card(cdp, '#shipyardControl', f'{width}-shipyard-detail')
                     if route == 'command/logistics':
@@ -190,6 +197,18 @@ def main():
                         assert result['firstInventoryTop'] <= 460, (width, result)
                 if width >= 1100 and workspace == 'operations':
                     assert result['inputs'] and all(0 < n <= 145 for n in result['inputs']), result
+                if route == 'command/production':
+                    lanes = base.ev(cdp, """(()=>{
+                      const cards=[...productionGrid.querySelectorAll('.production-row')];
+                      return cards.map(card=>{const capacity=card.querySelector('.production-capacity'),limit=card.querySelector('.production-limit');
+                        const a=capacity.getBoundingClientRect(),b=limit.getBoundingClientRect(),s=getComputedStyle(limit);
+                        return {capacityLabel:capacity.querySelector('small').textContent.trim(),units:capacity.querySelector('.production-unit')?.textContent,
+                          valuesFit:[...card.querySelectorAll('.production-stat strong')].every(n=>n.scrollWidth<=n.clientWidth+1),
+                          gap:b.left-a.right,separateRow:b.top>=a.bottom-1,divider:parseFloat(s.borderLeftWidth),
+                          overflow:card.scrollWidth-card.clientWidth};});
+                    })()""")
+                    assert lanes and all(x['capacityLabel']=='Can produce' and x['units']=='additional units' and x['overflow']<=2 and x['valuesFit'] for x in lanes), (width, lanes)
+                    assert all(x['separateRow'] or (x['gap']>=23 and x['divider']>=1) for x in lanes), ('Quantity and limiting material must be visibly separate',width,lanes)
                 if width <= 760 and workspace == 'operations':
                     assert result['priceLabelSizes'] and min(result['priceLabelSizes']) >= 11, result
                 if route == 'command/shipyard':
@@ -251,7 +270,7 @@ def main():
         # including on hover and in Eco mode.
         original_eco = base.ev(cdp, "document.documentElement.classList.contains('eco')")
         row_header_checks = []
-        for width in (390, 1366):
+        for width in (390, 1366, 1920):
             cdp.call('Emulation.setDeviceMetricsOverride', {'width': width, 'height': 844, 'deviceScaleFactor': 1, 'mobile': width <= 760})
             for eco in (False, True):
                 hover = base.ev(cdp, """(()=>{
@@ -334,6 +353,18 @@ def main():
         })()""")
         assert retired == {'civilians':5,'crew':200,'noLinks':True,'noPlanner':True,'fits':True}, retired
 
+        shared_design = base.ev(cdp, """(()=>{
+          RHWV4.presentation.applySurfaces();
+          const stock=document.querySelector('.maintenance-panel .alert-title>span:first-child');
+          const forum=document.querySelector('#commsComposerPanel .comms-panel-head strong');
+          const style=n=>{const s=getComputedStyle(n);return {family:s.fontFamily,size:s.fontSize,weight:s.fontWeight};};
+          const sections=[...document.querySelectorAll('#inventoryStatusPanel .summary-grid>.alert-card')];
+          return {stock:style(stock),forum:style(forum),sections:sections.map(n=>n.querySelector('ul')?.id),
+            surfaces:[stock.closest('.alert-card'),forum.closest('.comms-panel')].every(n=>n.classList.contains('rhw-surface'))};
+        })()""")
+        assert shared_design['stock']==shared_design['forum'] and shared_design['surfaces'], ('Forum and Overview must use the same section typography',shared_design)
+        assert shared_design['sections']==['reserveList','byproductList','exportList','shipStockList'], shared_design
+
         # Production uses current stock only; manual planning is fully retired.
         independent = base.ev(cdp, """(()=>{
           const app=RHWV4, original=items;
@@ -372,6 +403,16 @@ def main():
           return {exact,basic,isolated};
         })()""")
         assert all(mox_and_failure.values()), mox_and_failure
+        # Wide quantities must stay on one line in both labelled cards and the
+        # desktop comparison. Do not let a column silently split 1.234.567.
+        base.ev(cdp, """(()=>{
+          for(const recipe of RHWV4.production.recipes()) {
+            const item=findCommodity(recipe.product);
+            if(item)item.quantity=1234567;
+            else items.push({name:recipe.product,quantity:1234567});
+          }
+          rebuildItemCaches();renderProductionModules();return true;
+        })()""")
         for width in [1366,1024,390,360]:
             cdp.call('Emulation.setDeviceMetricsOverride', {'width':width,'height':1100,'deviceScaleFactor':1,'mobile':width<760})
             base.ev(cdp, 'renderProductionModules()')
@@ -380,12 +421,14 @@ def main():
               const cards=[...productionGrid.querySelectorAll('.production-card')];
               const heights=cards.map(c=>c.getBoundingClientRect().height);
               return {columns:getComputedStyle(productionGrid).gridTemplateColumns.split(' ').length,
+                panelWidth:productionPanel.clientWidth,
                 height:Math.max(...heights),even:Math.max(...heights)-Math.min(...heights)<40,
+                valuesFit:cards.every(c=>[...c.querySelectorAll('.production-stat strong')].every(n=>n.scrollWidth<=n.clientWidth+1)),
                 actions:cards.every(c=>c.querySelectorAll('.production-card-actions>button').length===2),
                 order:cards.map(c=>c.querySelector('.production-title').textContent)};
             })()""")
-            assert overview['columns'] == 1, (width, overview)
-            assert overview['height']<320 and overview['even'] and overview['actions'], (width, overview)
+            assert overview['columns'] == (2 if 600 < overview['panelWidth'] <= 1040 else 1), (width, overview)
+            assert overview['height']<320 and overview['even'] and overview['actions'] and overview['valuesFit'], (width, overview)
             assert overview['order']==['Multi-Mode Focusing Chamber','Reactor Systems','Superstructure Systems','Basic Alloy','Gold','Niobium','Prototype Components','MOX'], overview
             disclosure = base.ev(cdp, """(()=>{
               const card=productionGrid.querySelector('.production-card'),toggle=card.querySelector('.production-card-toggle');

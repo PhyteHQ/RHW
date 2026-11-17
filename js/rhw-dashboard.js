@@ -198,8 +198,8 @@ const DASHBOARD_CONFIG = Object.freeze({
       Object.freeze({ key: 'starfliers-explorer', division: 'civilian', label: 'Starfliers Explorer', plural: 'Starfliers Explorers',
         name: 'Starfliers Compact Explorer', subtitle: 'Compact Explorer', recipeId: 'ship_assembly_starfliers_explorer',
         productId: 'zoner_exploration_fr_package', apiCode: 'zoner_exploration_fr', matches: ['starfliers compact explorer'], sellPrice: null }),
-      Object.freeze({ key: 'civilian-cruiser', division: 'civilian', label: 'Escort Cruiser', plural: 'Escort Cruisers',
-        name: 'Civilian Escort Cruiser', subtitle: 'Civilian Cruiser', recipeId: 'ship_assembly_cv_cruiser',
+      Object.freeze({ key: 'civilian-cruiser', division: 'civilian', label: 'Civilian Cruiser', plural: 'Civilian Cruisers',
+        name: 'Civilian Cruiser', subtitle: 'Civilian Cruiser', recipeId: 'ship_assembly_cv_cruiser',
         productId: 'cv_cruiser_package', apiCode: 'cv_cruiser',
         matches: ['civilian cruiser', 'civilian escort cruiser'], sellPrice: null }),
       Object.freeze({ key: 'halberd', division: 'civilian', label: 'Halberd', plural: 'Halberds',
@@ -979,8 +979,8 @@ function readinessText(state, role) {
     return 'EVIDENCE SECURED';
   }
   if (role === 'export') {
-    if (state === 'critical') return 'EXPORT RESERVE CRITICAL';
-    if (state === 'low') return 'LOW EXPORT RESERVE';
+    if (state === 'critical') return 'Restock recommended';
+    if (state === 'low') return 'Export reserve low';
     return 'EXPORT READY';
   }
   if (role === 'maintenance') {
@@ -1205,6 +1205,7 @@ function statusLabel(state, role) {
   if (state === 'waiting') return 'UNKNOWN';
   if (role === 'reserve') return state === 'critical' ? 'NEEDED' : state === 'low' ? 'LOW' : 'INTERNAL USE';
   if (role === 'byproduct') return state === 'critical' ? 'INPUT NEEDED' : state === 'low' ? 'LOW' : 'MOX FEEDSTOCK';
+  if (role === 'export') return state === 'ok' ? 'IN STOCK' : 'LOW STOCK';
   if (role === 'confiscated') return state === 'critical' ? 'OVERFLOW' : (state === 'low' ? 'WARN' : 'STABLE');
   return state === 'critical' ? 'CRITICAL' : (state === 'low' ? 'LOW' : 'STABLE');
 }
@@ -1370,7 +1371,7 @@ function ensureProductionModuleTools() {
     const heading = document.createElement('div');
     heading.id = 'productionListHeading'; heading.className = 'production-list-head';
     heading.setAttribute('aria-hidden', 'true');
-    heading.innerHTML = '<span>PRODUCT / RECIPE</span><span>IN STOCK</span><span>MATERIAL FOR</span><span>LIMITING INPUT</span><span>ACTIONS</span>';
+    heading.innerHTML = '<span>Product</span><span>In stock</span><span>Can produce</span><span>Limiting material</span><span>Actions</span>';
     els.productionGrid.insertAdjacentElement('beforebegin', heading);
   }
   if (toolbar.dataset.bound !== 'true') {
@@ -1467,7 +1468,7 @@ function renderProductionModules() {
     const productKey = normalize(displayRecipeName(recipe.product));
     const collapsed = true;
     const materialId = `production-materials-${recipe.recipeId}`;
-    const inputStatus = { ok: 'INPUTS READY', low: 'INPUTS LOW', critical: 'INPUTS MISSING', waiting: 'INPUTS UNKNOWN' }[analysis.cardState];
+    const inputStatus = { ok: 'Materials available', low: 'Low materials', critical: 'Materials missing', waiting: 'Materials unknown' }[analysis.cardState];
 
     const role = DASHBOARD_CONFIG.roles.export.includes(keyFromName(module.product)) ? 'EXPORT'
       : DASHBOARD_CONFIG.roles.maintenance.includes(keyFromName(module.product)) ? 'FACILITY' : 'INTERNAL';
@@ -1482,10 +1483,10 @@ function renderProductionModules() {
                 <div class="production-title">${escapeHTML(displayRecipeName(recipe.product))}</div>
               </div>
               <div class="production-stats">
-                <div class="production-stat production-stock-primary" role="group" aria-label="In stock: ${number(analysis.productStock)}"><small>IN STOCK</small><strong>${number(analysis.productStock)}</strong></div>
-                <div class="production-stat production-capacity" role="group" aria-label="Material coverage: ${number(analysis.possibleOutput)}" title="Output covered by current materials; prerequisites and module activity are not checked"><small>MATERIAL COVERAGE</small><strong>${number(analysis.possibleOutput)}</strong></div>
+                <div class="production-stat production-stock-primary" role="group" aria-label="In stock: ${number(analysis.productStock)}"><small>In stock</small><strong>${number(analysis.productStock)}</strong></div>
+                <div class="production-stat production-capacity" role="group" aria-label="Can produce: ${number(analysis.possibleOutput)} additional units" title="Additional units covered by current materials; prerequisites and module activity are not checked"><small>Can produce</small><strong>${number(analysis.possibleOutput)}</strong><span class="production-unit">additional units</span></div>
               </div>
-              <div class="production-limit" title="${escapeHTML(analysis.bottleneck?.displayName || 'Input stock unknown')}"><span>LIMITED BY</span><strong>${escapeHTML(analysis.bottleneck?.displayName || 'Input stock unknown')}</strong></div>
+              <div class="production-limit" title="${escapeHTML(analysis.bottleneck?.displayName || 'Input stock unknown')}"><span>Limiting material</span><strong>${escapeHTML(analysis.bottleneck?.displayName || 'Input stock unknown')}</strong></div>
               <div class="production-card-actions"><button type="button" class="production-card-toggle" aria-label="${collapsed ? 'Show' : 'Hide'} details for ${escapeHTML(displayRecipeName(recipe.product))}" aria-controls="rhwItemDetails" aria-expanded="${!collapsed}"><span>${collapsed ? 'DETAILS' : 'CLOSE DETAILS'}</span></button></div>
               <div class="production-materials" id="${escapeHTML(materialId)}" hidden>
               <div class="footnote production-batch-time">${number(recipe.output)} / BATCH <span class="production-cycle-time">${cycle === null ? 'CYCLE TIME UNKNOWN' : `~${productionDuration(cycle)} / CYCLE`}</span></div>

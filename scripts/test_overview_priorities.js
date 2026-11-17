@@ -82,7 +82,7 @@ app.pobOverview.render();
 assert.match(nodes.get('overviewOperations').innerHTML, /Coverage unknown/, 'An unavailable configured recipe cannot disappear from the coverage total');
 production.push({ recipe: { product: 'MOX' }, possibleCycles: 3, cardState: 'low', nextCycleGap: 10, bottleneck: { name: 'Toxic Waste' } });
 app.pobOverview.render();
-assert.match(nodes.get('overviewOperations').innerHTML, /2 \/ 2 covered/);
+assert.match(nodes.get('overviewOperations').innerHTML, /2 \/ 2 supplied/);
 snapshot = { available: false, label: 'UNAVAILABLE' };
 app.pobOverview.render();
 assert.match(nodes.get('overviewOperations').innerHTML, /Ship stock unknown/);

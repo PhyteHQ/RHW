@@ -5,7 +5,7 @@
   if (!app || app.presentation) return;
   const pages = Object.freeze({
     'command/inventory': ['COMMAND', 'Overview', 'Your POB at a glance. Supplies, stock and next steps.'],
-    'command/production': ['COMMAND', 'Production', 'Compare independent material coverage and inspect the exact recipe.'],
+    'command/production': ['COMMAND', 'Production', 'Stock, additional output and the material that limits it.'],
     'command/shipyard': ['COMMAND', 'Shipyard', 'Choose a hull, check its requirements and source missing components.'],
     'command/logistics': ['COMMAND', 'Logistics', 'Find component and material offers across player bases.'],
     'operations/calculator': ['OPERATIONS', 'Calculator', 'Choose a recipe, enter material prices and review your quote.'],
@@ -15,9 +15,14 @@
     'comms/senders': ['COMMUNICATIONS', 'Senders', 'Manage the identities and signatures used in your transmissions.']
   });
   const nodeKeys = { command: 'commandNode', operations: 'operationsNode', pricecheck: 'pricecheckNode', comms: 'commsNode' };
+  function applySurfaces() {
+    document.querySelectorAll(':is(.panel,.ops-panel,.comms-panel,.alert-card,.overview-next,.overview-operation,.remote-card,.capital-shipyard-control,.market-card,.pricecheck-table-wrap,.v40-tool-panel):not(.rhw-surface)').forEach(node => node.classList.add('rhw-surface'));
+    document.querySelectorAll(':is(.panel-head,.ops-panel-head,.comms-panel-head,.alert-title,.overview-section-head,.remote-facility-head,.logistics-subhead):not(.rhw-surface-head)').forEach(node => node.classList.add('rhw-surface-head'));
+  }
   function sync() {
     const root = document.getElementById('rhwWorkspaceRoot');
     if (!root) return;
+    applySurfaces();
     const workspace = app.state.activeWorkspace;
     const route = `${workspace}/${app.state[nodeKeys[workspace]]}`;
     const page = pages[route];
@@ -37,7 +42,7 @@
       document.getElementById(id).textContent = page[index];
     });
   }
-  app.presentation = { sync };
+  app.presentation = { sync, applySurfaces };
   app.lifecycle.on('shell:ready', 'page-presentation', 90, sync);
   app.onRender('workspace', () => requestAnimationFrame(sync));
   app.onUiUpdate(sync);

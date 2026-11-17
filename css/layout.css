@@ -553,9 +553,9 @@ html.rhw-focus-pass.rhw-workbench #shipyardControl .shipyard-control-title { dis
 html.rhw-focus-pass.rhw-workbench #shipyardControl .shipyard-control-head:not(:has([data-freshness-badge]:not([hidden]))) { display:none; }
 html.rhw-focus-pass.rhw-workbench #shipyardControl .shipyard-control-subline { margin:0;font:12px/1.5 var(--font-main);letter-spacing:.03em; }
 html.rhw-focus-pass.rhw-workbench .operations-frame { container: operations / inline-size; }
-html.rhw-focus-pass.rhw-workbench .operations-layout-simple { display:grid;grid-template-columns:minmax(0,1fr);gap:20px; }
+html.rhw-focus-pass.rhw-workbench .operations-layout-simple { display:grid;grid-template-columns:minmax(0,1fr);gap:var(--rhw-space-panel); }
 html.rhw-focus-pass.rhw-workbench :is(.ops-setup-panel,.ops-cost-panel,.ops-quote-panel) { grid-column:auto;grid-row:auto;position:static; }
-html.rhw-focus-pass.rhw-workbench .comms-grid { display:grid;grid-template-columns:minmax(0,1fr);gap:20px; }
+html.rhw-focus-pass.rhw-workbench .comms-grid { display:grid;grid-template-columns:minmax(0,1fr);gap:var(--rhw-space-panel); }
 @container operations (min-width:1000px) {
  html.rhw-focus-pass.rhw-workbench .operations-layout-simple { grid-template-columns:minmax(300px,.9fr) minmax(0,1.5fr); }
  html.rhw-focus-pass.rhw-workbench .ops-setup-panel { grid-column:1;grid-row:1/span 2;align-self:start; }
