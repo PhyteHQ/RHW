@@ -234,7 +234,7 @@ def main() -> int:
                 })()""")
                 if geometry['overflow']>2 or geometry['scrollDeck']>2 or len(geometry['cards'])!=5 or not geometry['labelsFit'] or geometry['contentOverflow']:
                     layout_failures.append(f'Inventory overflow at {width}px: {geometry}')
-                if geometry['rows']!=['maintenanceList','byproductList','reserveList','exportList','shipStockList']:
+                if geometry['rows']!=['maintenanceList','reserveList','byproductList','exportList','shipStockList']:
                     layout_failures.append(f'Inventory reading order at {width}px: {geometry}')
                 cards=geometry['cards']
                 if width>=1201:
@@ -245,12 +245,10 @@ def main() -> int:
                     if header['height']>310 or geometry['unavailable']['header']['height']>310 or geometry['unavailable']['wrapped']:
                         layout_failures.append(f'Telemetry must fit the branded desktop masthead at {width}px: {geometry}')
                 if width>=1200:
-                    maintenance,waste,reserves,exports,ships=cards
-                    if max(c['top'] for c in [waste,reserves,exports])-min(c['top'] for c in [waste,reserves,exports])>2:
-                        layout_failures.append(f'Inventory column alignment at {width}px: {geometry}')
-                    for parent,child in [(exports,ships)]:
+                    maintenance,reserves,waste,exports,ships=cards
+                    for parent,child in [(reserves,waste),(waste,exports),(exports,ships)]:
                         if not 0<child['top']-parent['bottom']<=17 or abs(child['left']-parent['left'])>2 or abs(child['width']-parent['width'])>2:
-                            layout_failures.append(f'Inventory stacks must not wait for taller unrelated panels at {width}px: {geometry}')
+                            layout_failures.append(f'Inventory sections must have one aligned reading order at {width}px: {geometry}')
                     if cards[0]['top']>740 or geometry['quantity']<19 or geometry['kpi']<20:
                         layout_failures.append(f'Desktop HUD density at {width}px: {geometry}')
                 if width<760 and any(cards[i+1]['top']<cards[i]['bottom']-2 for i in range(4)):

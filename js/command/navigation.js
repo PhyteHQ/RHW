@@ -160,7 +160,7 @@
     const count = document.getElementById('v40PriorityCount');
     if (!list || !count) return;
     const actions = priorityActions();
-    const countText = `${actions.length} ACTIVE`;
+    const countText = `${actions.length} ${actions.length === 1 ? 'task' : 'tasks'}`;
     if (count.textContent !== countText) count.textContent = countText;
     const markup = actions.length
       ? actions.map(priorityMarkup).join('')

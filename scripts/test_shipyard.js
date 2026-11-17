@@ -103,6 +103,9 @@ ctx.__RHW_RECIPE_CATALOG__ = JSON.parse(zlib.gunzipSync(Buffer.from(ctx.__RHW_RE
   yard.selectHull('civilian-cruiser');
   const cruiser = yard.selectedHull(), cruiserNeeds = yard.requirements();
   assert.equal(yard.selectedDivision().key, 'civilian');
+  assert.equal(cruiser.label, cruiserNeeds.recipe.name, 'The hull uses the canonical catalog name throughout Overview and Shipyard');
+  assert.equal(cruiser.label, 'Civilian Cruiser');
+  assert.equal(cruiser.name, 'Civilian Cruiser');
   assert.equal(cruiserNeeds.recipe.restricted, false);
   assert.deepEqual(Array.from(cruiserNeeds.materials, row => [row.id, row.required]), [
     ['commodity_ship_part_avionics', 300], ['commodity_ship_part_interior', 300],

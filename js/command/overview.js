@@ -15,11 +15,11 @@
       briefing.id = 'commandBriefing';
       briefing.className = 'command-briefing';
       briefing.setAttribute('aria-label', 'POB at a glance');
-      briefing.innerHTML = `<section class="overview-next" aria-labelledby="overviewNextTitle">
+      briefing.innerHTML = `<div class="overview-operations" id="overviewOperations"></div><section class="overview-next" aria-labelledby="overviewNextTitle">
         <div class="overview-section-head"><h3 id="overviewNextTitle">Next steps</h3><span id="overviewTaskCount"></span></div>
         <div id="overviewNextActions" class="overview-next-actions"></div>
         <button type="button" id="overviewMoreTasks" aria-expanded="false" aria-controls="overviewNextActions" hidden></button>
-      </section><div class="overview-operations" id="overviewOperations"></div>`;
+      </section>`;
       status.prepend(briefing);
       const supplies = status.querySelector('.maintenance-panel');
       if (supplies) {
@@ -45,6 +45,13 @@
         });
       });
       app.workspaceUi.installAlertDeepLinks(document.getElementById('overviewNextActions'));
+    }
+    // Keep visual, reading and keyboard order identical at every screen width.
+    // Full-width sections replace independent columns of unrelated heights.
+    const stocks = status.querySelector('.summary-grid');
+    if (stocks && stocks.dataset.ordered !== 'true') {
+      const panels = ['reserve-panel', 'waste-panel', 'export-panel', 'ship-stock-panel'].map(name => stocks.querySelector(`.${name}`)).filter(Boolean);
+      if (panels.length === 4) { stocks.replaceChildren(...panels); stocks.dataset.ordered = 'true'; }
     }
     placeControls();
   }
@@ -72,9 +79,9 @@
     const complete = moduleCount > 0 && production.length === moduleCount && production.every(entry => entry.possibleCycles !== null);
     const blocked = production.filter(entry => entry.possibleCycles === 0);
     const first = blocked[0] || production.find(entry => entry.cardState === 'low');
-    const productionValue = !known || !complete ? 'Coverage unknown' : `${covered} / ${moduleCount} covered`;
+    const productionValue = !known || !complete ? 'Coverage unknown' : `${covered} / ${moduleCount} supplied`;
     const productionDetail = !known ? 'Waiting for stock data' : !complete ? 'Some recipes or inputs are unknown' : first
-      ? `${first.recipe.product} · ${first.bottleneck?.displayName || first.bottleneck?.name || 'input needed'}`
+      ? `${first.recipe.product}: ${first.bottleneck?.displayName || first.bottleneck?.name || 'input needed'}`
       : 'Next batches checked separately';
     const yard = known ? app.shipyard?.analyze() : null;
     const ships = known ? app.inventoryModel?.ships() || [] : [];

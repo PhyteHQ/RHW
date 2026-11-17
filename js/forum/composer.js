@@ -48,7 +48,7 @@
     return `<section class="comms-node-panel" data-comms-panel="forum">
       <div class="comms-grid">
         <section class="comms-panel composer-panel" id="commsComposerPanel">
-          <div class="comms-panel-head"><div><span>01</span><strong>WRITE TRANSMISSION</strong></div><small>AUTOSAVE ACTIVE</small></div>
+          <div class="comms-panel-head"><div><span>01</span><strong>Write transmission</strong></div><small>AUTOSAVE ACTIVE</small></div>
           <div class="comms-workflow-status" id="commsWorkflowStatus" aria-live="polite"></div>
           <div class="comms-context-tools" aria-label="Forum tools"><button type="button" data-forum-tool="drafts">OPEN DRAFTS</button><button type="button" data-forum-tool="senders">MANAGE SENDERS</button></div>
           <form id="commsForm" autocomplete="off">
@@ -97,14 +97,14 @@
         </section>
 
         <section class="comms-panel preview-panel">
-          <div class="comms-panel-head"><div><span>02</span><strong>LIVE FORUM PREVIEW</strong></div><small>APPROXIMATE RENDER</small></div>
+          <div class="comms-panel-head"><div><span>02</span><strong>Forum preview</strong></div><small>APPROXIMATE RENDER</small></div>
           <div class="forum-preview" id="forumLivePreview"></div>
           <div class="comms-surface-actions"><button type="button" data-comms-surface="write">← EDIT TRANSMISSION</button><button type="button" class="comms-primary" data-comms-surface="bbcode">REVIEW BB CODE →</button></div>
         </section>
       </div>
 
       <section class="comms-panel bbcode-panel">
-        <div class="comms-panel-head"><div><span>03</span><strong>GENERATED BB CODE</strong></div><small>FORUM READY</small></div>
+        <div class="comms-panel-head"><div><span>03</span><strong>Forum code</strong></div><small>FORUM READY</small></div>
         <textarea id="forumBbcodeOutput" readonly spellcheck="false" aria-label="Generated forum BB code"></textarea>
         <div class="bbcode-hint">THE PREVIEW REPRODUCES RHW STYLING, BUT THE FORUM REMAINS THE FINAL RENDERER FOR ITS CUSTOM BB CODE.</div>
         <div class="comms-surface-actions"><button type="button" data-comms-surface="preview">← BACK TO PREVIEW</button><button type="button" class="comms-primary" data-copy-forum-bbcode>COPY FORUM BB CODE</button></div>
@@ -115,7 +115,7 @@
   function draftsMarkup() {
     return `<section class="comms-node-panel" data-comms-panel="drafts" hidden>
       <section class="comms-panel drafts-panel">
-        <div class="comms-panel-head"><div><span>DR</span><strong>LOCAL DRAFT ARCHIVE</strong></div><small>LOCAL + CROSS-DEVICE</small></div>
+        <div class="comms-panel-head"><div><span>DR</span><strong>Saved drafts</strong></div><small>LOCAL + CROSS-DEVICE</small></div>
         <div class="comms-archive-summary"><div><small>NAMED DRAFTS</small><strong id="commsDraftCount">0</strong></div><div><small>CURRENT WORK</small><strong>IN COMPOSER</strong></div><div><small>LATEST NAMED SAVE</small><strong id="commsDraftLatest">—</strong></div></div>
         <section id="rhwTransferCenter" class="rhw-transfer-center" aria-labelledby="rhwTransferTitle">
           <div class="rhw-transfer-intro"><span>DEVICE TRANSFER</span><strong id="rhwTransferTitle">MOVE YOUR RHW WORK SAFELY</strong><p>CREATE ONE PRIVATE BACKUP FILE FOR ANOTHER PHONE OR BROWSER. RHW NEVER UPLOADS THIS FILE TO A SERVER.</p></div>
@@ -132,7 +132,7 @@
   function sendersMarkup() {
     return `<section class="comms-node-panel" data-comms-panel="senders" hidden>
       <section class="comms-panel v40-tool-panel">
-        <div class="comms-panel-head"><div><span>ID</span><strong>SENDER IDENTITY REGISTRY</strong></div><small>BUILT-IN + LOCAL PROFILES</small></div>
+        <div class="comms-panel-head"><div><span>ID</span><strong>Sender profiles</strong></div><small>BUILT-IN + LOCAL PROFILES</small></div>
         <div class="sender-registry-intro">SENDER PROFILES OWN NAME, ROLE, LOCATION AND DEFAULT CIPHER IDENTITY. THE FORUM COMPOSER USES THEM FOR SIGNATURES.</div>
         <div id="v40SenderRegistry" class="sender-registry"></div>
         <form id="v40SenderEditor" class="sender-editor" hidden>

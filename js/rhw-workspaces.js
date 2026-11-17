@@ -1277,7 +1277,7 @@ const RHW_APP_CONFIG = Object.freeze({
     const count = document.getElementById('v40PriorityCount');
     if (!list || !count) return;
     const actions = priorityActions();
-    const countText = `${actions.length} ACTIVE`;
+    const countText = `${actions.length} ${actions.length === 1 ? 'task' : 'tasks'}`;
     if (count.textContent !== countText) count.textContent = countText;
     const markup = actions.length
       ? actions.map(priorityMarkup).join('')
@@ -1523,7 +1523,7 @@ const RHW_APP_CONFIG = Object.freeze({
     return `<section class="comms-node-panel" data-comms-panel="forum">
       <div class="comms-grid">
         <section class="comms-panel composer-panel" id="commsComposerPanel">
-          <div class="comms-panel-head"><div><span>01</span><strong>WRITE TRANSMISSION</strong></div><small>AUTOSAVE ACTIVE</small></div>
+          <div class="comms-panel-head"><div><span>01</span><strong>Write transmission</strong></div><small>AUTOSAVE ACTIVE</small></div>
           <div class="comms-workflow-status" id="commsWorkflowStatus" aria-live="polite"></div>
           <div class="comms-context-tools" aria-label="Forum tools"><button type="button" data-forum-tool="drafts">OPEN DRAFTS</button><button type="button" data-forum-tool="senders">MANAGE SENDERS</button></div>
           <form id="commsForm" autocomplete="off">
@@ -1572,14 +1572,14 @@ const RHW_APP_CONFIG = Object.freeze({
         </section>
 
         <section class="comms-panel preview-panel">
-          <div class="comms-panel-head"><div><span>02</span><strong>LIVE FORUM PREVIEW</strong></div><small>APPROXIMATE RENDER</small></div>
+          <div class="comms-panel-head"><div><span>02</span><strong>Forum preview</strong></div><small>APPROXIMATE RENDER</small></div>
           <div class="forum-preview" id="forumLivePreview"></div>
           <div class="comms-surface-actions"><button type="button" data-comms-surface="write">← EDIT TRANSMISSION</button><button type="button" class="comms-primary" data-comms-surface="bbcode">REVIEW BB CODE →</button></div>
         </section>
       </div>
 
       <section class="comms-panel bbcode-panel">
-        <div class="comms-panel-head"><div><span>03</span><strong>GENERATED BB CODE</strong></div><small>FORUM READY</small></div>
+        <div class="comms-panel-head"><div><span>03</span><strong>Forum code</strong></div><small>FORUM READY</small></div>
         <textarea id="forumBbcodeOutput" readonly spellcheck="false" aria-label="Generated forum BB code"></textarea>
         <div class="bbcode-hint">THE PREVIEW REPRODUCES RHW STYLING, BUT THE FORUM REMAINS THE FINAL RENDERER FOR ITS CUSTOM BB CODE.</div>
         <div class="comms-surface-actions"><button type="button" data-comms-surface="preview">← BACK TO PREVIEW</button><button type="button" class="comms-primary" data-copy-forum-bbcode>COPY FORUM BB CODE</button></div>
@@ -1590,7 +1590,7 @@ const RHW_APP_CONFIG = Object.freeze({
   function draftsMarkup() {
     return `<section class="comms-node-panel" data-comms-panel="drafts" hidden>
       <section class="comms-panel drafts-panel">
-        <div class="comms-panel-head"><div><span>DR</span><strong>LOCAL DRAFT ARCHIVE</strong></div><small>LOCAL + CROSS-DEVICE</small></div>
+        <div class="comms-panel-head"><div><span>DR</span><strong>Saved drafts</strong></div><small>LOCAL + CROSS-DEVICE</small></div>
         <div class="comms-archive-summary"><div><small>NAMED DRAFTS</small><strong id="commsDraftCount">0</strong></div><div><small>CURRENT WORK</small><strong>IN COMPOSER</strong></div><div><small>LATEST NAMED SAVE</small><strong id="commsDraftLatest">—</strong></div></div>
         <section id="rhwTransferCenter" class="rhw-transfer-center" aria-labelledby="rhwTransferTitle">
           <div class="rhw-transfer-intro"><span>DEVICE TRANSFER</span><strong id="rhwTransferTitle">MOVE YOUR RHW WORK SAFELY</strong><p>CREATE ONE PRIVATE BACKUP FILE FOR ANOTHER PHONE OR BROWSER. RHW NEVER UPLOADS THIS FILE TO A SERVER.</p></div>
@@ -1607,7 +1607,7 @@ const RHW_APP_CONFIG = Object.freeze({
   function sendersMarkup() {
     return `<section class="comms-node-panel" data-comms-panel="senders" hidden>
       <section class="comms-panel v40-tool-panel">
-        <div class="comms-panel-head"><div><span>ID</span><strong>SENDER IDENTITY REGISTRY</strong></div><small>BUILT-IN + LOCAL PROFILES</small></div>
+        <div class="comms-panel-head"><div><span>ID</span><strong>Sender profiles</strong></div><small>BUILT-IN + LOCAL PROFILES</small></div>
         <div class="sender-registry-intro">SENDER PROFILES OWN NAME, ROLE, LOCATION AND DEFAULT CIPHER IDENTITY. THE FORUM COMPOSER USES THEM FOR SIGNATURES.</div>
         <div id="v40SenderRegistry" class="sender-registry"></div>
         <form id="v40SenderEditor" class="sender-editor" hidden>
@@ -6574,7 +6574,7 @@ globalThis.RHW_PRODUCTION_VOLUMES = Object.freeze({
       const head = panel.querySelector('.command-priority-head');
       if (head) head.innerHTML = `<button type="button" class="command-alert-toggle" id="commandAlertToggle" aria-expanded="false" aria-controls="v40PriorityList">
         <i class="command-alert-signal" aria-hidden="true"></i>
-        <span class="command-alert-copy"><strong>ATTENTION</strong><small>PRIORITY ACTIONS FROM CURRENT VERIFIED STATUS</small></span>
+        <span class="command-alert-copy"><strong>Next steps</strong><small>Tasks from current stock</small></span>
         <span class="command-alert-meta"><b id="v40PriorityCount">0 ACTIVE</b><i class="command-alert-chevron" aria-hidden="true">⌄</i></span>
       </button>`;
       host.insertAdjacentElement('beforebegin', panel);
@@ -7096,7 +7096,7 @@ globalThis.RHW_PRODUCTION_VOLUMES = Object.freeze({
   if (!app || app.presentation) return;
   const pages = Object.freeze({
     'command/inventory': ['COMMAND', 'Overview', 'Your POB at a glance. Supplies, stock and next steps.'],
-    'command/production': ['COMMAND', 'Production', 'Compare independent material coverage and inspect the exact recipe.'],
+    'command/production': ['COMMAND', 'Production', 'Stock, additional output and the material that limits it.'],
     'command/shipyard': ['COMMAND', 'Shipyard', 'Choose a hull, check its requirements and source missing components.'],
     'command/logistics': ['COMMAND', 'Logistics', 'Find component and material offers across player bases.'],
     'operations/calculator': ['OPERATIONS', 'Calculator', 'Choose a recipe, enter material prices and review your quote.'],
@@ -7106,9 +7106,14 @@ globalThis.RHW_PRODUCTION_VOLUMES = Object.freeze({
     'comms/senders': ['COMMUNICATIONS', 'Senders', 'Manage the identities and signatures used in your transmissions.']
   });
   const nodeKeys = { command: 'commandNode', operations: 'operationsNode', pricecheck: 'pricecheckNode', comms: 'commsNode' };
+  function applySurfaces() {
+    document.querySelectorAll(':is(.panel,.ops-panel,.comms-panel,.alert-card,.overview-next,.overview-operation,.remote-card,.capital-shipyard-control,.market-card,.pricecheck-table-wrap,.v40-tool-panel):not(.rhw-surface)').forEach(node => node.classList.add('rhw-surface'));
+    document.querySelectorAll(':is(.panel-head,.ops-panel-head,.comms-panel-head,.alert-title,.overview-section-head,.remote-facility-head,.logistics-subhead):not(.rhw-surface-head)').forEach(node => node.classList.add('rhw-surface-head'));
+  }
   function sync() {
     const root = document.getElementById('rhwWorkspaceRoot');
     if (!root) return;
+    applySurfaces();
     const workspace = app.state.activeWorkspace;
     const route = `${workspace}/${app.state[nodeKeys[workspace]]}`;
     const page = pages[route];
@@ -7128,7 +7133,7 @@ globalThis.RHW_PRODUCTION_VOLUMES = Object.freeze({
       document.getElementById(id).textContent = page[index];
     });
   }
-  app.presentation = { sync };
+  app.presentation = { sync, applySurfaces };
   app.lifecycle.on('shell:ready', 'page-presentation', 90, sync);
   app.onRender('workspace', () => requestAnimationFrame(sync));
   app.onUiUpdate(sync);
@@ -7570,11 +7575,11 @@ globalThis.RHW_PRODUCTION_VOLUMES = Object.freeze({
       briefing.id = 'commandBriefing';
       briefing.className = 'command-briefing';
       briefing.setAttribute('aria-label', 'POB at a glance');
-      briefing.innerHTML = `<section class="overview-next" aria-labelledby="overviewNextTitle">
+      briefing.innerHTML = `<div class="overview-operations" id="overviewOperations"></div><section class="overview-next" aria-labelledby="overviewNextTitle">
         <div class="overview-section-head"><h3 id="overviewNextTitle">Next steps</h3><span id="overviewTaskCount"></span></div>
         <div id="overviewNextActions" class="overview-next-actions"></div>
         <button type="button" id="overviewMoreTasks" aria-expanded="false" aria-controls="overviewNextActions" hidden></button>
-      </section><div class="overview-operations" id="overviewOperations"></div>`;
+      </section>`;
       status.prepend(briefing);
       const supplies = status.querySelector('.maintenance-panel');
       if (supplies) {
@@ -7600,6 +7605,13 @@ globalThis.RHW_PRODUCTION_VOLUMES = Object.freeze({
         });
       });
       app.workspaceUi.installAlertDeepLinks(document.getElementById('overviewNextActions'));
+    }
+    // Keep visual, reading and keyboard order identical at every screen width.
+    // Full-width sections replace independent columns of unrelated heights.
+    const stocks = status.querySelector('.summary-grid');
+    if (stocks && stocks.dataset.ordered !== 'true') {
+      const panels = ['reserve-panel', 'waste-panel', 'export-panel', 'ship-stock-panel'].map(name => stocks.querySelector(`.${name}`)).filter(Boolean);
+      if (panels.length === 4) { stocks.replaceChildren(...panels); stocks.dataset.ordered = 'true'; }
     }
     placeControls();
   }
@@ -7627,9 +7639,9 @@ globalThis.RHW_PRODUCTION_VOLUMES = Object.freeze({
     const complete = moduleCount > 0 && production.length === moduleCount && production.every(entry => entry.possibleCycles !== null);
     const blocked = production.filter(entry => entry.possibleCycles === 0);
     const first = blocked[0] || production.find(entry => entry.cardState === 'low');
-    const productionValue = !known || !complete ? 'Coverage unknown' : `${covered} / ${moduleCount} covered`;
+    const productionValue = !known || !complete ? 'Coverage unknown' : `${covered} / ${moduleCount} supplied`;
     const productionDetail = !known ? 'Waiting for stock data' : !complete ? 'Some recipes or inputs are unknown' : first
-      ? `${first.recipe.product} · ${first.bottleneck?.displayName || first.bottleneck?.name || 'input needed'}`
+      ? `${first.recipe.product}: ${first.bottleneck?.displayName || first.bottleneck?.name || 'input needed'}`
       : 'Next batches checked separately';
     const yard = known ? app.shipyard?.analyze() : null;
     const ships = known ? app.inventoryModel?.ships() || [] : [];

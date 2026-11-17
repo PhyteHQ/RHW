@@ -67,7 +67,8 @@ def main():
               const waste=r(panel('waste-panel')),ships=r(panel('ship-stock-panel'));
               return {overflow:document.documentElement.scrollWidth>innerWidth+2,
                 internal:inventoryStatusPanel.scrollWidth>inventoryStatusPanel.clientWidth+2,
-                columns:Math.max(waste.top,reserve.top,exports.top)-Math.min(waste.top,reserve.top,exports.top),
+                sectionsAligned:[reserve,waste,exports,ships].every(x=>Math.abs(x.left-reserve.left)<2&&Math.abs(x.width-reserve.width)<2),
+                ordered:reserve.bottom<=waste.top&&waste.bottom<=exports.top&&exports.bottom<=ships.top,
                 wasteGap:waste.top-maintenance.bottom,shipGap:ships.top-exports.bottom,
                 wasteAligned:Math.abs(waste.left-maintenance.left)<2&&Math.abs(waste.width-maintenance.width)<2,
                 shipsAligned:Math.abs(ships.left-exports.left)<2&&Math.abs(ships.width-exports.width)<2,
@@ -75,12 +76,7 @@ def main():
                 touch:[...inventoryStatusPanel.querySelectorAll('button')].filter(n=>n.getClientRects().length).every(n=>r(n).height>=(innerWidth<760?43:27))};
             })()""")
             assert not geometry['overflow'] and not geometry['internal'] and geometry['touch'], (width, geometry)
-            if width > 1100:
-                assert geometry['columns'] < 2, geometry
-                assert geometry['shipsAligned'], geometry
-                assert geometry['wasteGap']>0 and 0<geometry['shipGap']<=17, 'Detailed stock follows the briefing; ships follow exports: '+str(geometry)
-            elif width>760:
-                assert geometry['tabletMarketAligned'], geometry
+            assert geometry['sectionsAligned'] and geometry['ordered'], 'Inventory must use aligned full-width sections: '+str(geometry)
             (out / f'inventory-reserves-{width}.png').write_bytes(base64.b64decode(cdp.call('Page.captureScreenshot', {'format': 'png'})['data']))
         # Raw manifest entries stay separate, including a real zero Gold stock.
         base.ev(cdp, "(()=>{inventoryManifestTab.click();roleFilter.value='reserve';roleFilter.dispatchEvent(new Event('change'));return true;})()")
