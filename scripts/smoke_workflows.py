@@ -330,9 +330,11 @@ def test_pr3_decision_ui(cdp, workspace, node):
               const total=grid.querySelectorAll('.production-card').length;
               blocked.click();
               const blockedStates=[...grid.querySelectorAll('.production-card')].filter(card=>!card.hidden).map(card=>card.dataset.productionState);
+              const blockedCount=Number(blocked.querySelector('.production-filter-badge')?.textContent);
               all.click();
               search.value='Gold';search.dispatchEvent(new Event('input',{bubbles:true}));
               const searchProducts=[...grid.querySelectorAll('.production-card')].filter(card=>!card.hidden).map(card=>card.dataset.productionProduct);
+              const searchCount=Number(all.querySelector('.production-filter-badge')?.textContent);
               search.value='';search.dispatchEvent(new Event('input',{bubbles:true}));
               const card=grid.querySelector('.production-card'),toggle=card?.querySelector('.production-card-toggle'),list=card?.querySelector('.recipe-list');
               const before={collapsed:card?.classList.contains('production-card-collapsed'),visible:Boolean(list?.getClientRects().length)};
@@ -343,15 +345,15 @@ def test_pr3_decision_ui(cdp, workspace, node):
               const touch=[...tools.querySelectorAll('button,input'),...grid.querySelectorAll('.production-card-toggle')].filter(visible).map(x=>x.getBoundingClientRect().height);
               return{
                 total,filters:tools.querySelectorAll('[data-production-filter]').length,
-                blockedStates,searchProducts,before,after,touch,
+                blockedStates,blockedCount,searchProducts,searchCount,before,after,touch,
                 overflow:document.documentElement.scrollWidth-window.innerWidth
               };
             })()""")
         finally:
             cdp.call("Emulation.clearDeviceMetricsOverride")
-        if result.get("error") or result.get("total", 0) <= 0 or result.get("filters") != 4 or any(state != "critical" for state in result.get("blockedStates", [])):
+        if result.get("error") or result.get("total", 0) <= 0 or result.get("filters") != 4 or any(state != "critical" for state in result.get("blockedStates", [])) or result.get("blockedCount") != len(result.get("blockedStates", [])):
             raise RuntimeError(f"PR3 Production filters failed: {result}")
-        if not result.get("searchProducts") or any("gold" not in product for product in result.get("searchProducts", [])):
+        if not result.get("searchProducts") or any("gold" not in product for product in result.get("searchProducts", [])) or result.get("searchCount") != len(result.get("searchProducts", [])):
             raise RuntimeError(f"PR3 Production search failed: {result}")
         if not result.get("before", {}).get("collapsed") or result.get("before", {}).get("visible") or not result.get("after", {}).get("expanded") or not result.get("after", {}).get("visible") or result.get("after", {}).get("aria") != "true":
             raise RuntimeError(f"PR3 Production card details failed: {result}")

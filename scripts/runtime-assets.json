@@ -101,6 +101,7 @@
     "./js/supply/core/vendor/lp-solver.mjs",
     "./js/supply/core/vendor/LP-SOLVER-LICENSE.txt",
     "./assets/navigation.json.gz",
-    "./assets/navigation-last-verified.json.gz"
+    "./assets/navigation-last-verified.json.gz",
+    "./assets/production-module-art.webp"
   ]
 }

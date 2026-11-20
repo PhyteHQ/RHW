@@ -21,7 +21,8 @@ def main():
         assert build(root)[0] == outputs, 'A second build must be byte-identical (no self-hashing loop)'
         for name in ['js/core/app.js', 'css/theme.css', 'js/00-bootstrap.js', 'manifest.webmanifest',
                      'assets/recipes/catalog-v1-part-01.js', 'assets/discovery-status.json',
-                     'assets/pwa-icon-512.png', 'assets/rhw-forum-logo.png', 'sw.js', 'index.html', 'js/supply/planner.mjs', 'assets/navigation.json.gz']:
+                     'assets/pwa-icon-512.png', 'assets/rhw-forum-logo.png', 'assets/production-module-art.webp',
+                     'sw.js', 'index.html', 'js/supply/planner.mjs', 'assets/navigation.json.gz']:
             path = root / name
             original = path.read_bytes()
             path.write_bytes(original + b'\n')
@@ -36,6 +37,7 @@ def main():
         assert not any(name.startswith(('scripts/', 'docs/', '.github/')) for name in files)
         assert not any(name.startswith('js/core/') for name in files), 'Authoring sources must not be deployed'
         assert 'assets/rhw-forum-logo.png' in files
+        assert 'assets/production-module-art.webp' in files
         assert len(files) < 60
         routes_path = root / 'scripts/app-routes.json'
         routes = json.loads(routes_path.read_text())
