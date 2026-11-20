@@ -421,10 +421,22 @@ function renderProductionModules() {
               </tr>`;
     }).join('');
 
-    const bottleneckDisplay = analysis.bottleneck ? escapeHTML(analysis.bottleneck.displayName).toUpperCase() : '';
-    const nextGapText = analysis.bottleneck
-      ? `<div class="next-gap ${analysis.cardState}">NEXT +1 CYCLE: <strong>${bottleneckDisplay} +${number(analysis.nextCycleGap)}</strong></div>`
+    const nextBatchLabel = analysis.possibleCycles > 0 ? `Batch ${number(analysis.possibleCycles + 1)}` : 'First batch';
+    const otherGaps = analysis.ingredientData.filter(item => item !== analysis.bottleneck && item.nextCycleGap > 0);
+    const shortage = analysis.bottleneck && analysis.nextCycleGap > 0
+      ? `Missing ${number(analysis.nextCycleGap)} ${escapeHTML(analysis.bottleneck.displayName)}`
       : '';
+    const batchSummary = analysis.cardState === 'ok'
+      ? `<div class="production-batch-target production-batch-covered"><strong>${number(analysis.possibleCycles)} batches covered</strong></div>`
+      : shortage ? `<div class="production-batch-target">
+                        <span class="production-batch-label">${nextBatchLabel}</span>
+                        <strong class="production-shortage">${shortage}</strong>
+                        ${otherGaps.length ? `<span class="production-batch-other">+${number(otherGaps.length)} more</span>` : ''}
+                      </div>` : '';
+    const nextGapText = shortage ? `<div class="next-gap ${analysis.cardState}">
+                                      ${nextBatchLabel} · <strong>${shortage}</strong>
+                                      ${otherGaps.map(item => `<div>Missing ${number(item.nextCycleGap)} ${escapeHTML(item.displayName)}</div>`).join('')}
+                                    </div>` : '';
 
     const byproductsText = recipe.byproducts && recipe.byproducts.length
       ? `<div class="byproduct-strip"><span>BYPRODUCT / CYCLE</span>${recipe.byproducts.map(bp => `<span class="byproduct-tag">${number(bp[1])} ${escapeHTML(displayRecipeName(bp[0]))}</span>`).join('')}</div>`
@@ -453,6 +465,7 @@ function renderProductionModules() {
                 <div class="production-stat production-stock-primary" role="group" aria-label="Finished stock: ${number(analysis.productStock)}"><small>Finished stock</small><strong>${number(analysis.productStock)}</strong></div>
                 <div class="production-stat production-capacity" role="group" aria-label="Can produce: ${number(analysis.possibleOutput)} additional units" title="Additional units covered by current materials; prerequisites and module activity are not checked"><small>Can produce</small><strong>${number(analysis.possibleOutput)}</strong></div>
               </div>
+              ${batchSummary}
               <div class="production-input-summary">
                 <table class="production-input-table" aria-label="Materials for one batch of ${productName}">
                   <thead><tr><th scope="col">Material</th><th scope="col">Stock</th><th scope="col">Per batch</th><th scope="col">Short</th></tr></thead>

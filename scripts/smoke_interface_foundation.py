@@ -202,13 +202,15 @@ def main():
                       const cards=[...productionGrid.querySelectorAll('.production-row')];
                       return cards.map((card,index)=>{
                         const stats=card.querySelector('.production-stats');
+                        const target=card.querySelector('.production-batch-target').getBoundingClientRect();
                         const materials=card.querySelector('.production-input-table');
                         const rect=card.getBoundingClientRect(),prev=cards[index-1]?.getBoundingClientRect();
                         return {
                           labels:[...stats.querySelectorAll('small')].map(n=>n.textContent.trim()),
                           columns:[...materials.querySelectorAll('thead th')].map(n=>n.textContent.trim()),
                           limitInTable:materials.querySelector('.production-limit')?.textContent==='Limiting material',
-                          separated:materials.getBoundingClientRect().top>=stats.getBoundingClientRect().bottom+6,
+                          separated:target.top>=stats.getBoundingClientRect().bottom+6&&materials.getBoundingClientRect().top>=target.bottom+6,
+                          chamfered:getComputedStyle(card).clipPath.startsWith('polygon'),
                           cardGap:prev ? (Math.abs(rect.top-prev.top)<1 ? rect.left-prev.right : rect.top-prev.bottom) : 12,
                           border:parseFloat(getComputedStyle(card).borderTopWidth),
                           overflow:card.scrollWidth-card.clientWidth
@@ -216,7 +218,7 @@ def main():
                       });
                     })()""")
                     assert lanes and all(x['labels']==['Finished stock','Can produce'] and x['columns']==['Material','Stock','Per batch','Short'] for x in lanes), (width, lanes)
-                    assert all(x['limitInTable'] and x['separated'] and x['cardGap']>=10 and x['border']>=1 and x['overflow']<=2 for x in lanes), (width, lanes)
+                    assert all(x['limitInTable'] and x['separated'] and x['chamfered'] and x['cardGap']>=10 and x['border']>=1 and x['overflow']<=2 for x in lanes), (width, lanes)
                 if width <= 760 and workspace == 'operations':
                     assert result['priceLabelSizes'] and min(result['priceLabelSizes']) >= 11, result
                 if route == 'command/shipyard':
@@ -418,6 +420,8 @@ def main():
         material_summary = base.ev(cdp, """(()=>{
           findCommodity('Gold Ore').quantity=0;
           findCommodity('Niobium Ore').quantity=null;
+          findCommodity('Gold').quantity=506;
+          findCommodity('Industrial Materials').quantity=0;
           items.push({name:'Promethene',quantity:234});
           rebuildItemCaches();renderProductionModules();
           const input=(recipe,name)=>[...productionGrid.querySelectorAll(`[data-production-recipe="${recipe}"] .production-input`)]
@@ -425,11 +429,20 @@ def main():
           const gold=input('recipe_gold_advanced','Gold Ore');
           const niobium=input('recipe_niobium_advanced','Niobium Ore');
           const fuel=input('recipe_weapon_part_focusing_chamber','MOX / Promethene / H-Fuel');
+          const target=recipe=>productionGrid.querySelector(`[data-production-recipe="${recipe}"] .production-batch-target`);
+          const first=target('recipe_gold_advanced'), third=target('recipe_weapon_part_focusing_chamber');
           return {
             shortage:gold.querySelector('.production-input-gap')?.textContent==='425'&&gold.querySelector('.production-input-stock>strong').textContent==='0'
               &&gold.querySelector('.production-input-required').textContent==='425',
             unknown:niobium.querySelector('.production-input-stock>strong').textContent==='Unknown'&&!niobium.querySelector('.production-input-gap'),
             pooled:fuel.querySelector('.production-input-stock>strong').textContent===number(10234),
+            firstBatch:first.querySelector('.production-batch-label').textContent==='First batch'
+              &&first.querySelector('.production-shortage').textContent==='Missing 425 Gold Ore'
+              &&first.querySelector('.production-batch-other').textContent==='+1 more',
+            thirdBatch:third.querySelector('.production-batch-label').textContent==='Batch 3'
+              &&third.querySelector('.production-shortage').textContent==='Missing 244 Gold / Wildcat Gold',
+            noInventedTarget:!target('recipe_niobium_advanced'),
+            ready:[...productionGrid.querySelectorAll('[data-production-state="ok"]')].some(card=>card.querySelector('.production-batch-covered')),
             allVisible:RHWV4.production.recipes().every(recipe=>{
               const rows=[...productionGrid.querySelectorAll(`[data-production-recipe="${recipe.recipeId}"] .production-input`)];
               return rows.length===recipe.ingredients.length&&rows.every(row=>row.getClientRects().length);
@@ -465,7 +478,7 @@ def main():
                 order:cards.map(c=>c.querySelector('.production-title').textContent)};
             })()""")
             columns = 3 if overview['panelWidth'] >= 1320 else 2 if overview['panelWidth'] >= 760 else 1
-            assert overview['columns'] == columns and overview['height'] < 405, (width, overview)
+            assert overview['columns'] == columns and overview['height'] < 440, (width, overview)
             assert overview['actions'] and overview['valuesFit'] and overview['materialsFit'], (width, overview)
             assert overview['order']==['Multi-Mode Focusing Chamber','Reactor Systems','Superstructure Systems','Basic Alloy','Gold','Niobium','Prototype Components','MOX'], overview
             disclosure = base.ev(cdp, """(()=>{
