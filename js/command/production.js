@@ -416,6 +416,18 @@ function renderProductionModules() {
               </li>`;
     }).join('');
 
+    const materialSummary = analysis.ingredientData.map(item => {
+      const short = item.currentCycleGap > 0;
+      const stock = item.stock === null ? 'Unknown' : number(item.stock);
+      return `<li class="production-input${short ? ' production-input-short' : ''}">
+                <span class="production-input-name">${escapeHTML(item.displayName)}</span>
+                <div class="production-input-figures">
+                  <span class="production-input-stock"><span class="visually-hidden">In stock </span><strong>${stock}</strong><span aria-hidden="true"> / </span><span class="visually-hidden">, needed per batch </span>${number(item.required)}</span>
+                  ${short ? `<span class="production-input-gap">Short ${number(item.currentCycleGap)}</span>` : ''}
+                </div>
+              </li>`;
+    }).join('');
+
     const bottleneckDisplay = analysis.bottleneck ? escapeHTML(analysis.bottleneck.displayName).toUpperCase() : '';
     const nextGapText = analysis.bottleneck
       ? `<div class="next-gap ${analysis.cardState}">NEXT +1 CYCLE: <strong>${bottleneckDisplay} +${number(analysis.nextCycleGap)}</strong></div>`
@@ -450,7 +462,11 @@ function renderProductionModules() {
                 <div class="production-stat production-stock-primary" role="group" aria-label="In stock: ${number(analysis.productStock)}"><small>In stock</small><strong>${number(analysis.productStock)}</strong></div>
                 <div class="production-stat production-capacity" role="group" aria-label="Can produce: ${number(analysis.possibleOutput)} additional units" title="Additional units covered by current materials; prerequisites and module activity are not checked"><small>Can produce</small><strong>${number(analysis.possibleOutput)}</strong><span class="production-unit">additional units</span></div>
               </div>
-              <div class="production-limit" title="${escapeHTML(analysis.bottleneck?.displayName || 'Input stock unknown')}"><span>Limiting material</span><strong>${escapeHTML(analysis.bottleneck?.displayName || 'Input stock unknown')}</strong></div>
+              <div class="production-limit"><span>Limiting material</span><strong>${escapeHTML(analysis.bottleneck?.displayName || 'Input stock unknown')}</strong></div>
+              <div class="production-input-summary">
+                <div class="production-input-head" aria-hidden="true"><strong>Materials</strong><span>In stock / per batch</span></div>
+                <ul class="production-input-list" aria-label="Materials for one batch" role="list">${materialSummary}</ul>
+              </div>
               <div class="production-card-actions"><button type="button" class="production-card-toggle" aria-label="${collapsed ? 'Show' : 'Hide'} details for ${escapeHTML(displayRecipeName(recipe.product))}" aria-controls="rhwItemDetails" aria-expanded="${!collapsed}"><span>${collapsed ? 'DETAILS' : 'CLOSE DETAILS'}</span></button></div>
               <div class="production-materials" id="${escapeHTML(materialId)}" hidden>
               <div class="footnote production-batch-time">${number(recipe.output)} / BATCH <span class="production-cycle-time">${cycle === null ? 'CYCLE TIME UNKNOWN' : `~${productionDuration(cycle)} / CYCLE`}</span></div>

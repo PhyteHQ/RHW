@@ -392,17 +392,42 @@ def main():
           const advanced=app.production.recipes().find(r=>r.product==='MOX');
           const exact=advanced.recipeId==='recipe_mox_fuel_advanced'&&advanced.output===500
             &&app.productionPricing.findRecipeForLabel('MOX').id===advanced.recipeId;
+          const advancedInputs=[...productionGrid.querySelectorAll('[data-production-recipe="recipe_mox_fuel_advanced"] .production-input-name')].map(n=>n.textContent);
           select=productionGrid.querySelector('[data-production-mox]');
           select.value='recipe_mox_fuel_basic';select.dispatchEvent(new Event('change',{bubbles:true}));
           const basic=app.production.recipes().find(r=>r.product==='MOX').output===333;
+          const basicInputs=[...productionGrid.querySelectorAll('[data-production-recipe="recipe_mox_fuel_basic"] .production-input-name')].map(n=>n.textContent);
           const saved=core.state.recipesById.get('recipe_milsal');core.state.recipesById.delete(saved.id);renderProductionModules();
           const isolated=productionGrid.querySelectorAll('.production-card').length===8
             &&productionGrid.querySelectorAll('.production-unavailable').length===1
             &&productionGrid.querySelectorAll('.production-capacity').length===7;
           core.state.recipesById.set(saved.id,saved);renderProductionModules();
-          return {exact,basic,isolated};
+          return {exact,basic,isolated,advancedInputs,basicInputs};
         })()""")
-        assert all(mox_and_failure.values()), mox_and_failure
+        assert mox_and_failure == dict(exact=True, basic=True, isolated=True,
+                                       advancedInputs=['Toxic Waste', 'Uranium'], basicInputs=['Toxic Waste']), mox_and_failure
+
+        material_summary = base.ev(cdp, """(()=>{
+          findCommodity('Gold Ore').quantity=0;
+          findCommodity('Niobium Ore').quantity=null;
+          items.push({name:'Promethene',quantity:234});
+          rebuildItemCaches();renderProductionModules();
+          const input=(recipe,name)=>[...productionGrid.querySelectorAll(`[data-production-recipe="${recipe}"] .production-input`)]
+            .find(node=>node.querySelector('.production-input-name').textContent===name);
+          const gold=input('recipe_gold_advanced','Gold Ore');
+          const niobium=input('recipe_niobium_advanced','Niobium Ore');
+          const fuel=input('recipe_weapon_part_focusing_chamber','MOX / Promethene / H-Fuel');
+          return {
+            shortage:gold.querySelector('.production-input-gap')?.textContent==='Short 425'&&gold.querySelector('.production-input-stock>strong').textContent==='0',
+            unknown:niobium.querySelector('.production-input-stock>strong').textContent==='Unknown'&&!niobium.querySelector('.production-input-gap'),
+            pooled:fuel.querySelector('.production-input-stock>strong').textContent===number(10234),
+            allVisible:RHWV4.production.recipes().every(recipe=>{
+              const rows=[...productionGrid.querySelectorAll(`[data-production-recipe="${recipe.recipeId}"] .production-input`)];
+              return rows.length===recipe.ingredients.length&&rows.every(row=>row.getClientRects().length);
+            })
+          };
+        })()""")
+        assert all(material_summary.values()), material_summary
         # Wide quantities must stay on one line in both labelled cards and the
         # desktop comparison. Do not let a column silently split 1.234.567.
         base.ev(cdp, """(()=>{
@@ -422,13 +447,15 @@ def main():
               const heights=cards.map(c=>c.getBoundingClientRect().height);
               return {columns:getComputedStyle(productionGrid).gridTemplateColumns.split(' ').length,
                 panelWidth:productionPanel.clientWidth,
-                height:Math.max(...heights),even:Math.max(...heights)-Math.min(...heights)<40,
+                height:Math.max(...heights),
                 valuesFit:cards.every(c=>[...c.querySelectorAll('.production-stat strong')].every(n=>n.scrollWidth<=n.clientWidth+1)),
+                materialsFit:cards.every(c=>[...c.querySelectorAll('.production-input')].every(n=>n.scrollWidth<=n.clientWidth+1)),
                 actions:cards.every(c=>c.querySelectorAll('.production-card-actions>button').length===2),
                 order:cards.map(c=>c.querySelector('.production-title').textContent)};
             })()""")
             assert overview['columns'] == (2 if 600 < overview['panelWidth'] <= 1040 else 1), (width, overview)
-            assert overview['height']<320 and overview['even'] and overview['actions'] and overview['valuesFit'], (width, overview)
+            assert overview['height'] < (360 if overview['panelWidth'] <= 1040 else 175), (width, overview)
+            assert overview['actions'] and overview['valuesFit'] and overview['materialsFit'], (width, overview)
             assert overview['order']==['Multi-Mode Focusing Chamber','Reactor Systems','Superstructure Systems','Basic Alloy','Gold','Niobium','Prototype Components','MOX'], overview
             disclosure = base.ev(cdp, """(()=>{
               const card=productionGrid.querySelector('.production-card'),toggle=card.querySelector('.production-card-toggle');

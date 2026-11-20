@@ -5,7 +5,7 @@
   if (!app || app.presentation) return;
   const pages = Object.freeze({
     'command/inventory': ['COMMAND', 'Overview', 'Your POB at a glance. Supplies, stock and next steps.'],
-    'command/production': ['COMMAND', 'Production', 'Stock, additional output and the material that limits it.'],
+    'command/production': ['COMMAND', 'Production', 'What each module needs and what its stock can produce.'],
     'command/shipyard': ['COMMAND', 'Shipyard', 'Choose a hull, check its requirements and source missing components.'],
     'command/logistics': ['COMMAND', 'Logistics', 'Find component and material offers across player bases.'],
     'operations/calculator': ['OPERATIONS', 'Calculator', 'Choose a recipe, enter material prices and review your quote.'],
