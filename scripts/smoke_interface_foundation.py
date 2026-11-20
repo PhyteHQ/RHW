@@ -200,15 +200,23 @@ def main():
                 if route == 'command/production':
                     lanes = base.ev(cdp, """(()=>{
                       const cards=[...productionGrid.querySelectorAll('.production-row')];
-                      return cards.map(card=>{const capacity=card.querySelector('.production-capacity'),limit=card.querySelector('.production-limit');
-                        const a=capacity.getBoundingClientRect(),b=limit.getBoundingClientRect(),s=getComputedStyle(limit);
-                        return {capacityLabel:capacity.querySelector('small').textContent.trim(),units:capacity.querySelector('.production-unit')?.textContent,
-                          valuesFit:[...card.querySelectorAll('.production-stat strong')].every(n=>n.scrollWidth<=n.clientWidth+1),
-                          gap:b.left-a.right,separateRow:b.top>=a.bottom-1,divider:parseFloat(s.borderLeftWidth),
-                          overflow:card.scrollWidth-card.clientWidth};});
+                      return cards.map((card,index)=>{
+                        const stats=card.querySelector('.production-stats');
+                        const materials=card.querySelector('.production-input-table');
+                        const rect=card.getBoundingClientRect(),prev=cards[index-1]?.getBoundingClientRect();
+                        return {
+                          labels:[...stats.querySelectorAll('small')].map(n=>n.textContent.trim()),
+                          columns:[...materials.querySelectorAll('thead th')].map(n=>n.textContent.trim()),
+                          limitInTable:materials.querySelector('.production-limit')?.textContent==='Limiting material',
+                          separated:materials.getBoundingClientRect().top>=stats.getBoundingClientRect().bottom+6,
+                          cardGap:prev ? (Math.abs(rect.top-prev.top)<1 ? rect.left-prev.right : rect.top-prev.bottom) : 12,
+                          border:parseFloat(getComputedStyle(card).borderTopWidth),
+                          overflow:card.scrollWidth-card.clientWidth
+                        };
+                      });
                     })()""")
-                    assert lanes and all(x['capacityLabel']=='Can produce' and x['units']=='additional units' and x['overflow']<=2 and x['valuesFit'] for x in lanes), (width, lanes)
-                    assert all(x['separateRow'] or (x['gap']>=23 and x['divider']>=1) for x in lanes), ('Quantity and limiting material must be visibly separate',width,lanes)
+                    assert lanes and all(x['labels']==['Finished stock','Can produce'] and x['columns']==['Material','Stock','Per batch','Short'] for x in lanes), (width, lanes)
+                    assert all(x['limitInTable'] and x['separated'] and x['cardGap']>=10 and x['border']>=1 and x['overflow']<=2 for x in lanes), (width, lanes)
                 if width <= 760 and workspace == 'operations':
                     assert result['priceLabelSizes'] and min(result['priceLabelSizes']) >= 11, result
                 if route == 'command/shipyard':
@@ -418,7 +426,8 @@ def main():
           const niobium=input('recipe_niobium_advanced','Niobium Ore');
           const fuel=input('recipe_weapon_part_focusing_chamber','MOX / Promethene / H-Fuel');
           return {
-            shortage:gold.querySelector('.production-input-gap')?.textContent==='Short 425'&&gold.querySelector('.production-input-stock>strong').textContent==='0',
+            shortage:gold.querySelector('.production-input-gap')?.textContent==='425'&&gold.querySelector('.production-input-stock>strong').textContent==='0'
+              &&gold.querySelector('.production-input-required').textContent==='425',
             unknown:niobium.querySelector('.production-input-stock>strong').textContent==='Unknown'&&!niobium.querySelector('.production-input-gap'),
             pooled:fuel.querySelector('.production-input-stock>strong').textContent===number(10234),
             allVisible:RHWV4.production.recipes().every(recipe=>{
@@ -428,8 +437,7 @@ def main():
           };
         })()""")
         assert all(material_summary.values()), material_summary
-        # Wide quantities must stay on one line in both labelled cards and the
-        # desktop comparison. Do not let a column silently split 1.234.567.
+        # Both output and ingredient quantities must fit, including 1.234.567.
         base.ev(cdp, """(()=>{
           for(const recipe of RHWV4.production.recipes()) {
             const item=findCommodity(recipe.product);
@@ -438,7 +446,7 @@ def main():
           }
           rebuildItemCaches();renderProductionModules();return true;
         })()""")
-        for width in [1366,1024,390,360]:
+        for width in [1920,1366,1024,390,360]:
             cdp.call('Emulation.setDeviceMetricsOverride', {'width':width,'height':1100,'deviceScaleFactor':1,'mobile':width<760})
             base.ev(cdp, 'renderProductionModules()')
             assert base.ev(cdp, 'document.documentElement.scrollWidth<=innerWidth+1'), width
@@ -449,12 +457,15 @@ def main():
                 panelWidth:productionPanel.clientWidth,
                 height:Math.max(...heights),
                 valuesFit:cards.every(c=>[...c.querySelectorAll('.production-stat strong')].every(n=>n.scrollWidth<=n.clientWidth+1)),
-                materialsFit:cards.every(c=>[...c.querySelectorAll('.production-input')].every(n=>n.scrollWidth<=n.clientWidth+1)),
+                materialsFit:cards.every(c=>{
+                  const summary=c.querySelector('.production-input-summary');
+                  return summary.scrollWidth<=summary.clientWidth+1&&[...summary.querySelectorAll('td')].every(n=>n.scrollWidth<=n.clientWidth+1);
+                }),
                 actions:cards.every(c=>c.querySelectorAll('.production-card-actions>button').length===2),
                 order:cards.map(c=>c.querySelector('.production-title').textContent)};
             })()""")
-            assert overview['columns'] == (2 if 600 < overview['panelWidth'] <= 1040 else 1), (width, overview)
-            assert overview['height'] < (360 if overview['panelWidth'] <= 1040 else 175), (width, overview)
+            columns = 3 if overview['panelWidth'] >= 1320 else 2 if overview['panelWidth'] >= 760 else 1
+            assert overview['columns'] == columns and overview['height'] < 405, (width, overview)
             assert overview['actions'] and overview['valuesFit'] and overview['materialsFit'], (width, overview)
             assert overview['order']==['Multi-Mode Focusing Chamber','Reactor Systems','Superstructure Systems','Basic Alloy','Gold','Niobium','Prototype Components','MOX'], overview
             disclosure = base.ev(cdp, """(()=>{
