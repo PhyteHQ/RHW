@@ -1324,17 +1324,25 @@ let productionModuleQuery = '';
 function applyProductionModuleFilters() {
   const toolbar = document.getElementById('productionModuleTools');
   const cards = [...(els.productionGrid?.querySelectorAll('.production-card') || [])];
+  const counts = { all: 0, critical: 0, low: 0, ok: 0, waiting: 0 };
   let visible = 0;
   cards.forEach(card => {
-    const stateMatch = productionModuleFilter === 'all' || card.dataset.productionState === productionModuleFilter;
+    const state = card.dataset.productionState;
+    const stateMatch = productionModuleFilter === 'all' || state === productionModuleFilter;
     const queryMatch = !productionModuleQuery || (card.dataset.productionProduct || '').includes(productionModuleQuery);
+    if (queryMatch) {
+      counts.all += 1;
+      counts[state] += 1;
+    }
     card.hidden = !(stateMatch && queryMatch);
     if (!card.hidden) visible += 1;
   });
   toolbar?.querySelectorAll('[data-production-filter]').forEach(button => {
-    const active = button.dataset.productionFilter === productionModuleFilter;
+    const filter = button.dataset.productionFilter;
+    const active = filter === productionModuleFilter;
     button.classList.toggle('active', active);
     button.setAttribute('aria-pressed', active ? 'true' : 'false');
+    button.querySelector('.production-filter-badge').textContent = cards.length ? number(counts[filter]) : '–';
   });
   const count = document.getElementById('productionModuleCount');
   if (count) count.textContent = `${visible} / ${cards.length} MODULE${cards.length === 1 ? '' : 'S'}`;
@@ -1353,10 +1361,10 @@ function ensureProductionModuleTools() {
     toolbar.innerHTML = `
       <div class="production-filter-row">
         <div class="production-filter-segments" role="group" aria-label="Filter production modules by readiness">
-          <button type="button" class="active" data-production-filter="all" aria-pressed="true">ALL</button>
-          <button type="button" data-production-filter="critical" aria-pressed="false">BLOCKED</button>
-          <button type="button" data-production-filter="low" aria-pressed="false">LOW</button>
-          <button type="button" data-production-filter="ok" aria-pressed="false">READY</button>
+          <button type="button" class="active" data-production-filter="all" aria-pressed="true">All <span class="production-filter-badge">–</span></button>
+          <button type="button" data-production-filter="critical" aria-pressed="false">Blocked <span class="production-filter-badge">–</span></button>
+          <button type="button" data-production-filter="low" aria-pressed="false">Low <span class="production-filter-badge">–</span></button>
+          <button type="button" data-production-filter="ok" aria-pressed="false">Ready <span class="production-filter-badge">–</span></button>
         </div>
         <label class="production-module-search">
           <span class="visually-hidden">Search production modules</span>
@@ -1417,6 +1425,7 @@ function renderProductionModules() {
   if (!hasVerifiedTelemetry()) {
     const failed = Boolean(lastSyncError);
     els.productionGrid.innerHTML = `<div class="feature-empty production-empty">${failed ? 'TELEMETRY UNAVAILABLE' : 'AWAITING FIRST TELEMETRY BURST'}<small>${failed ? 'NO VERIFIED RHW INVENTORY IS AVAILABLE' : 'PRODUCTION ANALYSIS WILL APPEAR AFTER THE FIRST SUCCESSFUL SYNC'}</small></div>`;
+    applyProductionModuleFilters();
     return;
   }
   if (!app.operationsCore?.state.catalog) {
@@ -1462,13 +1471,12 @@ function renderProductionModules() {
     const shortage = analysis.bottleneck && analysis.nextCycleGap > 0
       ? `Missing ${number(analysis.nextCycleGap)} ${escapeHTML(analysis.bottleneck.displayName)}`
       : '';
-    const batchSummary = analysis.cardState === 'ok'
-      ? `<div class="production-batch-target production-batch-covered"><strong>${number(analysis.possibleCycles)} batches covered</strong></div>`
-      : shortage ? `<div class="production-batch-target">
-                        <span class="production-batch-label">${nextBatchLabel}</span>
-                        <strong class="production-shortage">${shortage}</strong>
-                        ${otherGaps.length ? `<span class="production-batch-other">+${number(otherGaps.length)} more</span>` : ''}
-                      </div>` : '';
+    const batchSummary = analysis.cardState !== 'ok' && shortage ? `<div class="production-batch-target">
+      <span class="production-batch-label">${nextBatchLabel}</span>
+      <strong class="production-shortage">${shortage}</strong>
+      ${otherGaps.length ? `<span class="production-batch-other">+${number(otherGaps.length)} more</span>` : ''}
+    </div>` : '';
+    const batchCoverage = analysis.cardState === 'ok' ? `${number(analysis.possibleCycles)} batches` : '';
     const nextGapText = shortage ? `<div class="next-gap ${analysis.cardState}">
                                       ${nextBatchLabel} · <strong>${shortage}</strong>
                                       ${otherGaps.map(item => `<div>Missing ${number(item.nextCycleGap)} ${escapeHTML(item.displayName)}</div>`).join('')}
@@ -1499,7 +1507,11 @@ function renderProductionModules() {
               </div>
               <div class="production-stats">
                 <div class="production-stat production-stock-primary" role="group" aria-label="Finished stock: ${number(analysis.productStock)}"><small>Finished stock</small><strong>${number(analysis.productStock)}</strong></div>
-                <div class="production-stat production-capacity" role="group" aria-label="Can produce: ${number(analysis.possibleOutput)} additional units" title="Additional units covered by current materials; prerequisites and module activity are not checked"><small>Can produce</small><strong>${number(analysis.possibleOutput)}</strong></div>
+                <div class="production-stat production-capacity" role="group" aria-label="Can produce: ${number(analysis.possibleOutput)} additional units${batchCoverage ? ` across ${batchCoverage}` : ''}" title="Additional units covered by current materials; prerequisites and module activity are not checked">
+                  <small>Can produce</small><div class="production-stat-value">
+                    <strong>${number(analysis.possibleOutput)}</strong>${batchCoverage ? `<span class="production-batch-covered">${batchCoverage}</span>` : ''}
+                  </div>
+                </div>
               </div>
               ${batchSummary}
               <div class="production-input-summary">

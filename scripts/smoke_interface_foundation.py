@@ -202,14 +202,17 @@ def main():
                       const cards=[...productionGrid.querySelectorAll('.production-row')];
                       return cards.map((card,index)=>{
                         const stats=card.querySelector('.production-stats');
-                        const target=card.querySelector('.production-batch-target').getBoundingClientRect();
+                        const target=card.querySelector('.production-batch-target')?.getBoundingClientRect();
                         const materials=card.querySelector('.production-input-table');
                         const rect=card.getBoundingClientRect(),prev=cards[index-1]?.getBoundingClientRect();
                         return {
                           labels:[...stats.querySelectorAll('small')].map(n=>n.textContent.trim()),
                           columns:[...materials.querySelectorAll('thead th')].map(n=>n.textContent.trim()),
                           limitInTable:materials.querySelector('.production-limit')?.textContent==='Limiting material',
-                          separated:target.top>=stats.getBoundingClientRect().bottom+6&&materials.getBoundingClientRect().top>=target.bottom+6,
+                          separated:materials.getBoundingClientRect().top>=(target?.bottom??stats.getBoundingClientRect().bottom)+6
+                            &&(!target||target.top>=stats.getBoundingClientRect().bottom+6),
+                          coverage:card.dataset.productionState==='ok' ? !target&&!!stats.querySelector('.production-batch-covered') : !!target,
+                          illustrated:getComputedStyle(card.querySelector('.production-card-head'),'::before').backgroundImage.includes('production-module-art.webp'),
                           chamfered:getComputedStyle(card).clipPath.startsWith('polygon'),
                           cardGap:prev ? (Math.abs(rect.top-prev.top)<1 ? rect.left-prev.right : rect.top-prev.bottom) : 12,
                           border:parseFloat(getComputedStyle(card).borderTopWidth),
@@ -218,7 +221,8 @@ def main():
                       });
                     })()""")
                     assert lanes and all(x['labels']==['Finished stock','Can produce'] and x['columns']==['Material','Stock','Per batch','Short'] for x in lanes), (width, lanes)
-                    assert all(x['limitInTable'] and x['separated'] and x['chamfered'] and x['cardGap']>=10 and x['border']>=1 and x['overflow']<=2 for x in lanes), (width, lanes)
+                    assert all(x['limitInTable'] and x['separated'] and x['coverage'] and x['illustrated'] and x['chamfered']
+                               and x['cardGap']>=10 and x['border']>=1 and x['overflow']<=2 for x in lanes), (width, lanes)
                 if width <= 760 and workspace == 'operations':
                     assert result['priceLabelSizes'] and min(result['priceLabelSizes']) >= 11, result
                 if route == 'command/shipyard':
@@ -478,7 +482,7 @@ def main():
                 order:cards.map(c=>c.querySelector('.production-title').textContent)};
             })()""")
             columns = 3 if overview['panelWidth'] >= 1320 else 2 if overview['panelWidth'] >= 760 else 1
-            assert overview['columns'] == columns and overview['height'] < 440, (width, overview)
+            assert overview['columns'] == columns and overview['height'] < 460, (width, overview)
             assert overview['actions'] and overview['valuesFit'] and overview['materialsFit'], (width, overview)
             assert overview['order']==['Multi-Mode Focusing Chamber','Reactor Systems','Superstructure Systems','Basic Alloy','Gold','Niobium','Prototype Components','MOX'], overview
             disclosure = base.ev(cdp, """(()=>{
