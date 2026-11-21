@@ -150,7 +150,7 @@ def main():
                     contextVisible:visible(document.getElementById('appSecondaryNav')),panels:panels.length,
                     commandButtons:[...document.querySelectorAll('#commandNodeNav [data-command-node]')].filter(visible).map(e=>({top:e.getBoundingClientRect().top,height:e.getBoundingClientRect().height,clipped:e.scrollWidth>e.clientWidth+1})),
                     toolbarHeight:document.getElementById('commandControlDeck').getBoundingClientRect().height,
-                    firstInventoryTop:document.querySelector('#inventoryStatusPanel .alert-card').getBoundingClientRect().top,
+                    firstOverviewTop:document.querySelector('#overviewOperations').getBoundingClientRect().top,
                     crestWidth:document.querySelector('.crest').getBoundingClientRect().width,
                     headerValuesFit:[...document.querySelectorAll('.base-telemetry-stat strong,.uplink-value,#headerDataAge')].filter(e=>e.getBoundingClientRect().width>2).every(e=>e.scrollWidth<=e.clientWidth+1&&e.getBoundingClientRect().height<=parseFloat(getComputedStyle(e).lineHeight)+1),
                     tabClipping:[...document.querySelectorAll('.app-tabs button')].some(b=>b.scrollWidth>b.clientWidth+2),
@@ -194,7 +194,7 @@ def main():
                     assert max(b['top'] for b in result['commandButtons']) - min(b['top'] for b in result['commandButtons']) < 1, (width, route, result)
                     assert result['toolbarHeight'] <= (440 if route == 'command/inventory' else 180) and 70 <= result['crestWidth'] <= 90, (width, route, result)
                     if route == 'command/inventory':
-                        assert result['firstInventoryTop'] <= 460, (width, result)
+                        assert result['firstOverviewTop'] <= 460, (width, result)
                 if width >= 1100 and workspace == 'operations':
                     assert result['inputs'] and all(0 < n <= 145 for n in result['inputs']), result
                 if route == 'command/production':
@@ -204,6 +204,7 @@ def main():
                         const stats=card.querySelector('.production-stats');
                         const target=card.querySelector('.production-batch-target')?.getBoundingClientRect();
                         const materials=card.querySelector('.production-input-table');
+                        const head=card.querySelector('.production-card-head');
                         const rect=card.getBoundingClientRect(),prev=cards[index-1]?.getBoundingClientRect();
                         return {
                           labels:[...stats.querySelectorAll('small')].map(n=>n.textContent.trim()),
@@ -212,7 +213,7 @@ def main():
                           separated:materials.getBoundingClientRect().top>=(target?.bottom??stats.getBoundingClientRect().bottom)+6
                             &&(!target||target.top>=stats.getBoundingClientRect().bottom+6),
                           coverage:card.dataset.productionState==='ok' ? !target&&!!stats.querySelector('.production-batch-covered') : !!target,
-                          illustrated:getComputedStyle(card.querySelector('.production-card-head'),'::before').backgroundImage.includes('production-module-art.webp'),
+                          headerFits:head.scrollWidth<=head.clientWidth+1,
                           chamfered:getComputedStyle(card).clipPath.startsWith('polygon'),
                           cardGap:prev ? (Math.abs(rect.top-prev.top)<1 ? rect.left-prev.right : rect.top-prev.bottom) : 12,
                           border:parseFloat(getComputedStyle(card).borderTopWidth),
@@ -221,7 +222,7 @@ def main():
                       });
                     })()""")
                     assert lanes and all(x['labels']==['Finished stock','Can produce'] and x['columns']==['Material','Stock','Per batch','Short'] for x in lanes), (width, lanes)
-                    assert all(x['limitInTable'] and x['separated'] and x['coverage'] and x['illustrated'] and x['chamfered']
+                    assert all(x['limitInTable'] and x['separated'] and x['coverage'] and x['headerFits'] and x['chamfered']
                                and x['cardGap']>=10 and x['border']>=1 and x['overflow']<=2 for x in lanes), (width, lanes)
                 if width <= 760 and workspace == 'operations':
                     assert result['priceLabelSizes'] and min(result['priceLabelSizes']) >= 11, result

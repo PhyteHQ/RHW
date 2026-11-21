@@ -79,7 +79,7 @@ function renderOverviewRow({ state, role, name, item = null, detail = '', quanti
             </div>
             ${breakdown}
             ${progress}
-            ${input}
+            ${role === 'reserve' && input ? `<div class="inventory-reserve-inputs">${input}</div>` : input}
           </li>`;
 }
 
