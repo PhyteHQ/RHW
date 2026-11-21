@@ -370,7 +370,7 @@ def main():
 
         shared_design = base.ev(cdp, """(()=>{
           RHWV4.presentation.applySurfaces();
-          const stock=document.querySelector('.maintenance-panel .alert-title>span:first-child');
+          const stock=document.querySelector('.reserve-panel .alert-title>span:first-child');
           const forum=document.querySelector('#commsComposerPanel .comms-panel-head strong');
           const style=n=>{const s=getComputedStyle(n);return {family:s.fontFamily,size:s.fontSize,weight:s.fontWeight};};
           const sections=[...document.querySelectorAll('#inventoryStatusPanel .summary-grid>.alert-card')];
