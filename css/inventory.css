@@ -102,52 +102,325 @@ html.rhw-focus-pass.rhw-workbench .rhw-item-detail::backdrop { background:#0007;
 
 #rhwItemDetails .recipe-list::before,#rhwItemDetails .recipe-list::after { display:none; }
 
-/* The first screen answers supplies, next steps and material coverage. */
-html.rhw-focus-pass.rhw-workbench .command-briefing { display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:16px;margin-bottom:16px;align-items:stretch; }
-html.rhw-focus-pass.rhw-workbench #commandBriefing .maintenance-panel { grid-column:1;grid-row:1;margin:0;min-width:0;align-self:stretch; }
-html.rhw-focus-pass.rhw-workbench #commandBriefing .maintenance-panel .alert-title { min-height:52px;padding:12px 16px;font:500 var(--rhw-section-size)/1.3 var(--font-title); }
+/* Overview pairs the station readout with the live action queue. */
+html.rhw-focus-pass.rhw-workbench .command-briefing {
+  --overview-rim:#39464e;
+  --overview-steel:#182229;
+  --overview-recess:#10171b;
+  display:grid;
+  grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);
+  gap:16px;
+  margin-bottom:20px;
+}
+.overview-station,.overview-next {
+  min-width:0;
+  border:1px solid var(--overview-rim);
+  background:var(--overview-recess);
+}
+.overview-station {
+  display:flex;
+  flex-direction:column;
+  border-top:3px solid var(--gold);
+}
+.overview-operations { display:grid; }
+html.rhw-focus-pass.rhw-workbench .overview-operation {
+  position:relative;
+  display:grid;
+  align-items:center;
+  min-width:0;
+  min-height:44px;
+  margin:0;
+  border:0;
+  border-radius:0;
+  background:transparent;
+  box-shadow:none;
+  clip-path:none;
+  text-align:left;
+  text-transform:none;
+  letter-spacing:0;
+}
+html.rhw-focus-pass.rhw-workbench .overview-production {
+  grid-template-columns:minmax(0,1fr) auto;
+  gap:clamp(14px,2.2vw,34px);
+  min-height:188px;
+  padding:18px 30px;
+  border-bottom:1px solid var(--overview-rim);
+  background:
+    linear-gradient(90deg,transparent 0%,var(--overview-steel) 78%),
+    repeating-linear-gradient(90deg,#a5b7c00b 0 1px,transparent 1px 22px),
+    repeating-linear-gradient(0deg,#a5b7c00b 0 1px,transparent 1px 22px),
+    linear-gradient(118deg,#202d32,var(--overview-steel));
+}
+html.rhw-focus-pass.rhw-workbench .overview-production:has(.overview-coverage-meter) {
+  grid-template-columns:auto minmax(0,1fr) auto;
+}
+.overview-coverage-meter {
+  position:relative;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  width:clamp(110px,11vw,150px);
+  aspect-ratio:1;
+  border-radius:50%;
+  background:
+    repeating-conic-gradient(transparent 0 calc(var(--segment) - 3deg),var(--overview-steel) 0 var(--segment)),
+    conic-gradient(var(--good) 0deg var(--coverage),#545f64 var(--coverage) 360deg);
+}
+.overview-coverage-meter::before {
+  position:absolute;
+  inset:8px;
+  border:5px solid #202e34;
+  border-radius:50%;
+  background:var(--overview-recess);
+  content:"";
+}
+.overview-coverage-meter>strong,.overview-coverage-meter>small { position:relative; }
+.overview-coverage-meter>strong {
+  color:var(--text);
+  font:600 clamp(33px,3.4vw,49px)/1 var(--font-title);
+  white-space:nowrap;
+}
+.overview-coverage-meter>strong span { color:#a1b0b6;font-size:.64em; }
+.overview-coverage-meter>small {
+  margin-top:6px;
+  color:#b8c6cb;
+  font:11px/1.2 var(--font-main);
+  letter-spacing:.11em;
+  text-transform:uppercase;
+}
+.overview-operation-copy { display:grid;gap:7px;min-width:0; }
+.overview-operation-label {
+  color:var(--gold);
+  font:600 12px/1.3 var(--font-main);
+  letter-spacing:.12em;
+  text-transform:uppercase;
+}
+.overview-operation-copy>strong { color:var(--text);font:500 clamp(23px,2.4vw,37px)/1.06 var(--font-title); }
+.overview-production[data-state="advisory"] .overview-operation-copy>strong { color:#ffd38a; }
+.overview-operation-copy>small,.overview-shipyard>small {
+  color:#b9c3c9;
+  font:13px/1.5 var(--font-main);
+  overflow-wrap:anywhere;
+}
+.overview-operation-arrow {
+  position:relative;
+  width:12px;
+  height:12px;
+  color:var(--gold);
+}
+.overview-operation-arrow::before {
+  position:absolute;
+  top:0;
+  right:0;
+  width:7px;
+  height:7px;
+  border-top:1px solid currentColor;
+  border-right:1px solid currentColor;
+  content:"";
+}
+.overview-operation-arrow::after {
+  position:absolute;
+  top:5px;
+  left:0;
+  width:13px;
+  height:1px;
+  background:currentColor;
+  transform:rotate(-45deg);
+  content:"";
+}
+html.rhw-focus-pass.rhw-workbench .overview-shipyard {
+  grid-template-columns:auto auto minmax(0,1fr) auto;
+  gap:12px;
+  padding:11px 22px;
+  background:#172027;
+}
+.overview-shipyard>strong { color:var(--text);font:500 18px/1.2 var(--font-title); }
+.overview-shipyard>small { padding-inline-start:12px;border-inline-start:1px solid var(--overview-rim); }
+html.rhw-focus-pass.rhw-workbench .overview-operation:is(:hover,:focus-visible) {
+  outline:2px solid var(--gold);
+  outline-offset:-2px;
+}
+
+html.rhw-focus-pass.rhw-workbench #commandBriefing .maintenance-panel {
+  flex:1;
+  align-self:stretch;
+  width:100%;
+  max-width:none;
+  min-width:0;
+  margin:0;
+  border:0;
+  border-top:1px solid var(--overview-rim);
+  border-radius:0;
+  background:var(--overview-recess);
+}
+html.rhw-focus-pass.rhw-workbench #commandBriefing .maintenance-panel .alert-title {
+  min-height:0;
+  padding:13px 22px 0;
+  border:0;
+  background:transparent;
+  color:var(--gold);
+  font:600 12px/1.3 var(--font-main);
+  letter-spacing:.12em;
+  text-transform:uppercase;
+}
+html.rhw-focus-pass.rhw-workbench #commandBriefing .maintenance-panel .alert-title>span:first-child { font:inherit;letter-spacing:inherit;text-transform:inherit; }
 html.rhw-focus-pass.rhw-workbench #commandBriefing .maintenance-panel .count-badge { display:none; }
-html.rhw-focus-pass.rhw-workbench #commandBriefing #maintenanceList { display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0;padding:0 12px;list-style:none; }
-html.rhw-focus-pass.rhw-workbench #commandBriefing #maintenanceList>li.overview-stock-row { display:grid;grid-template-columns:minmax(0,1fr);align-content:start;gap:5px;margin:0;padding:10px 8px 12px;border:0;border-right:1px solid var(--line);background:transparent; }
+html.rhw-focus-pass.rhw-workbench #commandBriefing #maintenanceList {
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:0;
+  padding:4px 8px 11px;
+  list-style:none;
+}
+html.rhw-focus-pass.rhw-workbench #commandBriefing #maintenanceList>li.overview-stock-row {
+  display:grid;
+  grid-template-columns:minmax(0,1fr);
+  align-content:start;
+  gap:2px;
+  margin:0;
+  padding:0 14px;
+  border:0;
+  border-right:1px solid var(--overview-rim);
+  background:transparent;
+}
 html.rhw-focus-pass.rhw-workbench #commandBriefing #maintenanceList>li:last-child { border-right:0; }
 #commandBriefing .maintenance-panel .overview-item-copy { grid-column:1;grid-row:1; }
-html.rhw-focus-pass #commandBriefing .maintenance-panel .inventory-production-link { font:500 14px/1.35 var(--font-main);min-height:38px; }
+html.rhw-focus-pass #commandBriefing .maintenance-panel .inventory-production-link { font:500 13px/1.35 var(--font-main);min-height:32px; }
 html.rhw-focus-pass #commandBriefing .maintenance-panel .overview-row-meta { display:contents; }
 html.rhw-focus-pass #commandBriefing .maintenance-panel .overview-stock-value { grid-column:1;grid-row:2;display:block;margin:0;text-align:left;justify-self:start; }
-html.rhw-focus-pass #commandBriefing .maintenance-panel .overview-row-qty { font:25px/1.3 var(--font-tech); }
-html.rhw-focus-pass #commandBriefing .maintenance-panel .pill { grid-column:1;grid-row:3;justify-self:start;padding:2px 4px;font:11px/1.4 var(--font-main); }
+html.rhw-focus-pass #commandBriefing .maintenance-panel .overview-row-qty { font:27px/1.15 var(--font-tech); }
+html.rhw-focus-pass #commandBriefing .maintenance-panel .pill {
+  display:inline-flex;
+  align-items:center;
+  gap:5px;
+  grid-column:1;
+  grid-row:3;
+  justify-self:start;
+  padding:3px 0;
+  border:0;
+  background:none;
+  font:11px/1.35 var(--font-main);
+}
+#commandBriefing .maintenance-panel .pill::before { width:5px;height:5px;border-radius:50%;background:currentColor;content:""; }
 html.rhw-focus-pass #commandBriefing .maintenance-panel :is(.progress-wrap,.inventory-input-row) { display:none; }
 html.rhw-focus-pass #commandBriefing .maintenance-panel .overview-stock-detail { grid-column:1;grid-row:4;order:initial;text-transform:none;font:12px/1.4 var(--font-main); }
-.overview-next { grid-column:1/-1;grid-row:2;min-width:0;border:1px solid var(--line);border-top:2px solid var(--gold);border-radius:var(--rhw-surface-radius);background:var(--panel); }
-.overview-section-head { display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 14px;border-bottom:1px solid var(--line); }
-.overview-section-head h3 { margin:0;color:var(--gold);font:500 var(--rhw-section-size)/1.3 var(--font-title); }
-.overview-section-head>span { color:var(--muted);font:12px/1.4 var(--font-main); }
-.overview-next-actions { display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));padding:0 16px;gap:16px; }
-html.rhw-focus-pass.rhw-workbench .overview-next .command-priority-entry { grid-template-columns:minmax(0,1fr);align-content:start;gap:6px;padding:12px 0;border-bottom:0; }
-html.rhw-focus-pass.rhw-workbench .overview-next .command-priority-item { display:flex;flex-direction:column;align-items:flex-start;gap:3px;min-height:60px;width:100%;padding:8px 2px;border:0;background:transparent;box-shadow:none;text-align:left; }
+
+.overview-next {
+  display:flex;
+  flex-direction:column;
+  align-self:start;
+  border-top:3px solid #546571;
+}
+.overview-section-head {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  padding:14px 19px;
+  border-bottom:1px solid var(--overview-rim);
+  background:#181f23;
+}
+.overview-section-head h3 { margin:0;color:var(--text);font:500 23px/1.2 var(--font-title); }
+.overview-section-head>span { color:#b9c3c9;font:12px/1.4 var(--font-main); }
+.overview-next-actions { display:grid;min-width:0; }
+html.rhw-focus-pass.rhw-workbench .overview-next .command-priority-entry {
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  align-items:center;
+  gap:8px;
+  padding:5px 18px;
+  border:0;
+  border-bottom:1px solid #2e383f;
+  background:transparent;
+}
+html.rhw-focus-pass.rhw-workbench .overview-next .command-priority-entry:last-child { border-bottom:0; }
+html.rhw-focus-pass.rhw-workbench .overview-next .command-priority-entry:first-child {
+  padding-block:13px;
+  border-left:3px solid var(--gold);
+  padding-inline-start:15px;
+  background:linear-gradient(112deg,#2b2920,#171c20 78%);
+}
+html.rhw-focus-pass.rhw-workbench .overview-next .state-critical:first-child { border-left-color:var(--danger); }
+html.rhw-focus-pass.rhw-workbench .overview-next .command-priority-item {
+  display:flex;
+  flex-direction:column;
+  align-items:flex-start;
+  gap:3px;
+  width:100%;
+  min-height:56px;
+  padding:5px 0;
+  border:0;
+  border-radius:0;
+  background:transparent;
+  box-shadow:none;
+  text-align:left;
+}
 .overview-next .command-priority-item>span { min-width:0; }
-.overview-next .command-priority-item .priority-state { display:block;font:11px/1.4 var(--font-main);letter-spacing:0; }
-html.rhw-focus-pass.rhw-workbench .overview-next .command-priority-item strong { display:block;color:var(--text);font:500 14px/1.35 var(--font-main);white-space:normal; }
-.overview-next .command-priority-item small { display:block;margin-top:3px;color:var(--muted);font:12px/1.4 var(--font-main);white-space:normal; }
+.overview-next .command-priority-item .priority-state {
+  display:block;
+  font:600 11px/1.35 var(--font-main);
+  letter-spacing:.06em;
+}
+html.rhw-focus-pass.rhw-workbench .overview-next .command-priority-item strong {
+  display:block;
+  color:var(--text);
+  font:600 15px/1.3 var(--font-main);
+  white-space:normal;
+  overflow-wrap:anywhere;
+}
+html.rhw-focus-pass.rhw-workbench .overview-next .command-priority-entry:first-child strong {
+  font:500 clamp(22px,2vw,31px)/1.1 var(--font-title);
+}
+.overview-next .command-priority-item small {
+  display:block;
+  margin-top:3px;
+  color:#b9c3c9;
+  font:12px/1.4 var(--font-main);
+  white-space:normal;
+}
 .overview-next .command-priority-item .priority-effects { font-size:11px; }
-html.rhw-focus-pass.rhw-workbench .overview-next .priority-supply-button { min-height:44px;padding:7px 10px;border:1px solid var(--rhw-control-border);border-radius:3px;background:var(--rhw-action-fill);color:var(--gold);font:12px/1.4 var(--font-main); }
+html.rhw-focus-pass.rhw-workbench .overview-next .priority-supply-button {
+  min-height:44px;
+  margin:0;
+  padding:7px 10px;
+  border:1px solid #59646a;
+  border-radius:2px;
+  background:transparent;
+  color:var(--gold);
+  font:600 12px/1.4 var(--font-main);
+  white-space:nowrap;
+}
+html.rhw-focus-pass.rhw-workbench .overview-next .command-priority-entry:first-child .priority-supply-button {
+  border-color:#e3b96f;
+  background:#e3b96f;
+  color:#191711;
+}
+html.rhw-focus-pass.rhw-workbench .overview-next :is(.priority-supply-button,.command-priority-item,#overviewMoreTasks):hover {
+  text-decoration:underline;
+}
 .state-advisory .priority-state { color:var(--gold); }
 .state-critical .priority-state { color:var(--danger); }
 .state-low .priority-state { color:var(--warn); }
 #commandGlobalAlerts[data-alert-state="advisory"] { --alert-state:var(--gold); }
-html.rhw-focus-pass.rhw-workbench #overviewMoreTasks { display:block;width:100%;min-height:44px;margin:0;padding:10px 14px;border:0;border-top:1px solid var(--line);background:transparent;color:var(--gold);font:12px/1.4 var(--font-main);text-align:left; }
+html.rhw-focus-pass.rhw-workbench #overviewMoreTasks {
+  display:block;
+  width:100%;
+  min-height:44px;
+  margin:0;
+  padding:10px 18px;
+  border:0;
+  border-top:1px solid var(--overview-rim);
+  border-radius:0;
+  background:#181f23;
+  color:var(--gold);
+  font:12px/1.4 var(--font-main);
+  text-align:left;
+}
 html.rhw-focus-pass.rhw-workbench #overviewMoreTasks[hidden] { display:none; }
-.overview-clear { display:grid;gap:5px;padding:20px 2px;font:13px/1.5 var(--font-main); }
+.overview-clear { display:grid;gap:5px;padding:20px 18px;font:13px/1.5 var(--font-main); }
 .overview-clear strong { color:var(--good);font-weight:500; }
-.overview-incomplete strong { color:var(--muted); }
-.overview-clear span { color:var(--muted); }
-.overview-operations { grid-column:2;grid-row:1;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px; }
-html.rhw-focus-pass.rhw-workbench .overview-operation { display:flex;flex-direction:column;align-items:stretch;gap:6px;padding:12px 14px;min-height:152px;min-width:0;justify-content:center;border:1px solid var(--line);border-radius:var(--rhw-surface-radius);background:var(--panel);text-align:left;letter-spacing:0; }
-.overview-operation>span { display:flex;justify-content:space-between;gap:6px;color:var(--gold);font:13px/1.4 var(--font-main); }
-.overview-operation>span>b { font-weight:400; }
-.overview-operation>strong { color:var(--text);font:500 var(--rhw-section-size)/1.3 var(--font-title); }
-.overview-operation>small { color:var(--muted);font:12px/1.4 var(--font-main); }
-.overview-operation:is(:hover,:focus-visible) { border-color:var(--gold); }
+.overview-incomplete strong,.overview-clear span { color:var(--muted); }
 html.rhw-focus-pass.rhw-workbench #overviewControlsHost #commandGlobalAlerts { display:none; }
 html.rhw-focus-pass.rhw-workbench #overviewControlsHost #commandControlDeck { grid-template-columns:minmax(240px,300px) minmax(0,1fr);align-items:center;margin-bottom:14px; }
 html.rhw-focus-pass.rhw-workbench #overviewControlsHost .inventory-view-nav { grid-column:1; }
@@ -155,41 +428,101 @@ html.rhw-focus-pass.rhw-workbench #overviewControlsHost .command-finder { grid-c
 /* Stock for an optional business goal is a planning hint. */
 html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel :is(.export-panel,.reserve-panel) .pill.critical { color:var(--warn);border-color:var(--warn);background:transparent; }
 #inventoryStatusPanel :is(.export-panel,.reserve-panel) .progress-fill.critical { background:var(--warn); }
+@media(max-width:950px) {
+  html.rhw-focus-pass.rhw-workbench .command-briefing { grid-template-columns:minmax(0,1fr);gap:12px; }
+}
 @media(max-width:760px) {
- html.rhw-focus-pass.rhw-workbench .command-briefing { grid-template-columns:minmax(0,1fr);gap:12px; }
- html.rhw-focus-pass.rhw-workbench #commandBriefing .maintenance-panel { grid-column:1;grid-row:1; }
- .overview-next { grid-column:1;grid-row:3; }
- .overview-next-actions { grid-template-columns:minmax(0,1fr);gap:0; }
- html.rhw-focus-pass.rhw-workbench .overview-next .command-priority-entry { grid-template-columns:minmax(0,1fr) auto;border-bottom:1px solid var(--line); }
- .overview-operations { grid-column:1;grid-row:2; }
- html.rhw-focus-pass #commandBriefing .maintenance-panel .inventory-production-link { min-height:44px; }
- html.rhw-focus-pass #commandBriefing .maintenance-panel .overview-row-qty { font-size:23px; }
- html.rhw-focus-pass.rhw-workbench #commandBriefing #maintenanceList { padding-inline:6px; }
- html.rhw-focus-pass.rhw-workbench #commandBriefing #maintenanceList>li.overview-stock-row { padding-inline:7px; }
- html.rhw-focus-pass.rhw-workbench #overviewControlsHost #commandControlDeck { grid-template-columns:minmax(0,1fr);gap:8px; }
- html.rhw-focus-pass.rhw-workbench #overviewControlsHost :is(.inventory-view-nav,.command-finder) { grid-column:1/-1; }
- html.rhw-focus-pass.rhw-workbench .overview-operation { padding:12px; }
+  html.rhw-focus-pass.rhw-workbench .overview-production { min-height:156px;padding:16px 13px; }
+  html.rhw-focus-pass.rhw-workbench .overview-shipyard { grid-template-columns:auto minmax(0,1fr) auto;gap:4px 10px;padding:10px 13px; }
+  .overview-shipyard>small { grid-column:1/-1;grid-row:2;padding:0;border:0; }
+  html.rhw-focus-pass.rhw-workbench #commandBriefing .maintenance-panel .alert-title { padding-inline:13px; }
+  html.rhw-focus-pass #commandBriefing .maintenance-panel .inventory-production-link { min-height:44px; }
+  html.rhw-focus-pass #commandBriefing .maintenance-panel .overview-row-qty { font-size:22px; }
+  html.rhw-focus-pass.rhw-workbench #commandBriefing #maintenanceList { padding-inline:4px; }
+  html.rhw-focus-pass.rhw-workbench #commandBriefing #maintenanceList>li.overview-stock-row { padding-inline:8px; }
+  html.rhw-focus-pass.rhw-workbench #overviewControlsHost #commandControlDeck { grid-template-columns:minmax(0,1fr);gap:8px; }
+  html.rhw-focus-pass.rhw-workbench #overviewControlsHost :is(.inventory-view-nav,.command-finder) { grid-column:1/-1; }
 }
 
 /* Inventory sections follow one top-to-bottom order, without masonry gaps. */
 html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel .summary-grid { display:grid;grid-template-columns:minmax(0,1fr);gap:16px;width:100%;align-items:stretch; }
 html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel .summary-grid>.alert-card { grid-column:1;width:100%;min-width:0;margin:0;align-self:stretch; }
-html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel :is(#reserveList,#exportList) { display:grid;grid-template-columns:repeat(4,minmax(0,1fr));align-items:stretch;gap:0;padding:0;list-style:none; }
-html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel #exportList { grid-template-columns:repeat(3,minmax(0,1fr)); }
-html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel :is(#reserveList,#exportList)>li.overview-stock-row { display:flex;flex-direction:column;align-items:stretch;gap:8px;padding:16px;border:0;border-right:1px solid var(--line);min-width:0; }
-html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel :is(#reserveList,#exportList)>li:last-child { border-right:0; }
-html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel :is(#reserveList,#exportList) .overview-item-copy { min-height:44px; }
-html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel :is(#reserveList,#exportList) .inventory-production-link { min-height:44px;font:600 15px/1.45 var(--font-main); }
-html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel :is(#reserveList,#exportList) .overview-row-meta { display:flex;flex-direction:column;align-items:flex-start;gap:5px;order:0; }
-html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel :is(#reserveList,#exportList) .overview-stock-value { order:0;display:block;margin:0;text-align:left;align-self:flex-start; }
-html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel :is(#reserveList,#exportList) .overview-stock-detail { order:1;white-space:normal;font:12px/1.5 var(--font-main); }
-html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel :is(#reserveList,#exportList) .pill { align-self:flex-start; }
-html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel #reserveList .inventory-pool-parts { font:12px/1.5 var(--font-main); }
-html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel #reserveList .inventory-input-row { display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-rows:auto auto;gap:2px 8px;margin-top:auto;padding-top:12px;border-top:1px solid var(--line); }
-#reserveList .inventory-input-row>span { display:none; }
-html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel #reserveList .inventory-input-row>button { grid-column:1;grid-row:1/span 2;min-height:44px; }
+html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel #reserveList {
+  display:grid;
+  grid-template-columns:minmax(0,1fr);
+  gap:0;
+  padding:0;
+  list-style:none;
+}
+html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel #reserveList>li.overview-stock-row {
+  display:grid;
+  grid-template-columns:minmax(0,1.13fr) minmax(0,.9fr) minmax(0,1fr);
+  grid-template-rows:auto auto;
+  align-items:center;
+  gap:0 18px;
+  min-width:0;
+  padding:9px 18px;
+  border:0;
+  border-bottom:1px solid var(--line);
+}
+html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel #reserveList>li:last-child { border-bottom:0; }
+#reserveList .overview-item-copy { grid-column:1;grid-row:1; }
+#reserveList .pill { grid-column:1;grid-row:2;justify-self:start; }
+html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel #reserveList .overview-row-meta {
+  display:flex;
+  flex-direction:column;
+  align-items:flex-start;
+  grid-column:2;
+  grid-row:1/span 2;
+  gap:4px;
+  min-width:0;
+}
+html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel #reserveList .overview-stock-value {
+  order:0;
+  display:block;
+  align-self:flex-start;
+  margin:0;
+  text-align:left;
+}
+html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel #reserveList .overview-stock-detail { order:1;white-space:normal; }
+html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel #reserveList .inventory-pool-parts {
+  grid-column:2;
+  grid-row:3;
+  margin-top:3px;
+  font:12px/1.4 var(--font-main);
+}
+.inventory-reserve-inputs {
+  grid-column:3;
+  grid-row:1/span 3;
+  align-self:center;
+  min-width:0;
+  padding-inline-start:15px;
+  border-inline-start:1px solid var(--line);
+}
+html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel #reserveList .inventory-input-row {
+  grid-template-columns:minmax(0,1fr) auto;
+  grid-template-rows:auto auto;
+  gap:0 8px;
+  padding:0;
+}
+#reserveList .inventory-input-row>span {
+  grid-column:1;
+  grid-row:1;
+  font-size:10px;
+  letter-spacing:.09em;
+}
+html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel #reserveList .inventory-input-row>button { grid-column:1;grid-row:2; }
 #reserveList .inventory-input-row>strong { grid-column:2;grid-row:1; }
 #reserveList .inventory-input-row>small { grid-column:2;grid-row:2; }
+html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel #exportList { display:grid;grid-template-columns:repeat(3,minmax(0,1fr));align-items:stretch;gap:0;padding:0;list-style:none; }
+html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel #exportList>li.overview-stock-row { display:flex;flex-direction:column;align-items:stretch;gap:8px;padding:16px;border:0;border-right:1px solid var(--line);min-width:0; }
+html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel #exportList>li:last-child { border-right:0; }
+html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel #exportList .overview-item-copy { min-height:44px; }
+html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel #exportList .inventory-production-link { min-height:44px;font:600 15px/1.45 var(--font-main); }
+html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel #exportList .overview-row-meta { display:flex;flex-direction:column;align-items:flex-start;gap:5px;order:0; }
+html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel #exportList .overview-stock-value { order:0;display:block;margin:0;text-align:left;align-self:flex-start; }
+html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel #exportList .overview-stock-detail { order:1;white-space:normal;font:12px/1.5 var(--font-main); }
+html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel #exportList .pill { align-self:flex-start; }
 html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel .waste-panel { display:grid;grid-template-columns:200px minmax(0,1fr);align-items:stretch;border-top:1px solid var(--line); }
 html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel .waste-panel .alert-title { border:0;border-right:1px solid var(--line); }
 html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel #byproductList { display:grid;padding:12px 16px;list-style:none; }
@@ -202,17 +535,23 @@ html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel .inventory-other-ships {
 html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel .overview-stock-row .progress-wrap { height:4px;margin-top:4px;box-shadow:none; }
 html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel .overview-stock-row .progress-fill { box-shadow:none;background-image:none; }
 html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel .overview-stock-row .progress-wrap::after { display:none; }
-@media(max-width:1100px) {
- html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel #reserveList { grid-template-columns:repeat(2,minmax(0,1fr)); }
- html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel #reserveList>li.overview-stock-row { border-bottom:1px solid var(--line); }
- html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel #reserveList>li:nth-child(2n) { border-right:0; }
-}
 @media(max-width:760px) {
- html.rhw-focus-pass.rhw-workbench .overview-operation { min-height:120px; }
- html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel :is(#reserveList,#exportList) { grid-template-columns:minmax(0,1fr); }
- html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel :is(#reserveList,#exportList)>li.overview-stock-row { border-right:0;border-bottom:1px solid var(--line); }
- html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel :is(#reserveList,#exportList) .overview-item-copy { min-height:0; }
- html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel .waste-panel { grid-template-columns:minmax(0,1fr); }
+  html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel #reserveList>li.overview-stock-row {
+    grid-template-columns:minmax(0,1fr) minmax(0,.8fr);
+    gap:3px 10px;
+    padding-inline:12px;
+  }
+  .inventory-reserve-inputs {
+    grid-column:1/-1;
+    grid-row:4;
+    padding:4px 0 0;
+    border-inline-start:0;
+    border-top:1px solid var(--line);
+  }
+  html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel #exportList { grid-template-columns:minmax(0,1fr); }
+  html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel #exportList>li.overview-stock-row { border-right:0;border-bottom:1px solid var(--line); }
+  html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel #exportList .overview-item-copy { min-height:0; }
+  html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel .waste-panel { grid-template-columns:minmax(0,1fr); }
  html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel .waste-panel .alert-title { border-right:0;border-bottom:1px solid var(--line); }
  html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel #shipStockList { grid-template-columns:minmax(0,1fr); }
 }

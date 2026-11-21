@@ -15,7 +15,7 @@
       briefing.id = 'commandBriefing';
       briefing.className = 'command-briefing';
       briefing.setAttribute('aria-label', 'POB at a glance');
-      briefing.innerHTML = `<div class="overview-operations" id="overviewOperations"></div><section class="overview-next" aria-labelledby="overviewNextTitle">
+      briefing.innerHTML = `<div class="overview-station"><div class="overview-operations" id="overviewOperations"></div></div><section class="overview-next" aria-labelledby="overviewNextTitle">
         <div class="overview-section-head"><h3 id="overviewNextTitle">Next steps</h3><span id="overviewTaskCount"></span></div>
         <div id="overviewNextActions" class="overview-next-actions"></div>
         <button type="button" id="overviewMoreTasks" aria-expanded="false" aria-controls="overviewNextActions" hidden></button>
@@ -23,7 +23,7 @@
       status.prepend(briefing);
       const supplies = status.querySelector('.maintenance-panel');
       if (supplies) {
-        briefing.prepend(supplies);
+        briefing.querySelector('.overview-station').appendChild(supplies);
         supplies.querySelector('.alert-title>span').textContent = 'Facility supplies';
       }
       const controls = document.createElement('div');
@@ -66,10 +66,6 @@
     } else if (deck.parentElement !== nodeHost.parentElement) nodeHost.insertAdjacentElement('beforebegin', deck);
   }
 
-  function operationCard(node, title, value, detail, state) {
-    return `<button type="button" class="overview-operation rhw-surface" data-overview-node="${node}" data-state="${state}"><span>${esc(title)} <b aria-hidden="true">↗</b></span><strong>${esc(value)}</strong><small>${esc(detail)}</small></button>`;
-  }
-
   function renderOperations() {
     const snapshot = window.telemetrySnapshot();
     const known = snapshot.available;
@@ -79,7 +75,8 @@
     const complete = moduleCount > 0 && production.length === moduleCount && production.every(entry => entry.possibleCycles !== null);
     const blocked = production.filter(entry => entry.possibleCycles === 0);
     const first = blocked[0] || production.find(entry => entry.cardState === 'low');
-    const productionValue = !known || !complete ? 'Coverage unknown' : `${covered} / ${moduleCount} supplied`;
+    const coverageKnown = known && complete;
+    const productionValue = coverageKnown ? `${covered} / ${moduleCount} supplied` : 'Coverage unknown';
     const productionDetail = !known ? 'Waiting for stock data' : !complete ? 'Some recipes or inputs are unknown' : first
       ? `${first.recipe.product}: ${first.bottleneck?.displayName || first.bottleneck?.name || 'input needed'}`
       : 'Next batches checked separately';
@@ -92,8 +89,17 @@
     const yardDetail = yard?.buildable !== null && yard?.buildable !== undefined
       ? `${archon?.stock > 0 ? `${app.util.number(archon.stock)} Archon in stock · ` : ''}Material for ${app.util.number(yard.buildable)} ${yard.hull.label}`
       : 'Open hulls and requirements';
-    const markup = operationCard('production', 'Production', productionValue, productionDetail, !known || !complete ? 'waiting' : blocked.length ? 'advisory' : 'ok')
-      + operationCard('shipyard', 'Shipyard', yardValue, yardDetail, known && reportedShips.length ? 'ok' : 'waiting');
+    const meter = coverageKnown ? `<span class="overview-coverage-meter" aria-hidden="true" style="--segment:${360 / moduleCount}deg;--coverage:${360 * covered / moduleCount}deg">
+      <strong>${covered}<span> / ${moduleCount}</span></strong><small>Supplied</small>
+    </span>` : '';
+    const productionStatus = coverageKnown && blocked.length
+      ? `${blocked.length} ${blocked.length === 1 ? 'module' : 'modules'} blocked`
+      : coverageKnown ? 'All modules supplied' : productionValue;
+    const markup = `<button type="button" class="overview-operation overview-production" data-overview-node="production" data-state="${!coverageKnown ? 'waiting' : blocked.length ? 'advisory' : 'ok'}" aria-label="Production. ${esc(productionValue)}. ${esc(productionDetail)}">
+      ${meter}<span class="overview-operation-copy"><span class="overview-operation-label">Production</span><strong>${productionStatus}</strong><small>${esc(productionDetail)}</small></span><span class="overview-operation-arrow" aria-hidden="true"></span>
+    </button><button type="button" class="overview-operation overview-shipyard" data-overview-node="shipyard">
+      <span class="overview-operation-label">Shipyard</span><strong>${esc(yardValue)}</strong><small>${esc(yardDetail)}</small><span class="overview-operation-arrow" aria-hidden="true"></span>
+    </button>`;
     const target = document.getElementById('overviewOperations');
     if (target && target.innerHTML !== markup) target.innerHTML = markup;
   }
