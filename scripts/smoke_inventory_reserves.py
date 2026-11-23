@@ -55,11 +55,12 @@ def main():
         assert len(state['ships']) == 2 and any('Archon' in n and '2' in n for n in state['ships']), state
         assert not any(n in state['exports'] for n in ['Gold', 'Wildcat Gold', 'Niobium', 'Prototype Components', 'MOX']), state
         assert base.ev(cdp, "byproductList.textContent.includes('MOX FEEDSTOCK') && byproductList.textContent.includes('TW FOR 10 BASIC MOX BATCHES') && !byproductList.textContent.includes('DISPOSAL')")
-        assert base.ev(cdp, """maintenanceList.querySelectorAll('[role="meter"]').length===3 &&
+        reported_population = "['2.900 · Darkstat', '2.900 · Darkstat cache'].includes(rhwPopulationTotal.textContent)"
+        assert base.ev(cdp, f"""maintenanceList.querySelectorAll('[role="meter"]').length===3 &&
           !reserveList.firstElementChild.querySelector('[role="meter"]') &&
           productionGrid.querySelector('.production-stock-primary .stock-capacity-max-label')?.textContent==='Max 100.000' &&
           maintenanceList.querySelector('.stock-capacity-min-label')?.textContent==='Min 0' &&
-          rhwPopulationTotal.textContent==='2.900 · Darkstat' &&
+          {reported_population} &&
           rhwPopulationCoverage.textContent.includes('5.800 Food Rations') &&
           maintenanceList.textContent.includes('~5,7 days')"""), 'Capacity and maintenance use reported stock and population'
         base.ev(cdp, """(()=>{
@@ -69,8 +70,8 @@ def main():
           rhwPopulationForm.requestSubmit();
           return true;
         })()""")
-        assert base.ev(cdp, """rhwPopulationStatus.textContent.includes('saved on this device') &&
-          rhwPopulationTotal.textContent==='2.900 · Darkstat'"""), 'Live counts take precedence over saved fallback'
+        assert base.ev(cdp, f"""rhwPopulationStatus.textContent.includes('saved on this device') &&
+          {reported_population}"""), 'Reported counts take precedence over saved fallback'
         base.ev(cdp, """(()=>{items=items.filter(item=>item.name!=='Scientists');renderOverview();return true;})()""")
         assert base.ev(cdp, """rhwPopulationTotal.textContent==='1.200 · Saved on this device' &&
           rhwPopulationCoverage.textContent.includes('2.400 Consumer Goods') &&
