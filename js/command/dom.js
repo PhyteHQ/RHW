@@ -97,7 +97,6 @@ const CAPITAL_SHIPYARD = DASHBOARD_CONFIG.capitalShipyard;
 const EXPORT_ORDER = DASHBOARD_CONFIG.exportOrder;
 const PRODUCTION_MODULES = DASHBOARD_CONFIG.productionModules;
 const CUSTOM_ALERTS = DASHBOARD_CONFIG.alerts;
-const BAR_MAX_FALLBACKS = DASHBOARD_CONFIG.barMaxFallbacks;
 
 const numFormatter = new Intl.NumberFormat('de-DE');
 

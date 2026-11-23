@@ -385,11 +385,8 @@ async function updates() {
 
 function overviewReferences(recipes) {
   const ctx = vm.createContext({
-    quantity: item => Number(item?.quantity || 0),
-    commodityKey: item => String(item?.name || '').toLowerCase(),
-    keyFromName: name => name.toLowerCase(),
-    minStock: item => Number(item?.min_stock || 0),
-    number: value => Number(value).toLocaleString('de-DE'),
+    document: { getElementById: () => null, addEventListener() {} },
+    numFormatter: new Intl.NumberFormat('de-DE'),
     escapeHTML: value => String(value).replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char])),
     statusPill: () => '<span class="pill">STABLE</span>',
     readinessText: () => 'READY', productionRecipes: () => recipes
@@ -398,6 +395,7 @@ function overviewReferences(recipes) {
   ctx.RHWV4 = { inventoryModel: { moxFeedstock: () => ({ cycles: 17, variant: 'BASIC' }) } };
   run(ctx, 'js/command/config.js');
   vm.runInContext('const CUSTOM_ALERTS=DASHBOARD_CONFIG.alerts, FEEDSTOCK=DASHBOARD_CONFIG.roles.feedstock;', ctx);
+  run(ctx, 'js/shared/utils.js');
   run(ctx, 'js/command/inventory.js');
   const evaluate = code => vm.runInContext(code, ctx);
   const ref = (item, role) => JSON.parse(evaluate(`JSON.stringify(overviewStockReference(${JSON.stringify(item)},${JSON.stringify(role)}))`));
@@ -418,6 +416,12 @@ function overviewReferences(recipes) {
   const markup=evaluate(`renderOverviewRow({state:'low',role:'export',name:'Reactor Systems',item:${JSON.stringify(reactor)},quantityValue:350,detail:overviewDetail(${JSON.stringify(reactor)},'low','export')})`);
   assert.match(markup, /overview-row-qty">350</);
   assert.doesNotMatch(markup, /TARGET|DEFICIT|overview-stock-reference/);
+  assert.match(markup, /aria-valuetext="350 of 2\.000 · Minimum 50"/);
+  const capacity = item => evaluate(`renderStockCapacity(${JSON.stringify(item)},'ok')`);
+  assert.equal(capacity({quantity:50,min_stock:10}), '', 'Unknown maximum has no capacity meter');
+  assert.equal(capacity({quantity:null,max_stock:100}), '', 'Unknown stock has no capacity meter');
+  assert.doesNotMatch(capacity({quantity:50,min_stock:110,max_stock:100}), /Minimum/);
+  assert.match(capacity({quantity:110,max_stock:100}), /aria-valuenow="100" aria-valuetext="110 of 100"/);
   assert.match(evaluate('telemetryPlaceholderRow()'), /STOCK UNKNOWN/i);
   console.log('Stock-only inventory, handling thresholds and input-batch references passed.');
 }

@@ -55,6 +55,26 @@ def main():
         assert len(state['ships']) == 2 and any('Archon' in n and '2' in n for n in state['ships']), state
         assert not any(n in state['exports'] for n in ['Gold', 'Wildcat Gold', 'Niobium', 'Prototype Components', 'MOX']), state
         assert base.ev(cdp, "byproductList.textContent.includes('MOX FEEDSTOCK') && byproductList.textContent.includes('TW FOR 10 BASIC MOX BATCHES') && !byproductList.textContent.includes('DISPOSAL')")
+        assert base.ev(cdp, """maintenanceList.querySelectorAll('[role="meter"]').length===3 &&
+          !reserveList.firstElementChild.querySelector('[role="meter"]') &&
+          productionGrid.querySelector('.production-stock-primary .stock-capacity-max-label')?.textContent==='Max 100.000' &&
+          maintenanceList.querySelector('.stock-capacity-min-label')?.textContent==='Min 0' &&
+          rhwPopulationTotal.textContent==='2.900 · Darkstat' &&
+          rhwPopulationCoverage.textContent.includes('5.800 Food Rations') &&
+          maintenanceList.textContent.includes('~5,7 days')"""), 'Capacity and maintenance use reported stock and population'
+        base.ev(cdp, """(()=>{
+          rhwPopulation.open=true;
+          rhwPopulationForm.elements.crew.value=1100;
+          rhwPopulationForm.elements.scientists.value=100;
+          rhwPopulationForm.requestSubmit();
+          return true;
+        })()""")
+        assert base.ev(cdp, """rhwPopulationStatus.textContent.includes('saved on this device') &&
+          rhwPopulationTotal.textContent==='2.900 · Darkstat'"""), 'Live counts take precedence over saved fallback'
+        base.ev(cdp, """(()=>{items=items.filter(item=>item.name!=='Scientists');renderOverview();return true;})()""")
+        assert base.ev(cdp, """rhwPopulationTotal.textContent==='1.200 · Saved on this device' &&
+          rhwPopulationCoverage.textContent.includes('2.400 Consumer Goods') &&
+          maintenanceList.textContent.includes('~13,9 days')"""), 'Incomplete Darkstat counts use the local fallback'
         out = Path(__file__).resolve().parents[1] / 'artifacts/interface'
         out.mkdir(parents=True, exist_ok=True)
         for width in [360, 390, 820, 1440]:
@@ -80,7 +100,9 @@ def main():
             (out / f'inventory-reserves-{width}.png').write_bytes(base64.b64decode(cdp.call('Page.captureScreenshot', {'format': 'png'})['data']))
         # Raw manifest entries stay separate, including a real zero Gold stock.
         base.ev(cdp, "(()=>{inventoryManifestTab.click();roleFilter.value='reserve';roleFilter.dispatchEvent(new Event('change'));return true;})()")
-        assert base.ev(cdp, "itemsBody.querySelectorAll('tr').length===5 && [...itemsBody.querySelectorAll('tr')].some(n=>n.textContent.includes('Wildcat Gold'))")
+        assert base.ev(cdp, """itemsBody.querySelectorAll('tr').length===5 &&
+          [...itemsBody.querySelectorAll('tr')].some(n=>n.textContent.includes('Wildcat Gold')) &&
+          itemsBody.querySelectorAll('.manifest-stock [role="meter"]').length===5""")
         base.ev(cdp, "(()=>{inventoryStatusTab.click();window.inventoryBefore=JSON.stringify(items);reserveList.querySelector('button[data-inventory-material]').click();return true;})()")
         wait(cdp, "!!document.querySelector('.inventory-uses-dialog[open]')")
         # A telemetry repaint can replace the original overview trigger while
@@ -110,7 +132,7 @@ def main():
         base.ev(cdp, "(()=>{items.find(n=>n.name==='Prototype Components').quantity=null;RHWV4.itemDetails.close();RHWV4.navigate('command','inventory');renderOverview();return true;})()")
         assert base.ev(cdp, "reserveList.children[2].classList.contains('alert-waiting') && reserveList.children[2].querySelector('.overview-row-qty').textContent==='–'")
         base.ev(cdp, "(()=>{items.filter(n=>['Basic Alloy','Toxic Waste'].includes(n.name)).forEach(n=>n.quantity=null);renderOverview();return true;})()")
-        assert base.ev(cdp, "maintenanceList.firstElementChild.textContent.includes('STOCK UNKNOWN') && !maintenanceList.firstElementChild.textContent.includes('FACILITY STABLE') && byproductList.textContent.includes('STOCK UNKNOWN') && !byproductList.textContent.includes('CONTAINMENT CRITICAL')"), 'Unknown stock must not claim stability or overflow'
+        assert base.ev(cdp, "maintenanceList.firstElementChild.textContent.includes('STOCK UNKNOWN') && !maintenanceList.firstElementChild.querySelector('[role=meter]') && !maintenanceList.firstElementChild.textContent.includes('FACILITY STABLE') && byproductList.textContent.includes('STOCK UNKNOWN') && !byproductList.textContent.includes('CONTAINMENT CRITICAL')"), 'Unknown stock must not claim stability, capacity or overflow'
         base.ev(cdp, """(()=>{
           const stock=(name,quantity)=>({name,quantity,min_stock:0,max_stock:1000000,category:'commodity'});
           const names=new Set();

@@ -3,6 +3,7 @@
   'use strict';
   const app = window.RHWV4;
   const definitions = DASHBOARD_CONFIG.reserveCards;
+  const populationKey = app.config.storageKeys.populationCounts;
   function definition(name) {
     const key = keyFromName(name);
     const spec = definitions.find(d => d.key === key || d.members.some(n => keyFromName(n) === key));
@@ -70,5 +71,45 @@
       return { hull, stock: Number.isSafeInteger(value) ? value : null };
     });
   }
-  app.inventoryModel = { definition, record, reserve, input, moxFeedstock, ships };
+  function populationCounts(crew, scientists) {
+    if (!Number.isSafeInteger(crew) || crew < 0 || !Number.isSafeInteger(scientists) || scientists < 0) return null;
+    const total = crew + scientists;
+    const unitsPerDay = 2 * total;
+    return Number.isSafeInteger(unitsPerDay) ? { crew, scientists, total, unitsPerDay } : null;
+  }
+
+  function reportedHeadcount(nickname, name) {
+    const counts = new Set();
+    for (const item of items) {
+      const key = normalize(item?.nickname);
+      if (!item || item.synthetic || (key ? key !== nickname : commodityKey(item) !== name)) continue;
+      const count = firstFiniteApiStockValue(item, ['quantity', 'amount', 'stock']);
+      if (Number.isSafeInteger(count)) counts.add(count);
+    }
+    return counts.size === 1 ? counts.values().next().value : null;
+  }
+
+  function savedPopulation() {
+    const saved = app.store.get(populationKey);
+    return populationCounts(saved?.crew, saved?.scientists);
+  }
+
+  function population(snapshot) {
+    if (snapshot.available) {
+      const reported = populationCounts(
+        reportedHeadcount('commodity_crew', 'crew'),
+        reportedHeadcount('commodity_scientists', 'scientists')
+      );
+      if (reported) return { ...reported, source: snapshot.stale ? 'Darkstat cache' : 'Darkstat' };
+    }
+    const saved = savedPopulation();
+    return saved ? { ...saved, source: 'Saved on this device' } : null;
+  }
+
+  function savePopulation(crew, scientists) {
+    if (!populationCounts(crew, scientists)) return 'invalid';
+    return app.store.set(populationKey, { crew, scientists }) ? 'saved' : 'unavailable';
+  }
+
+  app.inventoryModel = { definition, record, reserve, input, moxFeedstock, ships, population, savedPopulation, savePopulation };
 })();

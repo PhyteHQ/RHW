@@ -235,13 +235,6 @@ const DASHBOARD_CONFIG = Object.freeze({
     'multi-mode focusing chamber': { type: 'min', red: 500, yellow: 1000 },
     'multi-mode focusing chambers': { type: 'min', red: 500, yellow: 1000 },
     'wildcat gold': { type: 'max', yellow: 25000, red: 30000 }
-  }),
-  barMaxFallbacks: Object.freeze({
-    'basic alloy': 45000, 'food rations': 45000, 'consumer goods': 45000,
-    'reactor systems': 1000, 'superstructure systems': 1000, 'multi-mode focusing chamber': 2000,
-    'gold': 60000, 'niobium': 30000, 'prototype components': 25000, 'mox': 10000,
-    'gold ore': 50000, 'niobium ore': 50000, 'scrap metal': 30000, 'toxic waste': 50000,
-    'wildcat gold': 30000
   })
 });
 
@@ -347,7 +340,6 @@ const CAPITAL_SHIPYARD = DASHBOARD_CONFIG.capitalShipyard;
 const EXPORT_ORDER = DASHBOARD_CONFIG.exportOrder;
 const PRODUCTION_MODULES = DASHBOARD_CONFIG.productionModules;
 const CUSTOM_ALERTS = DASHBOARD_CONFIG.alerts;
-const BAR_MAX_FALLBACKS = DASHBOARD_CONFIG.barMaxFallbacks;
 
 const numFormatter = new Intl.NumberFormat('de-DE');
 
@@ -748,68 +740,24 @@ function apiStockBoundary(item) {
   };
 }
 
-function maxStock(item) {
-  const value = item?.max_stock ?? item?.max ?? item?.maxStock ?? item?.max_quantity ?? item?.maxQuantity ?? 0;
-  return finiteNumber(value, 0, 0);
-}
+function renderStockCapacity(item, state) {
+  const stock = firstFiniteApiStockValue(item, ['quantity', 'amount', 'stock']);
+  const { min, max, valid } = apiStockBoundary(item);
+  if (stock === null || !(max > 0)) return '';
 
-function barMaxFor(item) {
-  const nm = commodityKey(item);
-  const role = assetRole(item);
-  if (role === 'byproduct') return CUSTOM_ALERTS[nm]?.max || BAR_MAX_FALLBACKS[nm] || CUSTOM_ALERTS[nm]?.red || 15000;
-  return maxStock(item) || BAR_MAX_FALLBACKS[nm] || 1;
-}
-
-function progressMeta(item, roleOverride = null) {
-  const role = roleOverride || assetRole(item);
-  const q = quantity(item);
-  const max = barMaxFor(item);
-  const percent = max > 0 ? Math.min(100, (q / max) * 100) : 0;
-  const state = stateForRole(item, role);
-  let cls = state;
-  if (role === 'byproduct') cls = 'waste';
-  if (role === 'confiscated' && state === 'ok') cls = 'confiscated-bar';
-  const reportedMax = firstFiniteApiStockValue(item, ['max_stock', 'max', 'maxStock', 'max_quantity', 'maxQuantity']);
-  return { percent: Math.max(0, Math.round(percent)), cls, max, reportedMax,
-    actualMaximum: reportedMax > 0 && reportedMax === max };
-}
-
-function renderProgress(item, options = {}) {
-  const meta = progressMeta(item, options.role || null);
-  const fillClass = options.stateOverride || meta.cls;
-  const showApiReserve = options.showApiReserve !== false;
-  const q = quantity(item);
-
-  // The marker deliberately uses only live API values. Fallback capacities may size a
-  // normal bar, but they must never invent an in-game trade boundary. A real API
-  // min_stock of 0 is valid and is shown at the left edge of the scale.
-  const boundary = showApiReserve ? apiStockBoundary(item) : { min: null, max: null, valid: false };
-
-  if (!boundary.valid) {
-    const tooltip = meta.actualMaximum ? `${meta.percent}% OF API MAX ${number(meta.max)}`
-      : `STOCK ${number(q)} // DISPLAY SCALE ${number(meta.max)} // ${meta.reportedMax > 0 ? `API MAX ${number(meta.reportedMax)}` : 'API MAX NOT REPORTED'}`;
-    return `<div class="progress-wrap" data-tooltip="${tooltip}" aria-label="${tooltip}"><div class="progress-fill ${fillClass}" style="width:${meta.percent}%"></div></div>`;
-  }
-
-  const apiMin = boundary.min;
-  const apiMax = boundary.max;
-  const reservePercent = apiMin === 0 ? 0 : Math.max(0.5, Math.min(99.5, (apiMin / apiMax) * 100));
-  const sellable = Math.max(0, q - apiMin);
-  const tooltip = `STOCK ${number(q)} // BASE RESERVE ${number(apiMin)} // FOR SALE ${number(sellable)} // MAX ${number(apiMax)}`;
-  const markerTooltip = apiMin > 0
-    ? `API MIN STOCK ${number(apiMin)} // STOCK AT OR BELOW THIS MARK IS RESERVED`
-    : `API MIN STOCK 0 // NO STOCK IS SEALED AS BASE RESERVE`;
-
-  return `<div class="progress-wrap" data-tooltip="${tooltip}" aria-label="${tooltip}">` +
-    `<div class="progress-reserve-marker" style="left:${reservePercent.toFixed(2)}%" data-tooltip="${markerTooltip}" aria-label="${markerTooltip}" role="img" tabindex="0"></div>` +
-    `<div class="progress-fill ${fillClass}" style="width:${meta.percent}%"></div>` +
-  `</div>`;
-}
-
-function renderFeedstockProgress(item, state, fallbackKey) {
-  if (item) return renderProgress(item, { role: 'procurement', stateOverride: state, showApiReserve: true });
-  const max = BAR_MAX_FALLBACKS[fallbackKey] || 1;
-  return `<div class="progress-wrap" data-tooltip="DISPLAY SCALE ${number(max)} // STOCK NOT REPORTED" aria-label="DISPLAY SCALE ${number(max)} // STOCK NOT REPORTED"><div class="progress-fill ${state}" style="width:0%"></div></div>`;
+  const displayedStock = Math.min(stock, max);
+  const reading = `${number(stock)} of ${number(max)}${valid ? ` · Minimum ${number(min)}` : ''}`;
+  return `<div class="stock-capacity" data-stock-state="${state}" title="${reading}">
+    <div class="stock-capacity-track" role="meter" aria-label="Stock capacity" aria-valuemin="0"
+         aria-valuemax="${max}" aria-valuenow="${displayedStock}" aria-valuetext="${reading}">
+      <span class="stock-capacity-fill" style="width:${displayedStock / max * 100}%"></span>
+      ${valid ? `<span class="stock-capacity-min" style="left:${min / max * 100}%"></span>` : ''}
+    </div>
+    <div class="stock-capacity-limits" aria-hidden="true">
+      ${valid ? `<span class="stock-capacity-min-label">Min ${number(min)}</span>` : ''}
+      <span class="stock-capacity-max-label">Max ${number(max)}</span>
+    </div>
+  </div>`;
 }
 
 function formatBaseHealth(value) {
@@ -1506,7 +1454,10 @@ function renderProductionModules() {
                 </div>
               </div>
               <div class="production-stats">
-                <div class="production-stat production-stock-primary" role="group" aria-label="Finished stock: ${number(analysis.productStock)}"><small>Finished stock</small><strong>${number(analysis.productStock)}</strong></div>
+                <div class="production-stat production-stock-primary" role="group" aria-label="Finished stock: ${number(analysis.productStock)}">
+                  <small>Finished stock</small><strong>${number(analysis.productStock)}</strong>
+                  ${analysis.productItem ? renderStockCapacity(analysis.productItem, operationalState(analysis.productItem)) : ''}
+                </div>
                 <div class="production-stat production-capacity" role="group" aria-label="Can produce: ${number(analysis.possibleOutput)} additional units${batchCoverage ? ` across ${batchCoverage}` : ''}" title="Additional units covered by current materials; prerequisites and module activity are not checked">
                   <small>Can produce</small><div class="production-stat-value">
                     <strong>${number(analysis.possibleOutput)}</strong>${batchCoverage ? `<span class="production-batch-covered">${batchCoverage}</span>` : ''}
@@ -2061,7 +2012,7 @@ function renderOverviewTelemetryState(message, state = 'low') {
   });
 }
 
-function renderOverviewRow({ state, role, name, item = null, detail = '', quantityValue = 0, progress = '', extraClass = '', breakdown = '', input = '', actions = '' }) {
+function renderOverviewRow({ state, role, name, item = null, capacityItem = item, detail = '', detailTitle = '', quantityValue = 0, extraClass = '', breakdown = '', input = '', actions = '' }) {
   const reference = overviewStockReference(item, role);
   const modules = globalThis.RHWV4?.production?.modules?.() || DASHBOARD_CONFIG.productionModules;
   const recipeId = modules.find(module => keyFromName(module.product) === keyFromName(name))?.recipeId;
@@ -2069,8 +2020,6 @@ function renderOverviewRow({ state, role, name, item = null, detail = '', quanti
   const title = navigation ? `<button type="button" class="inventory-production-link" ${navigation}>${escapeHTML(name)}</button>` : `<strong>${escapeHTML(name)}</strong>`;
   const trade = role === 'export' && typeof exportRouteButton === 'function' ? exportRouteButton(name)
     : role === 'reserve' && typeof supplyRouteButton === 'function' ? supplyRouteButton(item?.name || name) : '';
-  const daily = role === 'maintenance' && DASHBOARD_CONFIG.maintenanceDailyReference?.[commodityKey(item)];
-  const detailTitle = daily > 0 ? `Stock only · estimated upkeep ${number(daily)} / day` : '';
   const safeDetail = detail ? `<small class="overview-stock-detail"${detailTitle ? ` title="${escapeHTML(detailTitle)}"` : ''}>${escapeHTML(detail)}</small>` : '';
   const referenceMarkup = reference ? `<span class="overview-stock-reference"><span aria-hidden="true">/</span> ${number(reference.value)} <small>${escapeHTML(reference.label)}</small></span>` : '';
   return `<li class="overview-stock-row alert-${state}${extraClass ? ` ${extraClass}` : ''}" ${navigation}>
@@ -2081,7 +2030,7 @@ function renderOverviewRow({ state, role, name, item = null, detail = '', quanti
               ${safeDetail}
             </div>
             ${breakdown}
-            ${progress}
+            ${renderStockCapacity(capacityItem, state)}
             ${role === 'reserve' && input ? `<div class="inventory-reserve-inputs">${input}</div>` : input}
           </li>`;
 }
@@ -2110,11 +2059,6 @@ function renderOverviewEmptyRow(text, statusText = 'SECURE') {
 
 function overviewDetail(item, state, role) {
   if (state === 'waiting') return 'STOCK UNKNOWN';
-  const daily = role === 'maintenance' && DASHBOARD_CONFIG.maintenanceDailyReference?.[commodityKey(item)];
-  if (daily > 0) {
-    const days = new Intl.NumberFormat('de-DE', { maximumFractionDigits: 1 }).format(quantity(item) / daily);
-    return `~${days} days`;
-  }
   const reference = overviewStockReference(item, role);
   if (role === 'byproduct') {
     if (commodityKey(item) === 'toxic waste') {
@@ -2137,7 +2081,24 @@ function overviewDetail(item, state, role) {
   return readinessText(state, role);
 }
 
-function renderList(target, list, emptyText, roleOverride = null) {
+const runwayDays = new Intl.NumberFormat('de-DE', { maximumFractionDigits: 1 });
+
+function maintenanceRunway(item, stock, population) {
+  const key = commodityKey(item);
+  const reference = DASHBOARD_CONFIG.maintenanceDailyReference[key];
+  const populationSupply = key === 'food rations' || key === 'consumer goods';
+  if (reference === undefined && !populationSupply) return null;
+  const daily = reference ?? population?.unitsPerDay;
+  if (daily === undefined) return { detail: 'Set population for coverage' };
+  if (daily === 0) return { detail: 'No upkeep', detailTitle: population?.source ?? '' };
+  return {
+    detail: `~${runwayDays.format(stock / daily)} days`,
+    detailTitle: reference !== undefined ? `Estimated upkeep ${number(reference)} per day`
+      : `${number(daily)} per day for ${number(population.total)} people · ${population.source}`
+  };
+}
+
+function renderList(target, list, emptyText, roleOverride = null, population = null) {
   if (!target) return;
   if (!list.length) {
     target.innerHTML = renderOverviewEmptyRow(emptyText);
@@ -2147,9 +2108,10 @@ function renderList(target, list, emptyText, roleOverride = null) {
     const role = roleOverride || assetRole(item);
     const stock = item.missing ? null : firstFiniteApiStockValue(item, ['quantity', 'amount', 'stock']);
     const state = stock === null ? 'waiting' : stateForRole(item, role);
+    const coverage = role === 'maintenance' && stock !== null ? maintenanceRunway(item, stock, population) : null;
     return renderOverviewRow({
-      state, role, name: displayName(item), item, detail: overviewDetail(item, state, role),
-      quantityValue: stock, progress: stock === null ? '' : renderProgress(item, { showApiReserve: true, role })
+      state, role, name: displayName(item), item, quantityValue: stock,
+      detail: overviewDetail(item, state, role), ...coverage
     });
   }).join('');
 }
@@ -2169,8 +2131,51 @@ function renderShipStock() {
   els.shipStockCount.textContent = rows.some(row => row.stock !== null) ? `${number(available.reduce((total, row) => total + row.stock, 0))} HULLS` : '—';
 }
 
+function installPopulationForm() {
+  const form = document.getElementById('rhwPopulationForm');
+  const fields = form?.querySelector('fieldset');
+  if (!fields?.disabled) return;
+  const model = window.RHWV4.inventoryModel;
+  const crew = form.elements.namedItem('crew');
+  const scientists = form.elements.namedItem('scientists');
+  const status = document.getElementById('rhwPopulationStatus');
+  const saved = model.savedPopulation();
+  if (saved) {
+    crew.value = saved.crew;
+    scientists.value = saved.scientists;
+  }
+  fields.disabled = false;
+  form.addEventListener('submit', event => {
+    event.preventDefault();
+    const outcome = model.savePopulation(crew.valueAsNumber, scientists.valueAsNumber);
+    if (outcome === 'saved') {
+      status.textContent = 'Fallback counts saved on this device.';
+      renderOverview();
+    } else if (outcome === 'invalid') {
+      status.textContent = 'Enter valid whole numbers of zero or more.';
+    } else {
+      status.textContent = 'Could not save counts on this device.';
+    }
+  });
+}
+
+function renderPopulation(population) {
+  const total = document.getElementById('rhwPopulationTotal');
+  const coverage = document.getElementById('rhwPopulationCoverage');
+  if (!total || !coverage) return;
+  total.textContent = population ? `${number(population.total)} · ${population.source}` : 'Awaiting headcounts';
+  coverage.hidden = !population;
+  coverage.textContent = population
+    ? `${number(population.crew)} Crew + ${number(population.scientists)} Scientists · ${number(population.unitsPerDay)} Food Rations and ${number(population.unitsPerDay)} Consumer Goods per day.`
+    : '';
+}
+
 function renderOverview() {
-  if (!hasVerifiedTelemetry() || !window.RHWV4?.inventoryModel) {
+  const snapshot = telemetrySnapshot();
+  const model = window.RHWV4?.inventoryModel;
+  const population = model?.population(snapshot) ?? null;
+  renderPopulation(population);
+  if (!snapshot.available || !model) {
     renderOverviewTelemetryState();
     return;
   }
@@ -2183,20 +2188,20 @@ function renderOverview() {
   scrambleText(els.exportCount, exports.length);
   scrambleText(els.byproductCount, byproducts.length);
   scrambleText(els.reserveCount, DASHBOARD_CONFIG.reserveCards.length);
-  renderList(els.maintenanceList, maintenance, 'FACILITY RESERVES STABLE', 'maintenance');
+  renderList(els.maintenanceList, maintenance, 'FACILITY RESERVES STABLE', 'maintenance', population);
   const alloy = [...els.maintenanceList.children].find(row => row.dataset.inventoryRecipe === 'recipe_scrap_advanced');
   alloy?.insertAdjacentHTML('beforeend', inventoryInputRow('Scrap Metal', 'recipe_scrap_advanced'));
   renderList(els.exportList, exports, 'NO EXPORT ASSETS DETECTED', 'export');
   renderList(els.byproductList, byproducts, 'NO REPORTED MOX FEEDSTOCK', 'byproduct');
   els.reserveList.innerHTML = DASHBOARD_CONFIG.reserveCards.map(spec => {
-    const reserve = window.RHWV4.inventoryModel.reserve(spec.key);
+    const reserve = model.reserve(spec.key);
     const breakdown = spec.members.length > 1 ? `<div class="inventory-pool-parts">${reserve.parts.map(part => `<span><span>${escapeHTML(part.name)}</span><strong>${number(reserve.stock === null ? part.stock : part.stock ?? 0)}</strong></span>`).join('')}</div>` : '';
     const detail = reserve.required === null ? 'RECIPE REQUIREMENTS UNKNOWN' : reserve.required > 0
       ? `LARGEST RECIPE INPUT · ${number(reserve.required)}` : 'AVAILABLE FOR PRODUCTION';
-    const progress = reserve.stock === null ? '' : renderProgress(reserve.item, { role: 'reserve', stateOverride: reserve.state, showApiReserve: false });
+    const capacityItem = reserve.parts.length === 1 && reserve.stock !== null ? reserve.parts[0].item : null;
     const actions = spec.key === 'prototype components' ? '<button type="button" class="rhw-supply-button rhw-supply-icon" data-surplus-commodity="Prototype Components" aria-label="Check surplus export buyers for Prototype Components" title="Check surplus buyers · Internal production first"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M14 4h6v6M20 4l-9 9M10 5H4v15h15v-6"/></svg></button>' : '';
     return renderOverviewRow({ role: 'reserve', name: spec.label, item: reserve.item, state: reserve.state,
-      quantityValue: reserve.stock, detail, breakdown, progress,
+      quantityValue: reserve.stock, detail, breakdown, capacityItem,
       input: (reserve.inputs || [reserve.input]).map(name => inventoryInputRow(name, reserve.recipeId)).join(''), actions });
   }).join('');
   renderShipStock();
@@ -2264,7 +2269,8 @@ function renderManifest() {
     const state = manifestState(item);
     const routeAction = hasAssetRole(item, 'export') && typeof exportRouteButton === 'function' ? exportRouteButton(displayName(item))
       : typeof supplyRouteButton === 'function' ? supplyRouteButton(displayName(item)) : '';
-    return `<tr><td class="asset-cell"><span class="rhw-supply-material"><strong>${escapeHTML(displayName(item))}</strong>${routeAction}</span></td><td>${rolePillsFor(item)}</td><td>${statusPill(state, role)}</td><td class="numeric-cell">${number(firstFiniteApiStockValue(item, ['quantity', 'amount', 'stock']))}</td><td class="numeric-cell price-cell sell-price">${formatCurrency(priceSell(item))}</td><td class="numeric-cell price-cell buy-price">${formatCurrency(priceBuy(item))}</td></tr>`;
+    const stock = firstFiniteApiStockValue(item, ['quantity', 'amount', 'stock']);
+    return `<tr><td class="asset-cell"><span class="rhw-supply-material"><strong>${escapeHTML(displayName(item))}</strong>${routeAction}</span></td><td>${rolePillsFor(item)}</td><td>${statusPill(state, role)}</td><td class="numeric-cell manifest-stock">${number(stock)}${renderStockCapacity(item, state)}</td><td class="numeric-cell price-cell sell-price">${formatCurrency(priceSell(item))}</td><td class="numeric-cell price-cell buy-price">${formatCurrency(priceBuy(item))}</td></tr>`;
   }).join('');
 }
 

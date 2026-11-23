@@ -304,68 +304,24 @@ function apiStockBoundary(item) {
   };
 }
 
-function maxStock(item) {
-  const value = item?.max_stock ?? item?.max ?? item?.maxStock ?? item?.max_quantity ?? item?.maxQuantity ?? 0;
-  return finiteNumber(value, 0, 0);
-}
+function renderStockCapacity(item, state) {
+  const stock = firstFiniteApiStockValue(item, ['quantity', 'amount', 'stock']);
+  const { min, max, valid } = apiStockBoundary(item);
+  if (stock === null || !(max > 0)) return '';
 
-function barMaxFor(item) {
-  const nm = commodityKey(item);
-  const role = assetRole(item);
-  if (role === 'byproduct') return CUSTOM_ALERTS[nm]?.max || BAR_MAX_FALLBACKS[nm] || CUSTOM_ALERTS[nm]?.red || 15000;
-  return maxStock(item) || BAR_MAX_FALLBACKS[nm] || 1;
-}
-
-function progressMeta(item, roleOverride = null) {
-  const role = roleOverride || assetRole(item);
-  const q = quantity(item);
-  const max = barMaxFor(item);
-  const percent = max > 0 ? Math.min(100, (q / max) * 100) : 0;
-  const state = stateForRole(item, role);
-  let cls = state;
-  if (role === 'byproduct') cls = 'waste';
-  if (role === 'confiscated' && state === 'ok') cls = 'confiscated-bar';
-  const reportedMax = firstFiniteApiStockValue(item, ['max_stock', 'max', 'maxStock', 'max_quantity', 'maxQuantity']);
-  return { percent: Math.max(0, Math.round(percent)), cls, max, reportedMax,
-    actualMaximum: reportedMax > 0 && reportedMax === max };
-}
-
-function renderProgress(item, options = {}) {
-  const meta = progressMeta(item, options.role || null);
-  const fillClass = options.stateOverride || meta.cls;
-  const showApiReserve = options.showApiReserve !== false;
-  const q = quantity(item);
-
-  // The marker deliberately uses only live API values. Fallback capacities may size a
-  // normal bar, but they must never invent an in-game trade boundary. A real API
-  // min_stock of 0 is valid and is shown at the left edge of the scale.
-  const boundary = showApiReserve ? apiStockBoundary(item) : { min: null, max: null, valid: false };
-
-  if (!boundary.valid) {
-    const tooltip = meta.actualMaximum ? `${meta.percent}% OF API MAX ${number(meta.max)}`
-      : `STOCK ${number(q)} // DISPLAY SCALE ${number(meta.max)} // ${meta.reportedMax > 0 ? `API MAX ${number(meta.reportedMax)}` : 'API MAX NOT REPORTED'}`;
-    return `<div class="progress-wrap" data-tooltip="${tooltip}" aria-label="${tooltip}"><div class="progress-fill ${fillClass}" style="width:${meta.percent}%"></div></div>`;
-  }
-
-  const apiMin = boundary.min;
-  const apiMax = boundary.max;
-  const reservePercent = apiMin === 0 ? 0 : Math.max(0.5, Math.min(99.5, (apiMin / apiMax) * 100));
-  const sellable = Math.max(0, q - apiMin);
-  const tooltip = `STOCK ${number(q)} // BASE RESERVE ${number(apiMin)} // FOR SALE ${number(sellable)} // MAX ${number(apiMax)}`;
-  const markerTooltip = apiMin > 0
-    ? `API MIN STOCK ${number(apiMin)} // STOCK AT OR BELOW THIS MARK IS RESERVED`
-    : `API MIN STOCK 0 // NO STOCK IS SEALED AS BASE RESERVE`;
-
-  return `<div class="progress-wrap" data-tooltip="${tooltip}" aria-label="${tooltip}">` +
-    `<div class="progress-reserve-marker" style="left:${reservePercent.toFixed(2)}%" data-tooltip="${markerTooltip}" aria-label="${markerTooltip}" role="img" tabindex="0"></div>` +
-    `<div class="progress-fill ${fillClass}" style="width:${meta.percent}%"></div>` +
-  `</div>`;
-}
-
-function renderFeedstockProgress(item, state, fallbackKey) {
-  if (item) return renderProgress(item, { role: 'procurement', stateOverride: state, showApiReserve: true });
-  const max = BAR_MAX_FALLBACKS[fallbackKey] || 1;
-  return `<div class="progress-wrap" data-tooltip="DISPLAY SCALE ${number(max)} // STOCK NOT REPORTED" aria-label="DISPLAY SCALE ${number(max)} // STOCK NOT REPORTED"><div class="progress-fill ${state}" style="width:0%"></div></div>`;
+  const displayedStock = Math.min(stock, max);
+  const reading = `${number(stock)} of ${number(max)}${valid ? ` · Minimum ${number(min)}` : ''}`;
+  return `<div class="stock-capacity" data-stock-state="${state}" title="${reading}">
+    <div class="stock-capacity-track" role="meter" aria-label="Stock capacity" aria-valuemin="0"
+         aria-valuemax="${max}" aria-valuenow="${displayedStock}" aria-valuetext="${reading}">
+      <span class="stock-capacity-fill" style="width:${displayedStock / max * 100}%"></span>
+      ${valid ? `<span class="stock-capacity-min" style="left:${min / max * 100}%"></span>` : ''}
+    </div>
+    <div class="stock-capacity-limits" aria-hidden="true">
+      ${valid ? `<span class="stock-capacity-min-label">Min ${number(min)}</span>` : ''}
+      <span class="stock-capacity-max-label">Max ${number(max)}</span>
+    </div>
+  </div>`;
 }
 
 function formatBaseHealth(value) {

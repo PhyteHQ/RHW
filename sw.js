@@ -1,4 +1,4 @@
-/* GENERATED release revision: sha256-b2f69997399f03555342 */
+/* GENERATED release revision: sha256-d48823034aad2a63cb0e */
 /* RHW V4.0.2 · unified workspace service worker
    App assets are available offline. Live telemetry remains network-only. */
 importScripts('./js/build-info.js', './js/app-shell.js');

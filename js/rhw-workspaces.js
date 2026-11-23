@@ -85,6 +85,7 @@ const RHW_APP_CONFIG = Object.freeze({
     activeWorkspace: 'rhw-webapp-v4:workspace',
     commandNode: 'rhw-webapp-v4:command-node',
     inventoryView: 'rhw-webapp-v4:inventory-view',
+    populationCounts: 'rhw-webapp-v4:population-counts',
     shipyardSelection: 'rhw-webapp-v4:shipyard-selection',
     shipyardDivisions: 'rhw-webapp-v4:shipyard-divisions',
     moxRecipe: 'rhw-webapp-v4:mox-recipe',
@@ -3049,6 +3050,7 @@ globalThis.RHW_PRODUCTION_VOLUMES = Object.freeze({
   'use strict';
   const app = window.RHWV4;
   const definitions = DASHBOARD_CONFIG.reserveCards;
+  const populationKey = app.config.storageKeys.populationCounts;
   function definition(name) {
     const key = keyFromName(name);
     const spec = definitions.find(d => d.key === key || d.members.some(n => keyFromName(n) === key));
@@ -3116,7 +3118,47 @@ globalThis.RHW_PRODUCTION_VOLUMES = Object.freeze({
       return { hull, stock: Number.isSafeInteger(value) ? value : null };
     });
   }
-  app.inventoryModel = { definition, record, reserve, input, moxFeedstock, ships };
+  function populationCounts(crew, scientists) {
+    if (!Number.isSafeInteger(crew) || crew < 0 || !Number.isSafeInteger(scientists) || scientists < 0) return null;
+    const total = crew + scientists;
+    const unitsPerDay = 2 * total;
+    return Number.isSafeInteger(unitsPerDay) ? { crew, scientists, total, unitsPerDay } : null;
+  }
+
+  function reportedHeadcount(nickname, name) {
+    const counts = new Set();
+    for (const item of items) {
+      const key = normalize(item?.nickname);
+      if (!item || item.synthetic || (key ? key !== nickname : commodityKey(item) !== name)) continue;
+      const count = firstFiniteApiStockValue(item, ['quantity', 'amount', 'stock']);
+      if (Number.isSafeInteger(count)) counts.add(count);
+    }
+    return counts.size === 1 ? counts.values().next().value : null;
+  }
+
+  function savedPopulation() {
+    const saved = app.store.get(populationKey);
+    return populationCounts(saved?.crew, saved?.scientists);
+  }
+
+  function population(snapshot) {
+    if (snapshot.available) {
+      const reported = populationCounts(
+        reportedHeadcount('commodity_crew', 'crew'),
+        reportedHeadcount('commodity_scientists', 'scientists')
+      );
+      if (reported) return { ...reported, source: snapshot.stale ? 'Darkstat cache' : 'Darkstat' };
+    }
+    const saved = savedPopulation();
+    return saved ? { ...saved, source: 'Saved on this device' } : null;
+  }
+
+  function savePopulation(crew, scientists) {
+    if (!populationCounts(crew, scientists)) return 'invalid';
+    return app.store.set(populationKey, { crew, scientists }) ? 'saved' : 'unavailable';
+  }
+
+  app.inventoryModel = { definition, record, reserve, input, moxFeedstock, ships, population, savedPopulation, savePopulation };
 })();
 
 ;
@@ -3305,6 +3347,7 @@ globalThis.RHW_PRODUCTION_VOLUMES = Object.freeze({
     else if (target.dataset.inventoryMaterial) material(target.dataset.inventoryMaterial, explicit || target.querySelector('button'));
   });
   const render = () => { renderOverview(); app.command?.updateOverview?.(); };
+  app.lifecycle.on('command:ready', 'inventory-population-form', 94, installPopulationForm);
   app.lifecycle.on('catalog:loaded', 'inventory-reserves', 55, render);
   app.lifecycle.on('command:ready', 'inventory-reserves', 95, render);
   app.inventoryNavigation = { recipe, hull, material };

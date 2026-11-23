@@ -470,7 +470,10 @@ function renderProductionModules() {
                 </div>
               </div>
               <div class="production-stats">
-                <div class="production-stat production-stock-primary" role="group" aria-label="Finished stock: ${number(analysis.productStock)}"><small>Finished stock</small><strong>${number(analysis.productStock)}</strong></div>
+                <div class="production-stat production-stock-primary" role="group" aria-label="Finished stock: ${number(analysis.productStock)}">
+                  <small>Finished stock</small><strong>${number(analysis.productStock)}</strong>
+                  ${analysis.productItem ? renderStockCapacity(analysis.productItem, operationalState(analysis.productItem)) : ''}
+                </div>
                 <div class="production-stat production-capacity" role="group" aria-label="Can produce: ${number(analysis.possibleOutput)} additional units${batchCoverage ? ` across ${batchCoverage}` : ''}" title="Additional units covered by current materials; prerequisites and module activity are not checked">
                   <small>Can produce</small><div class="production-stat-value">
                     <strong>${number(analysis.possibleOutput)}</strong>${batchCoverage ? `<span class="production-batch-covered">${batchCoverage}</span>` : ''}
