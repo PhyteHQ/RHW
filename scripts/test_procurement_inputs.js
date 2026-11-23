@@ -34,8 +34,7 @@ evaluate(`Object.assign(globalThis, { MAINTENANCE: DASHBOARD_CONFIG.roles.mainte
   EXPORTS: DASHBOARD_CONFIG.roles.export, SHIPYARD: DASHBOARD_CONFIG.roles.shipyard,
   BYPRODUCTS: DASHBOARD_CONFIG.roles.byproduct, PROCUREMENT: DASHBOARD_CONFIG.roles.procurement,
   FEEDSTOCK: DASHBOARD_CONFIG.roles.feedstock, CONFISCATED: DASHBOARD_CONFIG.roles.confiscated,
-  PRODUCTION_MODULES: DASHBOARD_CONFIG.productionModules, CUSTOM_ALERTS: DASHBOARD_CONFIG.alerts,
-  BAR_MAX_FALLBACKS: DASHBOARD_CONFIG.barMaxFallbacks });`);
+  PRODUCTION_MODULES: DASHBOARD_CONFIG.productionModules, CUSTOM_ALERTS: DASHBOARD_CONFIG.alerts });`);
 run('js/shared/utils.js'); run('js/command/production.js'); run('js/command/inventory.js');
 ctx.renderAll = () => {};
 run('js/calculator/model.js'); run('js/calculator/catalog.js');

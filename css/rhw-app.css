@@ -6086,12 +6086,15 @@ html.rhw-focus-pass .app-workspace .rhw-supply-icon:is(:hover,:focus-visible) { 
   min-width:0;
   margin:0;
   padding:10px 12px;
-  border:1px solid var(--production-rim);
+  border:1px solid color-mix(in srgb,var(--production-edge) 35%,var(--production-rim));
   border-top:3px solid var(--production-edge);
   border-radius:0;
   clip-path:polygon(0 0,calc(100% - 12px) 0,100% 12px,100% 100%,12px 100%,0 calc(100% - 12px));
-  background:#131a1f;
-  box-shadow:none;
+  background:
+    repeating-linear-gradient(90deg,#c5b79b0c 0 1px,transparent 1px 22px),
+    repeating-linear-gradient(0deg,#c5b79b0b 0 1px,transparent 1px 22px),
+    linear-gradient(155deg,#1e2329,#111418 56%,#0e1115);
+  box-shadow:inset 0 0 0 1px #0007;
   transform:none;
 }
 #productionGrid .production-card[hidden] { display:none; }
@@ -6114,7 +6117,7 @@ html.rhw-focus-pass .app-workspace .rhw-supply-icon:is(:hover,:focus-visible) { 
     linear-gradient(100deg,transparent,var(--production-deck) 78%),
     repeating-linear-gradient(90deg,#a5b7c011 0 1px,transparent 1px 22px),
     repeating-linear-gradient(0deg,#a5b7c00b 0 1px,transparent 1px 22px),
-    linear-gradient(100deg,#243139,var(--production-deck));
+    linear-gradient(100deg,color-mix(in srgb,var(--production-edge) 19%,#191d22),var(--production-deck));
 }
 #productionGrid .production-title {
   flex:1 1 152px;
@@ -6123,7 +6126,7 @@ html.rhw-focus-pass .app-workspace .rhw-supply-icon:is(:hover,:focus-visible) { 
   font:500 28px/1.05 var(--font-title);
   letter-spacing:.02em;
   overflow-wrap:anywhere;
-  text-shadow:none;
+  text-shadow:0 1px #0008,0 0 14px #e8b87538;
 }
 #productionGrid .production-card-meta { display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin:0; }
 #productionGrid .module-state {
@@ -6178,6 +6181,7 @@ html.rhw-focus-pass .app-workspace .rhw-supply-icon:is(:hover,:focus-visible) { 
 #productionGrid .production-stat small { display:block;min-height:0;margin:0;color:var(--palette-text-soft);font:500 13px/1.3 var(--font-main); }
 #productionGrid .production-stat strong { color:var(--text);font:29px/1.1 var(--font-tech);font-variant-numeric:tabular-nums;white-space:nowrap;text-shadow:none; }
 #productionGrid .production-capacity strong { color:var(--production-state); }
+#productionGrid .production-stock-primary>.stock-capacity { width:100%;margin-block-start:4px; }
 .production-stat-value { display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:1px 8px;width:100%; }
 .production-batch-covered { color:var(--muted);font:500 12px/1.35 var(--font-main);white-space:nowrap; }
 
@@ -6288,7 +6292,6 @@ html.rhw-focus-pass #inventoryStatusPanel .overview-stock-row { align-content:st
 html.rhw-focus-pass #inventoryStatusPanel .alert-list { gap:6px;padding:10px; }
 html.rhw-focus-pass #inventoryStatusPanel .alert-list li.overview-stock-row { padding:9px 10px;gap:5px 8px; }
 html.rhw-focus-pass #inventoryStatusPanel .overview-stock-detail { font:11px/1.5 var(--font-main); }
-html.rhw-focus-pass #inventoryStatusPanel .overview-stock-row>.progress-wrap { margin-top:1px; }
 html.rhw-focus-pass #inventoryStatusPanel .alert-title { padding-block:12px; }
 html.rhw-focus-pass #inventoryStatusPanel .inventory-production-link { display:block;min-height:28px;padding:0;border:0;background:transparent;color:var(--text);font:600 15px/1.4 var(--font-main);text-align:left;clip-path:none;box-shadow:none;cursor:pointer;overflow-wrap:anywhere; }
 html.rhw-focus-pass #inventoryStatusPanel li[data-inventory-recipe],html.rhw-focus-pass #inventoryStatusPanel li[data-inventory-material] { cursor:pointer; }
@@ -6304,7 +6307,6 @@ html.rhw-focus-pass #inventoryStatusPanel .inventory-input-row button { grid-col
 .inventory-input-row>small { grid-column:3;grid-row:2;text-align:right;color:var(--muted);font:11px/1.5 var(--font-main); }
 html.rhw-focus-pass #inventoryStatusPanel .reserve-panel .alert-ok { border-left-color:#b69b65; }
 html.rhw-focus-pass #inventoryStatusPanel .reserve-panel .pill.ok { color:#dac38a;border-color:#9c8050;background:#b69b650b; }
-.reserve-panel .progress-fill.ok { background:#b69b65; }
 .inventory-surplus { grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;font:10px/1.5 var(--font-tech);color:var(--muted); }
 html.rhw-focus-pass #inventoryStatusPanel :is(.inventory-surplus button,.inventory-yard-link) { min-height:44px;border:1px solid var(--line);background:var(--surface-input);padding:7px 9px;color:#dac38a;font:11px/1.5 var(--font-main);clip-path:none;box-shadow:none;cursor:pointer; }
 html.rhw-focus-pass #inventoryStatusPanel .ship-stock-panel .alert-list { display:grid;gap:0; }
@@ -6587,7 +6589,7 @@ html.rhw-focus-pass #commandBriefing .maintenance-panel .pill {
   font:11px/1.35 var(--font-main);
 }
 #commandBriefing .maintenance-panel .pill::before { width:5px;height:5px;border-radius:50%;background:currentColor;content:""; }
-html.rhw-focus-pass #commandBriefing .maintenance-panel :is(.progress-wrap,.inventory-input-row) { display:none; }
+html.rhw-focus-pass #commandBriefing .maintenance-panel .inventory-input-row { display:none; }
 html.rhw-focus-pass #commandBriefing .maintenance-panel .overview-stock-detail { grid-column:1;grid-row:4;order:initial;text-transform:none;font:12px/1.4 var(--font-main); }
 
 .overview-next {
@@ -6711,7 +6713,6 @@ html.rhw-focus-pass.rhw-workbench #overviewControlsHost .inventory-view-nav { gr
 html.rhw-focus-pass.rhw-workbench #overviewControlsHost .command-finder { grid-column:2; }
 /* Stock for an optional business goal is a planning hint. */
 html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel :is(.export-panel,.reserve-panel) .pill.critical { color:var(--warn);border-color:var(--warn);background:transparent; }
-#inventoryStatusPanel :is(.export-panel,.reserve-panel) .progress-fill.critical { background:var(--warn); }
 @media(max-width:950px) {
   html.rhw-focus-pass.rhw-workbench .command-briefing { grid-template-columns:minmax(0,1fr);gap:12px; }
 }
@@ -6812,13 +6813,9 @@ html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel .waste-panel .alert-titl
 html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel #byproductList { display:grid;padding:12px 16px;list-style:none; }
 html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel #byproductList>li.overview-stock-row { display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 20px;border:0;padding:0; }
 html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel #byproductList .overview-row-meta { grid-column:1/-1;display:flex;align-items:center;justify-content:space-between; }
-html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel #byproductList .progress-wrap { display:none; }
 html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel #shipStockList { display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0;padding:0 16px; }
 html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel .inventory-ship-row { padding:8px 12px;border-bottom:1px solid var(--line); }
 html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel .inventory-other-ships { grid-column:1/-1;padding:4px 12px; }
-html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel .overview-stock-row .progress-wrap { height:4px;margin-top:4px;box-shadow:none; }
-html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel .overview-stock-row .progress-fill { box-shadow:none;background-image:none; }
-html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel .overview-stock-row .progress-wrap::after { display:none; }
 @media(max-width:760px) {
   html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel #reserveList>li.overview-stock-row {
     grid-template-columns:minmax(0,1fr) minmax(0,.8fr);
@@ -6840,8 +6837,121 @@ html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel .overview-stock-row .pro
  html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel #shipStockList { grid-template-columns:minmax(0,1fr); }
 }
 
-/* Exact stocks and concise status labels carry the overview; bars stay in details. */
-html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel .overview-stock-row>.progress-wrap { display:none; }
 html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel .overview-row-qty { color:var(--text);text-shadow:none; }
 html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel .overview-next .command-priority-item small { text-transform:none; }
+
+.stock-capacity {
+  --capacity-ink:var(--muted);
+  display:grid;
+  gap:4px;
+  min-width:0;
+}
+.stock-capacity[data-stock-state="ok"] { --capacity-ink:var(--good); }
+.stock-capacity[data-stock-state="low"] { --capacity-ink:var(--warn); }
+.stock-capacity[data-stock-state="critical"] { --capacity-ink:var(--danger); }
+#inventoryStatusPanel :is(.export-panel,.reserve-panel) .stock-capacity[data-stock-state="critical"] { --capacity-ink:var(--warn); }
+.stock-capacity-track {
+  position:relative;
+  height:8px;
+  border:1px solid var(--line);
+  background:repeating-linear-gradient(90deg,#ffffff15 0 5px,transparent 5px 8px),var(--surface-input);
+  box-shadow:inset 0 1px 3px #0008;
+}
+.stock-capacity-fill {
+  position:absolute;
+  inset:0 auto 0 0;
+  background:repeating-linear-gradient(90deg,var(--capacity-ink) 0 5px,transparent 5px 8px);
+}
+.stock-capacity-min {
+  position:absolute;
+  inset-block:-2px;
+  width:2px;
+  transform:translateX(-50%);
+  background:#b8d6ff;
+}
+.stock-capacity-limits {
+  display:flex;
+  flex-wrap:wrap;
+  justify-content:space-between;
+  gap:2px 8px;
+  color:var(--palette-text-soft);
+  font:12px/1.25 var(--font-tech);
+  font-variant-numeric:tabular-nums;
+  overflow-wrap:anywhere;
+}
+.stock-capacity-min-label { color:#c2d8fa; }
+.stock-capacity-max-label { margin-inline-start:auto; }
+
+html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel .summary-grid>.alert-card {
+  border-radius:2px;
+  border-top-color:var(--palette-gold-muted);
+  background:linear-gradient(155deg,#1c2025,#0e1115 52%);
+}
+html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel .summary-grid .alert-title {
+  background:repeating-linear-gradient(90deg,#e9be7710 0 1px,transparent 1px 24px),linear-gradient(100deg,#392d1d 0,#1a1d22 62%,#111419);
+  border-color:var(--line);
+}
+html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel #exportList>li.overview-stock-row {
+  background:linear-gradient(160deg,#1d2329aa,#101419 62%);
+}
+#inventoryStatusPanel .overview-stock-row>.stock-capacity { grid-column:1/-1; }
+#inventoryStatusPanel #reserveList .stock-capacity { grid-column:2;grid-row:3;margin-block:6px 2px; }
+#commandBriefing #maintenanceList .stock-capacity { grid-column:1;grid-row:5;margin-block:5px 2px; }
+#dataTable .manifest-stock .stock-capacity { min-width:76px;margin-block-start:4px; }
+
+.facility-population { border-top:1px solid var(--overview-rim); }
+.facility-population>summary {
+  display:flex;
+  align-items:center;
+  gap:8px;
+  min-height:44px;
+  padding:8px 14px;
+  color:var(--palette-text-soft);
+  font:13px/1.4 var(--font-main);
+  list-style:none;
+  cursor:pointer;
+}
+.facility-population>summary::-webkit-details-marker { display:none; }
+.facility-population>summary::after {
+  flex:none;
+  width:6px;
+  height:6px;
+  border:solid currentColor;
+  border-width:0 1px 1px 0;
+  transform:rotate(45deg);
+  content:"";
+}
+.facility-population[open]>summary::after { transform:rotate(225deg); }
+.facility-population summary strong { margin-inline-start:auto;color:var(--gold);text-align:end; }
+.facility-population form { display:grid;gap:8px;padding:0 14px 12px;color:var(--palette-text-soft);font:13px/1.4 var(--font-main); }
+.facility-population form p { margin:0; }
+.facility-population form [role="status"]:empty { display:none; }
+.facility-population fieldset {
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr)) auto;
+  align-items:end;
+  min-width:0;
+  margin:0;
+  padding:0;
+  border:0;
+  gap:8px;
+}
+.facility-population label { display:grid;gap:4px; }
+.facility-population :is(input,button) {
+  width:100%;
+  min-height:44px;
+  padding:6px 8px;
+  border:1px solid var(--line);
+  border-radius:var(--rhw-surface-radius);
+  background:var(--surface-input);
+  color:var(--text);
+  font:inherit;
+}
+.facility-population button { color:var(--gold);cursor:pointer; }
+.facility-population button:hover { background:var(--rhw-control-hover); }
+.facility-population :is(summary,input,button):focus-visible { outline:2px solid var(--gold);outline-offset:2px; }
+@media(max-width:480px) {
+  .facility-population fieldset { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .facility-population button { grid-column:1/-1; }
+}
 

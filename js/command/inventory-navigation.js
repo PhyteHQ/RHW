@@ -47,6 +47,7 @@
     else if (target.dataset.inventoryMaterial) material(target.dataset.inventoryMaterial, explicit || target.querySelector('button'));
   });
   const render = () => { renderOverview(); app.command?.updateOverview?.(); };
+  app.lifecycle.on('command:ready', 'inventory-population-form', 94, installPopulationForm);
   app.lifecycle.on('catalog:loaded', 'inventory-reserves', 55, render);
   app.lifecycle.on('command:ready', 'inventory-reserves', 95, render);
   app.inventoryNavigation = { recipe, hull, material };

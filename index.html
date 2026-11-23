@@ -14,7 +14,7 @@
   <link rel="icon" type="image/png" href="./assets/favicon.png" />
   <link rel="apple-touch-icon" href="./assets/apple-touch-icon.png" />
   
-  <link rel="stylesheet" href="./css/rhw-app.css?v=sha256-b2f69997399f03555342">
+  <link rel="stylesheet" href="./css/rhw-app.css?v=sha256-d48823034aad2a63cb0e">
 </head>
 <body>
 
@@ -94,7 +94,23 @@
     <aside id="telemetryNotice" class="telemetry-notice" role="status" hidden><div><strong id="telemetryNoticeTitle">Connecting to inventory</strong><p id="telemetryNoticeCopy">Stock remains unknown until a verified response arrives.</p></div><button type="button" id="telemetryRetry">RETRY CONNECTION</button></aside>
     <section class="summary-grid anim-boot delay-4">
       <div class="inventory-column inventory-column-facility">
-        <div class="alert-card maintenance-panel"><div class="alert-title"><span>Facility Maintenance</span><span class="section-title-meta"><span class="section-freshness" data-freshness-badge hidden></span><span class="count-badge scramble" id="maintenanceCount">0</span></span></div><ul class="alert-list" id="maintenanceList"></ul></div>
+        <div class="alert-card maintenance-panel">
+          <div class="alert-title"><span>Facility Maintenance</span><span class="section-title-meta"><span class="section-freshness" data-freshness-badge hidden></span><span class="count-badge scramble" id="maintenanceCount">0</span></span></div>
+          <ul class="alert-list" id="maintenanceList"></ul>
+          <details class="facility-population" id="rhwPopulation">
+            <summary><span>Population</span><strong id="rhwPopulationTotal">Awaiting headcounts</strong></summary>
+            <form id="rhwPopulationForm">
+              <p id="rhwPopulationCoverage" hidden></p>
+              <p>Save your in-game headcounts on this device for when Darkstat headcounts are unavailable.</p>
+              <fieldset aria-label="Population fallback" disabled>
+                <label>Crew<input type="number" name="crew" min="0" step="1" inputmode="numeric" required></label>
+                <label>Scientists<input type="number" name="scientists" min="0" step="1" inputmode="numeric" required></label>
+                <button type="submit">Save locally</button>
+              </fieldset>
+              <p id="rhwPopulationStatus" role="status"></p>
+            </form>
+          </details>
+        </div>
         <div class="alert-card waste-panel"><div class="alert-title"><span>MOX Feedstock</span><span class="section-title-meta"><span class="section-freshness" data-freshness-badge hidden></span><span class="count-badge scramble" id="byproductCount">0</span></span></div><ul class="alert-list" id="byproductList"></ul></div>
       </div>
       <div class="inventory-column inventory-column-production">
@@ -151,8 +167,8 @@
 
   <footer><hr class="hrc-dark">CONNECTION <span id="footerConnection">SYNCING</span> /// GLORY TO THE QUEEN<br><div class="footer-clock" id="rpFooterTime"></div></footer>
 
-<script src="./js/build-info.js?v=sha256-b2f69997399f03555342"></script>
-<script src="./js/00-bootstrap.js?v=sha256-b2f69997399f03555342"></script>
-<script src="./js/rhw-dashboard.js?v=sha256-b2f69997399f03555342"></script>
+<script src="./js/build-info.js?v=sha256-d48823034aad2a63cb0e"></script>
+<script src="./js/00-bootstrap.js?v=sha256-d48823034aad2a63cb0e"></script>
+<script src="./js/rhw-dashboard.js?v=sha256-d48823034aad2a63cb0e"></script>
 </body>
 </html>

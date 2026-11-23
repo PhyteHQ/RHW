@@ -164,12 +164,5 @@ const DASHBOARD_CONFIG = Object.freeze({
     'multi-mode focusing chamber': { type: 'min', red: 500, yellow: 1000 },
     'multi-mode focusing chambers': { type: 'min', red: 500, yellow: 1000 },
     'wildcat gold': { type: 'max', yellow: 25000, red: 30000 }
-  }),
-  barMaxFallbacks: Object.freeze({
-    'basic alloy': 45000, 'food rations': 45000, 'consumer goods': 45000,
-    'reactor systems': 1000, 'superstructure systems': 1000, 'multi-mode focusing chamber': 2000,
-    'gold': 60000, 'niobium': 30000, 'prototype components': 25000, 'mox': 10000,
-    'gold ore': 50000, 'niobium ore': 50000, 'scrap metal': 30000, 'toxic waste': 50000,
-    'wildcat gold': 30000
   })
 });

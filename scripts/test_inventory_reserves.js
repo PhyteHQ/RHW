@@ -4,8 +4,8 @@ const root = path.join(__dirname, '..'), memory = new Map();
 const ctx = vm.createContext({ console, Map, Set, Intl, items: [], rhwBase: {}, els: {},
   document: { getElementById: () => null, addEventListener() {} },
   hasVerifiedTelemetry: () => true, telemetrySnapshot: () => ({ available: true, stale: false }),
-  RHWV4: { state: {}, config: { storageKeys: { shipyardSelection: 'hull', shipyardDivisions: 'divisions' }, operations: { defaultAffiliation: 'br_m_grp' } },
-    store: { get: (k, fallback) => memory.get(k) ?? fallback, set: (k, v) => memory.set(k, v) } }
+  RHWV4: { state: {}, config: { storageKeys: { shipyardSelection: 'hull', shipyardDivisions: 'divisions', populationCounts: 'population' }, operations: { defaultAffiliation: 'br_m_grp' } },
+    store: { get: (k, fallback) => memory.get(k) ?? fallback, set: (k, v) => { memory.set(k, v); return true; } } }
 });
 ctx.window = ctx;
 const run = p => vm.runInContext(fs.readFileSync(path.join(root, p), 'utf8'), ctx, { filename: p });
@@ -81,5 +81,17 @@ ctx.__RHW_RECIPE_CATALOG__ = JSON.parse(zlib.gunzipSync(Buffer.from(ctx.__RHW_RE
   assert.equal(app.shipyard.selectedHull().key, 'barge');
   assert.equal(JSON.stringify(ctx.items), stockBefore, 'Opening a hull only changes the preview');
   assert.equal(vm.runInContext("DASHBOARD_CONFIG.roles.export.some(n=>['gold','niobium','prototype components','wildcat gold','mox'].includes(n))",ctx),false);
+  const snapshot = { available: true, stale: false };
+  assert.equal(model.population(snapshot), null);
+  assert.equal(model.savePopulation(-1, 0), 'invalid');
+  assert.equal(model.savePopulation(250, 25), 'saved');
+  assert.equal(model.population(snapshot).unitsPerDay, 550);
+  const crew = { nickname: 'commodity_crew', amount: '400' };
+  const scientists = { name: 'Scientists', stock: 0 };
+  ctx.items = [crew, { ...crew }, scientists, { ...scientists, stock: 999, synthetic: true }];
+  assert.equal(model.population(snapshot).unitsPerDay, 800, 'Live zero and duplicate identical counts remain valid');
+  assert.equal(model.population({ ...snapshot, stale: true }).source, 'Darkstat cache');
+  ctx.items.push({ ...crew, amount: 401 });
+  assert.equal(model.population(snapshot).source, 'Saved on this device', 'Conflicting counts use the saved pair');
   console.log('Inventory reserves passed: pooled Gold, internal MOX with selected-recipe inputs, unknown stock, single-recipe thresholds, exact ship stock and view-only navigation.');
 })().catch(error=>{console.error(error);process.exit(1);});

@@ -13,6 +13,7 @@ const RHW_APP_CONFIG = Object.freeze({
     activeWorkspace: 'rhw-webapp-v4:workspace',
     commandNode: 'rhw-webapp-v4:command-node',
     inventoryView: 'rhw-webapp-v4:inventory-view',
+    populationCounts: 'rhw-webapp-v4:population-counts',
     shipyardSelection: 'rhw-webapp-v4:shipyard-selection',
     shipyardDivisions: 'rhw-webapp-v4:shipyard-divisions',
     moxRecipe: 'rhw-webapp-v4:mox-recipe',
