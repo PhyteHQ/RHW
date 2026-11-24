@@ -174,7 +174,7 @@ def main() -> int:
 
             # Four primary tabs must still fit common phone widths and remain
             # touch-ready. PRICE CHECK cards must not introduce horizontal scroll.
-            # The detailed crest must retain a usable rendered size in the header.
+            # Tool routes use the compact masthead at every viewport width.
             for width in [360, 390, 412, 430, 1366]:
                 cdp.call("Emulation.setDeviceMetricsOverride", {"width": width, "height": 900, "deviceScaleFactor": 1, "mobile": width < 760})
                 base.ev(cdp, "(()=>{document.querySelector('.app-tabs [data-workspace=\"pricecheck\"]')?.click();return true;})()")
@@ -184,14 +184,15 @@ def main() -> int:
                   return{{overflow:Math.max(document.documentElement.scrollWidth,document.body.scrollWidth)-innerWidth,
                     tabs:tabs.length,touch:tabs.map(x=>x.getBoundingClientRect().height),
                     crestHeight:document.querySelector('.command-header .crest')?.getBoundingClientRect().height||0,
+                    mastheadHeight:document.querySelector('.command-header-inner')?.getBoundingClientRect().height||0,
                     rowCount:document.querySelectorAll('#priceCheckRows .pricecheck-row').length}};
                 }})()""")
                 if geometry.get("overflow", 0) > 2 or geometry.get("tabs") != 4 or geometry.get("rowCount") != 11:
                     raise RuntimeError(f"Price Check geometry at {width}px failed: {geometry}")
                 if width < 760 and any(height < 43.5 for height in geometry.get("touch", [])):
                     raise RuntimeError(f"Primary touch targets at {width}px failed: {geometry}")
-                if not (90 <= geometry.get("crestHeight", 0) <= 110 if width < 760 else 180 <= geometry.get("crestHeight", 0) <= 220):
-                    raise RuntimeError(f"RHW crest is too small at {width}px: {geometry}")
+                if not 44 <= geometry.get("crestHeight", 0) <= 54 or geometry.get("mastheadHeight", 0) > 120:
+                    raise RuntimeError(f"Compact RHW masthead at {width}px failed: {geometry}")
 
             runtime_failures = [
                 failure for failure in cdp.take_runtime_failures()

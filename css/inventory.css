@@ -106,7 +106,7 @@ html.rhw-focus-pass.rhw-workbench .command-briefing {
   --overview-steel:#182229;
   --overview-recess:#10171b;
   display:grid;
-  grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);
+  grid-template-columns:minmax(0,1fr) minmax(0,1.35fr);
   gap:16px;
   margin-bottom:20px;
 }
@@ -429,7 +429,11 @@ html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel :is(.export-panel,.reser
   html.rhw-focus-pass.rhw-workbench .command-briefing { grid-template-columns:minmax(0,1fr);gap:12px; }
 }
 @media(max-width:760px) {
-  html.rhw-focus-pass.rhw-workbench .overview-production { min-height:156px;padding:16px 13px; }
+  html.rhw-focus-pass.rhw-workbench .overview-production { min-height:97px;gap:12px;padding:10px 13px; }
+  .overview-coverage-meter { width:64px; }
+  .overview-coverage-meter::before { inset:5px;border-width:2px; }
+  .overview-coverage-meter>strong { font-size:27px; }
+  .overview-coverage-meter>small { display:none; }
   html.rhw-focus-pass.rhw-workbench .overview-shipyard { grid-template-columns:auto minmax(0,1fr) auto;gap:4px 10px;padding:10px 13px; }
   .overview-shipyard>small { grid-column:1/-1;grid-row:2;padding:0;border:0; }
   html.rhw-focus-pass.rhw-workbench #commandBriefing .maintenance-panel .alert-title { padding-inline:13px; }

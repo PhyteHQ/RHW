@@ -115,6 +115,7 @@
       .map(entry => entry.recipe);
   }
   function recipeLabel(recipe) {
+    if (app.calculatorPresentation) return app.calculatorPresentation.recipeLabel(recipe);
     const product = recipeProduct(recipe);
     const name = recipeDisplayName(recipe);
     const variants = product ? core.recipesFor(product.id) : [];
@@ -122,12 +123,6 @@
     const qualifier = recipe.craftType || recipe.name || recipe.id;
     return `${name} · ${app.util.normalize(qualifier) === app.util.normalize(name) ? recipe.id : qualifier}`;
   }
-  function recipeOptions(recipes, selectedId) {
-    return recipes.length
-      ? recipes.map(recipe => `<option value="${esc(recipe.id)}"${recipe.id === selectedId ? ' selected' : ''}>${esc(recipeLabel(recipe))}</option>`).join('')
-      : '<option value="">NO MATCHING RECIPES</option>';
-  }
-
   function materialFactorLabel(value) {
     const percentage = Math.round(Math.abs(1 - Number(value)) * 100);
     return percentage ? `${value < 1 ? '−' : '+'}${percentage}% MATERIALS` : 'NO BONUS';
@@ -174,13 +169,9 @@
 
   function resolveSelection(raw) {
     const calc = { ...raw };
-    const matches = matchingRecipes(calc.search);
-    if (calc.search && !matches.length) return { calc, matches, recipe: null };
-    let recipe = core.recipe(calc.recipeId);
-    if (!recipe && !calc.search && calc.productId) recipe = core.recipesFor(calc.productId)[0] || null;
-    if (!recipe || (calc.search && !matches.some(entry => entry.id === recipe.id))) recipe = matches[0] || null;
-    if (!recipe) recipe = core.state.catalog?.recipes?.[0] || null;
-    if (!recipe) return { calc, matches, recipe: null };
+    const recipe = core.recipe(calc.recipeId) || (calc.search && matchingRecipes(calc.search)[0])
+      || core.recipesFor(calc.productId)[0] || core.state.catalog?.recipes?.[0];
+    if (!recipe) return { calc, recipe: null };
     if (recipe.id !== raw.recipeId) {
       calc.materialPrices = {};
       calc.materialPriceSources = {};
@@ -193,7 +184,7 @@
     if (!iff.some(entry => entry.id === calc.affiliationId)) {
       calc.affiliationId = iff.find(entry => entry.id === app.config.operations.defaultAffiliation)?.id || iff[0]?.id || '__none__';
     }
-    return { calc, matches, recipe };
+    return { calc, recipe };
   }
 
   function buildQuote(calc) {
@@ -360,19 +351,102 @@
     </div>`;
   }
 
-  function noMatchMarkup(calc, catalog) {
-    return `<div class="operations-layout-simple"><section class="ops-panel ops-setup-panel"><div class="ops-panel-head"><div><span>01</span><strong>RECIPE</strong></div></div><div class="ops-form-grid"><label class="comms-field ops-wide"><span>SEARCH RECIPE</span><input id="opsRecipeSearch" type="search" value="${esc(calc.search)}" placeholder="Bustard, Superstructure, Reactor, Gold…" autocomplete="off"><small>TYPE A NAME OR RECIPE ID</small></label></div><div class="ops-empty ops-no-match">NO MATCHING RECIPE<small>TRY A DIFFERENT ITEM OR RECIPE NAME</small></div></section></div>`;
+  function recipePickerMarkup(recipe) {
+    return `<div class="comms-field ops-wide ops-recipe-picker" id="opsRecipePicker">
+      <label for="opsRecipeSearch" id="opsRecipeLabel">RECIPE OR VARIANT</label>
+      <div class="ops-recipe-control">
+        <input id="opsRecipeSearch" type="text" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="opsRecipeMatches" aria-describedby="opsRecipeHint" value="${esc(recipeLabel(recipe))}" placeholder="Search by name or recipe ID" autocomplete="off" spellcheck="false">
+        <button type="button" id="opsRecipeToggle" tabindex="-1" aria-label="Browse recipes" aria-controls="opsRecipeMatches">⌄</button>
+        <div class="ops-recipe-results" id="opsRecipeResults" hidden>
+          <div role="listbox" id="opsRecipeMatches" aria-labelledby="opsRecipeLabel"></div>
+          <p role="status" class="ops-no-match" hidden>No matching recipe</p>
+        </div>
+      </div>
+      <small id="opsRecipeHint">Search by name or recipe ID · ${esc(craftLabel(recipe))}${recipe.restricted ? ' · Authorized IFF required' : ''}</small>
+    </div>`;
   }
 
-  function bindSearchOnly() {
-    document.getElementById('opsRecipeSearch')?.addEventListener('input', event => {
-      const search = event.target.value;
-      saveState({ search });
-      if (!search.trim() || matchingRecipes(search).length) scheduleRender({ search }, { focusSearch: true, delay: 120 });
+  function bindRecipePicker(recipe) {
+    const picker = document.getElementById('opsRecipePicker');
+    if (!picker) return;
+    const input = picker.querySelector('#opsRecipeSearch');
+    const results = picker.querySelector('#opsRecipeResults');
+    const list = picker.querySelector('#opsRecipeMatches');
+    const empty = picker.querySelector('.ops-no-match');
+    let matches = [];
+    let highlighted = -1;
+
+    function showResults(query) {
+      matches = matchingRecipes(query);
+      highlighted = -1;
+      list.innerHTML = matches.map((candidate, index) => `<div role="option" id="opsRecipeOption-${index}" data-recipe-option="${esc(candidate.id)}" aria-selected="${candidate.id === recipe.id}">${esc(recipeLabel(candidate))}</div>`).join('');
+      list.scrollTop = 0;
+      empty.hidden = matches.length > 0;
+      results.hidden = false;
+      input.setAttribute('aria-expanded', 'true');
+      input.removeAttribute('aria-activedescendant');
+    }
+
+    function closeResults() {
+      results.hidden = true;
+      input.value = recipeLabel(recipe);
+      input.setAttribute('aria-expanded', 'false');
+      input.removeAttribute('aria-activedescendant');
+    }
+
+    function choose(id) {
+      const selected = core.recipe(id);
+      if (!selected) return;
+      if (id === recipe.id) { closeResults(); return; }
+      clearTimeout(rerenderTimer);
+      saveState({ recipeId: id, productId: primaryOutput(selected)?.id || currentState().productId, search: '' });
+      renderCalculator();
+      document.getElementById('opsRecipeSearch')?.focus({ preventScroll: true });
+    }
+
+    input.addEventListener('input', () => showResults(input.value));
+    input.addEventListener('click', () => {
+      if (!results.hidden) return;
+      showResults('');
+      input.select();
     });
+    input.addEventListener('focus', () => input.select());
+    input.addEventListener('keydown', event => {
+      if (event.isComposing) return;
+      if (event.key === 'Escape' && !results.hidden) { event.preventDefault(); closeResults(); return; }
+      if (event.key === 'Enter' && !results.hidden) {
+        event.preventDefault();
+        choose(matches[Math.max(0, highlighted)]?.id);
+        return;
+      }
+      if (!['ArrowDown', 'ArrowUp'].includes(event.key)) return;
+      event.preventDefault();
+      if (results.hidden) showResults('');
+      if (!matches.length) return;
+      const previous = list.children[highlighted];
+      if (previous) previous.setAttribute('aria-selected', 'false');
+      if (highlighted === -1) list.querySelector('[aria-selected="true"]')?.setAttribute('aria-selected', 'false');
+      const next = event.key === 'ArrowDown' ? highlighted + 1 : highlighted === -1 ? matches.length - 1 : highlighted - 1;
+      highlighted = Math.min(matches.length - 1, Math.max(0, next));
+      const option = list.children[highlighted];
+      input.setAttribute('aria-activedescendant', option.id);
+      option.setAttribute('aria-selected', 'true');
+      option.scrollIntoView({ block: 'nearest' });
+    });
+    picker.querySelector('#opsRecipeToggle').addEventListener('click', () => {
+      input.focus();
+      if (results.hidden) { showResults(''); input.select(); }
+      else closeResults();
+    });
+    results.addEventListener('mousedown', event => { if (event.target.closest('[data-recipe-option]')) event.preventDefault(); });
+    results.addEventListener('click', event => {
+      const option = event.target.closest('[data-recipe-option]');
+      if (option) choose(option.dataset.recipeOption);
+    });
+    picker.addEventListener('focusout', event => { if (!picker.contains(event.relatedTarget)) closeResults(); });
   }
 
-  function renderCalculator({ focusSearch = false } = {}) {
+  function renderCalculator() {
     const mount = document.getElementById('operationsCalculatorMount');
     const catalog = core.state.catalog;
     if (!mount || !catalog) return;
@@ -380,15 +454,6 @@
     const resolved = resolveSelection(currentState());
     const calc = resolved.calc;
     saveState(calc);
-    if (calc.search && !resolved.matches.length) {
-      mount.className = 'operations-calculator';
-      mount.innerHTML = noMatchMarkup(calc, catalog);
-      bindSearchOnly();
-      const search = document.getElementById('opsRecipeSearch');
-      if (focusSearch && search) { search.focus(); try { search.setSelectionRange(search.value.length, search.value.length); } catch {} }
-      return;
-    }
-
     const recipe = resolved.recipe;
     if (!recipe) { mount.innerHTML = '<div class="ops-empty danger">NO RECIPE AVAILABLE</div>'; return; }
     let plan;
@@ -401,7 +466,6 @@
     const pricing = core.priceQuote(rows, calc, plan);
     const iff = iffEntries(recipe, calc.affiliationId);
     const outputPerCycle = Math.max(1, Number(plan.tree?.outputPerCycle) || Number(primaryOutput(recipe)?.qty) || 1);
-    const matches = resolved.matches.length ? resolved.matches : matchingRecipes('');
     const iffHint = recipe.restricted ? 'RESTRICTED RECIPE // ONLY AUTHORIZED IFF PROFILES ARE SHOWN' : 'BMM IS PRESELECTED FOR RHW';
 
     mount.className = 'operations-calculator';
@@ -409,34 +473,31 @@
       <section class="ops-panel ops-setup-panel">
         <div class="ops-panel-head"><div><span>01</span><strong>RECIPE</strong></div></div>
         <div class="ops-form-grid">
-          <label class="comms-field ops-wide"><span>SEARCH RECIPE</span><input id="opsRecipeSearch" type="search" value="${esc(calc.search)}" placeholder="Bustard, Superstructure, Reactor, Gold…" autocomplete="off"><small>TYPE A NAME OR RECIPE ID // FIRST MATCH IS SELECTED AUTOMATICALLY</small></label>
-          <label class="comms-field ops-wide"><span>SELECTED RECIPE</span><select id="opsRecipe">${recipeOptions(matches, calc.recipeId)}</select><small>${matches.length} match${matches.length === 1 ? '' : 'es'} · ${esc(craftLabel(recipe))}${recipe.restricted ? ' · Authorized IFF required' : ''}</small></label>
+          ${recipePickerMarkup(recipe)}
           <label class="comms-field"><span>OUTPUT QUANTITY</span><div class="ops-quantity-control"><button type="button" data-ops-quantity="-1" aria-label="Decrease output quantity">−</button><input id="opsQuantity" aria-label="Output quantity" type="number" inputmode="numeric" min="1" step="1" value="${calc.quantity}"><button type="button" data-ops-quantity="1" aria-label="Increase output quantity">+</button></div></label>
           <label class="comms-field"><span>AFFILIATION / IFF</span><select id="opsAffiliation">${iff.map(entry => `<option value="${esc(entry.id)}"${entry.id === calc.affiliationId ? ' selected' : ''}>${esc(entry.name)}</option>`).join('')}</select><small>${esc(iffHint)}</small></label>
         </div>
         <div class="ops-recipe-meta"><div><small>OUTPUT / CYCLE</small><strong>${fmt(outputPerCycle)}</strong></div><div><small>CYCLES</small><strong>${fmt(plan.cycles)}</strong></div><div><small>ACTUAL OUTPUT</small><strong>${fmt(plan.actualOutput)}</strong></div></div>
         ${comparison.entries.length > 1 ? `<button type="button" id="opsCompareToggle" aria-expanded="${calc.comparisonOpen}"${calc.comparisonOpen ? ' aria-controls="opsComparisonPanel"' : ''}>${calc.comparisonOpen ? 'CLOSE COMPARISON' : `COMPARE ${comparison.entries.length} VARIANTS`}</button>` : ''}
 
-        <div class="ops-mobile-decision" aria-label="Current quote summary"><div><small>RECOMMENDED SALE</small><strong id="opsMobileSellUnit">${money(pricing.sellPerUnit)}</strong></div><div><small>COST / ITEM</small><strong id="opsMobileUnitCost">${money(pricing.unitCost)}</strong></div><div><small>TOTAL PROFIT</small><strong id="opsMobileProfit">${money(pricing.profit)}</strong></div></div>
         <nav class="ops-mobile-jumps" aria-label="Calculator sections"><button type="button" data-ops-jump="opsMaterialPanel">ENTER MATERIAL PRICES</button><button type="button" data-ops-jump="opsQuotePanel">VIEW FULL QUOTE</button></nav>
       </section>
-      <section class="ops-panel ops-cost-panel" id="opsMaterialPanel"><div class="ops-panel-head"><div><span>02</span><strong>MATERIAL COST</strong></div><small>ENTER YOUR UNIT PRICES</small></div>${rhwPriceControlsMarkup()}${materialsMarkup(rows, calc)}${plan.recipeFeeTotal ? `<div class="ops-recipe-fee"><div><small>FIXED RECIPE FEE · INCLUDED IN QUOTE</small><strong>${money(plan.recipeFeePerCycle)} / CYCLE × ${fmt(plan.cycles)}</strong></div><b>${money(plan.recipeFeeTotal)}</b></div>` : ''}<div class="ops-price-memory">Prices apply to this calculation. Save a price profile to reuse them.</div>${notesMarkup(plan)}<button class="ops-mobile-quote-jump" type="button" data-ops-jump="opsQuotePanel">VIEW UPDATED QUOTE</button></section>
+      <section class="ops-panel ops-cost-panel" id="opsMaterialPanel"><div class="ops-panel-head"><div><span>02</span><strong>MATERIAL COST</strong></div><small>ENTER YOUR UNIT PRICES</small></div>
+        <div class="ops-quote-summary" role="group" aria-label="Prices per produced unit"><div><small>Cost / unit</small><strong id="opsMobileUnitCost">${money(pricing.unitCost)}</strong></div><div><small>Sale / unit</small><strong id="opsMobileSellUnit">${money(pricing.sellPerUnit)}</strong></div><div><small>Profit / unit</small><strong id="opsMobileProfit">${money(pricing.profitUnit)}</strong></div></div>
+        ${rhwPriceControlsMarkup()}${materialsMarkup(rows, calc)}${plan.recipeFeeTotal ? `<div class="ops-recipe-fee"><div><small>FIXED RECIPE FEE · INCLUDED IN QUOTE</small><strong>${money(plan.recipeFeePerCycle)} / CYCLE × ${fmt(plan.cycles)}</strong></div><b>${money(plan.recipeFeeTotal)}</b></div>` : ''}<div class="ops-price-memory">Prices apply to this calculation. Save a price profile to reuse them.</div>${notesMarkup(plan)}<button class="ops-mobile-quote-jump" type="button" data-ops-jump="opsQuotePanel">VIEW UPDATED QUOTE</button></section>
       <section class="ops-panel ops-quote-panel" id="opsQuotePanel"><div class="ops-panel-head"><div><span>03</span><strong>PRICE CALCULATION</strong></div><small>COST → MARGIN → SELL PRICE</small></div>${quoteMarkup(pricing, calc, rows, plan.actualOutput)}</section>
       ${comparisonMarkup(comparison, calc, rows)}
     </div>`;
+    bindRecipePicker(recipe);
     bindCalculator(plan, rows);
     updateRhwPriceControls();
     app.rendered?.('calculator');
-    if (focusSearch) {
-      const search = document.getElementById('opsRecipeSearch');
-      if (search) { search.focus(); try { search.setSelectionRange(search.value.length, search.value.length); } catch {} }
-    }
   }
 
-  function scheduleRender(patch = {}, options = {}) {
+  function scheduleRender(patch) {
     saveState(patch);
     clearTimeout(rerenderTimer);
-    rerenderTimer = setTimeout(() => renderCalculator({ focusSearch: options.focusSearch || false }), options.delay ?? 45);
+    rerenderTimer = setTimeout(renderCalculator, 45);
   }
 
   function updatePricing(plan, rows) {
@@ -458,7 +519,7 @@
     write('opsSellUnit', money(pricing.sellPerUnit));
     write('opsMobileSellUnit', money(pricing.sellPerUnit));
     write('opsMobileUnitCost', money(pricing.unitCost));
-    write('opsMobileProfit', money(pricing.profit));
+    write('opsMobileProfit', money(pricing.profitUnit));
     write('opsProfitUnit', money(pricing.profitUnit));
     write('opsProfit', money(pricing.profit));
     write('opsRevenue', money(pricing.revenue));
@@ -494,19 +555,6 @@
       if (!missing) return;
       missing.scrollIntoView({ behavior: 'smooth', block: 'center' });
       missing.focus({ preventScroll: true });
-    });
-    document.getElementById('opsRecipeSearch')?.addEventListener('input', event => {
-      const search = event.target.value;
-      const matches = matchingRecipes(search);
-      const select = document.getElementById('opsRecipe');
-      if (select) select.innerHTML = recipeOptions(matches, matches[0]?.id || '');
-      if (!matches.length) { scheduleRender({ search }, { focusSearch: true, delay: 160 }); return; }
-      const recipe = matches[0];
-      scheduleRender({ search, recipeId: recipe.id, productId: primaryOutput(recipe)?.id || currentState().productId }, { focusSearch: true, delay: 140 });
-    });
-    document.getElementById('opsRecipe')?.addEventListener('change', event => {
-      const recipe = core.recipe(event.target.value); if (!recipe) return;
-      scheduleRender({ recipeId: recipe.id, productId: primaryOutput(recipe)?.id || currentState().productId });
     });
     document.getElementById('opsQuantity')?.addEventListener('change', event => scheduleRender({ quantity: Math.max(1, Math.floor(num(event.target.value, 1))) }));
     document.querySelectorAll('[data-ops-quantity]').forEach(button => button.addEventListener('click', () => {

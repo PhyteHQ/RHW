@@ -150,8 +150,9 @@ def main():
                     contextVisible:visible(document.getElementById('appSecondaryNav')),panels:panels.length,
                     commandButtons:[...document.querySelectorAll('#commandNodeNav [data-command-node]')].filter(visible).map(e=>({top:e.getBoundingClientRect().top,height:e.getBoundingClientRect().height,clipped:e.scrollWidth>e.clientWidth+1})),
                     toolbarHeight:document.getElementById('commandControlDeck').getBoundingClientRect().height,
-                    firstOverviewTop:document.querySelector('#overviewOperations').getBoundingClientRect().top,
+                    firstOverviewTop:document.querySelector('.overview-next').getBoundingClientRect().top,
                     crestWidth:document.querySelector('.crest').getBoundingClientRect().width,
+                    mastheadHeight:document.querySelector('.command-header-inner').getBoundingClientRect().height,
                     headerValuesFit:[...document.querySelectorAll('.base-telemetry-stat strong,.uplink-value,#headerDataAge')].filter(e=>e.getBoundingClientRect().width>2).every(e=>e.scrollWidth<=e.clientWidth+1&&e.getBoundingClientRect().height<=parseFloat(getComputedStyle(e).lineHeight)+1),
                     tabClipping:[...document.querySelectorAll('.app-tabs button')].some(b=>b.scrollWidth>b.clientWidth+2),
                     noticeVisible:visible(document.getElementById('telemetryNotice')),
@@ -189,12 +190,14 @@ def main():
                 assert result['pageRoute'] == route and result['pageTitle'] and result['pageHeadingVisible'], (width, route, result)
                 assert result['headerValuesFit'], (width, route, result)
                 assert result['font'] and result['inventoryStyled'] and not result['noticeVisible'], (width, route, result)
+                if width <= 760:
+                    assert 36 <= result['crestWidth'] <= 42 and result['mastheadHeight'] <= (176 if route == 'command/inventory' else 120), (width, route, result)
                 if width <= 760 and workspace == 'command':
                     assert len(result['commandButtons']) == 4 and all(b['height'] >= 44 and not b['clipped'] for b in result['commandButtons']), (width, route, result)
                     assert max(b['top'] for b in result['commandButtons']) - min(b['top'] for b in result['commandButtons']) < 1, (width, route, result)
-                    assert result['toolbarHeight'] <= (440 if route == 'command/inventory' else 180) and 70 <= result['crestWidth'] <= 90, (width, route, result)
+                    assert result['toolbarHeight'] <= (440 if route == 'command/inventory' else 180), (width, route, result)
                     if route == 'command/inventory':
-                        assert result['firstOverviewTop'] <= 460, (width, result)
+                        assert result['firstOverviewTop'] <= 330, (width, result)
                 if width >= 1100 and workspace == 'operations':
                     assert result['inputs'] and all(0 < n <= 145 for n in result['inputs']), result
                 if route == 'command/production':
@@ -480,12 +483,14 @@ def main():
                   return summary.scrollWidth<=summary.clientWidth+1&&[...summary.querySelectorAll('td')].every(n=>n.scrollWidth<=n.clientWidth+1);
                 }),
                 actions:cards.every(c=>c.querySelectorAll('.production-card-actions>button').length===2),
-                order:cards.map(c=>c.querySelector('.production-title').textContent)};
+                order:cards.map(c=>c.querySelector('.production-title').textContent),
+                priorities:cards.map(c=>['critical','low','waiting','ok'].indexOf(c.dataset.productionState))};
             })()""")
             columns = 3 if overview['panelWidth'] >= 1320 else 2 if overview['panelWidth'] >= 760 else 1
             assert overview['columns'] == columns and overview['height'] < 460, (width, overview)
             assert overview['actions'] and overview['valuesFit'] and overview['materialsFit'], (width, overview)
-            assert overview['order']==['Multi-Mode Focusing Chamber','Reactor Systems','Superstructure Systems','Basic Alloy','Gold','Niobium','Prototype Components','MOX'], overview
+            assert len(overview['order']) == 8 and set(overview['order']) == {'Multi-Mode Focusing Chamber','Reactor Systems','Superstructure Systems','Basic Alloy','Gold','Niobium','Prototype Components','MOX'}, overview
+            assert overview['priorities'] == sorted(overview['priorities']) and overview['priorities'][0] != overview['priorities'][-1], overview
             disclosure = base.ev(cdp, """(()=>{
               const card=productionGrid.querySelector('.production-card'),toggle=card.querySelector('.production-card-toggle');
               const hidden=!card.querySelector('.production-materials').getClientRects().length;
@@ -622,6 +627,32 @@ def main():
             assert state['text'] == value and tone in state['tone'], state
             assert state['readOnly'] and not state['clipped'], state
         assert price_edit['liveResult'] == '+$20', price_edit
+        price_sort = base.ev(cdp, """(()=>{
+          const api=RHWV4.pricecheck,original=api.state.marketCache;
+          const rows=()=>[...priceCheckRows.querySelectorAll('[data-route-key]')];
+          const sort=value=>{priceCheckSort.value=value;priceCheckSort.dispatchEvent(new Event('change',{bubbles:true}));};
+          const qty=value=>{priceCheckQuantity.value=value;priceCheckQuantity.dispatchEvent(new Event('input',{bubbles:true}));};
+          const key='food-rations',hull='hull-panels';
+          const market={...original.routes,[key]:{...original.routes[key],livePrice:0}};
+          delete market[hull];
+          api.state.marketCache={...original,routes:market};
+          sort('best');qty('5');
+          const unknown=row=>row.querySelector('.pricecheck-difference').classList.contains('unknown');
+          const sorted=rows(),suffix=sorted.slice(sorted.findIndex(unknown));
+          const result={best:sorted[0].dataset.routeKey,unknownLast:suffix.every(unknown)&&suffix.some(row=>row.dataset.routeKey===hull),
+            total:rows()[0].querySelector('.pricecheck-total b')?.textContent};
+          sort('worst');result.worst=rows()[0].dataset.routeKey!==key;
+          market[key].livePrice=125;api.render();
+          result.loss=rows()[0].querySelector('.pricecheck-total b')?.textContent;
+          qty('0');result.noInvalidTotal=!priceCheckRows.querySelector('.pricecheck-total');
+          api.state.marketCache={...original,routes:{}};api.render();
+          result.waiting=priceCheckStatusGrid.textContent.includes('Awaiting prices')
+            &&!priceCheckStatusGrid.querySelector('[data-tone="positive"]');
+          api.state.marketCache=original;qty('');sort('source');
+          return result;
+        })()""")
+        assert price_sort == {'best':'food-rations','unknownLast':True,'total':'+$500',
+                              'worst':True,'loss':'-$125','noInvalidTotal':True,'waiting':True}, price_sort
         base.ev(cdp, "(()=>{location.hash='#pricecheck/obsolete';return true;})()")
         time.sleep(.15)
         assert base.ev(cdp, 'location.hash') == '#pricecheck/routes', 'Price Check uses the shared canonical route model'
@@ -643,7 +674,8 @@ def main():
           const costing=document.querySelector('[data-production-product="basic alloy"] .production-calc-button');
           if(!costing)return {production,debug:{titles:[...productionGrid.querySelectorAll('.production-title')].map(n=>n.textContent),buttons:productionGrid.querySelectorAll('.production-calc-button').length,bridge:!!RHWV4.productionPricing,installed:productionGrid.dataset.v40ProductionCalculatorBridge,selfTest:RHWV4.productionPricing?.selfTest()}};
           costing.click();
-          return {production,recipe:opsRecipe.value,output:RHWV4.operationsCore.buildPlan({recipeId:opsRecipe.value,
+          const recipe=RHWV4.state.calculator.recipeId;
+          return {production,recipe,output:RHWV4.operationsCore.buildPlan({recipeId:recipe,
             quantity:1,affiliationId:'br_m_grp',useInventory:false,recursive:false,routingPolicy:'first'}).actualOutput,
             materialNames:document.getElementById('opsMaterialPanel').textContent};
         })()""")

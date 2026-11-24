@@ -236,8 +236,8 @@ function updateSortArrows() {
   });
 }
 
-function analyzeRecipe(recipe) {
-  const productItem = findCommodity(recipe.product);
+function analyzeRecipe(recipe, stockAvailable = true) {
+  const productItem = stockAvailable ? findCommodity(recipe.product) : null;
   const productStock = firstFiniteApiStockValue(productItem, ['quantity', 'amount', 'stock']);
 
   const ingredientData = recipe.ingredients.map(pair => {
@@ -246,7 +246,7 @@ function analyzeRecipe(recipe) {
 
     const names = recipe.inputOptions?.[originalName] || [originalName];
     const stocks = names.map(name => {
-      const item = findCommodity(name);
+      const item = stockAvailable ? findCommodity(name) : null;
       return { name, item, stock: firstFiniteApiStockValue(item, ['quantity', 'amount', 'stock']) };
     });
     // An unlisted alternative contributes no reported stock. A reported item
@@ -255,7 +255,7 @@ function analyzeRecipe(recipe) {
       && stocks.every(entry => !entry.item || entry.item.missing || entry.stock !== null);
     const stock = known ? stocks.reduce((sum, entry) => sum + (entry.stock ?? 0), 0) : null;
     const extraHtml = names.length > 1 ? `<span class="recipe-stock-breakdown">${stocks.map(entry => {
-      return `<span class="recipe-stock-option"><span>${escapeHTML(displayRecipeName(entry.name))}</span><strong>${number(entry.item && !entry.item.missing ? entry.stock : 0)}</strong></span>`;
+      return `<span class="recipe-stock-option"><span>${escapeHTML(displayRecipeName(entry.name))}</span><strong>${stockAvailable ? number(entry.item && !entry.item.missing ? entry.stock : 0) : 'Unknown'}</strong></span>`;
     }).join('')}</span>` : '';
     const cycles = stock === null ? null : required > 0 ? Math.floor(stock / required) : 0;
     const currentCycleGap = stock === null ? null : Math.max(0, required - stock);
@@ -329,6 +329,7 @@ function ensureProductionModuleTools() {
           <button type="button" data-production-filter="critical" aria-pressed="false">Blocked <span class="production-filter-badge">–</span></button>
           <button type="button" data-production-filter="low" aria-pressed="false">Low <span class="production-filter-badge">–</span></button>
           <button type="button" data-production-filter="ok" aria-pressed="false">Ready <span class="production-filter-badge">–</span></button>
+          <button type="button" data-production-filter="waiting" aria-pressed="false">Unknown <span class="production-filter-badge">–</span></button>
         </div>
         <label class="production-module-search">
           <span class="visually-hidden">Search production modules</span>
@@ -386,25 +387,24 @@ function renderProductionModules() {
   const materialFocus = document.activeElement?.closest?.('.production-card-toggle')?.closest('.production-card')?.dataset.productionRecipe;
   const moxFocus = document.activeElement?.matches?.('[data-production-mox]');
   ensureProductionModuleTools();
-  if (!hasVerifiedTelemetry()) {
-    const failed = Boolean(lastSyncError);
-    els.productionGrid.innerHTML = `<div class="feature-empty production-empty">${failed ? 'TELEMETRY UNAVAILABLE' : 'AWAITING FIRST TELEMETRY BURST'}<small>${failed ? 'NO VERIFIED RHW INVENTORY IS AVAILABLE' : 'PRODUCTION ANALYSIS WILL APPEAR AFTER THE FIRST SUCCESSFUL SYNC'}</small></div>`;
-    applyProductionModuleFilters();
-    return;
-  }
   if (!app.operationsCore?.state.catalog) {
     els.productionGrid.innerHTML = '<div class="feature-empty production-empty">PRODUCTION RECIPES UNAVAILABLE<small>CAPACITY REQUIRES THE VERIFIED RECIPE CATALOG</small></div>';
     applyProductionModuleFilters();
     return;
   }
 
-  els.productionGrid.innerHTML = model.modules().map(module => {
+  const stockAvailable = hasVerifiedTelemetry();
+  const order = { critical: 0, low: 1, waiting: 2, ok: 3 };
+  const modules = model.modules().map(module => {
     const recipe = model.requirements(module);
+    return { module, recipe, analysis: recipe ? analyzeRecipe(recipe, stockAvailable) : null };
+  }).sort((a, b) => order[a.analysis?.cardState || 'waiting'] - order[b.analysis?.cardState || 'waiting']);
+  els.productionGrid.innerHTML = modules.map(({ module, recipe, analysis }) => {
     const variant = module.product === 'MOX' ? `<label class="production-variant"><span class="visually-hidden">MOX recipe</span><select data-production-mox aria-label="MOX recipe" title="MOX recipe: Basic uses Toxic Waste; Advanced also uses Uranium">${model.moxRecipes.map(option => `<option value="${option.recipeId}"${option.recipeId === module.recipeId ? ' selected' : ''}>${option.shortLabel}</option>`).join('')}</select></label>` : '';
     if (!recipe) return `<article class="production-card waiting production-unavailable" data-production-recipe="${escapeHTML(module.recipeId)}" data-production-state="waiting" data-production-product="${escapeHTML(normalize(module.product))}"><div class="production-card-head"><h3 class="production-title">${escapeHTML(module.product)}</h3>${variant}</div><p>Recipe unavailable</p></article>`;
-    const analysis = analyzeRecipe(recipe);
     const cycle = window.RHWV4.production.cycleSeconds(recipe.recipeId);
     const runtime = analysis.possibleCycles === null || cycle === null ? null : analysis.possibleCycles * cycle;
+    const purpose = `${recipe.product} batch ${(analysis.possibleCycles ?? 0) + 1}`;
     const ingredientRows = analysis.ingredientData.map(item => {
       const isBottleneck = analysis.bottleneck && item.name === analysis.bottleneck.name;
       const shortText = item.currentCycleGap > 0
@@ -412,7 +412,7 @@ function renderProductionModules() {
         : '';
 
       return `<li class="${isBottleneck ? `bottleneck ${analysis.cardState}` : ''}">
-                <span class="recipe-name"><span class="rhw-supply-material"><span>${escapeHTML(item.displayName)}</span>${typeof supplyRouteButton === 'function' ? supplyRouteButton(item.name) : ''}</span>${item.extraHtml || ''}${typeof purchaseSourceButton === 'function' ? purchaseSourceButton(item.name, item.currentCycleGap) : ''}</span>
+                <span class="recipe-name"><span class="rhw-supply-material"><span>${escapeHTML(item.displayName)}</span>${typeof supplyRouteButton === 'function' ? supplyRouteButton(item.name) : ''}</span>${item.extraHtml || ''}${typeof purchaseSourceButton === 'function' ? purchaseSourceButton(item.name, item.nextCycleGap, purpose) : ''}</span>
                 <span class="recipe-required">${number(item.required)}</span>
                 <span class="recipe-stock">${number(item.stock)}${shortText}</span>
               </li>`;
@@ -435,10 +435,13 @@ function renderProductionModules() {
     const shortage = analysis.bottleneck && analysis.nextCycleGap > 0
       ? `Missing ${number(analysis.nextCycleGap)} ${escapeHTML(analysis.bottleneck.displayName)}`
       : '';
+    const source = analysis.bottleneck && typeof purchaseSourceTarget === 'function'
+      ? [analysis.bottleneck, ...otherGaps].find(item => purchaseSourceTarget(item.name)) : null;
     const batchSummary = analysis.cardState !== 'ok' && shortage ? `<div class="production-batch-target">
       <span class="production-batch-label">${nextBatchLabel}</span>
       <strong class="production-shortage">${shortage}</strong>
       ${otherGaps.length ? `<span class="production-batch-other">+${number(otherGaps.length)} more</span>` : ''}
+      ${source ? purchaseSourceButton(source.name, source.nextCycleGap, purpose, source === analysis.bottleneck ? 'Find sellers' : `Find +${number(source.nextCycleGap)} ${source.name}`) : ''}
     </div>` : '';
     const batchCoverage = analysis.cardState === 'ok' ? `${number(analysis.possibleCycles)} batches` : '';
     const nextGapText = shortage ? `<div class="next-gap ${analysis.cardState}">

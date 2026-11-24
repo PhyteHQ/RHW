@@ -13,10 +13,12 @@ function purchaseSourceTarget(name) {
   return match ? { name: match, key, view: ships.includes(match) ? 'market' : 'materials' } : null;
 }
 
-function purchaseSourceButton(name, gap) {
+function purchaseSourceButton(name, gap, purpose = '', label = 'Find sellers') {
   const target = purchaseSourceTarget(name);
-  if (!target || !(gap > 0)) return '';
-  return `<button type="button" class="rhw-source-button" data-purchase-source="${escapeHTML(target.name)}" aria-label="Find sellers for ${escapeHTML(target.name)}">FIND SELLERS</button>`;
+  const quantity = Math.ceil(gap);
+  if (!target || !Number.isSafeInteger(quantity) || quantity <= 0) return '';
+  const accessibleLabel = label === 'Find sellers' ? `Find sellers for ${number(quantity)} ${target.name}` : label;
+  return `<button type="button" class="rhw-source-button" data-purchase-source="${escapeHTML(target.name)}" data-purchase-quantity="${quantity}" data-purchase-purpose="${escapeHTML(purpose)}" aria-label="${escapeHTML(accessibleLabel)}">${escapeHTML(label)}</button>`;
 }
 
 function marketBaseSystem(base) {

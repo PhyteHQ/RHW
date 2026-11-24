@@ -86,12 +86,12 @@ async function models() {
   assert.match(mount.innerHTML, /ACTUAL OUTPUT<\/small><strong>1\.000<\/strong>/);
   assert.match(mount.innerHTML, /FIXED RECIPE FEE/);
   assert.match(mount.innerHTML, /id="opsQuantity" aria-label="Output quantity"/);
-  ['opsMargin', 'opsUnitCost', 'opsMobileUnitCost', 'opsSellUnit', 'opsMobileSellUnit', 'opsProfit', 'opsMobileProfit'].forEach(id => nodes.set(id, node()));
+  ['opsMargin', 'opsUnitCost', 'opsMobileUnitCost', 'opsSellUnit', 'opsMobileSellUnit', 'opsProfitUnit', 'opsMobileProfit'].forEach(id => nodes.set(id, node()));
   app.operations.renderCalculator();
   nodes.get('opsMargin').listeners.input({ target: { value: '20' } });
   assert.equal(nodes.get('opsMobileUnitCost').textContent, nodes.get('opsUnitCost').textContent);
   assert.equal(nodes.get('opsMobileSellUnit').textContent, '$3,125,000');
-  assert.equal(nodes.get('opsMobileProfit').textContent, nodes.get('opsProfit').textContent);
+  assert.equal(nodes.get('opsMobileProfit').textContent, nodes.get('opsProfitUnit').textContent);
   const miners = app.operations.matchingRecipes('Archon');
   assert.equal(miners.length, 2);
   assert.ok(miners.every(r => r.outputs[0].id === 'medium_miner_package'));
@@ -104,25 +104,17 @@ async function models() {
     assert.equal(frigates[0].id, 'ship_assembly_li_frigate');
     assert.equal(frigates[0].outputs[0].id, 'li_frigate_package');
   }
-  app.state.calculator = { ...calc, search: 'longhorn' };
+  app.state.calculator = { ...calc, recipeId: '', search: 'longhorn' };
   app.operations.renderCalculator();
   assert.match(mount.innerHTML, /"Longhorn" Liberty Heavy Frigate/);
-  assert.match(mount.innerHTML, /value="ship_assembly_li_frigate" selected/);
+  assert.equal(app.state.calculator.recipeId, 'ship_assembly_li_frigate');
   assert.equal(app.operations.matchingRecipes('Gold')[0].outputs[0].id, 'commodity_gold', 'Exact material name outranks Golden Blade');
-  nodes.set('opsRecipeSearch', node());
-  nodes.set('opsRecipe', node());
   app.state.calculator = { ...calc, recipeId: 'recipe_gold_advanced', productId: 'commodity_gold',
-    search: 'Gold refining', affiliationId: '__none__', materialPrices: { commodity_gold_ore: 123 } };
+    search: 'Niobium', affiliationId: '__none__', materialPrices: { commodity_gold_ore: 123 } };
   app.operations.renderCalculator();
-  nodes.get('opsRecipeSearch').listeners.input({ target: { value: 'Gold refinin' } });
-  await new Promise(resolve => setTimeout(resolve, 180));
-  assert.equal(app.state.calculator.recipeId, 'recipe_gold_advanced');
-  assert.equal(app.state.calculator.materialPrices.commodity_gold_ore, 123, 'Refining a search preserves prices for the same recipe');
-  assert.equal(app.state.calculator.affiliationId, '__none__', 'Same-recipe search preserves deliberate IFF choice');
-  nodes.get('opsRecipeSearch').listeners.input({ target: { value: 'Niobium' } });
-  await new Promise(resolve => setTimeout(resolve, 180));
-  assert.equal(Object.keys(app.state.calculator.materialPrices).length, 0, 'A different recipe starts with blank prices');
-  assert.equal(app.state.calculator.affiliationId, 'br_m_grp');
+  assert.equal(app.state.calculator.recipeId, 'recipe_gold_advanced', 'A stored recipe takes precedence over old search text');
+  assert.equal(app.state.calculator.materialPrices.commodity_gold_ore, 123);
+  assert.equal(app.state.calculator.affiliationId, '__none__');
   assert.doesNotMatch(mount.innerHTML, /opsAddProductionOrder|ADD TO ORDER BOARD/);
   // Same requested output, independently known BMM quantities, shared prices,
   // whole-batch surplus and zero-valued self-mined ore.

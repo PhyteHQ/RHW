@@ -53,7 +53,9 @@
     marketLabel: 'AWAITING MARKET DATA',
     marketDetail: '',
     lastError: '',
-    receivedAt: 0
+    receivedAt: 0,
+    sort: 'source',
+    quantity: null
   };
 
   const refreshTask = window.RHWRuntime.createRefreshTask({
@@ -114,8 +116,12 @@
       </header>
       <div class="pricecheck-status-grid" id="priceCheckStatusGrid"></div>
       <div class="pricecheck-note" id="priceCheckNote">MARKET DATA LOADS WHEN PRICE CHECK OPENS.</div>
+      <div class="pricecheck-controls">
+        <label for="priceCheckSort">Sort by<select id="priceCheckSort"><option value="source">Source</option><option value="best">Highest difference / unit</option><option value="worst">Lowest difference / unit</option></select></label>
+        <label for="priceCheckQuantity">Quantity · optional<input id="priceCheckQuantity" type="number" min="1" step="1" inputmode="numeric" placeholder="Units per route"></label>
+      </div>
       <div class="pricecheck-table-wrap"><table class="pricecheck-table">
-        <thead><tr><th>COMMODITY</th><th>SOURCE</th><th>NPC PRICE</th><th>RHW PAYS</th><th>DIFFERENCE</th></tr></thead>
+        <thead><tr><th>COMMODITY</th><th>SOURCE</th><th>NPC PRICE</th><th>RHW PAYS</th><th>DIFFERENCE / UNIT</th></tr></thead>
         <tbody id="priceCheckRows"></tbody>
       </table></div>
     </div>`;
@@ -163,6 +169,15 @@
         refreshTask.refresh({ forceResolve: true });
         return;
       }
+    });
+    panel.querySelector('#priceCheckSort').addEventListener('change', event => {
+      state.sort = event.target.value;
+      render();
+    });
+    panel.querySelector('#priceCheckQuantity').addEventListener('input', event => {
+      const value = event.target.valueAsNumber;
+      state.quantity = Number.isSafeInteger(value) && value > 0 ? value : null;
+      render();
     });
   }
 
@@ -433,13 +448,14 @@
     const negative = rows.filter(row => row.difference !== null && row.difference < 0).length;
     const neutral = rows.filter(row => row.difference === 0).length;
     const unknown = rows.length - positive - negative - neutral;
+    const hasComparison = unknown < rows.length;
     const rhw = rhwSnapshot();
     const rhwTone = rhw.available && !rhw.stale ? 'positive' : 'warn';
     return `
       <article class="pricecheck-status"><small>FIXED ROUTES</small><strong>${ROUTES.length}</strong></article>
-      <article class="pricecheck-status" data-tone="positive"><small>POSITIVE</small><strong>${positive}</strong></article>
-      <article class="pricecheck-status" data-tone="${negative ? 'negative' : 'positive'}"><small>LOSS</small><strong>${negative}</strong></article>
-      <article class="pricecheck-status" data-tone="${unknown ? 'warn' : rhwTone}"><small>DATA STATUS</small><strong>${unknown ? `${unknown} MISSING` : esc(rhw.label || 'RHW READY')}</strong></article>`;
+      <article class="pricecheck-status" data-tone="${positive ? 'positive' : 'neutral'}"><small>POSITIVE</small><strong>${hasComparison ? positive : '—'}</strong></article>
+      <article class="pricecheck-status" data-tone="${negative ? 'negative' : 'neutral'}"><small>LOSS</small><strong>${hasComparison ? negative : '—'}</strong></article>
+      <article class="pricecheck-status" data-tone="${unknown ? 'warn' : rhwTone}"><small>DATA STATUS</small><strong>${!hasComparison ? 'Awaiting prices' : unknown ? `${unknown} MISSING` : esc(rhw.label || 'RHW READY')}</strong></article>`;
   }
 
   function rowMarkup(row) {
@@ -453,12 +469,13 @@
     const stamp = Number.isFinite(Date.parse(priceAt || '')) ? new Date(priceAt).toLocaleString('de-DE', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : 'TIME UNKNOWN';
     const liveCopy = live === null ? 'SOURCE PRICE UNAVAILABLE' : `${fresh ? 'LIVE' : 'CACHED'} · ${stamp}`;
     const payoutCopy = payout === null ? 'RHW PRICE UNAVAILABLE' : money(payout);
+    const total = state.quantity && difference !== null ? `<small class="pricecheck-total"><b>${signedMoney(difference * state.quantity)}</b> total for ${state.quantity.toLocaleString('en-US')}</small>` : '';
     return `<tr class="pricecheck-row" data-route-key="${esc(route.key)}">
       <td class="pricecheck-item-cell"><span class="pricecheck-mobile-label">COMMODITY</span><span class="pricecheck-commodity"><strong>${esc(route.commodity)}</strong><small>${route.sourceType === 'pob' ? 'FIXED POB ROUTE' : 'FIXED NPC ROUTE'}</small></span></td>
       <td class="pricecheck-source-cell"><span class="pricecheck-mobile-label">SOURCE</span><span class="pricecheck-source"><strong>${esc(sourceName)}</strong><small>${esc(system)}<span class="${sourceMetaClass}"> // ${esc(sourceMeta)}</span></small></span></td>
       <td class="pricecheck-price-cell"><span class="pricecheck-mobile-label">NPC PRICE</span><div class="pricecheck-price-quote"><strong class="pricecheck-source-price">${money(live)}</strong><small class="pricecheck-live">${liveCopy}</small></div></td>
       <td class="pricecheck-payout-cell"><span class="pricecheck-mobile-label">RHW PAYS</span><span class="pricecheck-payout"><strong>${payoutCopy}</strong><small class="${rhw.available && !rhw.stale ? 'pricecheck-current' : ''}">${!rhw.available ? 'RHW DATA UNAVAILABLE' : rhw.stale ? 'RHW CACHED' : 'CURRENT RHW BUY'}</small></span></td>
-      <td class="pricecheck-difference ${tone}"><span class="pricecheck-mobile-label">DIFFERENCE</span><strong>${signedMoney(difference)}</strong>${difference !== null && (!fresh || rhw.stale) ? '<small class="pricecheck-estimate">FROM CACHED PRICES</small>' : ''}</td>
+      <td class="pricecheck-difference ${tone}"><span class="pricecheck-mobile-label">DIFFERENCE / UNIT</span><strong>${signedMoney(difference)}</strong>${total}${difference !== null && (!fresh || rhw.stale) ? '<small class="pricecheck-estimate">FROM CACHED PRICES</small>' : ''}</td>
     </tr>`;
   }
 
@@ -471,12 +488,21 @@
     if (!grid || !rowsNode || !note) return;
 
     const rows = DISPLAY_ROUTES.map(effectiveRow);
+    if (state.sort !== 'source') {
+      const direction = state.sort === 'best' ? -1 : 1;
+      rows.sort((a, b) => {
+        if (a.difference === null) return b.difference === null ? 0 : 1;
+        if (b.difference === null) return -1;
+        return (a.difference - b.difference) * direction;
+      });
+    }
     const status = statusMarkup(rows);
     if (grid.innerHTML !== status) grid.innerHTML = status;
-    rows.forEach(row => {
+    rows.forEach((row, index) => {
       const key = row.route.key;
       const existing = rowsNode.querySelector(`[data-route-key="${key}"]`);
       if (!existing) { rowsNode.insertAdjacentHTML('beforeend', rowMarkup(row)); return; }
+      if (rowsNode.children[index] !== existing) rowsNode.insertBefore(existing, rowsNode.children[index] || null);
       const fragment = document.createElement('tbody');
       fragment.innerHTML = rowMarkup(row);
       const next = fragment.firstElementChild;

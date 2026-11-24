@@ -426,6 +426,16 @@ def main():
         wait_for(cdp, "rhwSupplyDialog.open && !supplySearch.disabled && supplyResults.dataset.stale==='false'")
         if not base.ev(cdp, "supplyQuantity.value==='123' && !!supplyResults.querySelector('.supply-result') && [...supplyResults.querySelectorAll('.supply-metrics>div:first-child strong')].every(n=>Number(n.textContent.replace(/[^0-9]/g,''))<=123)"):
             raise RuntimeError('Restock entry quantity must reach the real route form and cap the delivery')
+        base.ev(cdp, "supplyClose.click()")
+        base.ev(cdp, "RHWV4.logisticsNavigation.openPurchaseSource('Gold',87,'batch 1')")
+        wait_for(cdp, "logisticsPurchaseRequest.textContent==='87 Gold for batch 1'")
+        base.ev(cdp, "document.querySelector('.rhw-supply-launcher [data-trade-desk]').click()")
+        wait_for(cdp, "rhwSupplyDialog.open && !supplyPurchaseRequest.hidden")
+        if not base.ev(cdp, "supplyQuantity.value==='87' && supplyMode.value==='supply' && supplyCommodity.value==='Gold' && supplyPurchaseRequest.textContent==='Requested: 87 Gold for batch 1'"):
+            raise RuntimeError('Logistics route planning must carry the commodity, shortage and purpose to Trade Desk')
+        base.ev(cdp, "(()=>{supplyClose.click();logisticsClearRequest.click();return true})()")
+        if not base.ev(cdp, "logisticsClearRequest.hidden && logisticsPurchaseRequest.textContent===''"):
+            raise RuntimeError('Logistics must allow the prepared request to be cleared')
         print('Trade Desk browser passed: independent background map updates, cold/warm/reload persistence, map outages and cancellation, fresh stock, route-first ranking, compatible IDs, four haulers, import/export, focus and 360/390/1440px layouts.')
     finally:
         if cdp:

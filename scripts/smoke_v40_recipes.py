@@ -41,12 +41,7 @@ def main() -> int:
             if snap.get("recipes") != base.CATALOG_COUNTS["recipeCount"] or snap.get("products") != base.CATALOG_COUNTS["productCount"]:
                 raise RuntimeError(f"Corrected catalog counts unexpected: {snap}")
 
-            base.ev(cdp, """(()=>{
-              const search=document.getElementById('opsRecipeSearch');
-              search.value='Gold refining'; search.dispatchEvent(new Event('input',{bubbles:true}));
-              return true;
-            })()""")
-            time.sleep(.2)
+            base.choose_recipe(cdp, 'Gold refining')
             base.ev(cdp, """(()=>{
               const price=document.querySelector('[data-material-price="commodity_gold_ore"]');
               price.value='123'; price.dispatchEvent(new Event('input',{bubbles:true}));
@@ -60,7 +55,7 @@ def main() -> int:
             })()""")
             time.sleep(.2)
             preserved=base.ev(cdp, """(()=>({
-              recipe:document.getElementById('opsRecipe').value,
+              recipe:RHWV4.state.calculator.recipeId,
               price:document.querySelector('[data-material-price="commodity_gold_ore"]').value,
               iff:document.getElementById('opsAffiliation').value,
               firstGold:RHWV4.operations.matchingRecipes('Gold')[0].outputs[0].id,
@@ -113,12 +108,7 @@ def main() -> int:
             if ["commodity_toxic_waste", 150] not in outputs.get("goldByproducts", []):
                 raise RuntimeError(f"Gold toxic-waste byproduct missing: {outputs}")
 
-            base.ev(cdp, """(()=>{
-              opsRecipeSearch.value='Core Upgrade';
-              opsRecipeSearch.dispatchEvent(new Event('input',{bubbles:true}));
-              return{};
-            })()""")
-            time.sleep(.45)
+            base.choose_recipe(cdp, 'Core Upgrade')
             base.ev(cdp, """(()=>{
               document.querySelectorAll('[data-material-price]').forEach(input=>{
                 input.value='0';input.dispatchEvent(new Event('input',{bubbles:true}));
@@ -127,7 +117,7 @@ def main() -> int:
             })()""")
             time.sleep(.15)
             fee_ui = base.ev(cdp, """(()=>({
-              recipe:opsRecipe?.selectedOptions?.[0]?.textContent||'',
+              recipe:opsRecipeSearch?.value||'',
               fee:document.querySelector('.ops-recipe-fee')?.textContent||'',
               total:opsTotalCost?.textContent||'',unit:opsUnitCost?.textContent||'',
               warning:opsPricingWarning?.textContent||''

@@ -134,7 +134,7 @@
     button.type = 'button';
     button.id = 'copyBbcodePreviewBtn';
     button.className = 'comms-preview-copy';
-    button.textContent = 'COPY BB CODE';
+    button.textContent = 'Copy BBCode';
     button.addEventListener('click', async () => {
       const copied = await app.util.copy(app.comms?.buildBbcode?.() || '');
       app.notify(copied ? 'BB CODE COPIED TO CLIPBOARD' : 'COPY FAILED', copied ? 'good' : 'warn');
