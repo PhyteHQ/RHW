@@ -225,7 +225,8 @@ def main() -> int:
                 expected_fallback = 'marketScanSection' if view=='market' else 'materialsScanSection'
                 if destination.get('focused') not in [material.lower(), expected_fallback]:
                     raise RuntimeError(f"Sourcing focus missed {material}: {destination}")
-                if destination['request'] != f"{clicked['quantity']:,} {material} for {clicked['purpose']}" or destination['scope'] != 'All known POBs':
+                formatted_quantity = f"{clicked['quantity']:,}".replace(',', '.')
+                if destination['request'] != f"{formatted_quantity} {material} for {clicked['purpose']}" or destination['scope'] != 'All known POBs':
                     raise RuntimeError(f"Sourcing request lost in Logistics: {clicked} → {destination}")
 
             print("V4.0.2 interaction smoke passed: recipe variants, shared-price comparison, responsive layout, seller links and costing")

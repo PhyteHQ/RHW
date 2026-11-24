@@ -150,7 +150,7 @@ def main():
                     contextVisible:visible(document.getElementById('appSecondaryNav')),panels:panels.length,
                     commandButtons:[...document.querySelectorAll('#commandNodeNav [data-command-node]')].filter(visible).map(e=>({top:e.getBoundingClientRect().top,height:e.getBoundingClientRect().height,clipped:e.scrollWidth>e.clientWidth+1})),
                     toolbarHeight:document.getElementById('commandControlDeck').getBoundingClientRect().height,
-                    firstOverviewTop:document.querySelector('#overviewOperations').getBoundingClientRect().top,
+                    firstOverviewTop:document.querySelector('.overview-next').getBoundingClientRect().top,
                     crestWidth:document.querySelector('.crest').getBoundingClientRect().width,
                     mastheadHeight:document.querySelector('.command-header-inner').getBoundingClientRect().height,
                     headerValuesFit:[...document.querySelectorAll('.base-telemetry-stat strong,.uplink-value,#headerDataAge')].filter(e=>e.getBoundingClientRect().width>2).every(e=>e.scrollWidth<=e.clientWidth+1&&e.getBoundingClientRect().height<=parseFloat(getComputedStyle(e).lineHeight)+1),
@@ -197,7 +197,7 @@ def main():
                     assert max(b['top'] for b in result['commandButtons']) - min(b['top'] for b in result['commandButtons']) < 1, (width, route, result)
                     assert result['toolbarHeight'] <= (440 if route == 'command/inventory' else 180), (width, route, result)
                     if route == 'command/inventory':
-                        assert result['firstOverviewTop'] <= 460, (width, result)
+                        assert result['firstOverviewTop'] <= 330, (width, result)
                 if width >= 1100 and workspace == 'operations':
                     assert result['inputs'] and all(0 < n <= 145 for n in result['inputs']), result
                 if route == 'command/production':

@@ -7346,7 +7346,7 @@ globalThis.RHW_PRODUCTION_VOLUMES = Object.freeze({
       });
     }
 
-    panel.insertBefore(nav, market);
+    if (nav.nextElementSibling !== market) panel.insertBefore(nav, market);
     if (market.nextElementSibling !== materials) market.insertAdjacentElement('afterend', materials);
     if (materials.nextElementSibling !== legacy) materials.insertAdjacentElement('afterend', legacy);
 
@@ -7755,15 +7755,17 @@ globalThis.RHW_PRODUCTION_VOLUMES = Object.freeze({
     const limit = phone?.matches ? 1 : 3;
     const shown = expanded ? actions : actions.slice(0, limit);
     const unknownStock = snapshot.available && window.operationalItems().some(item => window.firstFiniteApiStockValue(item, ['quantity', 'amount', 'stock']) === null);
-    const signature = JSON.stringify({ shown, unknownStock });
+    const signature = JSON.stringify({ shown, available: snapshot.available, unknownStock });
     if (target.dataset.signature !== signature) {
       target.innerHTML = shown.length ? shown.map(app.command.priorityMarkup).join('')
+        : !snapshot.available ? '<div class="overview-clear overview-incomplete"><strong>Waiting for stock data</strong></div>'
         : `<div class="overview-clear${unknownStock ? ' overview-incomplete' : ''}"><strong>${unknownStock ? 'No known shortages' : 'Supplies and stock look good'}</strong><span>${unknownStock ? 'Some stock levels are unknown. Check the full inventory.' : 'No monitored threshold needs attention.'}</span></div>`;
       target.dataset.signature = signature;
     }
     document.getElementById('overviewTaskCount').textContent = !snapshot.available ? 'Stock unknown' : `${actions.length} ${actions.length === 1 ? 'task' : 'tasks'}`;
-    more.hidden = actions.length <= limit;
-    more.textContent = expanded ? 'Show fewer tasks' : `Show ${actions.length - limit} more tasks`;
+    const remaining = actions.length - limit;
+    more.hidden = remaining <= 0;
+    more.textContent = expanded ? 'Show fewer tasks' : `Show ${remaining} more ${remaining === 1 ? 'task' : 'tasks'}`;
     renderOperations();
     placeControls();
   }

@@ -125,7 +125,7 @@
       });
     }
 
-    panel.insertBefore(nav, market);
+    if (nav.nextElementSibling !== market) panel.insertBefore(nav, market);
     if (market.nextElementSibling !== materials) market.insertAdjacentElement('afterend', materials);
     if (materials.nextElementSibling !== legacy) materials.insertAdjacentElement('afterend', legacy);
 

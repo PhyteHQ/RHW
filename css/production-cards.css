@@ -177,6 +177,7 @@
 }
 .production-batch-label { color:var(--palette-text-soft);font-weight:600;white-space:nowrap; }
 .production-batch-other { color:var(--palette-text-soft);white-space:nowrap; }
+html.rhw-focus-pass .production-batch-target .rhw-source-button { margin:0 0 0 auto;padding:4px 8px; }
 .production-input-summary { min-width:0;border:1px solid var(--line);border-radius:2px;overflow:hidden;background:var(--surface-input); }
 #productionGrid .production-input-table { width:100%;margin:0;font:13px/1.35 var(--font-main);font-variant-numeric:tabular-nums; }
 #productionGrid .production-input-table :is(th,td) { padding:3px 8px;border-bottom:1px solid var(--line);vertical-align:baseline; }

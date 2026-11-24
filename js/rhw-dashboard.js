@@ -1425,7 +1425,7 @@ function renderProductionModules() {
       <span class="production-batch-label">${nextBatchLabel}</span>
       <strong class="production-shortage">${shortage}</strong>
       ${otherGaps.length ? `<span class="production-batch-other">+${number(otherGaps.length)} more</span>` : ''}
-      ${source ? purchaseSourceButton(source.name, source.nextCycleGap, purpose, `Find +${number(source.nextCycleGap)} ${source.name}`) : ''}
+      ${source ? purchaseSourceButton(source.name, source.nextCycleGap, purpose, source === analysis.bottleneck ? 'Find sellers' : `Find +${number(source.nextCycleGap)} ${source.name}`) : ''}
     </div>` : '';
     const batchCoverage = analysis.cardState === 'ok' ? `${number(analysis.possibleCycles)} batches` : '';
     const nextGapText = shortage ? `<div class="next-gap ${analysis.cardState}">
@@ -1674,7 +1674,8 @@ function purchaseSourceButton(name, gap, purpose = '', label = 'Find sellers') {
   const target = purchaseSourceTarget(name);
   const quantity = Math.ceil(gap);
   if (!target || !Number.isSafeInteger(quantity) || quantity <= 0) return '';
-  return `<button type="button" class="rhw-source-button" data-purchase-source="${escapeHTML(target.name)}" data-purchase-quantity="${quantity}" data-purchase-purpose="${escapeHTML(purpose)}" aria-label="Find sellers for ${number(quantity)} ${escapeHTML(target.name)}">${escapeHTML(label)}</button>`;
+  const accessibleLabel = label === 'Find sellers' ? `Find sellers for ${number(quantity)} ${target.name}` : label;
+  return `<button type="button" class="rhw-source-button" data-purchase-source="${escapeHTML(target.name)}" data-purchase-quantity="${quantity}" data-purchase-purpose="${escapeHTML(purpose)}" aria-label="${escapeHTML(accessibleLabel)}">${escapeHTML(label)}</button>`;
 }
 
 function marketBaseSystem(base) {

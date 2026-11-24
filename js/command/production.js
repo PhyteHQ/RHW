@@ -441,7 +441,7 @@ function renderProductionModules() {
       <span class="production-batch-label">${nextBatchLabel}</span>
       <strong class="production-shortage">${shortage}</strong>
       ${otherGaps.length ? `<span class="production-batch-other">+${number(otherGaps.length)} more</span>` : ''}
-      ${source ? purchaseSourceButton(source.name, source.nextCycleGap, purpose, `Find +${number(source.nextCycleGap)} ${source.name}`) : ''}
+      ${source ? purchaseSourceButton(source.name, source.nextCycleGap, purpose, source === analysis.bottleneck ? 'Find sellers' : `Find +${number(source.nextCycleGap)} ${source.name}`) : ''}
     </div>` : '';
     const batchCoverage = analysis.cardState === 'ok' ? `${number(analysis.possibleCycles)} batches` : '';
     const nextGapText = shortage ? `<div class="next-gap ${analysis.cardState}">

@@ -414,6 +414,11 @@ def test_pr3_calculator_ui(cdp, workspace, node):
               const coverage=document.getElementById('opsPriceCoverage')?.textContent.trim()||'';
               const sell=document.getElementById('opsSellUnit')?.textContent.trim()||'';
               const mirror=document.getElementById('opsMobileSellUnit')?.textContent.trim()||'';
+              const summaryTop=parseFloat(getComputedStyle(decision).top);
+              const scrollStart=window.scrollY;
+              window.scrollBy({top:decision.getBoundingClientRect().top-summaryTop+100,behavior:'instant'});
+              const staysVisible=Math.abs(decision.getBoundingClientRect().top-summaryTop)<=2;
+              window.scrollTo({top:scrollStart,behavior:'instant'});
               return{
                 recipes:RHWV4.operations.matchingRecipes('').length,
                 rows:rows.length,
@@ -422,6 +427,7 @@ def test_pr3_calculator_ui(cdp, workspace, node):
                 decisionDisplay:decision?getComputedStyle(decision).display:'',
                 decisionPosition:decision?getComputedStyle(decision).position:'',
                 mirrors:decision?.querySelectorAll('strong').length||0,
+                staysVisible,
                 profileOrder:profile?getComputedStyle(profile).order:'',
                 profileInCost:Boolean(profile&&costPanel&&costPanel.contains(profile)),
                 touch,coverage,sell,mirror,
@@ -433,7 +439,7 @@ def test_pr3_calculator_ui(cdp, workspace, node):
             cdp.call("Emulation.clearDeviceMetricsOverride")
         if result.get("recipes") != base.CATALOG_COUNTS["recipeCount"] or result.get("rows", 0) <= 0:
             raise RuntimeError(f"PR3 Calculator catalog/material rows failed at {width}px: {result}")
-        if result.get("rowDisplay") != "grid" or result.get("wrapOverflow") != "visible" or result.get("decisionDisplay") != "grid" or result.get("decisionPosition") != "sticky" or result.get("mirrors") != 3:
+        if result.get("rowDisplay") != "grid" or result.get("wrapOverflow") != "visible" or result.get("decisionDisplay") != "grid" or result.get("decisionPosition") != "sticky" or result.get("mirrors") != 3 or not result.get("staysVisible"):
             raise RuntimeError(f"PR3 Calculator mobile hierarchy failed at {width}px: {result}")
         if result.get("profileOrder") != "2" or not result.get("profileInCost") or not result.get("jumpTargets"):
             raise RuntimeError(f"PR3 Calculator mobile workflow failed at {width}px: {result}")
