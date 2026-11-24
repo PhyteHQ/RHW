@@ -27,14 +27,12 @@ MAP** applies it through a new search with fresh POB stock; current quotes are
 never silently relabelled with a newer map date. Canceling a trade does not
 cancel the independent map update.
 
-Only responses accepted by the existing navigation validator and covering
-RHW's system replace the saved map. Rendering data are stripped; persisted
-routing facts contain system nicknames, objects and jump kinds, positions and
-destination systems. Invalid responses, timeouts, unavailable/full browser
-storage and a missing endpoint cannot discard a valid map. A damaged or older
-cache falls back to the packaged map. Map and reference records use separate
-IndexedDB keys, so concurrent writes cannot overwrite each other. Warm searches
-reuse memory without further IndexedDB reads or writes.
+An accepted response contains a populated entry for every system used by the
+bundled geometry. A partial update leaves the last usable map available. An
+incomplete map already saved by an older version falls back to the bundled
+snapshot. Persisted routing facts include system nicknames, objects, jump
+kinds, positions and destination systems. Map and reference records use
+separate IndexedDB keys. Warm searches reuse the map in memory.
 
 The packaged `assets/navigation-last-verified.json.gz` is the same complete
 public routing projection retained in the map regression fixture. It is never
@@ -91,6 +89,12 @@ simulation. Missing docking mode is an unverified policy, separate from reported
 whitelist modes and hostile-IFF owner approvals. It can be quoted conditionally
 through **Include unverified ID / docking rules**, never as a default verified route.
 
+An NPC market that reports a different system from its mapped docking point can
+use its current coordinates for an estimated flight. **Include unverified ID /
+docking rules** is required for estimates at NPCs with unknown physical dock
+classes, including newly reported stations and moves that await verification.
+The same check covers import stops, export buyers and return cargo.
+
 `live-navigation.mjs` checks the bundled graph against the selected checked map
 objects before either planner runs. Missing, unknown and campaign-locked jump
 objects cannot keep old connections. A changed destination invalidates its old
@@ -113,6 +117,14 @@ continue to come from `assets/navigation.json.gz`; new links are not guessed
 from system names or coordinates. The UI displays the geometry build date
 separately from the current map receipt time. This is a live availability and
 position check on known geometry, not a claim that the entire graph is rebuilt.
+
+The bundled August geometry incorporates targeted corrections from the November
+hotfixes. Orkney and Provence have a direct gate in both directions. De Grasse
+maps to Tau-23 and Woodlark is berth-only. The same pass updated Ciutadella
+Outpost, Sisteron, Tuscaloosa, Lehigh and Verthandi from their published system
+and solar configuration. The corrected positions take precedence over older
+Darkstat projections. [3 November hotfix](https://patch.discoverygc.com/20261103-hotfix.zip)
+· [10 November hotfix](https://patch.discoverygc.com/20261110-hotfix.zip)
 
 Server/campaign closures can precede the client-config feed. On 2026-10-29,
 Darkstat still reported Galileo–Shikoku as a regular gate despite the operator's

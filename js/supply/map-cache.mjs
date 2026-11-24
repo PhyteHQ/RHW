@@ -15,7 +15,7 @@ function projection(systems) {
 
 export function createMapCache({ fetchSystems, loadBundled, readCache, writeCache,
   onChange = () => {}, now = Date.now, timeoutMs = 20000, requiredSystem = 'br01' }) {
-  let geometry, current = null, initial = null, pending = null, lastAttempt = -Infinity, error = '';
+  let geometry, requiredSystems, current = null, initial = null, pending = null, lastAttempt = -Infinity, error = '';
   const notify = () => onChange();
   const accept = (raw, origin) => {
     const at = Date.parse(raw?.capturedAt);
@@ -23,6 +23,10 @@ export function createMapCache({ fetchSystems, loadBundled, readCache, writeCach
       throw Error('Invalid saved map');
     const navigation = currentNavigation(geometry, raw.systems, raw.capturedAt);
     if (!navigation.nodes.some(node => node.system === requiredSystem)) throw Error('Map does not cover RHW’s system');
+    const reported = new Set(raw.systems.filter(system => system.Objs?.length || system.Jumpholes?.length)
+      .map(system => system.nickname));
+    const missing = requiredSystems.filter(system => !reported.has(system));
+    if (missing.length) throw Error(`Map response is incomplete. ${missing.length} routing systems are missing or empty.`);
     const snapshot = { schema: 1, source: SOURCE, capturedAt: raw.capturedAt, systems: projection(raw.systems) };
     return { snapshot, navigation, origin };
   };
@@ -30,6 +34,7 @@ export function createMapCache({ fetchSystems, loadBundled, readCache, writeCach
     if (current) return current;
     if (initial) return initial;
     geometry = base;
+    requiredSystems = [...new Set(geometry.nodes.map(node => node.system))];
     initial = (async () => {
       try {
         const cached = await readCache();
