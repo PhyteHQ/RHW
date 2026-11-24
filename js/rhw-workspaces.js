@@ -1270,7 +1270,7 @@ const RHW_APP_CONFIG = Object.freeze({
   function priorityMarkup(action) {
     const esc = app.util.escape;
     const effects = action.effects?.length > 1 ? `<small class="priority-effects">Affects: ${esc(action.effects.join(' · '))}</small>` : '';
-    return `<div class="command-priority-entry state-${action.state}"><button type="button" class="command-priority-item state-${action.state}" data-priority-jump="${action.node}" data-priority-nodes="${esc((action.nodes || [action.node]).join(' '))}" data-priority-target="${esc(action.target || '')}" data-priority-action="${action.action || 'stock'}"><span class="priority-state">${esc(action.label || action.state)}</span><span><strong>${esc(action.title)}</strong><small>${esc(action.meta)}</small>${effects}</span><b>Open ↗</b></button>${action.supply && Number.isSafeInteger(action.quantity) && action.quantity > 0 ? `<button type="button" class="priority-supply-button" data-supply-commodity="${esc(action.supply)}" data-supply-quantity="${action.quantity}" aria-label="Find ${app.util.number(action.quantity)} ${esc(action.supply)}">Find +${app.util.number(action.quantity)}</button>` : ''}</div>`;
+    return `<div class="command-priority-entry state-${action.state}"><button type="button" class="command-priority-item state-${action.state}" data-priority-jump="${action.node}" data-priority-nodes="${esc((action.nodes || [action.node]).join(' '))}" data-priority-target="${esc(action.target || '')}" data-priority-action="${action.action || 'stock'}"><span class="priority-state">${esc(action.label || action.state)}</span><span><strong>${esc(action.title)}</strong><small>${esc(action.meta)}</small>${effects}</span><b>Open ↗</b></button>${action.supply && Number.isSafeInteger(action.quantity) && action.quantity > 0 ? `<button type="button" class="priority-supply-button" data-supply-commodity="${esc(action.supply)}" data-supply-quantity="${action.quantity}" data-supply-purpose="${esc(action.effects?.join(' · ') || action.title)}" aria-label="Find ${app.util.number(action.quantity)} ${esc(action.supply)}">Find +${app.util.number(action.quantity)}</button>` : ''}</div>`;
   }
 
   function renderPriorities() {
@@ -1524,18 +1524,17 @@ const RHW_APP_CONFIG = Object.freeze({
     return `<section class="comms-node-panel" data-comms-panel="forum">
       <div class="comms-grid">
         <section class="comms-panel composer-panel" id="commsComposerPanel">
-          <div class="comms-panel-head"><div><span>01</span><strong>Write transmission</strong></div><small>AUTOSAVE ACTIVE</small></div>
+          <div class="comms-panel-head"><div><strong>Write transmission</strong></div><small>AUTOSAVE ACTIVE</small></div>
           <div class="comms-workflow-status" id="commsWorkflowStatus" aria-live="polite"></div>
-          <div class="comms-context-tools" aria-label="Forum tools"><button type="button" data-forum-tool="drafts">OPEN DRAFTS</button><button type="button" data-forum-tool="senders">MANAGE SENDERS</button></div>
           <form id="commsForm" autocomplete="off">
-            <div class="comms-field-grid">
-              <label class="comms-field"><span>SENDER PROFILE</span><select id="commsSender"></select><small>SENDER PROFILE CONTROLS THE SIGNATURE</small></label>
+            <div class="comms-field-grid comms-envelope">
+              <label class="comms-field"><span>SENDER PROFILE</span><select id="commsSender"></select></label>
               <div class="comms-signature-auto" id="v40SignatureAuto"></div>
               <div class="comms-custom-sender" id="customSenderWrap" hidden>
                 <label class="comms-field"><span>CUSTOM SENDER NAME</span><input id="customSenderName" type="text" maxlength="80" placeholder="Character name" /></label>
                 <label class="comms-field"><span>SENDER ROLE / TITLE</span><input id="commsSignatureTitle" type="text" maxlength="120" placeholder="Role / organisation" /></label>
               </div>
-              <label class="comms-field comms-wide"><span>RECIPIENT ID</span><input id="commsRecipient" type="text" maxlength="180" placeholder="Recipient / office / organisation" /></label>
+              <label class="comms-field comms-wide comms-recipient"><span>RECIPIENT ID</span><input id="commsRecipient" type="text" maxlength="180" placeholder="Name or office" /></label>
               <label class="comms-field comms-wide"><span>SUBJECT</span><input id="commsSubject" type="text" maxlength="180" /></label>
               <div class="comms-field comms-wide message-field"><label for="commsMessage">MESSAGE</label>
                 <div class="comms-editor-toolbar" role="toolbar" aria-label="Message formatting">
@@ -1543,6 +1542,7 @@ const RHW_APP_CONFIG = Object.freeze({
                 </div>
                 <textarea id="commsMessage" rows="14" placeholder="Write the actual forum post here — no BB code required."></textarea><small class="comms-message-help"><span>SMART MARKUP: ## HEADING · **BOLD** · !WARNING · !STATUS · - LIST</span><b id="commsMessageCount">0 CHARACTERS</b></small>
               </div>
+              <div class="comms-actions comms-copy-write comms-wide"><button class="comms-primary" type="button" id="copyBbcodeBtn">Copy BBCode</button></div>
               <label class="comms-field comms-wide"><span>DRAFT NAME</span><input id="commsDraftName" type="text" maxlength="100" placeholder="e.g. BAF Dunkirk Offer" /></label>
             </div>
             <details class="comms-advanced"><summary>TRANSMISSION SETTINGS <span id="v40DocumentControlSummary"></span></summary>
@@ -1563,27 +1563,27 @@ const RHW_APP_CONFIG = Object.freeze({
               </div>
             </details>
             <div class="comms-actions">
-              <button class="comms-primary" type="button" id="copyBbcodeBtn"><span>COPY BB CODE</span></button>
               <button type="button" id="saveDraftBtn"><span>SAVE NAMED DRAFT</span></button>
               <button type="button" id="saveSenderBtn" hidden><span>SAVE SENDER PROFILE</span></button>
               <button type="button" id="newTransmissionBtn"><span>NEW TRANSMISSION</span></button>
               <button type="button" class="comms-next-action" data-comms-surface="preview"><span>REVIEW TRANSMISSION →</span></button>
             </div>
           </form>
+          <div class="comms-context-tools" aria-label="Forum tools"><button type="button" data-forum-tool="drafts">OPEN DRAFTS</button><button type="button" data-forum-tool="senders">MANAGE SENDERS</button></div>
         </section>
 
         <section class="comms-panel preview-panel">
-          <div class="comms-panel-head"><div><span>02</span><strong>Forum preview</strong></div><small>APPROXIMATE RENDER</small></div>
+          <div class="comms-panel-head"><div><strong>Forum preview</strong></div><small>APPROXIMATE RENDER</small></div>
           <div class="forum-preview" id="forumLivePreview"></div>
           <div class="comms-surface-actions"><button type="button" data-comms-surface="write">← EDIT TRANSMISSION</button><button type="button" class="comms-primary" data-comms-surface="bbcode">REVIEW BB CODE →</button></div>
         </section>
       </div>
 
       <section class="comms-panel bbcode-panel">
-        <div class="comms-panel-head"><div><span>03</span><strong>Forum code</strong></div><small>FORUM READY</small></div>
+        <div class="comms-panel-head"><div><strong>Forum code</strong></div><small>FORUM READY</small></div>
         <textarea id="forumBbcodeOutput" readonly spellcheck="false" aria-label="Generated forum BB code"></textarea>
         <div class="bbcode-hint">THE PREVIEW REPRODUCES RHW STYLING, BUT THE FORUM REMAINS THE FINAL RENDERER FOR ITS CUSTOM BB CODE.</div>
-        <div class="comms-surface-actions"><button type="button" data-comms-surface="preview">← BACK TO PREVIEW</button><button type="button" class="comms-primary" data-copy-forum-bbcode>COPY FORUM BB CODE</button></div>
+        <div class="comms-surface-actions"><button type="button" data-comms-surface="preview">← BACK TO PREVIEW</button><button type="button" class="comms-primary" data-copy-forum-bbcode>Copy BBCode</button></div>
       </section>
     </section>`;
   }
@@ -1826,8 +1826,9 @@ const RHW_APP_CONFIG = Object.freeze({
       ['MESSAGE', Boolean(String(state.message || '').trim())]
     ];
     if (target) {
-      const ready = checks.filter(([, ok]) => ok).length;
-      target.innerHTML = `<div class="comms-workflow-score"><small>TRANSMISSION READINESS</small><strong>${ready} / ${checks.length} READY</strong></div>${checks.map(([label, ok]) => `<span data-ready="${ok ? 'true' : 'false'}"><i aria-hidden="true"></i>${label}</span>`).join('')}`;
+      const missing = checks.filter(([, ok]) => !ok).map(([label]) => label.toLowerCase());
+      const compact = missing.length ? `Missing: ${missing.join(', ')}` : 'Ready for the forum';
+      target.innerHTML = `<div class="comms-readiness-compact">${compact}</div><div class="comms-workflow-score"><small>TRANSMISSION READINESS</small><strong>${checks.length - missing.length} / ${checks.length} READY</strong></div>${checks.map(([label, ok]) => `<span data-ready="${ok ? 'true' : 'false'}"><i aria-hidden="true"></i>${label}</span>`).join('')}`;
     }
     if (count) count.textContent = `${String(state.message || '').length.toLocaleString('en-US')} CHARACTERS`;
   }
@@ -2019,6 +2020,7 @@ const RHW_APP_CONFIG = Object.freeze({
       return;
     }
     const target = view === 'write' ? document.getElementById('commsComposerPanel') : view === 'preview' ? document.querySelector('.preview-panel') : document.querySelector('.bbcode-panel');
+    if (view === 'bbcode' && target?.classList.contains('v40-collapsed')) document.getElementById('toggleBbcodePanelBtn')?.click();
     target?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
@@ -2405,7 +2407,7 @@ const RHW_APP_CONFIG = Object.freeze({
     button.type = 'button';
     button.id = 'copyBbcodePreviewBtn';
     button.className = 'comms-preview-copy';
-    button.textContent = 'COPY BB CODE';
+    button.textContent = 'Copy BBCode';
     button.addEventListener('click', async () => {
       const copied = await app.util.copy(app.comms?.buildBbcode?.() || '');
       app.notify(copied ? 'BB CODE COPIED TO CLIPBOARD' : 'COPY FAILED', copied ? 'good' : 'warn');
@@ -3473,6 +3475,7 @@ globalThis.RHW_PRODUCTION_VOLUMES = Object.freeze({
       .map(entry => entry.recipe);
   }
   function recipeLabel(recipe) {
+    if (app.calculatorPresentation) return app.calculatorPresentation.recipeLabel(recipe);
     const product = recipeProduct(recipe);
     const name = recipeDisplayName(recipe);
     const variants = product ? core.recipesFor(product.id) : [];
@@ -3480,12 +3483,6 @@ globalThis.RHW_PRODUCTION_VOLUMES = Object.freeze({
     const qualifier = recipe.craftType || recipe.name || recipe.id;
     return `${name} · ${app.util.normalize(qualifier) === app.util.normalize(name) ? recipe.id : qualifier}`;
   }
-  function recipeOptions(recipes, selectedId) {
-    return recipes.length
-      ? recipes.map(recipe => `<option value="${esc(recipe.id)}"${recipe.id === selectedId ? ' selected' : ''}>${esc(recipeLabel(recipe))}</option>`).join('')
-      : '<option value="">NO MATCHING RECIPES</option>';
-  }
-
   function materialFactorLabel(value) {
     const percentage = Math.round(Math.abs(1 - Number(value)) * 100);
     return percentage ? `${value < 1 ? '−' : '+'}${percentage}% MATERIALS` : 'NO BONUS';
@@ -3532,13 +3529,9 @@ globalThis.RHW_PRODUCTION_VOLUMES = Object.freeze({
 
   function resolveSelection(raw) {
     const calc = { ...raw };
-    const matches = matchingRecipes(calc.search);
-    if (calc.search && !matches.length) return { calc, matches, recipe: null };
-    let recipe = core.recipe(calc.recipeId);
-    if (!recipe && !calc.search && calc.productId) recipe = core.recipesFor(calc.productId)[0] || null;
-    if (!recipe || (calc.search && !matches.some(entry => entry.id === recipe.id))) recipe = matches[0] || null;
-    if (!recipe) recipe = core.state.catalog?.recipes?.[0] || null;
-    if (!recipe) return { calc, matches, recipe: null };
+    const recipe = core.recipe(calc.recipeId) || (calc.search && matchingRecipes(calc.search)[0])
+      || core.recipesFor(calc.productId)[0] || core.state.catalog?.recipes?.[0];
+    if (!recipe) return { calc, recipe: null };
     if (recipe.id !== raw.recipeId) {
       calc.materialPrices = {};
       calc.materialPriceSources = {};
@@ -3551,7 +3544,7 @@ globalThis.RHW_PRODUCTION_VOLUMES = Object.freeze({
     if (!iff.some(entry => entry.id === calc.affiliationId)) {
       calc.affiliationId = iff.find(entry => entry.id === app.config.operations.defaultAffiliation)?.id || iff[0]?.id || '__none__';
     }
-    return { calc, matches, recipe };
+    return { calc, recipe };
   }
 
   function buildQuote(calc) {
@@ -3718,19 +3711,102 @@ globalThis.RHW_PRODUCTION_VOLUMES = Object.freeze({
     </div>`;
   }
 
-  function noMatchMarkup(calc, catalog) {
-    return `<div class="operations-layout-simple"><section class="ops-panel ops-setup-panel"><div class="ops-panel-head"><div><span>01</span><strong>RECIPE</strong></div></div><div class="ops-form-grid"><label class="comms-field ops-wide"><span>SEARCH RECIPE</span><input id="opsRecipeSearch" type="search" value="${esc(calc.search)}" placeholder="Bustard, Superstructure, Reactor, Gold…" autocomplete="off"><small>TYPE A NAME OR RECIPE ID</small></label></div><div class="ops-empty ops-no-match">NO MATCHING RECIPE<small>TRY A DIFFERENT ITEM OR RECIPE NAME</small></div></section></div>`;
+  function recipePickerMarkup(recipe) {
+    return `<div class="comms-field ops-wide ops-recipe-picker" id="opsRecipePicker">
+      <label for="opsRecipeSearch" id="opsRecipeLabel">RECIPE</label>
+      <div class="ops-recipe-control">
+        <input id="opsRecipeSearch" type="text" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="opsRecipeMatches" aria-describedby="opsRecipeHint" value="${esc(recipeLabel(recipe))}" placeholder="Search by name or recipe ID" autocomplete="off" spellcheck="false">
+        <button type="button" id="opsRecipeToggle" tabindex="-1" aria-label="Browse recipes" aria-controls="opsRecipeMatches">⌄</button>
+        <div class="ops-recipe-results" id="opsRecipeResults" hidden>
+          <div role="listbox" id="opsRecipeMatches" aria-labelledby="opsRecipeLabel"></div>
+          <p role="status" class="ops-no-match" hidden>No matching recipe</p>
+        </div>
+      </div>
+      <small id="opsRecipeHint">Search by name or recipe ID · ${esc(craftLabel(recipe))}${recipe.restricted ? ' · Authorized IFF required' : ''}</small>
+    </div>`;
   }
 
-  function bindSearchOnly() {
-    document.getElementById('opsRecipeSearch')?.addEventListener('input', event => {
-      const search = event.target.value;
-      saveState({ search });
-      if (!search.trim() || matchingRecipes(search).length) scheduleRender({ search }, { focusSearch: true, delay: 120 });
+  function bindRecipePicker(recipe) {
+    const picker = document.getElementById('opsRecipePicker');
+    if (!picker) return;
+    const input = picker.querySelector('#opsRecipeSearch');
+    const results = picker.querySelector('#opsRecipeResults');
+    const list = picker.querySelector('#opsRecipeMatches');
+    const empty = picker.querySelector('.ops-no-match');
+    let matches = [];
+    let highlighted = -1;
+
+    function showResults(query) {
+      matches = matchingRecipes(query);
+      highlighted = -1;
+      list.innerHTML = matches.map((candidate, index) => `<div role="option" id="opsRecipeOption-${index}" data-recipe-option="${esc(candidate.id)}" aria-selected="${candidate.id === recipe.id}">${esc(recipeLabel(candidate))}</div>`).join('');
+      list.scrollTop = 0;
+      empty.hidden = matches.length > 0;
+      results.hidden = false;
+      input.setAttribute('aria-expanded', 'true');
+      input.removeAttribute('aria-activedescendant');
+    }
+
+    function closeResults() {
+      results.hidden = true;
+      input.value = recipeLabel(recipe);
+      input.setAttribute('aria-expanded', 'false');
+      input.removeAttribute('aria-activedescendant');
+    }
+
+    function choose(id) {
+      const selected = core.recipe(id);
+      if (!selected) return;
+      if (id === recipe.id) { closeResults(); return; }
+      clearTimeout(rerenderTimer);
+      saveState({ recipeId: id, productId: primaryOutput(selected)?.id || currentState().productId, search: '' });
+      renderCalculator();
+      document.getElementById('opsRecipeSearch')?.focus({ preventScroll: true });
+    }
+
+    input.addEventListener('input', () => showResults(input.value));
+    input.addEventListener('click', () => {
+      if (!results.hidden) return;
+      showResults('');
+      input.select();
     });
+    input.addEventListener('focus', () => input.select());
+    input.addEventListener('keydown', event => {
+      if (event.isComposing) return;
+      if (event.key === 'Escape' && !results.hidden) { event.preventDefault(); closeResults(); return; }
+      if (event.key === 'Enter' && !results.hidden) {
+        event.preventDefault();
+        choose(matches[Math.max(0, highlighted)]?.id);
+        return;
+      }
+      if (!['ArrowDown', 'ArrowUp'].includes(event.key)) return;
+      event.preventDefault();
+      if (results.hidden) showResults('');
+      if (!matches.length) return;
+      const previous = list.children[highlighted];
+      if (previous) previous.setAttribute('aria-selected', 'false');
+      if (highlighted === -1) list.querySelector('[aria-selected="true"]')?.setAttribute('aria-selected', 'false');
+      const next = event.key === 'ArrowDown' ? highlighted + 1 : highlighted === -1 ? matches.length - 1 : highlighted - 1;
+      highlighted = Math.min(matches.length - 1, Math.max(0, next));
+      const option = list.children[highlighted];
+      input.setAttribute('aria-activedescendant', option.id);
+      option.setAttribute('aria-selected', 'true');
+      option.scrollIntoView({ block: 'nearest' });
+    });
+    picker.querySelector('#opsRecipeToggle').addEventListener('click', () => {
+      input.focus();
+      if (results.hidden) { showResults(''); input.select(); }
+      else closeResults();
+    });
+    results.addEventListener('mousedown', event => { if (event.target.closest('[data-recipe-option]')) event.preventDefault(); });
+    results.addEventListener('click', event => {
+      const option = event.target.closest('[data-recipe-option]');
+      if (option) choose(option.dataset.recipeOption);
+    });
+    picker.addEventListener('focusout', event => { if (!picker.contains(event.relatedTarget)) closeResults(); });
   }
 
-  function renderCalculator({ focusSearch = false } = {}) {
+  function renderCalculator() {
     const mount = document.getElementById('operationsCalculatorMount');
     const catalog = core.state.catalog;
     if (!mount || !catalog) return;
@@ -3738,15 +3814,6 @@ globalThis.RHW_PRODUCTION_VOLUMES = Object.freeze({
     const resolved = resolveSelection(currentState());
     const calc = resolved.calc;
     saveState(calc);
-    if (calc.search && !resolved.matches.length) {
-      mount.className = 'operations-calculator';
-      mount.innerHTML = noMatchMarkup(calc, catalog);
-      bindSearchOnly();
-      const search = document.getElementById('opsRecipeSearch');
-      if (focusSearch && search) { search.focus(); try { search.setSelectionRange(search.value.length, search.value.length); } catch {} }
-      return;
-    }
-
     const recipe = resolved.recipe;
     if (!recipe) { mount.innerHTML = '<div class="ops-empty danger">NO RECIPE AVAILABLE</div>'; return; }
     let plan;
@@ -3759,7 +3826,6 @@ globalThis.RHW_PRODUCTION_VOLUMES = Object.freeze({
     const pricing = core.priceQuote(rows, calc, plan);
     const iff = iffEntries(recipe, calc.affiliationId);
     const outputPerCycle = Math.max(1, Number(plan.tree?.outputPerCycle) || Number(primaryOutput(recipe)?.qty) || 1);
-    const matches = resolved.matches.length ? resolved.matches : matchingRecipes('');
     const iffHint = recipe.restricted ? 'RESTRICTED RECIPE // ONLY AUTHORIZED IFF PROFILES ARE SHOWN' : 'BMM IS PRESELECTED FOR RHW';
 
     mount.className = 'operations-calculator';
@@ -3767,34 +3833,31 @@ globalThis.RHW_PRODUCTION_VOLUMES = Object.freeze({
       <section class="ops-panel ops-setup-panel">
         <div class="ops-panel-head"><div><span>01</span><strong>RECIPE</strong></div></div>
         <div class="ops-form-grid">
-          <label class="comms-field ops-wide"><span>SEARCH RECIPE</span><input id="opsRecipeSearch" type="search" value="${esc(calc.search)}" placeholder="Bustard, Superstructure, Reactor, Gold…" autocomplete="off"><small>TYPE A NAME OR RECIPE ID // FIRST MATCH IS SELECTED AUTOMATICALLY</small></label>
-          <label class="comms-field ops-wide"><span>SELECTED RECIPE</span><select id="opsRecipe">${recipeOptions(matches, calc.recipeId)}</select><small>${matches.length} match${matches.length === 1 ? '' : 'es'} · ${esc(craftLabel(recipe))}${recipe.restricted ? ' · Authorized IFF required' : ''}</small></label>
+          ${recipePickerMarkup(recipe)}
           <label class="comms-field"><span>OUTPUT QUANTITY</span><div class="ops-quantity-control"><button type="button" data-ops-quantity="-1" aria-label="Decrease output quantity">−</button><input id="opsQuantity" aria-label="Output quantity" type="number" inputmode="numeric" min="1" step="1" value="${calc.quantity}"><button type="button" data-ops-quantity="1" aria-label="Increase output quantity">+</button></div></label>
           <label class="comms-field"><span>AFFILIATION / IFF</span><select id="opsAffiliation">${iff.map(entry => `<option value="${esc(entry.id)}"${entry.id === calc.affiliationId ? ' selected' : ''}>${esc(entry.name)}</option>`).join('')}</select><small>${esc(iffHint)}</small></label>
         </div>
         <div class="ops-recipe-meta"><div><small>OUTPUT / CYCLE</small><strong>${fmt(outputPerCycle)}</strong></div><div><small>CYCLES</small><strong>${fmt(plan.cycles)}</strong></div><div><small>ACTUAL OUTPUT</small><strong>${fmt(plan.actualOutput)}</strong></div></div>
         ${comparison.entries.length > 1 ? `<button type="button" id="opsCompareToggle" aria-expanded="${calc.comparisonOpen}"${calc.comparisonOpen ? ' aria-controls="opsComparisonPanel"' : ''}>${calc.comparisonOpen ? 'CLOSE COMPARISON' : `COMPARE ${comparison.entries.length} VARIANTS`}</button>` : ''}
 
-        <div class="ops-mobile-decision" aria-label="Current quote summary"><div><small>RECOMMENDED SALE</small><strong id="opsMobileSellUnit">${money(pricing.sellPerUnit)}</strong></div><div><small>COST / ITEM</small><strong id="opsMobileUnitCost">${money(pricing.unitCost)}</strong></div><div><small>TOTAL PROFIT</small><strong id="opsMobileProfit">${money(pricing.profit)}</strong></div></div>
         <nav class="ops-mobile-jumps" aria-label="Calculator sections"><button type="button" data-ops-jump="opsMaterialPanel">ENTER MATERIAL PRICES</button><button type="button" data-ops-jump="opsQuotePanel">VIEW FULL QUOTE</button></nav>
       </section>
-      <section class="ops-panel ops-cost-panel" id="opsMaterialPanel"><div class="ops-panel-head"><div><span>02</span><strong>MATERIAL COST</strong></div><small>ENTER YOUR UNIT PRICES</small></div>${rhwPriceControlsMarkup()}${materialsMarkup(rows, calc)}${plan.recipeFeeTotal ? `<div class="ops-recipe-fee"><div><small>FIXED RECIPE FEE · INCLUDED IN QUOTE</small><strong>${money(plan.recipeFeePerCycle)} / CYCLE × ${fmt(plan.cycles)}</strong></div><b>${money(plan.recipeFeeTotal)}</b></div>` : ''}<div class="ops-price-memory">Prices apply to this calculation. Save a price profile to reuse them.</div>${notesMarkup(plan)}<button class="ops-mobile-quote-jump" type="button" data-ops-jump="opsQuotePanel">VIEW UPDATED QUOTE</button></section>
+      <section class="ops-panel ops-cost-panel" id="opsMaterialPanel"><div class="ops-panel-head"><div><span>02</span><strong>MATERIAL COST</strong></div><small>ENTER YOUR UNIT PRICES</small></div>
+        <div class="ops-quote-summary" role="group" aria-label="Prices per produced unit"><div><small>Cost / unit</small><strong id="opsMobileUnitCost">${money(pricing.unitCost)}</strong></div><div><small>Sale / unit</small><strong id="opsMobileSellUnit">${money(pricing.sellPerUnit)}</strong></div><div><small>Profit / unit</small><strong id="opsMobileProfit">${money(pricing.profitUnit)}</strong></div></div>
+        ${rhwPriceControlsMarkup()}${materialsMarkup(rows, calc)}${plan.recipeFeeTotal ? `<div class="ops-recipe-fee"><div><small>FIXED RECIPE FEE · INCLUDED IN QUOTE</small><strong>${money(plan.recipeFeePerCycle)} / CYCLE × ${fmt(plan.cycles)}</strong></div><b>${money(plan.recipeFeeTotal)}</b></div>` : ''}<div class="ops-price-memory">Prices apply to this calculation. Save a price profile to reuse them.</div>${notesMarkup(plan)}<button class="ops-mobile-quote-jump" type="button" data-ops-jump="opsQuotePanel">VIEW UPDATED QUOTE</button></section>
       <section class="ops-panel ops-quote-panel" id="opsQuotePanel"><div class="ops-panel-head"><div><span>03</span><strong>PRICE CALCULATION</strong></div><small>COST → MARGIN → SELL PRICE</small></div>${quoteMarkup(pricing, calc, rows, plan.actualOutput)}</section>
       ${comparisonMarkup(comparison, calc, rows)}
     </div>`;
+    bindRecipePicker(recipe);
     bindCalculator(plan, rows);
     updateRhwPriceControls();
     app.rendered?.('calculator');
-    if (focusSearch) {
-      const search = document.getElementById('opsRecipeSearch');
-      if (search) { search.focus(); try { search.setSelectionRange(search.value.length, search.value.length); } catch {} }
-    }
   }
 
-  function scheduleRender(patch = {}, options = {}) {
+  function scheduleRender(patch) {
     saveState(patch);
     clearTimeout(rerenderTimer);
-    rerenderTimer = setTimeout(() => renderCalculator({ focusSearch: options.focusSearch || false }), options.delay ?? 45);
+    rerenderTimer = setTimeout(renderCalculator, 45);
   }
 
   function updatePricing(plan, rows) {
@@ -3816,7 +3879,7 @@ globalThis.RHW_PRODUCTION_VOLUMES = Object.freeze({
     write('opsSellUnit', money(pricing.sellPerUnit));
     write('opsMobileSellUnit', money(pricing.sellPerUnit));
     write('opsMobileUnitCost', money(pricing.unitCost));
-    write('opsMobileProfit', money(pricing.profit));
+    write('opsMobileProfit', money(pricing.profitUnit));
     write('opsProfitUnit', money(pricing.profitUnit));
     write('opsProfit', money(pricing.profit));
     write('opsRevenue', money(pricing.revenue));
@@ -3852,19 +3915,6 @@ globalThis.RHW_PRODUCTION_VOLUMES = Object.freeze({
       if (!missing) return;
       missing.scrollIntoView({ behavior: 'smooth', block: 'center' });
       missing.focus({ preventScroll: true });
-    });
-    document.getElementById('opsRecipeSearch')?.addEventListener('input', event => {
-      const search = event.target.value;
-      const matches = matchingRecipes(search);
-      const select = document.getElementById('opsRecipe');
-      if (select) select.innerHTML = recipeOptions(matches, matches[0]?.id || '');
-      if (!matches.length) { scheduleRender({ search }, { focusSearch: true, delay: 160 }); return; }
-      const recipe = matches[0];
-      scheduleRender({ search, recipeId: recipe.id, productId: primaryOutput(recipe)?.id || currentState().productId }, { focusSearch: true, delay: 140 });
-    });
-    document.getElementById('opsRecipe')?.addEventListener('change', event => {
-      const recipe = core.recipe(event.target.value); if (!recipe) return;
-      scheduleRender({ recipeId: recipe.id, productId: primaryOutput(recipe)?.id || currentState().productId });
     });
     document.getElementById('opsQuantity')?.addEventListener('change', event => scheduleRender({ quantity: Math.max(1, Math.floor(num(event.target.value, 1))) }));
     document.querySelectorAll('[data-ops-quantity]').forEach(button => button.addEventListener('click', () => {
@@ -4683,20 +4733,6 @@ globalThis.RHW_PRODUCTION_VOLUMES = Object.freeze({
     return [...grouped.values()].filter(group => group.ids.length > 1).map(group => [group.label, group.ids]);
   }
 
-  function polishRecipeOptions() {
-    const select = document.getElementById('opsRecipe');
-    if (!select || !core.state.catalog) return;
-    [...select.options].forEach(option => {
-      const recipe = core.recipe(option.value);
-      if (!recipe) return;
-      const label = recipeLabel(recipe);
-      if (option.textContent !== label) option.textContent = label;
-      option.dataset.rhwRecipeLabel = label;
-      const title = `${label} // ${recipe.id}`;
-      if (option.title !== title) option.title = title;
-    });
-  }
-
   function actualOutputText() {
     const block = [...document.querySelectorAll('#workspaceOperations .ops-recipe-meta > div')]
       .find(entry => entry.querySelector('small')?.textContent?.trim() === 'ACTUAL OUTPUT');
@@ -4778,7 +4814,6 @@ globalThis.RHW_PRODUCTION_VOLUMES = Object.freeze({
     polishQueued = true;
     queueMicrotask(() => {
       polishQueued = false;
-      polishRecipeOptions();
       polishCostFlow();
     });
   }
@@ -4787,7 +4822,7 @@ globalThis.RHW_PRODUCTION_VOLUMES = Object.freeze({
     const workspace = document.getElementById('workspaceOperations');
     if (!workspace || workspace.dataset.v40FinalUiPolish === 'true') return;
     workspace.dataset.v40FinalUiPolish = 'true';
-    app.onRender('calculator', () => { polishRecipeOptions(); polishCostFlow(); });
+    app.onRender('calculator', polishCostFlow);
     app.onRender('pricing', polishCostFlow);
     queuePolish();
   }
@@ -4833,7 +4868,6 @@ globalThis.RHW_PRODUCTION_VOLUMES = Object.freeze({
   app.calculatorPresentation = {
     recipeLabel,
     duplicateFinalLabels,
-    polishRecipeOptions,
     polishCostCard: polishCostFlow,
     polishCostFlow,
     fixHeaderClockLayout,
@@ -7082,8 +7116,8 @@ globalThis.RHW_PRODUCTION_VOLUMES = Object.freeze({
 
     const shipScope = document.getElementById('rhwMarketScanScope');
     const materialsScope = document.getElementById('rhwMaterialsScanScope');
-    if (shipScope) shipScope.textContent = `${MARKET_SCAN.length} COMPONENTS · ALL KNOWN POBS`;
-    if (materialsScope) materialsScope.textContent = `${MATERIALS_SCAN.length} MATERIALS · ALL KNOWN POBS`;
+    if (shipScope) shipScope.textContent = `${MARKET_SCAN.length} COMPONENTS`;
+    if (materialsScope) materialsScope.textContent = `${MATERIALS_SCAN.length} MATERIALS`;
 
     try {
       if (typeof renderSupplier === 'function') renderSupplier();
@@ -7210,16 +7244,17 @@ globalThis.RHW_PRODUCTION_VOLUMES = Object.freeze({
   }
 
   let pendingPurchaseTarget = null;
-  function openPurchaseSource(name) {
+  function openPurchaseSource(name, quantity, purpose) {
     const target = typeof purchaseSourceTarget === 'function' ? purchaseSourceTarget(name) : null;
     if (!target) return false;
-    pendingPurchaseTarget = target;
+    pendingPurchaseTarget = { ...target, quantity, purpose };
     app.navigate('command', 'logistics');
     return true;
   }
 
   function revealPurchaseTarget(target) {
     setLogisticsView(target.view);
+    app.supplyRoutes?.showPurchase(target);
     const section = document.getElementById(target.view === 'materials' ? 'materialsScanSection' : 'marketScanSection');
     const card = [...(section?.querySelectorAll('[data-market-commodity]') || [])].find(node => node.dataset.marketCommodity === target.key);
     const focus = card || section;
@@ -7235,7 +7270,7 @@ globalThis.RHW_PRODUCTION_VOLUMES = Object.freeze({
     const button = event.target.closest?.('[data-purchase-source]');
     if (!button) return;
     event.preventDefault();
-    openPurchaseSource(button.dataset.purchaseSource);
+    openPurchaseSource(button.dataset.purchaseSource, Number(button.dataset.purchaseQuantity), button.dataset.purchasePurpose);
   });
 
   function disableLegacyCommandAutoScroll() {
@@ -7281,13 +7316,13 @@ globalThis.RHW_PRODUCTION_VOLUMES = Object.freeze({
       nav.id = 'rhwLogisticsViewNav';
       nav.className = 'rhw-logistics-view-nav';
       nav.setAttribute('role', 'tablist');
-      nav.setAttribute('aria-label', 'Logistics views');
+      nav.setAttribute('aria-labelledby', 'logisticsOffersHeading');
       nav.innerHTML = `
         <button type="button" role="tab" id="logisticsShipsTab" data-logistics-view="market" aria-controls="marketScanSection">
-          SHIP COMPONENTS<small>ALL KNOWN POBS</small>
+          SHIP COMPONENTS
         </button>
         <button type="button" role="tab" id="logisticsMaterialsTab" data-logistics-view="materials" aria-controls="materialsScanSection">
-          INDUSTRIAL MATERIALS<small>ALL KNOWN POBS</small>
+          INDUSTRIAL MATERIALS
         </button>`;
       nav.addEventListener('click', event => {
         const button = event.target.closest('[data-logistics-view]');
@@ -7331,6 +7366,7 @@ globalThis.RHW_PRODUCTION_VOLUMES = Object.freeze({
       const root = document.scrollingElement || document.documentElement;
       const primary = document.getElementById('rhwAppNav');
       const nav = document.getElementById('rhwLogisticsViewNav');
+      const launcher = document.querySelector('.rhw-supply-launcher');
       const section = document.getElementById(document.body.dataset.logisticsView === 'materials' ? 'materialsScanSection' : 'marketScanSection');
       const price = section?.querySelector('[data-market-sort="price"]');
       const stock = section?.querySelector('[data-market-sort="stock"]');
@@ -7340,10 +7376,10 @@ globalThis.RHW_PRODUCTION_VOLUMES = Object.freeze({
         const visibleBottom = window.innerHeight - 12;
         const navTop = nav.getBoundingClientRect().top;
         const sortBottom = Math.max(price.getBoundingClientRect().bottom, stock.getBoundingClientRect().bottom);
-        // Keep the view switch below the sticky top row and sorting inside
-        // the viewport. If the screen is short, prioritize the view switch.
-        if (navTop < visibleTop) delta = navTop - visibleTop;
-        else if (sortBottom > visibleBottom) delta = Math.min(sortBottom - visibleBottom, navTop - visibleTop);
+        const launcherTop = launcher?.getBoundingClientRect().top ?? navTop;
+        const toolsTop = sortBottom - launcherTop <= visibleBottom - visibleTop ? launcherTop : navTop;
+        if (toolsTop < visibleTop) delta = toolsTop - visibleTop;
+        else if (sortBottom > visibleBottom) delta = Math.min(sortBottom - visibleBottom, toolsTop - visibleTop);
         if (Math.abs(delta) > 2) {
           const maxScroll = Math.max(0, root.scrollHeight - window.innerHeight);
           root.scrollTop = Math.max(0, Math.min(maxScroll, root.scrollTop + delta));
@@ -7608,6 +7644,7 @@ globalThis.RHW_PRODUCTION_VOLUMES = Object.freeze({
   if (!app?.command || app.pobOverview) return;
   let unsubscribe;
   const esc = value => app.util.escape(value);
+  const phone = window.matchMedia?.('(max-width: 760px)');
 
   function mount() {
     const status = document.getElementById('inventoryStatusPanel');
@@ -7618,11 +7655,11 @@ globalThis.RHW_PRODUCTION_VOLUMES = Object.freeze({
       briefing.id = 'commandBriefing';
       briefing.className = 'command-briefing';
       briefing.setAttribute('aria-label', 'POB at a glance');
-      briefing.innerHTML = `<div class="overview-station"><div class="overview-operations" id="overviewOperations"></div></div><section class="overview-next" aria-labelledby="overviewNextTitle">
+      briefing.innerHTML = `<section class="overview-next" aria-labelledby="overviewNextTitle">
         <div class="overview-section-head"><h3 id="overviewNextTitle">Next steps</h3><span id="overviewTaskCount"></span></div>
         <div id="overviewNextActions" class="overview-next-actions"></div>
         <button type="button" id="overviewMoreTasks" aria-expanded="false" aria-controls="overviewNextActions" hidden></button>
-      </section>`;
+      </section><div class="overview-station"><div class="overview-operations" id="overviewOperations"></div></div>`;
       status.prepend(briefing);
       const supplies = status.querySelector('.maintenance-panel');
       if (supplies) {
@@ -7648,6 +7685,7 @@ globalThis.RHW_PRODUCTION_VOLUMES = Object.freeze({
         });
       });
       app.workspaceUi.installAlertDeepLinks(document.getElementById('overviewNextActions'));
+      phone?.addEventListener('change', render);
     }
     // Keep visual, reading and keyboard order identical at every screen width.
     // Full-width sections replace independent columns of unrelated heights.
@@ -7682,7 +7720,7 @@ globalThis.RHW_PRODUCTION_VOLUMES = Object.freeze({
     const productionValue = coverageKnown ? `${covered} / ${moduleCount} supplied` : 'Coverage unknown';
     const productionDetail = !known ? 'Waiting for stock data' : !complete ? 'Some recipes or inputs are unknown' : first
       ? `${first.recipe.product}: ${first.bottleneck?.displayName || first.bottleneck?.name || 'input needed'}`
-      : 'Next batches checked separately';
+      : 'One batch per module, checked separately';
     const yard = known ? app.shipyard?.analyze() : null;
     const ships = known ? app.inventoryModel?.ships() || [] : [];
     const reportedShips = ships.filter(entry => entry.stock !== null);
@@ -7697,7 +7735,7 @@ globalThis.RHW_PRODUCTION_VOLUMES = Object.freeze({
     </span>` : '';
     const productionStatus = coverageKnown && blocked.length
       ? `${blocked.length} ${blocked.length === 1 ? 'module' : 'modules'} blocked`
-      : coverageKnown ? 'All modules supplied' : productionValue;
+      : coverageKnown ? 'Next batches covered' : productionValue;
     const markup = `<button type="button" class="overview-operation overview-production" data-overview-node="production" data-state="${!coverageKnown ? 'waiting' : blocked.length ? 'advisory' : 'ok'}" aria-label="Production. ${esc(productionValue)}. ${esc(productionDetail)}">
       ${meter}<span class="overview-operation-copy"><span class="overview-operation-label">Production</span><strong>${productionStatus}</strong><small>${esc(productionDetail)}</small></span><span class="overview-operation-arrow" aria-hidden="true"></span>
     </button><button type="button" class="overview-operation overview-shipyard" data-overview-node="shipyard">
@@ -7714,7 +7752,8 @@ globalThis.RHW_PRODUCTION_VOLUMES = Object.freeze({
     const actions = app.command.priorityActions();
     const more = document.getElementById('overviewMoreTasks');
     const expanded = more.getAttribute('aria-expanded') === 'true';
-    const shown = expanded ? actions : actions.slice(0, 3);
+    const limit = phone?.matches ? 1 : 3;
+    const shown = expanded ? actions : actions.slice(0, limit);
     const unknownStock = snapshot.available && window.operationalItems().some(item => window.firstFiniteApiStockValue(item, ['quantity', 'amount', 'stock']) === null);
     const signature = JSON.stringify({ shown, unknownStock });
     if (target.dataset.signature !== signature) {
@@ -7723,8 +7762,8 @@ globalThis.RHW_PRODUCTION_VOLUMES = Object.freeze({
       target.dataset.signature = signature;
     }
     document.getElementById('overviewTaskCount').textContent = !snapshot.available ? 'Stock unknown' : `${actions.length} ${actions.length === 1 ? 'task' : 'tasks'}`;
-    more.hidden = actions.length <= 3;
-    more.textContent = expanded ? 'Show fewer tasks' : `Show ${actions.length - 3} more tasks`;
+    more.hidden = actions.length <= limit;
+    more.textContent = expanded ? 'Show fewer tasks' : `Show ${actions.length - limit} more tasks`;
     renderOperations();
     placeControls();
   }
@@ -8070,7 +8109,9 @@ globalThis.RHW_PRODUCTION_VOLUMES = Object.freeze({
     marketLabel: 'AWAITING MARKET DATA',
     marketDetail: '',
     lastError: '',
-    receivedAt: 0
+    receivedAt: 0,
+    sort: 'source',
+    quantity: null
   };
 
   const refreshTask = window.RHWRuntime.createRefreshTask({
@@ -8131,8 +8172,12 @@ globalThis.RHW_PRODUCTION_VOLUMES = Object.freeze({
       </header>
       <div class="pricecheck-status-grid" id="priceCheckStatusGrid"></div>
       <div class="pricecheck-note" id="priceCheckNote">MARKET DATA LOADS WHEN PRICE CHECK OPENS.</div>
+      <div class="pricecheck-controls">
+        <label for="priceCheckSort">Sort by<select id="priceCheckSort"><option value="source">Source</option><option value="best">Highest difference / unit</option><option value="worst">Lowest difference / unit</option></select></label>
+        <label for="priceCheckQuantity">Quantity · optional<input id="priceCheckQuantity" type="number" min="1" step="1" inputmode="numeric" placeholder="Units per route"></label>
+      </div>
       <div class="pricecheck-table-wrap"><table class="pricecheck-table">
-        <thead><tr><th>COMMODITY</th><th>SOURCE</th><th>NPC PRICE</th><th>RHW PAYS</th><th>DIFFERENCE</th></tr></thead>
+        <thead><tr><th>COMMODITY</th><th>SOURCE</th><th>NPC PRICE</th><th>RHW PAYS</th><th>DIFFERENCE / UNIT</th></tr></thead>
         <tbody id="priceCheckRows"></tbody>
       </table></div>
     </div>`;
@@ -8180,6 +8225,15 @@ globalThis.RHW_PRODUCTION_VOLUMES = Object.freeze({
         refreshTask.refresh({ forceResolve: true });
         return;
       }
+    });
+    panel.querySelector('#priceCheckSort').addEventListener('change', event => {
+      state.sort = event.target.value;
+      render();
+    });
+    panel.querySelector('#priceCheckQuantity').addEventListener('input', event => {
+      const value = event.target.valueAsNumber;
+      state.quantity = Number.isSafeInteger(value) && value > 0 ? value : null;
+      render();
     });
   }
 
@@ -8450,13 +8504,14 @@ globalThis.RHW_PRODUCTION_VOLUMES = Object.freeze({
     const negative = rows.filter(row => row.difference !== null && row.difference < 0).length;
     const neutral = rows.filter(row => row.difference === 0).length;
     const unknown = rows.length - positive - negative - neutral;
+    const hasComparison = unknown < rows.length;
     const rhw = rhwSnapshot();
     const rhwTone = rhw.available && !rhw.stale ? 'positive' : 'warn';
     return `
       <article class="pricecheck-status"><small>FIXED ROUTES</small><strong>${ROUTES.length}</strong></article>
-      <article class="pricecheck-status" data-tone="positive"><small>POSITIVE</small><strong>${positive}</strong></article>
-      <article class="pricecheck-status" data-tone="${negative ? 'negative' : 'positive'}"><small>LOSS</small><strong>${negative}</strong></article>
-      <article class="pricecheck-status" data-tone="${unknown ? 'warn' : rhwTone}"><small>DATA STATUS</small><strong>${unknown ? `${unknown} MISSING` : esc(rhw.label || 'RHW READY')}</strong></article>`;
+      <article class="pricecheck-status" data-tone="${positive ? 'positive' : 'neutral'}"><small>POSITIVE</small><strong>${hasComparison ? positive : '—'}</strong></article>
+      <article class="pricecheck-status" data-tone="${negative ? 'negative' : 'neutral'}"><small>LOSS</small><strong>${hasComparison ? negative : '—'}</strong></article>
+      <article class="pricecheck-status" data-tone="${unknown ? 'warn' : rhwTone}"><small>DATA STATUS</small><strong>${!hasComparison ? 'Awaiting prices' : unknown ? `${unknown} MISSING` : esc(rhw.label || 'RHW READY')}</strong></article>`;
   }
 
   function rowMarkup(row) {
@@ -8470,12 +8525,13 @@ globalThis.RHW_PRODUCTION_VOLUMES = Object.freeze({
     const stamp = Number.isFinite(Date.parse(priceAt || '')) ? new Date(priceAt).toLocaleString('de-DE', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : 'TIME UNKNOWN';
     const liveCopy = live === null ? 'SOURCE PRICE UNAVAILABLE' : `${fresh ? 'LIVE' : 'CACHED'} · ${stamp}`;
     const payoutCopy = payout === null ? 'RHW PRICE UNAVAILABLE' : money(payout);
+    const total = state.quantity && difference !== null ? `<small class="pricecheck-total"><b>${signedMoney(difference * state.quantity)}</b> total for ${state.quantity.toLocaleString('en-US')}</small>` : '';
     return `<tr class="pricecheck-row" data-route-key="${esc(route.key)}">
       <td class="pricecheck-item-cell"><span class="pricecheck-mobile-label">COMMODITY</span><span class="pricecheck-commodity"><strong>${esc(route.commodity)}</strong><small>${route.sourceType === 'pob' ? 'FIXED POB ROUTE' : 'FIXED NPC ROUTE'}</small></span></td>
       <td class="pricecheck-source-cell"><span class="pricecheck-mobile-label">SOURCE</span><span class="pricecheck-source"><strong>${esc(sourceName)}</strong><small>${esc(system)}<span class="${sourceMetaClass}"> // ${esc(sourceMeta)}</span></small></span></td>
       <td class="pricecheck-price-cell"><span class="pricecheck-mobile-label">NPC PRICE</span><div class="pricecheck-price-quote"><strong class="pricecheck-source-price">${money(live)}</strong><small class="pricecheck-live">${liveCopy}</small></div></td>
       <td class="pricecheck-payout-cell"><span class="pricecheck-mobile-label">RHW PAYS</span><span class="pricecheck-payout"><strong>${payoutCopy}</strong><small class="${rhw.available && !rhw.stale ? 'pricecheck-current' : ''}">${!rhw.available ? 'RHW DATA UNAVAILABLE' : rhw.stale ? 'RHW CACHED' : 'CURRENT RHW BUY'}</small></span></td>
-      <td class="pricecheck-difference ${tone}"><span class="pricecheck-mobile-label">DIFFERENCE</span><strong>${signedMoney(difference)}</strong>${difference !== null && (!fresh || rhw.stale) ? '<small class="pricecheck-estimate">FROM CACHED PRICES</small>' : ''}</td>
+      <td class="pricecheck-difference ${tone}"><span class="pricecheck-mobile-label">DIFFERENCE / UNIT</span><strong>${signedMoney(difference)}</strong>${total}${difference !== null && (!fresh || rhw.stale) ? '<small class="pricecheck-estimate">FROM CACHED PRICES</small>' : ''}</td>
     </tr>`;
   }
 
@@ -8488,12 +8544,21 @@ globalThis.RHW_PRODUCTION_VOLUMES = Object.freeze({
     if (!grid || !rowsNode || !note) return;
 
     const rows = DISPLAY_ROUTES.map(effectiveRow);
+    if (state.sort !== 'source') {
+      const direction = state.sort === 'best' ? -1 : 1;
+      rows.sort((a, b) => {
+        if (a.difference === null) return b.difference === null ? 0 : 1;
+        if (b.difference === null) return -1;
+        return (a.difference - b.difference) * direction;
+      });
+    }
     const status = statusMarkup(rows);
     if (grid.innerHTML !== status) grid.innerHTML = status;
-    rows.forEach(row => {
+    rows.forEach((row, index) => {
       const key = row.route.key;
       const existing = rowsNode.querySelector(`[data-route-key="${key}"]`);
       if (!existing) { rowsNode.insertAdjacentHTML('beforeend', rowMarkup(row)); return; }
+      if (rowsNode.children[index] !== existing) rowsNode.insertBefore(existing, rowsNode.children[index] || null);
       const fragment = document.createElement('tbody');
       fragment.innerHTML = rowMarkup(row);
       const next = fragment.firstElementChild;
@@ -8603,6 +8668,18 @@ globalThis.RHW_PRODUCTION_VOLUMES = Object.freeze({
   const app = window.RHWV4;
   if (!app || app.supplyRoutes) return;
   let modulePromise;
+  let purchase = null;
+
+  function showPurchase(target) {
+    const launcher = document.querySelector('.rhw-supply-launcher');
+    if (!launcher) return;
+    purchase = target && Number.isSafeInteger(target.quantity) && target.quantity > 0 ? target : null;
+    const request = document.getElementById('logisticsPurchaseRequest');
+    launcher.toggleAttribute('data-request', Boolean(purchase));
+    request.textContent = purchase ? `${app.util.number(purchase.quantity)} ${purchase.name}${purchase.purpose ? ` for ${purchase.purpose}` : ''}` : '';
+    document.getElementById('logisticsClearRequest').hidden = !purchase;
+  }
+
   function commodities() {
     const names = [...new Set(Object.values(DASHBOARD_CONFIG.roles).flat())];
     if (typeof items !== 'undefined') items.forEach(item => {
@@ -8632,7 +8709,7 @@ globalThis.RHW_PRODUCTION_VOLUMES = Object.freeze({
       receivedAt: typeof lastLoaded !== 'undefined' && lastLoaded ? lastLoaded.getTime() : 0,
       stale: typeof dataIsStale !== 'undefined' && dataIsStale };
   }
-  async function open(name, trigger = document.activeElement, mode, { surplus = false, quantity = null } = {}) {
+  async function open(name, trigger = document.activeElement, mode, { surplus = false, quantity = null, purpose = '' } = {}) {
     try {
       modulePromise ||= import(new URL('./js/supply/ui.mjs', document.baseURI).href).catch(error => { modulePromise = null; throw error; });
       const module = await modulePromise;
@@ -8649,20 +8726,24 @@ globalThis.RHW_PRODUCTION_VOLUMES = Object.freeze({
       module.open({ commodity: name, commodities: names, surplusCommodity: surplus ? name : null,
         exportCommodities: names.filter(item => outputKeys.has(keyFromName(item))),
         importCommodities: names.filter(item => inputKeys.has(keyFromName(item))), mode, telemetry, trigger,
-        quantity: Number.isSafeInteger(quantity) && quantity > 0 ? quantity : null });
+        quantity: Number.isSafeInteger(quantity) && quantity > 0 ? quantity : null, purpose });
     } catch (error) { app.notify(`TRADE DESK // ${error.message}`, 'warn'); }
   }
   document.addEventListener('click', event => {
     const trigger = event.target.closest('[data-supply-commodity],[data-export-commodity],[data-surplus-commodity],[data-trade-desk]');
     if (!trigger) return;
+    const activePurchase = app.state.activeWorkspace === 'command' && app.state.commandNode === 'logistics' ? purchase : null;
     if (trigger.hasAttribute('data-surplus-commodity')) open(trigger.dataset.surplusCommodity, trigger, 'export', { surplus: true });
     else if (trigger.hasAttribute('data-export-commodity')) open(trigger.dataset.exportCommodity, trigger, 'export');
     else if (trigger.hasAttribute('data-supply-commodity')) {
       const returnFocus = trigger.closest('.command-priority-entry')
         ? document.getElementById('commandAlertToggle') || trigger : trigger;
       app.inventoryToolbar?.closeAlerts();
-      open(trigger.dataset.supplyCommodity, returnFocus, 'supply', { quantity: Number(trigger.dataset.supplyQuantity) });
+      const request = activePurchase && keyFromName(trigger.dataset.supplyCommodity) === activePurchase.key ? activePurchase
+        : { quantity: Number(trigger.dataset.supplyQuantity), purpose: trigger.dataset.supplyPurpose };
+      open(trigger.dataset.supplyCommodity, returnFocus, 'supply', request);
     }
+    else if (activePurchase) open(activePurchase.name, trigger, 'supply', activePurchase);
     else open(null, trigger);
   });
   app.lifecycle.on('command:ready', 'supply-route-launcher', 90, () => {
@@ -8670,9 +8751,13 @@ globalThis.RHW_PRODUCTION_VOLUMES = Object.freeze({
     if (typeof renderManifest === 'function') renderManifest();
     const panel = document.querySelector('[data-command-panel="logistics"]');
     if (!panel || panel.querySelector('.rhw-supply-launcher')) return;
-    panel.insertAdjacentHTML('afterbegin', `<div class="rhw-supply-launcher"><div><strong>RHW TRADE DESK</strong><span>Plan imports and exports · compare ships, time and hauling profit</span></div><button type="button" class="rhw-supply-button" data-trade-desk>OPEN TRADE DESK</button></div>`);
+    panel.insertAdjacentHTML('afterbegin', `<div class="rhw-supply-launcher"><div class="rhw-supply-launcher-copy"><strong>RHW TRADE DESK</strong><span id="logisticsPurchaseRequest" role="status"></span><span class="rhw-supply-launcher-description">Compare ships, travel time and hauling profit.</span></div><div class="rhw-supply-launcher-actions"><button type="button" id="logisticsClearRequest" aria-label="Clear purchase request" hidden>Clear</button><button type="button" class="rhw-supply-button" data-trade-desk aria-haspopup="dialog">Plan route</button></div></div><div class="rhw-logistics-offers-heading"><h3 id="logisticsOffersHeading">Compare offers</h3><span>All known POBs</span></div>`);
+    panel.querySelector('#logisticsClearRequest').addEventListener('click', () => {
+      showPurchase(null);
+      panel.querySelector('.rhw-supply-launcher [data-trade-desk]').focus({ preventScroll: true });
+    });
   });
-  app.supplyRoutes = { button, commodities, open, telemetry };
+  app.supplyRoutes = { button, commodities, open, telemetry, showPurchase };
 })();
 function supplyRouteButton(name) { return window.RHWV4?.supplyRoutes?.button(name) || ''; }
 function exportRouteButton(name) { return window.RHWV4?.supplyRoutes?.button(name, 'export') || ''; }

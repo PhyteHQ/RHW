@@ -8,10 +8,21 @@ html.rhw-focus-pass .app-workspace .rhw-supply-icon:is(:hover,:focus-visible) { 
 .shipyard-material-name>.rhw-supply-name { min-height: 44px;min-width: 0;max-width: 100%;padding: 0;background: transparent;border: 0;color: inherit;text-align: left;font: inherit;text-decoration: underline;text-decoration-color: #9e8c55;text-underline-offset: 4px;cursor: pointer; }
 .shipyard-material-name>.rhw-supply-name:focus-visible { outline: 2px solid var(--gold);outline-offset: 2px; }
 .shipyard-material-table tbody th { padding-block: 8px; }
-.rhw-supply-launcher { display: flex;align-items: center;justify-content: space-between;gap: 16px;padding: 16px;margin: 12px 0;border: 1px solid var(--line);background: var(--surface-input); }
+.rhw-supply-launcher { display: flex;flex-wrap: wrap;align-items: center;justify-content: space-between;gap: 8px 16px;padding: 12px 16px;margin: 12px 0;border: 1px solid var(--line);background: var(--surface-input); }
 .rhw-supply-launcher strong,.rhw-supply-launcher span { display: block; }
 .rhw-supply-launcher strong { color: var(--gold);font: 500 26px/1.1 var(--font-title);letter-spacing: .04em; }
 .rhw-supply-launcher span { color: var(--muted);font: 14px/1.5 var(--font-main); }
+.rhw-supply-launcher-copy { min-width: 0;overflow-wrap: anywhere; }
+.rhw-supply-launcher-actions { display: flex;align-items: center;gap: 8px; }
+.rhw-supply-launcher-actions #logisticsClearRequest { min-height: 44px;padding: 6px 9px; }
+.rhw-supply-launcher[data-request] { position: sticky;top: var(--rhw-sticky-nav-offset,62px);z-index: 75;border-color: var(--gold);background: var(--palette-canvas); }
+.rhw-supply-launcher[data-request] :is(strong,.rhw-supply-launcher-description) { display: none; }
+.rhw-supply-launcher #logisticsPurchaseRequest { color: var(--text); }
+[data-command-panel="logistics"]:has(.rhw-supply-launcher[data-request]) .rhw-target-highlight { scroll-margin-top: 116px; }
+.rhw-logistics-offers-heading { display: flex;flex-wrap: wrap;align-items: baseline;gap: 2px 12px;padding: 4px 10px 8px; }
+.rhw-logistics-offers-heading h3 { margin: 0;color: var(--gold);font: 500 23px/1.2 var(--font-title); }
+.rhw-logistics-offers-heading span { color: var(--muted);font: 13px/1.4 var(--font-main); }
+.supply-purchase-request { margin: 0 0 12px;padding: 9px 12px;border-left: 2px solid var(--gold);background: var(--surface-input);color: var(--text);font: 14px/1.45 var(--font-main);overflow-wrap: anywhere; }
 
 .rhw-supply-dialog { width: min(1100px,calc(100vw - 32px));max-width: none;max-height: calc(100dvh - 32px);padding: 0;border: 1px solid #62553d;border-top: 2px solid var(--gold);background: var(--palette-canvas);color: var(--text);box-shadow: 0 24px 90px #000c;scrollbar-color: #756749 #0b0c10; }
 .rhw-supply-dialog::backdrop { background: #000c; }
@@ -127,7 +138,9 @@ html.rhw-focus-pass .app-workspace .rhw-supply-icon:is(:hover,:focus-visible) { 
 .supply-empty p { margin-bottom: 0;color: #b8bac5;font: 15px/1.6 var(--font-main); }
 @media (max-width:760px) {
   html.rhw-focus-pass .app-workspace .rhw-supply-icon { flex-basis: 44px;width: 44px;height: 44px;min-width: 44px;min-height: 44px;padding: 12px; }
-  .rhw-supply-launcher { align-items: stretch;flex-direction: column; }
+  .rhw-supply-launcher { margin-inline: 9px;padding: 8px 10px; }
+  .rhw-supply-launcher strong { font-size: 22px; }
+  .rhw-supply-launcher-description { display: none !important; }
   .rhw-supply-dialog { width: calc(100vw - 12px);max-height: calc(100dvh - 12px); }
   .supply-heading { padding: 14px;gap: 10px; }
   .supply-heading h2 { font-size: var(--rhw-title-size); }

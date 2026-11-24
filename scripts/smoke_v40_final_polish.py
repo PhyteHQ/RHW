@@ -82,21 +82,16 @@ def main() -> int:
             })()""")
             time.sleep(.5)
             option_data = base.ev(cdp, """(()=>({
-              labels:[...opsRecipe.options].filter(o=>o.value.startsWith('recipe_gold_')).map(o=>[o.value,o.textContent]),
-              all:[...opsRecipe.options].map(o=>[o.value,o.textContent])
+              labels:[...document.querySelectorAll('[data-recipe-option^="recipe_gold_"]')].map(o=>[o.dataset.recipeOption,o.textContent]),
+              all:[...document.querySelectorAll('[data-recipe-option]')].map(o=>[o.dataset.recipeOption,o.textContent])
             }))()""")
             gold_options = option_data.get("labels", [])
             if len(gold_options) < 4 or len({text.lower() for _, text in gold_options}) != len(gold_options):
                 raise RuntimeError(f"Rendered Gold dropdown labels are not unique: {option_data}")
 
             basic_id = next((rid for rid, text in gold_options if "basic" in text.lower()), gold_options[0][0])
-            base.ev(cdp, f"""(()=>{{
-              opsRecipeSearch.value={json.dumps(basic_id)};
-              opsRecipeSearch.dispatchEvent(new Event('input',{{bubbles:true}}));
-              return{{}};
-            }})()""")
-            time.sleep(.45)
-            selected = base.ev(cdp, "(()=>({id:opsRecipe?.value||'',label:opsRecipe?.selectedOptions?.[0]?.textContent||''}))()")
+            base.choose_recipe(cdp, basic_id)
+            selected = base.ev(cdp, "(()=>({id:RHWV4.state.calculator.recipeId,label:opsRecipeSearch.value}))()")
             if selected.get("id") != basic_id and "basic" not in selected.get("label", "").lower():
                 raise RuntimeError(f"Could not select a Gold basic batch recipe: {selected}, expected {basic_id}")
 
@@ -135,11 +130,7 @@ def main() -> int:
 
             # Exercise the real shared-price comparison controls. This runs in
             # GitHub CI using the existing synthetic telemetry browser harness.
-            base.ev(cdp, """(()=>{
-              opsRecipeSearch.value='recipe_niobium_basic';
-              opsRecipeSearch.dispatchEvent(new Event('input',{bubbles:true}));return true;
-            })()""")
-            time.sleep(.3)
+            base.choose_recipe(cdp, 'recipe_niobium_basic')
             base.ev(cdp, """(()=>{
               opsQuantity.value='801';opsQuantity.dispatchEvent(new Event('change',{bubbles:true}));return true;
             })()""")
@@ -180,7 +171,7 @@ def main() -> int:
 
             adopted = base.ev(cdp, """(()=>{
               document.querySelector('[data-use-variant="recipe_niobium_bulk"]').click();
-              return {recipe:opsRecipe.value,iff:opsAffiliation.value,quantity:opsQuantity.value,
+              return {recipe:RHWV4.state.calculator.recipeId,iff:opsAffiliation.value,quantity:opsQuantity.value,
                 prices:[...document.querySelectorAll('[data-material-price]')].map(x=>[x.dataset.materialPrice,x.value]),
                 output:document.querySelector('[data-comparison-recipe="recipe_niobium_bulk"] td[data-label="OUTPUT"]')?.textContent};
             })()""")
@@ -211,17 +202,21 @@ def main() -> int:
                   const source=[...document.querySelectorAll('[data-purchase-source]')].find(x=>x.dataset.purchaseSource==={json.dumps(material)});
                   if(!source)return false;
                   const card=source.closest('.production-card');
-                  if(!card){{source.click();return true;}}
+                  if(!card){{source.click();return {{quantity:Number(source.dataset.purchaseQuantity),purpose:source.dataset.purchasePurpose}};}}
                   card.querySelector('.production-card-toggle').click();
                   const button=[...document.querySelectorAll('#rhwItemDetails [data-purchase-source]')].find(x=>x.dataset.purchaseSource==={json.dumps(material)});
-                  button.click();return true;
+                  if(!button)return null;
+                  const request={{quantity:Number(button.dataset.purchaseQuantity),purpose:button.dataset.purchasePurpose}};
+                  button.click();return request;
                 }})()""")
-                if not clicked:
+                if not clicked or clicked['quantity'] <= 0 or not clicked['purpose']:
                     raise RuntimeError(f"Missing sourcing shortcut for {material}")
                 time.sleep(1)
                 destination = base.ev(cdp, """(()=>({
                   hash:location.hash,view:document.body.dataset.logisticsView,
                   focused:document.activeElement?.dataset.marketCommodity||document.activeElement?.id,
+                  request:document.getElementById('logisticsPurchaseRequest')?.textContent,
+                  scope:document.querySelector('[data-command-panel="logistics"] .rhw-logistics-offers-heading span')?.textContent,
                   overflow:Math.max(document.documentElement.scrollWidth,document.body.scrollWidth)-innerWidth,
                   oreButtons:[...document.querySelectorAll('[data-purchase-source]')].filter(x=>/ore/i.test(x.dataset.purchaseSource)).length
                 }))()""")
@@ -230,6 +225,8 @@ def main() -> int:
                 expected_fallback = 'marketScanSection' if view=='market' else 'materialsScanSection'
                 if destination.get('focused') not in [material.lower(), expected_fallback]:
                     raise RuntimeError(f"Sourcing focus missed {material}: {destination}")
+                if destination['request'] != f"{clicked['quantity']:,} {material} for {clicked['purpose']}" or destination['scope'] != 'All known POBs':
+                    raise RuntimeError(f"Sourcing request lost in Logistics: {clicked} → {destination}")
 
             print("V4.0.2 interaction smoke passed: recipe variants, shared-price comparison, responsive layout, seller links and costing")
         finally:

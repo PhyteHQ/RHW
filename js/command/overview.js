@@ -5,6 +5,7 @@
   if (!app?.command || app.pobOverview) return;
   let unsubscribe;
   const esc = value => app.util.escape(value);
+  const phone = window.matchMedia?.('(max-width: 760px)');
 
   function mount() {
     const status = document.getElementById('inventoryStatusPanel');
@@ -15,11 +16,11 @@
       briefing.id = 'commandBriefing';
       briefing.className = 'command-briefing';
       briefing.setAttribute('aria-label', 'POB at a glance');
-      briefing.innerHTML = `<div class="overview-station"><div class="overview-operations" id="overviewOperations"></div></div><section class="overview-next" aria-labelledby="overviewNextTitle">
+      briefing.innerHTML = `<section class="overview-next" aria-labelledby="overviewNextTitle">
         <div class="overview-section-head"><h3 id="overviewNextTitle">Next steps</h3><span id="overviewTaskCount"></span></div>
         <div id="overviewNextActions" class="overview-next-actions"></div>
         <button type="button" id="overviewMoreTasks" aria-expanded="false" aria-controls="overviewNextActions" hidden></button>
-      </section>`;
+      </section><div class="overview-station"><div class="overview-operations" id="overviewOperations"></div></div>`;
       status.prepend(briefing);
       const supplies = status.querySelector('.maintenance-panel');
       if (supplies) {
@@ -45,6 +46,7 @@
         });
       });
       app.workspaceUi.installAlertDeepLinks(document.getElementById('overviewNextActions'));
+      phone?.addEventListener('change', render);
     }
     // Keep visual, reading and keyboard order identical at every screen width.
     // Full-width sections replace independent columns of unrelated heights.
@@ -79,7 +81,7 @@
     const productionValue = coverageKnown ? `${covered} / ${moduleCount} supplied` : 'Coverage unknown';
     const productionDetail = !known ? 'Waiting for stock data' : !complete ? 'Some recipes or inputs are unknown' : first
       ? `${first.recipe.product}: ${first.bottleneck?.displayName || first.bottleneck?.name || 'input needed'}`
-      : 'Next batches checked separately';
+      : 'One batch per module, checked separately';
     const yard = known ? app.shipyard?.analyze() : null;
     const ships = known ? app.inventoryModel?.ships() || [] : [];
     const reportedShips = ships.filter(entry => entry.stock !== null);
@@ -94,7 +96,7 @@
     </span>` : '';
     const productionStatus = coverageKnown && blocked.length
       ? `${blocked.length} ${blocked.length === 1 ? 'module' : 'modules'} blocked`
-      : coverageKnown ? 'All modules supplied' : productionValue;
+      : coverageKnown ? 'Next batches covered' : productionValue;
     const markup = `<button type="button" class="overview-operation overview-production" data-overview-node="production" data-state="${!coverageKnown ? 'waiting' : blocked.length ? 'advisory' : 'ok'}" aria-label="Production. ${esc(productionValue)}. ${esc(productionDetail)}">
       ${meter}<span class="overview-operation-copy"><span class="overview-operation-label">Production</span><strong>${productionStatus}</strong><small>${esc(productionDetail)}</small></span><span class="overview-operation-arrow" aria-hidden="true"></span>
     </button><button type="button" class="overview-operation overview-shipyard" data-overview-node="shipyard">
@@ -111,7 +113,8 @@
     const actions = app.command.priorityActions();
     const more = document.getElementById('overviewMoreTasks');
     const expanded = more.getAttribute('aria-expanded') === 'true';
-    const shown = expanded ? actions : actions.slice(0, 3);
+    const limit = phone?.matches ? 1 : 3;
+    const shown = expanded ? actions : actions.slice(0, limit);
     const unknownStock = snapshot.available && window.operationalItems().some(item => window.firstFiniteApiStockValue(item, ['quantity', 'amount', 'stock']) === null);
     const signature = JSON.stringify({ shown, unknownStock });
     if (target.dataset.signature !== signature) {
@@ -120,8 +123,8 @@
       target.dataset.signature = signature;
     }
     document.getElementById('overviewTaskCount').textContent = !snapshot.available ? 'Stock unknown' : `${actions.length} ${actions.length === 1 ? 'task' : 'tasks'}`;
-    more.hidden = actions.length <= 3;
-    more.textContent = expanded ? 'Show fewer tasks' : `Show ${actions.length - 3} more tasks`;
+    more.hidden = actions.length <= limit;
+    more.textContent = expanded ? 'Show fewer tasks' : `Show ${actions.length - limit} more tasks`;
     renderOperations();
     placeControls();
   }

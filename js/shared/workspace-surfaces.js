@@ -85,8 +85,8 @@
 
     const shipScope = document.getElementById('rhwMarketScanScope');
     const materialsScope = document.getElementById('rhwMaterialsScanScope');
-    if (shipScope) shipScope.textContent = `${MARKET_SCAN.length} COMPONENTS · ALL KNOWN POBS`;
-    if (materialsScope) materialsScope.textContent = `${MATERIALS_SCAN.length} MATERIALS · ALL KNOWN POBS`;
+    if (shipScope) shipScope.textContent = `${MARKET_SCAN.length} COMPONENTS`;
+    if (materialsScope) materialsScope.textContent = `${MATERIALS_SCAN.length} MATERIALS`;
 
     try {
       if (typeof renderSupplier === 'function') renderSupplier();

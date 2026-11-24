@@ -240,7 +240,7 @@
 }
 @container production (max-width:640px) {
   #productionModuleTools .production-filter-row { grid-template-columns:minmax(0,1fr) auto; }
-  #productionModuleTools .production-filter-segments { display:grid;grid-template-columns:repeat(4,minmax(0,1fr));grid-column:1/-1; }
+  #productionModuleTools .production-filter-segments { display:grid;grid-template-columns:repeat(5,minmax(0,1fr));grid-column:1/-1; }
   #productionModuleTools .production-filter-segments button { flex-wrap:wrap;align-content:center;gap:0 4px;padding-inline:4px;font-size:12px; }
   #productionModuleTools .production-filter-badge { min-width:16px;padding-inline:2px; }
 }

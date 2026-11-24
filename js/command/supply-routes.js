@@ -4,6 +4,18 @@
   const app = window.RHWV4;
   if (!app || app.supplyRoutes) return;
   let modulePromise;
+  let purchase = null;
+
+  function showPurchase(target) {
+    const launcher = document.querySelector('.rhw-supply-launcher');
+    if (!launcher) return;
+    purchase = target && Number.isSafeInteger(target.quantity) && target.quantity > 0 ? target : null;
+    const request = document.getElementById('logisticsPurchaseRequest');
+    launcher.toggleAttribute('data-request', Boolean(purchase));
+    request.textContent = purchase ? `${app.util.number(purchase.quantity)} ${purchase.name}${purchase.purpose ? ` for ${purchase.purpose}` : ''}` : '';
+    document.getElementById('logisticsClearRequest').hidden = !purchase;
+  }
+
   function commodities() {
     const names = [...new Set(Object.values(DASHBOARD_CONFIG.roles).flat())];
     if (typeof items !== 'undefined') items.forEach(item => {
@@ -33,7 +45,7 @@
       receivedAt: typeof lastLoaded !== 'undefined' && lastLoaded ? lastLoaded.getTime() : 0,
       stale: typeof dataIsStale !== 'undefined' && dataIsStale };
   }
-  async function open(name, trigger = document.activeElement, mode, { surplus = false, quantity = null } = {}) {
+  async function open(name, trigger = document.activeElement, mode, { surplus = false, quantity = null, purpose = '' } = {}) {
     try {
       modulePromise ||= import(new URL('./js/supply/ui.mjs', document.baseURI).href).catch(error => { modulePromise = null; throw error; });
       const module = await modulePromise;
@@ -50,20 +62,24 @@
       module.open({ commodity: name, commodities: names, surplusCommodity: surplus ? name : null,
         exportCommodities: names.filter(item => outputKeys.has(keyFromName(item))),
         importCommodities: names.filter(item => inputKeys.has(keyFromName(item))), mode, telemetry, trigger,
-        quantity: Number.isSafeInteger(quantity) && quantity > 0 ? quantity : null });
+        quantity: Number.isSafeInteger(quantity) && quantity > 0 ? quantity : null, purpose });
     } catch (error) { app.notify(`TRADE DESK // ${error.message}`, 'warn'); }
   }
   document.addEventListener('click', event => {
     const trigger = event.target.closest('[data-supply-commodity],[data-export-commodity],[data-surplus-commodity],[data-trade-desk]');
     if (!trigger) return;
+    const activePurchase = app.state.activeWorkspace === 'command' && app.state.commandNode === 'logistics' ? purchase : null;
     if (trigger.hasAttribute('data-surplus-commodity')) open(trigger.dataset.surplusCommodity, trigger, 'export', { surplus: true });
     else if (trigger.hasAttribute('data-export-commodity')) open(trigger.dataset.exportCommodity, trigger, 'export');
     else if (trigger.hasAttribute('data-supply-commodity')) {
       const returnFocus = trigger.closest('.command-priority-entry')
         ? document.getElementById('commandAlertToggle') || trigger : trigger;
       app.inventoryToolbar?.closeAlerts();
-      open(trigger.dataset.supplyCommodity, returnFocus, 'supply', { quantity: Number(trigger.dataset.supplyQuantity) });
+      const request = activePurchase && keyFromName(trigger.dataset.supplyCommodity) === activePurchase.key ? activePurchase
+        : { quantity: Number(trigger.dataset.supplyQuantity), purpose: trigger.dataset.supplyPurpose };
+      open(trigger.dataset.supplyCommodity, returnFocus, 'supply', request);
     }
+    else if (activePurchase) open(activePurchase.name, trigger, 'supply', activePurchase);
     else open(null, trigger);
   });
   app.lifecycle.on('command:ready', 'supply-route-launcher', 90, () => {
@@ -71,9 +87,13 @@
     if (typeof renderManifest === 'function') renderManifest();
     const panel = document.querySelector('[data-command-panel="logistics"]');
     if (!panel || panel.querySelector('.rhw-supply-launcher')) return;
-    panel.insertAdjacentHTML('afterbegin', `<div class="rhw-supply-launcher"><div><strong>RHW TRADE DESK</strong><span>Plan imports and exports · compare ships, time and hauling profit</span></div><button type="button" class="rhw-supply-button" data-trade-desk>OPEN TRADE DESK</button></div>`);
+    panel.insertAdjacentHTML('afterbegin', `<div class="rhw-supply-launcher"><div class="rhw-supply-launcher-copy"><strong>RHW TRADE DESK</strong><span id="logisticsPurchaseRequest" role="status"></span><span class="rhw-supply-launcher-description">Compare ships, travel time and hauling profit.</span></div><div class="rhw-supply-launcher-actions"><button type="button" id="logisticsClearRequest" aria-label="Clear purchase request" hidden>Clear</button><button type="button" class="rhw-supply-button" data-trade-desk aria-haspopup="dialog">Plan route</button></div></div><div class="rhw-logistics-offers-heading"><h3 id="logisticsOffersHeading">Compare offers</h3><span>All known POBs</span></div>`);
+    panel.querySelector('#logisticsClearRequest').addEventListener('click', () => {
+      showPurchase(null);
+      panel.querySelector('.rhw-supply-launcher [data-trade-desk]').focus({ preventScroll: true });
+    });
   });
-  app.supplyRoutes = { button, commodities, open, telemetry };
+  app.supplyRoutes = { button, commodities, open, telemetry, showPurchase };
 })();
 function supplyRouteButton(name) { return window.RHWV4?.supplyRoutes?.button(name) || ''; }
 function exportRouteButton(name) { return window.RHWV4?.supplyRoutes?.button(name, 'export') || ''; }

@@ -154,6 +154,17 @@ def snapshot(cdp):
 def ui_number(value):
     digits=re.sub(r"[^0-9-]","",value or ""); return int(digits) if digits and digits!="-" else 0
 
+def choose_recipe(cdp, query):
+    return ev(cdp, f"""(()=>{{
+      opsRecipeSearch.value={json.dumps(query)};
+      opsRecipeSearch.dispatchEvent(new Event('input',{{bubbles:true}}));
+      const options=[...document.querySelectorAll('[data-recipe-option]')];
+      const option=options.find(entry=>entry.dataset.recipeOption===opsRecipeSearch.value)||options[0];
+      if(!option) throw new Error('Recipe chooser did not find '+opsRecipeSearch.value);
+      option.click();
+      return RHWV4.state.calculator.recipeId;
+    }})()""")
+
 def test_status_sensor(cdp):
     result=ev(cdp,"(()=>{window.hasVerifiedTelemetry=()=>true;window.operationalItems=()=>[];window.stockFor=()=>100;window.analyzeRecipe=r=>({recipe:r,possibleCycles:r.product==='Reactor Systems'?2:3,cardState:'low',bottleneck:{name:'test'},nextCycleGap:5});RHWV4.command.updateOverview();return{ship:v40OverviewShipyard.textContent,prod:v40OverviewProduction.textContent}})()")
     if not (result["ship"].startswith("MATERIAL FOR") or result["ship"] == "YARD DATA UNKNOWN") or not result["prod"].startswith("MIN "): raise RuntimeError(f"Overview telemetry analysis failed: {result}")
@@ -162,31 +173,47 @@ def test_status_sensor(cdp):
     print("V4 interaction smoke passed: COMMAND status sensor")
 
 def test_production_bridge(cdp):
-    result=ev(cdp,"(()=>{window.hasVerifiedTelemetry=()=>true;window.stockFor=()=>50000;if(typeof renderProductionModules!=='function'||!RHWV4.productionPricing)return{ok:false,reason:'bridge missing'};renderProductionModules();RHWV4.productionPricing.enhanceProduction();const cards=[...document.querySelectorAll('.production-card')];const card=cards.find(x=>x.querySelector('.production-title')?.textContent.trim()==='Reactor Systems');const button=card?.querySelector('.production-calc-button');if(!button)return{ok:false,reason:'button missing',cards:cards.map(x=>x.querySelector('.production-title')?.textContent.trim())};button.click();return{ok:true,hash:location.hash,ws:document.body.dataset.workspace,search:document.querySelector('#opsRecipeSearch')?.value||'',recipe:document.querySelector('#opsRecipe')?.selectedOptions?.[0]?.textContent||''}})()")
-    if not result.get("ok") or result.get("hash")!="#operations/calculator" or result.get("ws")!="operations" or "reactor" not in result.get("search","").lower() or "reactor" not in result.get("recipe","").lower():
+    result=ev(cdp,"(()=>{window.hasVerifiedTelemetry=()=>true;window.stockFor=()=>50000;if(typeof renderProductionModules!=='function'||!RHWV4.productionPricing)return{ok:false,reason:'bridge missing'};renderProductionModules();RHWV4.productionPricing.enhanceProduction();const cards=[...document.querySelectorAll('.production-card')];const card=cards.find(x=>x.querySelector('.production-title')?.textContent.trim()==='Reactor Systems');const button=card?.querySelector('.production-calc-button');if(!button)return{ok:false,reason:'button missing',cards:cards.map(x=>x.querySelector('.production-title')?.textContent.trim())};button.click();return{ok:true,hash:location.hash,ws:document.body.dataset.workspace,recipe:document.getElementById('opsRecipeSearch')?.value||''}})()")
+    if not result.get("ok") or result.get("hash")!="#operations/calculator" or result.get("ws")!="operations" or "reactor" not in result.get("recipe","").lower():
         raise RuntimeError(f"Production calculator bridge failed: {result}")
     print("V4 interaction smoke passed: PRODUCTION → calculator")
 
 def test_restricted_iff(cdp):
-    target=ev(cdp,"(()=>{const r=RHWV4.operationsCore.state.catalog.recipes.find(x=>x.restricted&&(x.bonuses||[]).length&&!(x.bonuses||[]).some(b=>b.id==='br_m_grp'));if(!r)return{ok:false};opsRecipeSearch.value=r.id;opsRecipeSearch.dispatchEvent(new Event('input',{bubbles:true}));return{ok:true,id:r.id,product:r.outputs?.[0]?.id,allowed:(r.bonuses||[]).map(b=>b.id)}})()")
+    target=ev(cdp,"(()=>{const r=RHWV4.operationsCore.state.catalog.recipes.find(x=>x.restricted&&(x.bonuses||[]).length&&!(x.bonuses||[]).some(b=>b.id==='br_m_grp'));return r&&{ok:true,id:r.id,product:r.outputs?.[0]?.id,allowed:(r.bonuses||[]).map(b=>b.id)}||{ok:false}})()")
     if not target.get("ok"): raise RuntimeError("No restricted non-BMM test recipe")
-    time.sleep(.4)
+    if choose_recipe(cdp, target['id']) != target['id']: raise RuntimeError(f"Could not choose {target['id']}")
     state=ev(cdp,"({values:[...opsAffiliation.options].map(o=>o.value),selected:opsAffiliation.value,hint:opsAffiliation.closest('label').querySelector('small').textContent})")
     if "br_m_grp" in state["values"] or "__none__" in state["values"] or state["selected"] not in target["allowed"] or "RESTRICTED RECIPE" not in state["hint"]: raise RuntimeError(f"Restricted IFF UI failed: {state}")
     guard=ev(cdp,f"(()=>{{const c=RHWV4.operationsCore,r=c.recipe({json.dumps(target['id'])});try{{c.buildPlan({{productId:{json.dumps(target['product'])},recipeId:r.id,quantity:1,affiliationId:'br_m_grp',useInventory:false,recursive:false,routingPolicy:'first'}});return{{blocked:false}}}}catch(e){{return{{blocked:true,msg:String(e.message||e)}}}}}})()")
     if not guard.get("blocked") or "AUTHORIZED IFF" not in guard.get("msg",""): raise RuntimeError(f"Restricted IFF core guard failed: {guard}")
 
 def test_calculator(cdp):
-    ev(cdp,"(()=>{RHWV4.state.calculator.materialPrices={};RHWV4.store.set(RHWV4.config.storageKeys.calculatorState,RHWV4.state.calculator);RHWV4.operations.renderCalculator();opsRecipeSearch.value='Superstr';opsRecipeSearch.dispatchEvent(new Event('input',{bubbles:true}));return{}})()"); time.sleep(.4)
-    selected=ev(cdp,"({recipe:opsRecipe.selectedOptions[0].textContent,count:document.querySelectorAll('[data-material-price]').length,cycle:document.querySelector('.ops-recipe-meta strong').textContent,suffix:[...document.querySelectorAll('.ops-price-input-wrap>span')].map(x=>x.textContent.trim()),values:[...document.querySelectorAll('[data-material-price]')].map(x=>x.value),sources:document.querySelectorAll('.ops-price-source').length,alternative:[...document.querySelectorAll('*')].some(x=>x.children.length===0&&x.textContent.trim()==='ALTERNATIVE INPUTS')})")
+    ev(cdp,"(()=>{RHWV4.state.calculator.materialPrices={};RHWV4.store.set(RHWV4.config.storageKeys.calculatorState,RHWV4.state.calculator);RHWV4.operations.renderCalculator();return{}})()")
+    choose_recipe(cdp, 'Superstr')
+    selected=ev(cdp,"({recipe:opsRecipeSearch.value,count:document.querySelectorAll('[data-material-price]').length,cycle:document.querySelector('.ops-recipe-meta strong').textContent,suffix:[...document.querySelectorAll('.ops-price-input-wrap>span')].map(x=>x.textContent.trim()),values:[...document.querySelectorAll('[data-material-price]')].map(x=>x.value),sources:document.querySelectorAll('.ops-price-source').length,alternative:[...document.querySelectorAll('*')].some(x=>x.children.length===0&&x.textContent.trim()==='ALTERNATIVE INPUTS')})")
     if "superstructure" not in selected["recipe"].lower() or "dunkirk" in selected["recipe"].lower() or selected["count"]<=0 or selected["cycle"] in {"","0"} or selected["alternative"] or any(x!="$" for x in selected["suffix"]): raise RuntimeError(f"Calculator selection/currency failed: {selected}")
     if any(value for value in selected["values"]) or selected["sources"] != 0:
         raise RuntimeError(f"Calculator must not prefill material prices: {selected}")
 
-    ev(cdp,"(()=>{opsRecipeSearch.value='zzzz-no-such-rhw-recipe';opsRecipeSearch.dispatchEvent(new Event('input',{bubbles:true}));return{}})()"); time.sleep(.35)
-    miss=ev(cdp,"({text:document.querySelector('.ops-no-match')?.textContent||'',count:document.querySelectorAll('[data-material-price]').length})")
-    if "NO MATCHING RECIPE" not in miss["text"] or miss["count"]!=0: raise RuntimeError(f"Calculator no-match failed: {miss}")
-    ev(cdp,"(()=>{opsRecipeSearch.value='Superstr';opsRecipeSearch.dispatchEvent(new Event('input',{bubbles:true}));return{}})()"); time.sleep(.4)
+    picker=ev(cdp,"""(()=>{
+      const field=document.querySelector('[data-material-price]');
+      field.value='123';field.dispatchEvent(new Event('input',{bubbles:true}));
+      const before=RHWV4.state.calculator.recipeId;
+      const input=opsRecipeSearch;
+      input.focus();input.value='zzzz-no-such-rhw-recipe';input.dispatchEvent(new Event('input',{bubbles:true}));
+      const noMatch=!document.querySelector('.ops-no-match').hidden;
+      const kept=field.isConnected&&field.value==='123'&&RHWV4.state.calculator.recipeId===before;
+      input.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));
+      const restored=input.value===%s&&input.getAttribute('aria-expanded')==='false';
+      input.value='recipe_niobium_basic';input.dispatchEvent(new Event('input',{bubbles:true}));
+      input.dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowDown',bubbles:true}));
+      const active=Boolean(document.getElementById(input.getAttribute('aria-activedescendant')));
+      input.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true}));
+      return {noMatch,kept,restored,active,chosen:RHWV4.state.calculator.recipeId,priceReset:Object.keys(RHWV4.state.calculator.materialPrices).length===0};
+    })()""" % json.dumps(selected['recipe']))
+    if picker.pop('chosen', None) != 'recipe_niobium_basic' or not all(picker.values()):
+        raise RuntimeError(f"Calculator search, explicit selection and quote preservation failed: {picker}")
+    choose_recipe(cdp, 'Superstr')
     ev(cdp,"(()=>{document.querySelectorAll('[data-material-price]').forEach(i=>{i.value='1000';i.dispatchEvent(new Event('input',{bubbles:true}))});opsMargin.value='99';opsMargin.dispatchEvent(new Event('input',{bubbles:true}));return{}})()"); time.sleep(.1)
     quote=ev(cdp,"({total:opsTotalCost.textContent,sell:opsSellUnit.textContent,profit:opsProfit.textContent,unit:opsProfitUnit.textContent,revenue:opsRevenue.textContent,margin:opsMargin.value,actual:[...document.querySelectorAll('.ops-recipe-meta>div')].find(x=>x.querySelector('small')?.textContent==='ACTUAL OUTPUT')?.querySelector('strong')?.textContent||'1'})")
     if quote["margin"]!="95" or any("$" not in quote[k] for k in ("total","sell","profit","unit","revenue")): raise RuntimeError(f"Calculator dollar quote failed: {quote}")

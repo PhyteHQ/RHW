@@ -487,6 +487,7 @@ function mount() {
     <div class="supply-content"><p class="supply-source">Find a hauler category for the route, then open an ID to see which checked models work for the whole trip. Ship and ID purchase costs are excluded.</p><form id="supplyForm"><div class="supply-fields supply-main-fields"><label>TRADE MODE<select id="supplyMode"><option value="supply">IMPORT</option><option value="export">EXPORT</option></select></label><label>COMMODITY<select id="supplyCommodity"></select></label><label>HAULER CATEGORY<select id="supplyHauler"></select></label></div><details class="supply-settings"><summary id="supplySettingsTitle">IMPORT SETTINGS</summary><div class="supply-fields"><label>LIMIT TO ID<select id="supplyIdentity"><option value="all">AUTO · All available IDs</option></select></label><label>SPECIFIC MODEL · OPTIONAL<select id="supplyShip"></select></label><label data-supply-only>IMPORT PRIORITY<select id="supplyImportGoal"><option value="price">Lowest buy price within time limit</option><option value="income">Best hauler $/hour within time limit</option><option value="speed">Fastest supply rate</option></select></label><label><span id="supplyExtraLabel">MAX EXTRA TIME</span><select id="supplyExtra"><option value="0">Direct import only</option><option value="10">10% extra</option><option value="20" selected>20% extra</option><option value="35">35% extra</option><option value="50">50% extra</option></select></label><label>START CAPITAL · $<input id="supplyCapital" type="number" min="0" step="1" inputmode="numeric" placeholder="Show capital required"></label><label>DELIVERY QUANTITY<input id="supplyQuantity" type="number" min="1" step="1" inputmode="numeric" placeholder="Full hold within RHW limits"></label><label class="supply-check" data-export-only hidden><input id="supplyBackhaul" type="checkbox" checked>Find profitable return cargo</label><label class="supply-check"><input id="supplyPobs" type="checkbox" checked><span id="supplyPobsLabel">Include POB sellers</span></label><label class="supply-check"><input id="supplyUnverified" type="checkbox">Include unverified ID / docking rules · conditional quotes</label><label class="supply-check"><input id="supplyRestrictedPobs" type="checkbox">Include approval-only POBs · conditional quotes</label></div><p id="supplySettingsCopy"></p></details><div class="supply-actions"><button type="submit" id="supplySearch">CALCULATE IMPORT ROUTE</button><button type="button" id="supplyRefresh">REFRESH MARKETS</button><button type="button" id="supplyCancel" hidden>CANCEL SEARCH</button></div></form><p id="supplySource" class="supply-source"></p><p id="supplyStatus" role="status" aria-live="polite"></p><div id="supplyResults"></div></div>`;
   document.body.append(dialog);
   $('supplyForm').insertAdjacentHTML('beforebegin', '<p id="supplySurplusNote" class="supply-surplus-note" hidden>PROTOTYPE COMPONENTS · INTERNAL RESERVE. Choose an export quantity after allowing for planned production. Fresh quotes still respect RHW’s reported sale reserve and stock.</p>');
+  $('supplyForm').insertAdjacentHTML('beforebegin', '<p id="supplyPurchaseRequest" class="supply-purchase-request" hidden></p>');
   $('supplySource').insertAdjacentHTML('beforebegin', '<section id="supplyMapState" class="supply-map-state" aria-label="Route map"><div><strong id="supplyMapSummary"></strong><p id="supplyMapNote" role="status" aria-live="polite"></p></div><div class="supply-actions"><button type="button" id="supplyMapApply" hidden>RECALCULATE WITH UPDATED MAP</button><button type="button" id="supplyMapRefresh">UPDATE MAP</button></div></section>');
   $('supplyClose').addEventListener('click', () => dialog.close());
   dialog.addEventListener('close', () => {
@@ -515,6 +516,10 @@ function mount() {
   $('supplyMapApply').addEventListener('click', () => search());
   $('supplyForm').addEventListener('submit', event => { event.preventDefault(); search(); });
   $('supplyForm').addEventListener('change', event => {
+    if (['supplyMode', 'supplyCommodity'].includes(event.target.id) && !$('supplyPurchaseRequest').hidden) {
+      $('supplyPurchaseRequest').hidden = true;
+      $('supplyQuantity').value = '';
+    }
     if (event.target.id === 'supplyMode') {
       result = null; $('supplyResults').innerHTML = ''; updateMode(selectedByMode[$('supplyMode').value]); search();
     } else if (event.target.id === 'supplyIdentity') {
@@ -528,13 +533,18 @@ function mount() {
   });
 }
 export function open(next) {
-  const previousSurplus = context?.surplusCommodity;
+  const resetQuantity = next.surplusCommodity || context?.surplusCommodity || context?.quantity;
   mount(); context = next; result = null; $('supplyResults').innerHTML = '';
   const selected = next.commodity || $('supplyCommodity').value;
   if (next.mode) $('supplyMode').value = next.mode;
-  if (next.surplusCommodity || previousSurplus) $('supplyQuantity').value = '';
-  if (Number.isSafeInteger(next.quantity) && next.quantity > 0) $('supplyQuantity').value = String(next.quantity);
+  if (resetQuantity) $('supplyQuantity').value = '';
   updateMode(selected);
+  const requested = Number.isSafeInteger(next.quantity) && next.quantity > 0 && !exporting()
+    && normalize($('supplyCommodity').value) === normalize(next.commodity);
+  const purchase = $('supplyPurchaseRequest');
+  purchase.hidden = !requested;
+  purchase.textContent = requested ? `Requested: ${count(next.quantity)} ${$('supplyCommodity').value}${next.purpose ? ` for ${next.purpose}` : ''}` : '';
+  if (requested) $('supplyQuantity').value = String(next.quantity);
   identityOptions(); haulerOptions(); shipOptions();
   if (!dialog.open) dialog.showModal();
   search();

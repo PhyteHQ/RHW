@@ -48,18 +48,17 @@
     return `<section class="comms-node-panel" data-comms-panel="forum">
       <div class="comms-grid">
         <section class="comms-panel composer-panel" id="commsComposerPanel">
-          <div class="comms-panel-head"><div><span>01</span><strong>Write transmission</strong></div><small>AUTOSAVE ACTIVE</small></div>
+          <div class="comms-panel-head"><div><strong>Write transmission</strong></div><small>AUTOSAVE ACTIVE</small></div>
           <div class="comms-workflow-status" id="commsWorkflowStatus" aria-live="polite"></div>
-          <div class="comms-context-tools" aria-label="Forum tools"><button type="button" data-forum-tool="drafts">OPEN DRAFTS</button><button type="button" data-forum-tool="senders">MANAGE SENDERS</button></div>
           <form id="commsForm" autocomplete="off">
-            <div class="comms-field-grid">
-              <label class="comms-field"><span>SENDER PROFILE</span><select id="commsSender"></select><small>SENDER PROFILE CONTROLS THE SIGNATURE</small></label>
+            <div class="comms-field-grid comms-envelope">
+              <label class="comms-field"><span>SENDER PROFILE</span><select id="commsSender"></select></label>
               <div class="comms-signature-auto" id="v40SignatureAuto"></div>
               <div class="comms-custom-sender" id="customSenderWrap" hidden>
                 <label class="comms-field"><span>CUSTOM SENDER NAME</span><input id="customSenderName" type="text" maxlength="80" placeholder="Character name" /></label>
                 <label class="comms-field"><span>SENDER ROLE / TITLE</span><input id="commsSignatureTitle" type="text" maxlength="120" placeholder="Role / organisation" /></label>
               </div>
-              <label class="comms-field comms-wide"><span>RECIPIENT ID</span><input id="commsRecipient" type="text" maxlength="180" placeholder="Recipient / office / organisation" /></label>
+              <label class="comms-field comms-wide comms-recipient"><span>RECIPIENT ID</span><input id="commsRecipient" type="text" maxlength="180" placeholder="Name or office" /></label>
               <label class="comms-field comms-wide"><span>SUBJECT</span><input id="commsSubject" type="text" maxlength="180" /></label>
               <div class="comms-field comms-wide message-field"><label for="commsMessage">MESSAGE</label>
                 <div class="comms-editor-toolbar" role="toolbar" aria-label="Message formatting">
@@ -67,6 +66,7 @@
                 </div>
                 <textarea id="commsMessage" rows="14" placeholder="Write the actual forum post here — no BB code required."></textarea><small class="comms-message-help"><span>SMART MARKUP: ## HEADING · **BOLD** · !WARNING · !STATUS · - LIST</span><b id="commsMessageCount">0 CHARACTERS</b></small>
               </div>
+              <div class="comms-actions comms-copy-write comms-wide"><button class="comms-primary" type="button" id="copyBbcodeBtn">Copy BBCode</button></div>
               <label class="comms-field comms-wide"><span>DRAFT NAME</span><input id="commsDraftName" type="text" maxlength="100" placeholder="e.g. BAF Dunkirk Offer" /></label>
             </div>
             <details class="comms-advanced"><summary>TRANSMISSION SETTINGS <span id="v40DocumentControlSummary"></span></summary>
@@ -87,27 +87,27 @@
               </div>
             </details>
             <div class="comms-actions">
-              <button class="comms-primary" type="button" id="copyBbcodeBtn"><span>COPY BB CODE</span></button>
               <button type="button" id="saveDraftBtn"><span>SAVE NAMED DRAFT</span></button>
               <button type="button" id="saveSenderBtn" hidden><span>SAVE SENDER PROFILE</span></button>
               <button type="button" id="newTransmissionBtn"><span>NEW TRANSMISSION</span></button>
               <button type="button" class="comms-next-action" data-comms-surface="preview"><span>REVIEW TRANSMISSION →</span></button>
             </div>
           </form>
+          <div class="comms-context-tools" aria-label="Forum tools"><button type="button" data-forum-tool="drafts">OPEN DRAFTS</button><button type="button" data-forum-tool="senders">MANAGE SENDERS</button></div>
         </section>
 
         <section class="comms-panel preview-panel">
-          <div class="comms-panel-head"><div><span>02</span><strong>Forum preview</strong></div><small>APPROXIMATE RENDER</small></div>
+          <div class="comms-panel-head"><div><strong>Forum preview</strong></div><small>APPROXIMATE RENDER</small></div>
           <div class="forum-preview" id="forumLivePreview"></div>
           <div class="comms-surface-actions"><button type="button" data-comms-surface="write">← EDIT TRANSMISSION</button><button type="button" class="comms-primary" data-comms-surface="bbcode">REVIEW BB CODE →</button></div>
         </section>
       </div>
 
       <section class="comms-panel bbcode-panel">
-        <div class="comms-panel-head"><div><span>03</span><strong>Forum code</strong></div><small>FORUM READY</small></div>
+        <div class="comms-panel-head"><div><strong>Forum code</strong></div><small>FORUM READY</small></div>
         <textarea id="forumBbcodeOutput" readonly spellcheck="false" aria-label="Generated forum BB code"></textarea>
         <div class="bbcode-hint">THE PREVIEW REPRODUCES RHW STYLING, BUT THE FORUM REMAINS THE FINAL RENDERER FOR ITS CUSTOM BB CODE.</div>
-        <div class="comms-surface-actions"><button type="button" data-comms-surface="preview">← BACK TO PREVIEW</button><button type="button" class="comms-primary" data-copy-forum-bbcode>COPY FORUM BB CODE</button></div>
+        <div class="comms-surface-actions"><button type="button" data-comms-surface="preview">← BACK TO PREVIEW</button><button type="button" class="comms-primary" data-copy-forum-bbcode>Copy BBCode</button></div>
       </section>
     </section>`;
   }
@@ -350,8 +350,9 @@
       ['MESSAGE', Boolean(String(state.message || '').trim())]
     ];
     if (target) {
-      const ready = checks.filter(([, ok]) => ok).length;
-      target.innerHTML = `<div class="comms-workflow-score"><small>TRANSMISSION READINESS</small><strong>${ready} / ${checks.length} READY</strong></div>${checks.map(([label, ok]) => `<span data-ready="${ok ? 'true' : 'false'}"><i aria-hidden="true"></i>${label}</span>`).join('')}`;
+      const missing = checks.filter(([, ok]) => !ok).map(([label]) => label.toLowerCase());
+      const compact = missing.length ? `Missing: ${missing.join(', ')}` : 'Ready for the forum';
+      target.innerHTML = `<div class="comms-readiness-compact">${compact}</div><div class="comms-workflow-score"><small>TRANSMISSION READINESS</small><strong>${checks.length - missing.length} / ${checks.length} READY</strong></div>${checks.map(([label, ok]) => `<span data-ready="${ok ? 'true' : 'false'}"><i aria-hidden="true"></i>${label}</span>`).join('')}`;
     }
     if (count) count.textContent = `${String(state.message || '').length.toLocaleString('en-US')} CHARACTERS`;
   }
@@ -543,6 +544,7 @@
       return;
     }
     const target = view === 'write' ? document.getElementById('commsComposerPanel') : view === 'preview' ? document.querySelector('.preview-panel') : document.querySelector('.bbcode-panel');
+    if (view === 'bbcode' && target?.classList.contains('v40-collapsed')) document.getElementById('toggleBbcodePanelBtn')?.click();
     target?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 

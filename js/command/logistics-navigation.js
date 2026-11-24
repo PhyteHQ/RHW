@@ -23,16 +23,17 @@
   }
 
   let pendingPurchaseTarget = null;
-  function openPurchaseSource(name) {
+  function openPurchaseSource(name, quantity, purpose) {
     const target = typeof purchaseSourceTarget === 'function' ? purchaseSourceTarget(name) : null;
     if (!target) return false;
-    pendingPurchaseTarget = target;
+    pendingPurchaseTarget = { ...target, quantity, purpose };
     app.navigate('command', 'logistics');
     return true;
   }
 
   function revealPurchaseTarget(target) {
     setLogisticsView(target.view);
+    app.supplyRoutes?.showPurchase(target);
     const section = document.getElementById(target.view === 'materials' ? 'materialsScanSection' : 'marketScanSection');
     const card = [...(section?.querySelectorAll('[data-market-commodity]') || [])].find(node => node.dataset.marketCommodity === target.key);
     const focus = card || section;
@@ -48,7 +49,7 @@
     const button = event.target.closest?.('[data-purchase-source]');
     if (!button) return;
     event.preventDefault();
-    openPurchaseSource(button.dataset.purchaseSource);
+    openPurchaseSource(button.dataset.purchaseSource, Number(button.dataset.purchaseQuantity), button.dataset.purchasePurpose);
   });
 
   function disableLegacyCommandAutoScroll() {
@@ -94,13 +95,13 @@
       nav.id = 'rhwLogisticsViewNav';
       nav.className = 'rhw-logistics-view-nav';
       nav.setAttribute('role', 'tablist');
-      nav.setAttribute('aria-label', 'Logistics views');
+      nav.setAttribute('aria-labelledby', 'logisticsOffersHeading');
       nav.innerHTML = `
         <button type="button" role="tab" id="logisticsShipsTab" data-logistics-view="market" aria-controls="marketScanSection">
-          SHIP COMPONENTS<small>ALL KNOWN POBS</small>
+          SHIP COMPONENTS
         </button>
         <button type="button" role="tab" id="logisticsMaterialsTab" data-logistics-view="materials" aria-controls="materialsScanSection">
-          INDUSTRIAL MATERIALS<small>ALL KNOWN POBS</small>
+          INDUSTRIAL MATERIALS
         </button>`;
       nav.addEventListener('click', event => {
         const button = event.target.closest('[data-logistics-view]');
@@ -144,6 +145,7 @@
       const root = document.scrollingElement || document.documentElement;
       const primary = document.getElementById('rhwAppNav');
       const nav = document.getElementById('rhwLogisticsViewNav');
+      const launcher = document.querySelector('.rhw-supply-launcher');
       const section = document.getElementById(document.body.dataset.logisticsView === 'materials' ? 'materialsScanSection' : 'marketScanSection');
       const price = section?.querySelector('[data-market-sort="price"]');
       const stock = section?.querySelector('[data-market-sort="stock"]');
@@ -153,10 +155,10 @@
         const visibleBottom = window.innerHeight - 12;
         const navTop = nav.getBoundingClientRect().top;
         const sortBottom = Math.max(price.getBoundingClientRect().bottom, stock.getBoundingClientRect().bottom);
-        // Keep the view switch below the sticky top row and sorting inside
-        // the viewport. If the screen is short, prioritize the view switch.
-        if (navTop < visibleTop) delta = navTop - visibleTop;
-        else if (sortBottom > visibleBottom) delta = Math.min(sortBottom - visibleBottom, navTop - visibleTop);
+        const launcherTop = launcher?.getBoundingClientRect().top ?? navTop;
+        const toolsTop = sortBottom - launcherTop <= visibleBottom - visibleTop ? launcherTop : navTop;
+        if (toolsTop < visibleTop) delta = toolsTop - visibleTop;
+        else if (sortBottom > visibleBottom) delta = Math.min(sortBottom - visibleBottom, toolsTop - visibleTop);
         if (Math.abs(delta) > 2) {
           const maxScroll = Math.max(0, root.scrollHeight - window.innerHeight);
           root.scrollTop = Math.max(0, Math.min(maxScroll, root.scrollTop + delta));

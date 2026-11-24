@@ -148,20 +148,6 @@
     return [...grouped.values()].filter(group => group.ids.length > 1).map(group => [group.label, group.ids]);
   }
 
-  function polishRecipeOptions() {
-    const select = document.getElementById('opsRecipe');
-    if (!select || !core.state.catalog) return;
-    [...select.options].forEach(option => {
-      const recipe = core.recipe(option.value);
-      if (!recipe) return;
-      const label = recipeLabel(recipe);
-      if (option.textContent !== label) option.textContent = label;
-      option.dataset.rhwRecipeLabel = label;
-      const title = `${label} // ${recipe.id}`;
-      if (option.title !== title) option.title = title;
-    });
-  }
-
   function actualOutputText() {
     const block = [...document.querySelectorAll('#workspaceOperations .ops-recipe-meta > div')]
       .find(entry => entry.querySelector('small')?.textContent?.trim() === 'ACTUAL OUTPUT');
@@ -243,7 +229,6 @@
     polishQueued = true;
     queueMicrotask(() => {
       polishQueued = false;
-      polishRecipeOptions();
       polishCostFlow();
     });
   }
@@ -252,7 +237,7 @@
     const workspace = document.getElementById('workspaceOperations');
     if (!workspace || workspace.dataset.v40FinalUiPolish === 'true') return;
     workspace.dataset.v40FinalUiPolish = 'true';
-    app.onRender('calculator', () => { polishRecipeOptions(); polishCostFlow(); });
+    app.onRender('calculator', polishCostFlow);
     app.onRender('pricing', polishCostFlow);
     queuePolish();
   }
@@ -298,7 +283,6 @@
   app.calculatorPresentation = {
     recipeLabel,
     duplicateFinalLabels,
-    polishRecipeOptions,
     polishCostCard: polishCostFlow,
     polishCostFlow,
     fixHeaderClockLayout,

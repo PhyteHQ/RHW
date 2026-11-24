@@ -75,6 +75,12 @@ def main() -> int:
               const briefing=document.getElementById('commandBriefing');
               const briefingBeforeControls=rect(briefing).top<rect(document.getElementById('commandControlDeck')).top;
               const inlineTasksVisible=visible(document.getElementById('overviewNextActions'));
+              const tasksFirst=rect(document.getElementById('overviewNextActions')).top<rect(document.getElementById('overviewOperations')).top;
+              const initialTasks=document.querySelectorAll('#overviewNextActions .command-priority-entry').length;
+              const more=document.getElementById('overviewMoreTasks');
+              more.click();
+              const expandedTasks=document.querySelectorAll('#overviewNextActions .command-priority-entry').length;
+              more.click();
               // The compact disclosure remains available in the detailed view.
               document.getElementById('inventoryManifestTab').click();
               const commandNav=document.getElementById('commandNodeNav');
@@ -91,7 +97,7 @@ def main() -> int:
               const manifest=document.getElementById('inventoryManifestPanel');
               const initial={
                 selfFailures:RHWV4.inventoryToolbar?.selfTest?.()||[],
-                briefingBeforeControls,inlineTasksVisible,
+                briefingBeforeControls,inlineTasksVisible,tasksFirst,initialTasks,expandedTasks,
                 commandCount:commandButtons.length,
                 commandHeights:commandButtons.map(x=>rect(x).height),
                 commandSingleRow:commandButtons.every(x=>Math.abs(rect(x).top-rect(commandButtons[0]).top)<1),
@@ -147,6 +153,8 @@ def main() -> int:
                 raise RuntimeError(f"Mobile Command navigation/toolbar is not compact: {result}")
             if not initial.get("briefingBeforeControls") or not initial.get("inlineTasksVisible"):
                 raise RuntimeError(f"Daily briefing and tasks must precede detailed controls: {result}")
+            if not initial.get("tasksFirst") or initial.get("initialTasks") != 1 or initial.get("expandedTasks", 0) <= 1:
+                raise RuntimeError(f"Mobile overview must show a first task with the rest readily available: {result}")
             if initial.get("selfFailures"):
                 raise RuntimeError(f"Compact COMMAND self-test failed: {result}")
             if not initial.get("searchVisible") or initial.get("searchHeight", 0) < 43.5 or initial.get("searchName") != "Command finder":

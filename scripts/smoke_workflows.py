@@ -121,14 +121,18 @@ def test_pr3_comms_workflow(cdp, workspace, node):
               commsSubject.value='Dockyard readiness confirmation';fire(commsSubject);
               commsMessage.value='## Production readiness\\n**Heavy Works** reports full output.\\n!WARNING Restricted gantry access.\\n!STATUS All lines operational.\\n- Hull plating ready';fire(commsMessage);
               commsDraftName.value='PR3 COMMS workflow smoke';fire(commsDraftName);
-              const readiness=commsWorkflowStatus.textContent.replace(/\\s+/g,' ').trim();
+              const readiness=commsWorkflowStatus.querySelector('.comms-readiness-compact').textContent;
+              const countCopy=()=>[...document.querySelectorAll('#copyBbcodeBtn,#copyBbcodePreviewBtn,[data-copy-forum-bbcode]')].filter(visible).length;
+              const writeCopy=countCopy();
+              const sameRow=Math.abs(commsSender.getBoundingClientRect().top-commsRecipient.getBoundingClientRect().top)<1;
               document.querySelector('[data-comms-surface="preview"]').click();
               const preview={
                 active:document.body.dataset.commsMobileView,
                 heading:document.querySelector('.forum-preview-body h3')?.textContent||'',
                 warning:document.querySelector('.forum-preview-callout.warning')?.textContent||'',
                 status:document.querySelector('.forum-preview-callout.status')?.textContent||'',
-                bullets:document.querySelectorAll('.forum-preview-bullet').length
+                bullets:document.querySelectorAll('.forum-preview-bullet').length,
+                copies:countCopy()
               };
               document.querySelector('.preview-panel [data-comms-surface="bbcode"]').click();
               const code=forumBbcodeOutput.value;
@@ -140,9 +144,9 @@ def test_pr3_comms_workflow(cdp, workspace, node):
                 status:code.includes('[color=#78ad8a][b]STATUS //[/b] All lines operational.[/color]'),
                 bullet:code.includes('[b]•[/b] Hull plating ready'),
                 recipient:code.includes('Bretonia Admiralty'),
-                subject:code.includes('Dockyard readiness confirmation')
+                subject:code.includes('Dockyard readiness confirmation'),
+                copies:countCopy()
               };
-              const copy=document.querySelector('[data-copy-forum-bbcode]');
               RHWV4.mobileUi.setForumView('write');
               saveDraftBtn.click();
               document.querySelector('[data-comms-node="drafts"]').click();
@@ -158,10 +162,12 @@ def test_pr3_comms_workflow(cdp, workspace, node):
               draft.restored=commsSubject.value==='Dockyard readiness confirmation'&&commsRecipient.value==='Bretonia Admiralty';
               const touch=[...document.querySelectorAll('.comms-mobile-view-switch button,.comms-surface-actions button,.comms-actions button')]
                 .filter(visible).map(element=>element.getBoundingClientRect().height);
-              return{readiness,preview,bbcode,draft,touch,hash:location.hash,overflow:document.documentElement.scrollWidth-window.innerWidth};
+              return{readiness,preview,bbcode,writeCopy,sameRow,draft,touch,hash:location.hash,overflow:document.documentElement.scrollWidth-window.innerWidth};
             })()""")
-            if "4 / 4 READY" not in result.get("readiness", "") or result.get("preview", {}).get("active") != "preview" or result.get("preview", {}).get("heading") != "Production readiness" or result.get("preview", {}).get("bullets") != 1:
+            if result.get("readiness") != "Ready for the forum" or result.get("preview", {}).get("active") != "preview" or result.get("preview", {}).get("heading") != "Production readiness" or result.get("preview", {}).get("bullets") != 1 or not result.get("sameRow"):
                 raise RuntimeError(f"PR3 COMMS write/preview workflow failed: {result}")
+            if [result.get('writeCopy'),result['preview'].get('copies'),result['bbcode'].get('copies')] != [1,1,1]:
+                raise RuntimeError(f"Forum must show one copy action per mobile view: {result}")
             if not all(result.get("bbcode", {}).values()) or result.get("bbcode", {}).get("active") != "bbcode":
                 raise RuntimeError(f"PR3 COMMS preview/BBCode parity failed: {result}")
             draft = result.get("draft", {})
@@ -284,7 +290,7 @@ def test_qol_shipyard(cdp):
       button.click();
       return{ok:true,retired,label,hash:location.hash,qty:document.getElementById('opsQuantity')?.value||'',ws:document.body.dataset.workspace};
     })()""")
-    if not result.get("ok") or result.get("retired") or result.get("label") != "PRICE 1 SHIP" or result.get("hash") != "#operations/calculator" or result.get("qty") != "1" or result.get("ws") != "operations":
+    if not result.get("ok") or result.get("retired") or result.get("label") != "CALCULATE BUILD COST" or result.get("hash") != "#operations/calculator" or result.get("qty") != "1" or result.get("ws") != "operations":
         raise RuntimeError(f"Shipyard planner retirement / Calculator shortcut failed: {result}")
     print("V4 interaction smoke passed: Shipyard has no multi-hull planner; per-hull Calculator shortcut works")
 
@@ -301,6 +307,7 @@ def test_pr3_decision_ui(cdp, workspace, node):
           return{
             metrics:strip?.querySelectorAll('.shipyard-decision-metric').length||0,
             labels:[...(strip?.querySelectorAll('small')||[])].map(x=>x.textContent.trim()),
+            besideHull:strip?.previousElementSibling?.classList.contains('shipyard-hull-grid'),
             mobileLabels:[...document.querySelectorAll('.shipyard-material-row td')].every(x=>Boolean(x.dataset.label)),
             ships:document.querySelectorAll('[data-shipyard-select]').length,
             division:document.querySelector('[data-shipyard-division][aria-pressed="true"]')?.dataset.shipyardDivision,
@@ -308,7 +315,7 @@ def test_pr3_decision_ui(cdp, workspace, node):
             plannerAbsent:!planner,stockSections:grid?.querySelectorAll('.shipyard-control-section').length||0
           };
         })()""")
-        if result.get("metrics") != 3 or result.get("labels", [])[:2] != ["MATERIAL FOR", "BOTTLENECK"] or result.get("ships") != {"naval":2,"mining":2,"civilian":5}.get(result.get("division")) or result.get("divisions") != 3 or not result.get("mobileLabels") or not result.get("plannerAbsent") or result.get("stockSections") != 2:
+        if result.get("metrics") != 3 or not result['labels'][0].endswith('IN STOCK') or result['labels'][1] != "MATERIAL FOR" or not result.get("besideHull") or result.get("ships") != {"naval":2,"mining":2,"civilian":5}.get(result.get("division")) or result.get("divisions") != 3 or not result.get("mobileLabels") or not result.get("plannerAbsent") or result.get("stockSections") != 2:
             raise RuntimeError(f"PR3 Shipyard decision UI failed: {result}")
         print("PR3 smoke passed: Shipyard readiness strip + stock and hull registry without planner")
     elif (workspace, node) == ("command", "production"):
@@ -328,6 +335,7 @@ def test_pr3_decision_ui(cdp, workspace, node):
               if(!tools||!grid||!all||!blocked||!search)return{error:'production decision controls missing'};
               search.value='';search.dispatchEvent(new Event('input',{bubbles:true}));
               const total=grid.querySelectorAll('.production-card').length;
+              const priorities=Array.from(grid.querySelectorAll('.production-card'),card=>['critical','low','waiting','ok'].indexOf(card.dataset.productionState));
               blocked.click();
               const blockedStates=[...grid.querySelectorAll('.production-card')].filter(card=>!card.hidden).map(card=>card.dataset.productionState);
               const blockedCount=Number(blocked.querySelector('.production-filter-badge')?.textContent);
@@ -343,16 +351,26 @@ def test_pr3_decision_ui(cdp, workspace, node):
               const after={expanded:dialog?.open,visible:Boolean(dialog?.querySelector('.recipe-list')?.getClientRects().length),aria:toggle?.getAttribute('aria-expanded')};
               dialog.close();
               const touch=[...tools.querySelectorAll('button,input'),...grid.querySelectorAll('.production-card-toggle')].filter(visible).map(x=>x.getBoundingClientRect().height);
+              const verified=window.hasVerifiedTelemetry;
+              window.hasVerifiedTelemetry=()=>false;renderProductionModules();
+              tools.querySelector('[data-production-filter="waiting"]').click();
+              const offline=[...grid.querySelectorAll('.production-card')].filter(visible);
+              const offlineRecipes=offline.every(card=>card.querySelector('.production-input-table tbody tr')
+                &&card.querySelector('.module-state').textContent==='Stock unknown'
+                &&[...card.querySelectorAll('.production-stat strong')].every(node=>node.textContent==='–'));
+              window.hasVerifiedTelemetry=verified;renderProductionModules();all.click();
               return{
                 total,filters:tools.querySelectorAll('[data-production-filter]').length,
-                blockedStates,blockedCount,searchProducts,searchCount,before,after,touch,
+                blockedStates,blockedCount,searchProducts,searchCount,before,after,touch,priorities,offline:offline.length,offlineRecipes,
                 overflow:document.documentElement.scrollWidth-window.innerWidth
               };
             })()""")
         finally:
             cdp.call("Emulation.clearDeviceMetricsOverride")
-        if result.get("error") or result.get("total", 0) <= 0 or result.get("filters") != 4 or any(state != "critical" for state in result.get("blockedStates", [])) or result.get("blockedCount") != len(result.get("blockedStates", [])):
+        if result.get("error") or result.get("total") != 8 or result.get("filters") != 5 or any(state != "critical" for state in result.get("blockedStates", [])) or result.get("blockedCount") != len(result.get("blockedStates", [])):
             raise RuntimeError(f"PR3 Production filters failed: {result}")
+        if sorted(result['priorities']) != result['priorities'] or result.get('offline') != result['total'] or not result.get('offlineRecipes'):
+            raise RuntimeError(f"Production priorities / offline recipes failed: {result}")
         if not result.get("searchProducts") or any("gold" not in product for product in result.get("searchProducts", [])) or result.get("searchCount") != len(result.get("searchProducts", [])):
             raise RuntimeError(f"PR3 Production search failed: {result}")
         if not result.get("before", {}).get("collapsed") or result.get("before", {}).get("visible") or not result.get("after", {}).get("expanded") or not result.get("after", {}).get("visible") or result.get("after", {}).get("aria") != "true":
@@ -390,18 +408,20 @@ def test_pr3_calculator_ui(cdp, workspace, node):
               ].filter(visible).map(element=>element.getBoundingClientRect().height);
               const first=rows[0];
               const materialWrap=document.querySelector('.ops-material-table-wrap');
-              const decision=document.querySelector('.ops-mobile-decision');
+              const decision=document.querySelector('.ops-quote-summary');
               const profile=document.getElementById('opsPriceProfiles');
               const costPanel=document.querySelector('.ops-cost-panel');
               const coverage=document.getElementById('opsPriceCoverage')?.textContent.trim()||'';
               const sell=document.getElementById('opsSellUnit')?.textContent.trim()||'';
               const mirror=document.getElementById('opsMobileSellUnit')?.textContent.trim()||'';
               return{
-                recipes:document.querySelectorAll('#opsRecipe option').length,
+                recipes:RHWV4.operations.matchingRecipes('').length,
                 rows:rows.length,
                 rowDisplay:first?getComputedStyle(first).display:'',
                 wrapOverflow:materialWrap?getComputedStyle(materialWrap).overflowX:'',
                 decisionDisplay:decision?getComputedStyle(decision).display:'',
+                decisionPosition:decision?getComputedStyle(decision).position:'',
+                mirrors:decision?.querySelectorAll('strong').length||0,
                 profileOrder:profile?getComputedStyle(profile).order:'',
                 profileInCost:Boolean(profile&&costPanel&&costPanel.contains(profile)),
                 touch,coverage,sell,mirror,
@@ -413,7 +433,7 @@ def test_pr3_calculator_ui(cdp, workspace, node):
             cdp.call("Emulation.clearDeviceMetricsOverride")
         if result.get("recipes") != base.CATALOG_COUNTS["recipeCount"] or result.get("rows", 0) <= 0:
             raise RuntimeError(f"PR3 Calculator catalog/material rows failed at {width}px: {result}")
-        if result.get("rowDisplay") != "grid" or result.get("wrapOverflow") != "visible" or result.get("decisionDisplay") != "grid":
+        if result.get("rowDisplay") != "grid" or result.get("wrapOverflow") != "visible" or result.get("decisionDisplay") != "grid" or result.get("decisionPosition") != "sticky" or result.get("mirrors") != 3:
             raise RuntimeError(f"PR3 Calculator mobile hierarchy failed at {width}px: {result}")
         if result.get("profileOrder") != "2" or not result.get("profileInCost") or not result.get("jumpTargets"):
             raise RuntimeError(f"PR3 Calculator mobile workflow failed at {width}px: {result}")
