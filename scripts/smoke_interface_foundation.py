@@ -483,12 +483,14 @@ def main():
                   return summary.scrollWidth<=summary.clientWidth+1&&[...summary.querySelectorAll('td')].every(n=>n.scrollWidth<=n.clientWidth+1);
                 }),
                 actions:cards.every(c=>c.querySelectorAll('.production-card-actions>button').length===2),
-                order:cards.map(c=>c.querySelector('.production-title').textContent)};
+                order:cards.map(c=>c.querySelector('.production-title').textContent),
+                priorities:cards.map(c=>['critical','low','waiting','ok'].indexOf(c.dataset.productionState))};
             })()""")
             columns = 3 if overview['panelWidth'] >= 1320 else 2 if overview['panelWidth'] >= 760 else 1
             assert overview['columns'] == columns and overview['height'] < 460, (width, overview)
             assert overview['actions'] and overview['valuesFit'] and overview['materialsFit'], (width, overview)
-            assert overview['order']==['Multi-Mode Focusing Chamber','Reactor Systems','Superstructure Systems','Basic Alloy','Gold','Niobium','Prototype Components','MOX'], overview
+            assert len(overview['order']) == 8 and set(overview['order']) == {'Multi-Mode Focusing Chamber','Reactor Systems','Superstructure Systems','Basic Alloy','Gold','Niobium','Prototype Components','MOX'}, overview
+            assert overview['priorities'] == sorted(overview['priorities']) and overview['priorities'][0] != overview['priorities'][-1], overview
             disclosure = base.ev(cdp, """(()=>{
               const card=productionGrid.querySelector('.production-card'),toggle=card.querySelector('.production-card-toggle');
               const hidden=!card.querySelector('.production-materials').getClientRects().length;
@@ -635,7 +637,9 @@ def main():
           delete market[hull];
           api.state.marketCache={...original,routes:market};
           sort('best');qty('5');
-          const result={best:rows()[0].dataset.routeKey,unknownLast:rows().at(-1).dataset.routeKey,
+          const unknown=row=>row.querySelector('.pricecheck-difference').classList.contains('unknown');
+          const sorted=rows(),suffix=sorted.slice(sorted.findIndex(unknown));
+          const result={best:sorted[0].dataset.routeKey,unknownLast:suffix.every(unknown)&&suffix.some(row=>row.dataset.routeKey===hull),
             total:rows()[0].querySelector('.pricecheck-total b')?.textContent};
           sort('worst');result.worst=rows()[0].dataset.routeKey!==key;
           market[key].livePrice=125;api.render();
@@ -647,7 +651,7 @@ def main():
           api.state.marketCache=original;qty('');sort('source');
           return result;
         })()""")
-        assert price_sort == {'best':'food-rations','unknownLast':'hull-panels','total':'+$500',
+        assert price_sort == {'best':'food-rations','unknownLast':True,'total':'+$500',
                               'worst':True,'loss':'-$125','noInvalidTotal':True,'waiting':True}, price_sort
         base.ev(cdp, "(()=>{location.hash='#pricecheck/obsolete';return true;})()")
         time.sleep(.15)

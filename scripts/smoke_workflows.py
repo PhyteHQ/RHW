@@ -125,6 +125,8 @@ def test_pr3_comms_workflow(cdp, workspace, node):
               const countCopy=()=>[...document.querySelectorAll('#copyBbcodeBtn,#copyBbcodePreviewBtn,[data-copy-forum-bbcode]')].filter(visible).length;
               const writeCopy=countCopy();
               const sameRow=Math.abs(commsSender.getBoundingClientRect().top-commsRecipient.getBoundingClientRect().top)<1;
+              const subjectBox=commsSubject.getBoundingClientRect(),messageBox=commsMessage.getBoundingClientRect();
+              const hasWritingSpace=messageBox.top>=subjectBox.bottom&&Math.abs(subjectBox.width-messageBox.width)<2;
               document.querySelector('[data-comms-surface="preview"]').click();
               const preview={
                 active:document.body.dataset.commsMobileView,
@@ -162,9 +164,9 @@ def test_pr3_comms_workflow(cdp, workspace, node):
               draft.restored=commsSubject.value==='Dockyard readiness confirmation'&&commsRecipient.value==='Bretonia Admiralty';
               const touch=[...document.querySelectorAll('.comms-mobile-view-switch button,.comms-surface-actions button,.comms-actions button')]
                 .filter(visible).map(element=>element.getBoundingClientRect().height);
-              return{readiness,preview,bbcode,writeCopy,sameRow,draft,touch,hash:location.hash,overflow:document.documentElement.scrollWidth-window.innerWidth};
+              return{readiness,preview,bbcode,writeCopy,sameRow,hasWritingSpace,draft,touch,hash:location.hash,overflow:document.documentElement.scrollWidth-window.innerWidth};
             })()""")
-            if result.get("readiness") != "Ready for the forum" or result.get("preview", {}).get("active") != "preview" or result.get("preview", {}).get("heading") != "Production readiness" or result.get("preview", {}).get("bullets") != 1 or not result.get("sameRow"):
+            if result.get("readiness") != "Ready for the forum" or result.get("preview", {}).get("active") != "preview" or result.get("preview", {}).get("heading") != "Production readiness" or result.get("preview", {}).get("bullets") != 1 or not result.get("sameRow") or not result.get("hasWritingSpace"):
                 raise RuntimeError(f"PR3 COMMS write/preview workflow failed: {result}")
             if [result.get('writeCopy'),result['preview'].get('copies'),result['bbcode'].get('copies')] != [1,1,1]:
                 raise RuntimeError(f"Forum must show one copy action per mobile view: {result}")

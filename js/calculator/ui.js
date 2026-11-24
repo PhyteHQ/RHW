@@ -353,7 +353,7 @@
 
   function recipePickerMarkup(recipe) {
     return `<div class="comms-field ops-wide ops-recipe-picker" id="opsRecipePicker">
-      <label for="opsRecipeSearch" id="opsRecipeLabel">RECIPE</label>
+      <label for="opsRecipeSearch" id="opsRecipeLabel">RECIPE OR VARIANT</label>
       <div class="ops-recipe-control">
         <input id="opsRecipeSearch" type="text" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="opsRecipeMatches" aria-describedby="opsRecipeHint" value="${esc(recipeLabel(recipe))}" placeholder="Search by name or recipe ID" autocomplete="off" spellcheck="false">
         <button type="button" id="opsRecipeToggle" tabindex="-1" aria-label="Browse recipes" aria-controls="opsRecipeMatches">⌄</button>

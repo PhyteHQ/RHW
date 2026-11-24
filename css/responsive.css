@@ -341,6 +341,7 @@ body[data-workspace="command"] .command-node-host, body[data-workspace="command"
 .ops-mobile-jumps button, .ops-mobile-quote-jump { padding: 8px 10px;font-size: 7.5px;letter-spacing: .075em; }
 .ops-cost-panel { display: flex;flex-direction: column; }
 .ops-cost-panel > .ops-panel-head { order: 1; }
+.ops-cost-panel > .ops-rhw-prices { order: 2; }
 .ops-cost-panel > .ops-price-profiles { order: 2; }
 .ops-cost-panel > .ops-material-table-wrap, .ops-cost-panel > .ops-empty { order: 3; }
 .ops-cost-panel > .ops-price-memory { order: 4; }

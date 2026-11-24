@@ -884,7 +884,9 @@ html.rhw-focus-pass.rhw-workbench :is(.comms-actions,.comms-draft-actions,.sende
  html.rhw-focus-pass .comms-envelope #v40SignatureAuto { display:none; }
  .comms-readiness-compact { display:block;color:var(--muted); }
  html.rhw-focus-pass.rhw-workbench .comms-envelope { grid-template-columns:repeat(2,minmax(0,1fr));gap:8px; }
+ html.rhw-focus-pass.rhw-workbench .comms-envelope > :is(.comms-wide,.comms-custom-sender) { grid-column:1/-1; }
  html.rhw-focus-pass.rhw-workbench .comms-envelope:not(:has(#customSenderWrap:not([hidden]))) .comms-recipient { grid-column:auto; }
  html.rhw-focus-pass.rhw-workbench .comms-envelope :is(input,select) { min-width:0;width:100%; }
  html.rhw-focus-pass.rhw-workbench .comms-copy-write { padding:0;margin:0; }
+ body[data-workspace="comms"][data-comms-node="forum"] #rhwPageHeading :is(small,p) { display:none; }
 }
