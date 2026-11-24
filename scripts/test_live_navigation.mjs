@@ -121,6 +121,28 @@ const realDuplicate = complete.systems.find(system => system.nickname === 'br07'
 assert.equal(realDuplicate.length, 2);
 assert.deepEqual(realDuplicate[0], realDuplicate[1]);
 
+// The official patch supplies exact endpoints and verified station docks.
+const orkneyGate = 'br08:br08_to_ew13', provenceGate = 'ga08:ga08_sealed_gate';
+for (const [from, to] of [[orkneyGate, provenceGate], [provenceGate, orkneyGate]])
+  assert.ok(completeMap.links.some(edge => edge.kind === 'jump' && edge.from === from && edge.to === to));
+const mappedNodes = new Map(completeMap.nodes.map(node => [node.id, node]));
+assert.deepEqual(mappedNodes.get(orkneyGate).pos, [3117.64, 0, -47496.67], 'The old saved projection cannot move a patched gate back');
+assert.equal(completeMap.baseNodes.ga04_06_base, 'bw08:ew16_degrasse');
+const woodlark = mappedNodes.get(completeMap.baseNodes.br09_04_base);
+assert.deepEqual(woodlark.allows, ['berth']);
+assert.equal(new ShipNavigator(completeMap, [], profile).from('br09_04_base'), null, 'A medium dock cannot use Woodlark’s berth');
+
+const freshOrkney = structuredClone(complete.systems.find(system => system.nickname === 'br08'));
+freshOrkney.Jumpholes.find(object => object.Nickname === 'br08_to_ew13').Pos.X = 3200;
+const revised = currentNavigation(map, [freshOrkney], '2026-11-24T12:00:00Z');
+assert.equal(revised.nodes.find(node => node.id === orkneyGate).pos[0], 3200, 'Newer map data can still update a corrected point');
+
+const relocated = { id: 'ga04_06_base', kind: 'npc', system: 'br01', pos: [100, 0, 100] };
+const movedDock = new ShipNavigator(completeMap, [relocated], profile);
+assert.equal(movedDock.nodes.get(movedDock.baseNodes.get(relocated.id)).system, 'br01');
+const missingPosition = new ShipNavigator(completeMap, [{ ...relocated, pos: null }], profile);
+assert.equal(missingPosition.from(relocated.id), null, 'An old system is unusable for a moved station without current coordinates');
+
 // Synthetic trades on this complete real map must reach both planners. These
 // prices and quantities are controlled test data, not current game offers.
 const item = { id: 'map_fixture', name: 'Map Fixture', buy: 100, sell: 150, volume: 1, originalVolume: 1, volumes: {} };

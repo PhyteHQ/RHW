@@ -37,6 +37,10 @@ export function validateNavigation(nav) {
   return nav;
 }
 
+export function matchingBaseNode(base, mapped) {
+  return mapped && (!base.system || mapped.system === base.system) ? mapped : null;
+}
+
 export class Navigator {
   constructor(nav, bases, profile, settings = {}) {
     this.profile = profile;
@@ -54,10 +58,11 @@ export class Navigator {
     }
     for (const [baseId, nodeId] of Object.entries(nav.baseNodes || {})) if (this.nodes.has(nodeId)) this.baseNodes.set(baseId, nodeId);
     for (const base of bases) {
-      if (this.baseNodes.has(base.id)) continue;
-      if (base.system && base.pos && this.systems.has(base.system)) {
+      if (matchingBaseNode(base, this.nodes.get(this.baseNodes.get(base.id)))) continue;
+      this.baseNodes.delete(base.id);
+      if (this.systems.has(base.system) && Array.isArray(base.pos) && base.pos.length === 3 && base.pos.every(Number.isFinite)) {
         const id = `market:${base.id}`;
-        this.addNode({ id, system: base.system, pos: base.pos, kind: 'base', name: base.name, allows: ['medium', 'berth', 'large'] });
+        this.addNode({ id, system: base.system, pos: base.pos, kind: 'base', name: base.name });
         this.baseNodes.set(base.id, id);
       }
     }

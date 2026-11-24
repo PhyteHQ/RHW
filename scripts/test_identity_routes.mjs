@@ -91,6 +91,23 @@ const data = { schema: 1, asOf: new Date().toISOString(), bases };
 const scopeWith = (identity, access) => ({ identity, blocked: access.blocked, accessReady: access.ready, unverifiedDocks: access.unverifiedDocks, approvalDocks: access.approvalDocks });
 const scopes = [scopeWith(bmm, bmmAccess), scopeWith(junkers, junkerAccess)];
 const compared = await searchIdentities(data, navigation, ships, scopes, { commodity: 'Wildcat Gold', extraPercent: 20, shipId: 'auto' });
+
+const marketOnlyDock = structuredClone(navigation);
+delete marketOnlyDock.baseNodes.trafalgar;
+const dockOptions = { commodity: 'Wildcat Gold', shipId: train.id, identityId: BMM_ID, extraPercent: 0 };
+assert.equal((await searchIdentities(data, marketOnlyDock, ships, scopes, dockOptions)).results.length, 0);
+const uncheckedDock = await searchIdentities(data, marketOnlyDock, ships, scopes, { ...dockOptions, includeUnverified: true });
+assert.ok(uncheckedDock.results.length, 'Market coordinates support a conditional estimate');
+for (const route of uncheckedDock.results) {
+  assert.equal(route.shipCheck.state, 'conditional');
+  assert.match(route.shipCheck.reason, /Docking class is unverified at Trafalgar/);
+  assert.equal(route.recommendation, null);
+}
+const berthOnlyDock = structuredClone(navigation);
+berthOnlyDock.nodes.find(node => node.id === 'trafalgar').allows = ['berth'];
+assert.equal((await searchIdentities(data, berthOnlyDock, ships, scopes, { ...dockOptions, includeUnverified: true })).results.length, 0,
+  'A confirmed berth-only station still rejects a medium-docking train with conditional quotes enabled');
+
 // Controlled matrix: one hull works with Junkers but has only 10% tech under
 // BMM. Opting into unverified rules and owner approvals must not revive BMM.
 const partialTechShip = { ...small, techCompat: { [BMM_ID]: .1, [JUNKERS]: 1 } };

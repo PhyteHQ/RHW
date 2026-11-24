@@ -17,8 +17,9 @@ const routingKey = object => JSON.stringify([object.Kind, coords(object.Pos), ob
 
 export function currentNavigation(base, systems, receivedAt, closures = KNOWN_JUMP_CLOSURES) {
   validateNavigation(base);
+  const checkedAt = Date.parse(receivedAt);
   if (!Array.isArray(systems) || !systems.length || systems.length > 1000
-    || !Number.isFinite(Date.parse(receivedAt))) throw Error('Current navigation feed is unavailable');
+    || !Number.isFinite(checkedAt)) throw Error('Current navigation feed is unavailable');
   const objects = new Map(), jumps = new Map(), covered = new Set(), ambiguous = new Set();
   let count = 0, duplicates = 0;
   for (const system of systems) {
@@ -50,6 +51,7 @@ export function currentNavigation(base, systems, receivedAt, closures = KNOWN_JU
     blocked.add(JSON.stringify([closure.from, closure.to]));
     if (closure.bidirectional) blocked.add(JSON.stringify([closure.to, closure.from]));
   }
+  const position = (node, object) => Date.parse(node.positionAsOf) > checkedAt ? node.pos : coords(object.Pos);
   const nodes = base.nodes.flatMap(node => {
     if (!covered.has(node.system)) return [];
     if (node.kind === 'jump') {
@@ -60,12 +62,12 @@ export function currentNavigation(base, systems, receivedAt, closures = KNOWN_JU
       if (jump.Kind === 1 && !(node.cargoLimit > 0)
         && !base.links.some(edge => edge.from === node.id && edge.cargoLimit > 0)) return [];
       const allows = jump.Kind === 2 ? (node.allows || ['berth']).filter(dock => dock === 'berth') : node.allows;
-      return [{ ...node, pos: coords(jump.Pos), ...(allows ? { allows } : {}) }];
+      return [{ ...node, pos: position(node, jump), ...(allows ? { allows } : {}) }];
     }
     if (objects.has(node.id) && objects.get(node.id) === null) return [];
     const object = objects.get(node.id);
     if (node.kind === 'lane' && (!object || object.Kind !== 2)) return [];
-    return [{ ...node, ...(object ? { pos: coords(object.Pos) } : {}) }];
+    return [{ ...node, ...(object ? { pos: position(node, object) } : {}) }];
   });
   const byId = new Map(nodes.map(node => [node.id, node]));
   let removedJumps = 0;

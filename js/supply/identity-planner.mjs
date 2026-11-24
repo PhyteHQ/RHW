@@ -4,6 +4,7 @@ import { searchExports } from './export-planner.mjs';
 import { BMM_ID } from './access.mjs';
 import { autoIdentityShips, identityShipCheck, PREFERRED_TRADER_IDS } from './identity-profiles.mjs';
 import { flightKey } from './navigation.mjs';
+import { matchingBaseNode } from './core/navigation.mjs';
 import { volumeFor, makeLeg, cargoItems } from './core/trade.mjs';
 import { isSelectableShip } from './ship-profiles.mjs';
 import { haulerCategory, matchesHauler } from './hauler-categories.mjs';
@@ -47,6 +48,12 @@ export async function searchIdentities(dataset, navigation, ships, scopes, optio
   ships = ships.filter(ship => isSelectableShip(ship) && matchesHauler(ship, options.haulerId));
   const origin = findRhw(dataset)?.id;
   const bases = new Map(dataset.bases.map(base => [base.id, base]));
+  const nodes = new Map(navigation?.nodes?.map(node => [node.id, node]));
+  const unknownDocks = new Set(dataset.bases.filter(base => {
+    const mapped = matchingBaseNode(base, nodes.get(navigation?.baseNodes?.[base.id]));
+    return base.kind === 'npc' && !Array.isArray(mapped?.allows);
+  }).map(base => base.id));
+  const baseName = id => bases.get(id)?.name || id;
   const allScopes = [...new Map(scopes.map(scope => [scope.identity.id, {
     ...scope, denied: new Set(scope.blocked || []), approval: new Set(scope.approvalDocks || []), unverified: new Set(scope.unverifiedDocks || [])
   }])).values()];
@@ -67,13 +74,15 @@ export async function searchIdentities(dataset, navigation, ships, scopes, optio
     const denied = stops.find(id => scope.denied.has(id));
     const approval = stops.find(id => scope.approval.has(id));
     const unverified = stops.find(id => scope.unverified.has(id));
-    const baseName = id => dataset.bases.find(base => base.id === id)?.name || id;
+    const unknownDock = stops.find(id => unknownDocks.has(id));
     return { identity: scope.identity, shipCheck: denied ? { ...shipCheck, state: 'blocked', reason: 'ID prevents docking at ' + baseName(denied) }
       : approval ? { ...shipCheck, state: 'conditional', reason: 'Explicit POB owner approval is required at ' + baseName(approval) }
+      : unknownDock ? { ...shipCheck, state: 'conditional', reason: 'Docking class is unverified at ' + baseName(unknownDock) }
       : shipCheck.state !== 'checked' ? shipCheck
       : unverified ? { ...shipCheck, state: 'conditional', reason: 'ID docking rights are unverified at ' + baseName(unverified) } : shipCheck };
   }
   function matches(ship, stops, restrict = false) {
+    if (!options.includeUnverified && stops.some(id => unknownDocks.has(id))) return [];
     return policies(ship).flatMap(({ scope, shipCheck }) => {
       if (restrict && !active.includes(scope) || shipCheck.state === 'blocked' || stops.some(id => scope.denied.has(id))) return [];
       const unverified = shipCheck.state !== 'checked' || stops.some(id => scope.unverified.has(id));
@@ -127,9 +136,10 @@ export async function searchIdentities(dataset, navigation, ships, scopes, optio
   if (!shortlisted.length) return empty;
   if (shortlisted.every(ship => !matches(ship, [origin], true).length)) return { ...empty,
     reason: 'No checked combination of this ID, ship and docking rights at RHW. Unknown rules and POB owner approvals are excluded by default.' };
-  const blocked = dataset.bases.filter(base => active.every(scope => scope.denied.has(base.id)
-    || !options.includeRestrictedPobs && scope.approval.has(base.id)
-    || !options.includeUnverified && scope.unverified.has(base.id))).map(base => base.id);
+  const blocked = dataset.bases.filter(base => !options.includeUnverified && unknownDocks.has(base.id)
+    || active.every(scope => scope.denied.has(base.id)
+      || !options.includeRestrictedPobs && scope.approval.has(base.id)
+      || !options.includeUnverified && scope.unverified.has(base.id))).map(base => base.id);
   const routeEligibility = (ship, stops) => {
     const permitted = matches(ship, stops, true);
     return permitted.some(row => row.shipCheck.state === 'checked') ? 'checked' : permitted.length ? 'conditional' : 'blocked';

@@ -70,6 +70,22 @@ await restored.refresh(true);
 assert.match(restored.state().error, /does not cover/);
 assert.equal(writes, 1);
 
+const londonOnly = bundled.systems.filter(system => system.nickname === 'br01');
+send = async () => londonOnly;
+await restored.refresh(true);
+assert.match(restored.state().error, /incomplete/);
+assert.equal(restored.get().snapshot.capturedAt, live.snapshot.capturedAt);
+assert.equal(restored.get().navigation.live.systems, 146);
+assert.equal(writes, 1, 'A partial response including RHW cannot replace the saved map');
+const repaired = createMapCache({ ...settings, readCache: async () => ({ ...disk, systems: londonOnly }) });
+assert.equal((await repaired.ready(geometry)).navigation.live.systems, 146, 'A partial map saved by an older release falls back to the full bundle');
+
+send = async () => bundled.systems.map(system => system.nickname === 'br05'
+  ? { ...system, Objs: [], Jumpholes: [] } : system);
+await restored.refresh(true);
+assert.match(restored.state().error, /incomplete/);
+assert.equal(writes, 1, 'An empty entry cannot stand in for a required system');
+
 // The timeout belongs to map refresh, never to the caller's trade request.
 let aborted = false;
 const timed = createMapCache({ ...settings, timeoutMs: 5,

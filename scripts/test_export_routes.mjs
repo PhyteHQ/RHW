@@ -67,7 +67,8 @@ assert.equal((await searchExports(dataset, nav, [ship], { commodity: 'Gold', blo
 const unmoored = structuredClone(nav); unmoored.nodes[1].allows = ['berth'];
 assert.equal((await searchExports(dataset, unmoored, [ship], { commodity: 'Gold' })).results.length, 0);
 const oneWay = structuredClone(nav); oneWay.nodes[1].system = 'br02'; oneWay.links = [{ from: 'rhw', to: 'buyer', kind: 'jump' }];
-assert.equal((await searchExports(dataset, oneWay, [ship], { commodity: 'Gold' })).results.length, 0, 'Return travel must also be possible');
+const oneWayMarket = { ...dataset, bases: [rhw, { ...buyer, system: 'br02', systemName: 'Manchester' }] };
+assert.equal((await searchExports(oneWayMarket, oneWay, [ship], { commodity: 'Gold' })).results.length, 0, 'Return travel must also be possible');
 
 const raw = normalizeDarkstat([{ nickname: 'p', name: 'P', money: 1000, cargospace: 100,
   shop_items: [{ nickname: 'g', name: 'Gold', price: 200, sell_price: 250, quantity: 10, min_stock: 0, max_stock: 20, volume: 1, original_volume: 1 }] }], []);
