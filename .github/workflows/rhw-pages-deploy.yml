@@ -158,6 +158,9 @@ jobs:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
+    env:
+      # A rerun can still see artifacts uploaded by earlier attempts.
+      PAGES_ARTIFACT_NAME: github-pages-${{ github.run_attempt }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -173,8 +176,11 @@ jobs:
       - name: Upload static site
         uses: actions/upload-pages-artifact@v4
         with:
+          name: ${{ env.PAGES_ARTIFACT_NAME }}
           path: dist
 
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+        with:
+          artifact_name: ${{ env.PAGES_ARTIFACT_NAME }}
