@@ -208,7 +208,7 @@ const DASHBOARD_CONFIG = Object.freeze({
     ])
   }),
   reserveCards: Object.freeze([
-    Object.freeze({ key: 'gold', label: 'Gold Supply', members: ['Gold', 'Wildcat Gold'], recipeId: 'recipe_gold_advanced', input: 'Gold Ore' }),
+    Object.freeze({ key: 'gold', label: 'Gold', members: ['Gold', 'Wildcat Gold'], recipeId: 'recipe_gold_advanced', input: 'Gold Ore' }),
     Object.freeze({ key: 'niobium', label: 'Niobium', members: ['Niobium'], recipeId: 'recipe_niobium_advanced', input: 'Niobium Ore' }),
     Object.freeze({ key: 'prototype components', label: 'Prototype Components', members: ['Prototype Components'], recipeId: 'recipe_milsal', input: 'Military Salvage' }),
     Object.freeze({ key: 'mox', label: 'MOX', members: ['MOX'], recipeId: 'recipe_mox_fuel_basic', input: 'Toxic Waste' })
@@ -2027,10 +2027,10 @@ function renderOverviewTelemetryState(message, state = 'low') {
   });
 }
 
-function renderOverviewRow({ state, role, name, item = null, capacityItem = item, detail = '', detailTitle = '', quantityValue = 0, extraClass = '', breakdown = '', input = '', actions = '' }) {
+function renderOverviewRow({ state, role, name, item = null, capacityItem = item, detail = '', detailTitle = '', quantityValue = 0, extraClass = '', pooledStock = false, breakdown = '', input = '', actions = '' }) {
   const reference = overviewStockReference(item, role);
   const modules = globalThis.RHWV4?.production?.modules?.() || DASHBOARD_CONFIG.productionModules;
-  const recipeId = modules.find(module => keyFromName(module.product) === keyFromName(name))?.recipeId;
+  const recipeId = !pooledStock && modules.find(module => keyFromName(module.product) === keyFromName(name))?.recipeId;
   const navigation = recipeId ? `data-inventory-recipe="${escapeHTML(recipeId)}"` : ['reserve', 'byproduct', 'maintenance'].includes(role) ? `data-inventory-material="${escapeHTML(item?.name || name)}"` : '';
   const title = navigation ? `<button type="button" class="inventory-production-link" ${navigation}>${escapeHTML(name)}</button>` : `<strong>${escapeHTML(name)}</strong>`;
   const trade = role === 'export' && typeof exportRouteButton === 'function' ? exportRouteButton(name)
@@ -2041,7 +2041,7 @@ function renderOverviewRow({ state, role, name, item = null, capacityItem = item
             <span class="overview-item-copy"><span class="rhw-supply-material">${title}${trade}${actions}</span></span>
             ${statusPill(state, role)}
             <div class="overview-row-meta">
-              <div class="overview-stock-value"><strong class="overview-row-qty">${number(quantityValue)}</strong>${referenceMarkup}</div>
+              <div class="overview-stock-value"><strong class="overview-row-qty">${number(quantityValue)}</strong>${pooledStock ? '<small class="overview-stock-total">Total</small>' : ''}${referenceMarkup}</div>
               ${safeDetail}
             </div>
             ${breakdown}
@@ -2212,13 +2212,14 @@ function renderOverview() {
   renderList(els.exportList, exports, 'NO EXPORT ASSETS DETECTED', 'export');
   els.reserveList.innerHTML = DASHBOARD_CONFIG.reserveCards.map(spec => {
     const reserve = model.reserve(spec.key);
-    const breakdown = spec.members.length > 1 ? `<div class="inventory-pool-parts">${reserve.parts.map(part => `<span><span>${escapeHTML(part.name)}</span><strong>${number(reserve.stock === null ? part.stock : part.stock ?? 0)}</strong></span>`).join('')}</div>` : '';
+    const pooledStock = spec.members.length > 1;
+    const breakdown = pooledStock ? `<div class="inventory-pool-parts">${reserve.parts.map(part => `<span><span>${escapeHTML(part.name)}</span><strong>${number(reserve.stock === null ? part.stock : part.stock ?? 0)}</strong></span>`).join('')}</div>` : '';
     const detail = reserve.required === null ? 'RECIPE REQUIREMENTS UNKNOWN' : reserve.required > 0
       ? `LARGEST RECIPE INPUT · ${number(reserve.required)}` : 'AVAILABLE FOR PRODUCTION';
     const capacityItem = reserve.parts.length === 1 && reserve.stock !== null ? reserve.parts[0].item : null;
     const actions = spec.key === 'prototype components' ? '<button type="button" class="rhw-supply-button rhw-supply-icon" data-surplus-commodity="Prototype Components" aria-label="Check surplus export buyers for Prototype Components" title="Check surplus buyers · Internal production first"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M14 4h6v6M20 4l-9 9M10 5H4v15h15v-6"/></svg></button>' : '';
     return renderOverviewRow({ role: 'reserve', name: spec.label, item: reserve.item, state: reserve.state,
-      quantityValue: reserve.stock, detail, breakdown, capacityItem,
+      quantityValue: reserve.stock, detail, pooledStock, breakdown, capacityItem,
       input: (reserve.inputs || [reserve.input]).map(name => inventoryInputRow(name, reserve.recipeId)).join(''), actions });
   }).join('');
   renderShipStock();

@@ -42,6 +42,9 @@ def main():
         })()""")
         state = base.ev(cdp, """(()=>({counts:[maintenanceList.children.length,reserveList.children.length,exportList.children.length],
           gold:reserveList.children[0].innerText,stocks:[...reserveList.querySelectorAll('.overview-row-qty')].map(n=>n.textContent),
+          goldName:reserveList.querySelector('.inventory-production-link').textContent,
+          goldTotalLabel:reserveList.querySelector('.overview-stock-total')?.textContent,
+          goldParts:[...reserveList.querySelectorAll('.inventory-pool-parts>span')].map(row=>[row.firstElementChild.textContent,row.lastElementChild.textContent]),
           inputs:[...inventoryStatusPanel.querySelectorAll('[data-input-name]')].map(n=>n.dataset.inputName),
           inputMeters:[...inventoryStatusPanel.querySelectorAll('[data-input-name] [role="meter"]')].map(n=>n.closest('[data-input-name]').dataset.inputName),
           ships:[...shipStockList.querySelectorAll(':scope>.inventory-ship-row button')].map(n=>n.textContent),
@@ -49,6 +52,7 @@ def main():
           exports:[...exportList.querySelectorAll('[data-export-commodity]')].map(n=>n.dataset.exportCommodity)}))()""")
         assert state['counts'] == [3, 4, 3], state
         assert state['stocks'] == ['8.600', '9.519', '40', '8.381'], state
+        assert state['goldName'] == 'Gold' and state['goldTotalLabel'] == 'Total' and state['goldParts'] == [['Gold', '0'], ['Wildcat Gold', '8.600']], state
         assert 'Wildcat Gold' in state['gold'] and '0 input batches' in state['gold'].lower(), state
         assert not state['phantom'] and state['inputMeters'] == ['Toxic Waste'], state
         assert sorted(state['inputs']) == sorted(['Gold Ore', 'Niobium Ore', 'Military Salvage', 'Scrap Metal', 'Toxic Waste']), state

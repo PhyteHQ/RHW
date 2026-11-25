@@ -12,6 +12,7 @@ html.rhw-focus-pass #inventoryStatusPanel .inventory-production-link:hover { col
 html.rhw-focus-pass #inventoryStatusPanel .inventory-pool-parts { grid-column:1/-1;display:grid;gap:3px;font:12px/1.6 var(--font-main);color:var(--muted); }
 .inventory-pool-parts>span { display:flex;justify-content:space-between;gap:12px; }
 .inventory-pool-parts strong { color:var(--text);font:13px/1.6 var(--font-tech); }
+.overview-stock-total { margin-inline-start:6px;color:var(--muted);text-transform:none; }
 html.rhw-focus-pass #inventoryStatusPanel .inventory-input-row { grid-column:1/-1;display:grid;grid-template-columns:auto minmax(0,1fr) auto;grid-template-rows:16px 16px;align-items:center;gap:0 8px;border-top:1px solid var(--line);padding-top:4px;font:11px/1.5 var(--font-main);color:var(--muted); }
 .inventory-input-row>span { grid-column:1;grid-row:1;color:var(--muted);font:11px/1.5 var(--font-main); }
 html.rhw-focus-pass #inventoryStatusPanel .inventory-input-row button { grid-column:2;grid-row:1/3;min-height:32px;padding:0;border:0;background:none;color:#c7c8ce;font:12px/1.4 var(--font-main);text-align:left;cursor:pointer;white-space:normal; }
