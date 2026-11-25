@@ -21,6 +21,9 @@ jobs:
   validate:
     runs-on: ubuntu-latest
     timeout-minutes: 8
+    outputs:
+      pages_artifact_name: ${{ steps.pages_package.outputs.name }}
+      pages_artifact_id: ${{ steps.pages_upload.outputs.artifact_id }}
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -148,39 +151,60 @@ jobs:
         if: ${{ !cancelled() }}
         run: python3 scripts/smoke_v40_final_polish.py
 
+      - name: Package runtime files only
+        if: github.event_name != 'pull_request'
+        id: pages_package
+        run: |
+          python3 scripts/build_app_assets.py --check --dist
+          echo "name=github-pages-${GITHUB_RUN_ATTEMPT}" >> "$GITHUB_OUTPUT"
+
+      - name: Upload static site
+        if: github.event_name != 'pull_request'
+        id: pages_upload
+        uses: actions/upload-pages-artifact@v4
+        with:
+          name: ${{ steps.pages_package.outputs.name }}
+          path: dist
+
   deploy:
     if: github.event_name != 'pull_request'
     needs: validate
     permissions:
+      actions: read
       contents: read
       pages: write
       id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-    env:
-      # A rerun can still see artifacts uploaded by earlier attempts.
-      PAGES_ARTIFACT_NAME: github-pages-${{ github.run_attempt }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - name: Checkout
-        uses: actions/checkout@v6
+      - name: Wait for the uploaded Pages artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PAGES_ARTIFACT_NAME: ${{ needs.validate.outputs.pages_artifact_name }}
+          PAGES_ARTIFACT_ID: ${{ needs.validate.outputs.pages_artifact_id }}
+        run: |
+          if [[ ! "$PAGES_ARTIFACT_ID" =~ ^[0-9]+$ || ! "$PAGES_ARTIFACT_NAME" =~ ^github-pages-[0-9]+$ ]]; then
+            echo "::error::Validation did not produce a Pages artifact."
+            exit 1
+          fi
+          for delay in 1 2 4 8 16; do
+            listed=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/artifacts?name=$PAGES_ARTIFACT_NAME" --jq '.artifacts[] | select(.expired == false) | .id' || true)
+            if [[ "$listed" == "$PAGES_ARTIFACT_ID" ]]; then
+              exit 0
+            fi
+            sleep "$delay"
+          done
+          echo "::error::GitHub Actions did not list the uploaded Pages artifact."
+          exit 1
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
-
-      - name: Package runtime files only
-        run: python3 scripts/build_app_assets.py --check --dist
-
-      - name: Upload static site
-        uses: actions/upload-pages-artifact@v4
-        with:
-          name: ${{ env.PAGES_ARTIFACT_NAME }}
-          path: dist
 
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
         with:
-          artifact_name: ${{ env.PAGES_ARTIFACT_NAME }}
+          artifact_name: ${{ needs.validate.outputs.pages_artifact_name }}
