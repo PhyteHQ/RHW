@@ -6895,8 +6895,8 @@ html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel .inventory-other-ships {
     text-align:right;
   }
   #reserveList .overview-item-copy { grid-column:1;grid-row:1; }
-  #reserveList .pill { grid-column:1;grid-row:2;justify-self:start; }
-  #reserveList .overview-stock-detail { grid-column:2;grid-row:2;text-align:right; }
+  #reserveList .pill { grid-column:1/-1;grid-row:2;justify-self:start;max-width:40%;white-space:normal; }
+  #reserveList .overview-stock-detail { grid-column:1/-1;grid-row:2;justify-self:end;max-width:58%;text-align:right; }
   #reserveList>li>:is(.inventory-pool-parts,.stock-capacity,.inventory-reserve-inputs) { grid-column:1/-1; }
   html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel #exportList { grid-template-columns:minmax(0,1fr); }
   html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel #exportList>li.overview-stock-row { border-right:0;border-bottom:1px solid var(--line); }

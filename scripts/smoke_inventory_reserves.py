@@ -98,12 +98,16 @@ def main():
                   const name=r(card.querySelector('.overview-item-copy')),stock=r(card.querySelector('.overview-stock-value'));
                   return stock.left>=name.right-1&&stock.top<name.bottom&&stock.bottom>name.top;
                 }),
+                reserveNamesFit:[...reserveList.querySelectorAll('.inventory-production-link')].every(button=>{
+                  const text=document.createRange();text.selectNodeContents(button);
+                  return text.getClientRects().length<=2;
+                }),
                 touch:[...inventoryStatusPanel.querySelectorAll('button')].filter(n=>n.getClientRects().length).every(n=>r(n).height>=(innerWidth<760?43:27))};
             })()""")
             assert not geometry['overflow'] and not geometry['internal'] and geometry['touch'], (width, geometry)
             assert geometry['sectionsAligned'] and geometry['ordered'], 'Inventory must use aligned full-width sections: '+str(geometry)
             assert geometry['reserveCardsFit'] and geometry['reserveColumns'] == (4 if width >= 1440 else 2 if width >= 820 else 1), (width, geometry)
-            assert width >= 760 or geometry['reserveQuantityInline'], (width, geometry)
+            assert width >= 760 or geometry['reserveQuantityInline'] and geometry['reserveNamesFit'], (width, geometry)
             (out / f'inventory-reserves-{width}.png').write_bytes(base64.b64decode(cdp.call('Page.captureScreenshot', {'format': 'png'})['data']))
         # Raw manifest entries stay separate, including a real zero Gold stock.
         base.ev(cdp, "(()=>{inventoryManifestTab.click();roleFilter.value='reserve';roleFilter.dispatchEvent(new Event('change'));return true;})()")
