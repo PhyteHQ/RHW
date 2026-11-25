@@ -260,7 +260,7 @@ def test_v402(cdp, workspace, node):
           lastLoaded=null;lastSyncError='test outage';renderOverview();
           return{retired:!document.getElementById('newswirePanel')&&!document.getElementById('newswireFilter'),
             navigation:!!document.querySelector('#rhwAppNav .app-tabs'),
-            unknown:document.querySelectorAll('#inventoryStatusPanel .telemetry-placeholder').length===5&&[...document.querySelectorAll('#inventoryStatusPanel .telemetry-placeholder')].every(row=>/stock unknown/i.test(row.textContent))};
+            unknown:document.querySelectorAll('#inventoryStatusPanel .telemetry-placeholder').length===4&&[...document.querySelectorAll('#inventoryStatusPanel .telemetry-placeholder')].every(row=>/stock unknown/i.test(row.textContent))};
         })()""")
         if cache != {"retired": True, "navigation": True, "unknown": True}:
             raise RuntimeError(f"No-cache stock / navigation without Newswire failed: {cache}")
@@ -337,13 +337,17 @@ def test_pr3_decision_ui(cdp, workspace, node):
               if(!tools||!grid||!all||!blocked||!search)return{error:'production decision controls missing'};
               search.value='';search.dispatchEvent(new Event('input',{bubbles:true}));
               const total=grid.querySelectorAll('.production-card').length;
-              const priorities=Array.from(grid.querySelectorAll('.production-card'),card=>['critical','low','waiting','ok'].indexOf(card.dataset.productionState));
+              const grouped=()=>[...grid.querySelectorAll('[data-production-group]')].map(group=>[
+                group.dataset.productionGroup,group.querySelectorAll('.production-card').length
+              ]);
+              const groups=grouped();
               blocked.click();
               const blockedStates=[...grid.querySelectorAll('.production-card')].filter(card=>!card.hidden).map(card=>card.dataset.productionState);
               const blockedCount=Number(blocked.querySelector('.production-filter-badge')?.textContent);
               all.click();
               search.value='Gold';search.dispatchEvent(new Event('input',{bubbles:true}));
               const searchProducts=[...grid.querySelectorAll('.production-card')].filter(card=>!card.hidden).map(card=>card.dataset.productionProduct);
+              const searchGroups=[...grid.querySelectorAll('[data-production-group]:not([hidden])')].map(group=>group.dataset.productionGroup);
               const searchCount=Number(all.querySelector('.production-filter-badge')?.textContent);
               search.value='';search.dispatchEvent(new Event('input',{bubbles:true}));
               const card=grid.querySelector('.production-card'),toggle=card?.querySelector('.production-card-toggle'),list=card?.querySelector('.recipe-list');
@@ -363,7 +367,7 @@ def test_pr3_decision_ui(cdp, workspace, node):
               window.hasVerifiedTelemetry=verified;renderProductionModules();all.click();
               return{
                 total,filters:tools.querySelectorAll('[data-production-filter]').length,
-                blockedStates,blockedCount,searchProducts,searchCount,before,after,touch,priorities,offline:offline.length,offlineRecipes,
+                blockedStates,blockedCount,searchProducts,searchCount,searchGroups,before,after,touch,groups,offline:offline.length,offlineRecipes,
                 overflow:document.documentElement.scrollWidth-window.innerWidth
               };
             })()""")
@@ -371,9 +375,9 @@ def test_pr3_decision_ui(cdp, workspace, node):
             cdp.call("Emulation.clearDeviceMetricsOverride")
         if result.get("error") or result.get("total") != 8 or result.get("filters") != 5 or any(state != "critical" for state in result.get("blockedStates", [])) or result.get("blockedCount") != len(result.get("blockedStates", [])):
             raise RuntimeError(f"PR3 Production filters failed: {result}")
-        if sorted(result['priorities']) != result['priorities'] or result.get('offline') != result['total'] or not result.get('offlineRecipes'):
-            raise RuntimeError(f"Production priorities / offline recipes failed: {result}")
-        if not result.get("searchProducts") or any("gold" not in product for product in result.get("searchProducts", [])) or result.get("searchCount") != len(result.get("searchProducts", [])):
+        if result.get('groups') != [['exports', 3], ['internal', 5]] or result.get('offline') != result['total'] or not result.get('offlineRecipes'):
+            raise RuntimeError(f"Production groups / offline recipes failed: {result}")
+        if not result.get("searchProducts") or any("gold" not in product for product in result.get("searchProducts", [])) or result.get("searchCount") != len(result.get("searchProducts", [])) or result.get('searchGroups') != ['internal']:
             raise RuntimeError(f"PR3 Production search failed: {result}")
         if not result.get("before", {}).get("collapsed") or result.get("before", {}).get("visible") or not result.get("after", {}).get("expanded") or not result.get("after", {}).get("visible") or result.get("after", {}).get("aria") != "true":
             raise RuntimeError(f"PR3 Production card details failed: {result}")

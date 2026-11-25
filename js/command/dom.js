@@ -147,13 +147,11 @@ const els = {
   baseStorageVal: document.getElementById('baseStorageVal'),
 
   maintenanceList: document.getElementById('maintenanceList'),
-  byproductList: document.getElementById('byproductList'),
   exportList: document.getElementById('exportList'),
   reserveList: document.getElementById('reserveList'),
   shipStockList: document.getElementById('shipStockList'),
 
   maintenanceCount: document.getElementById('maintenanceCount'),
-  byproductCount: document.getElementById('byproductCount'),
   exportCount: document.getElementById('exportCount'),
   reserveCount: document.getElementById('reserveCount'),
   shipStockCount: document.getElementById('shipStockCount'),

@@ -52,8 +52,8 @@
     // Full-width sections replace independent columns of unrelated heights.
     const stocks = status.querySelector('.summary-grid');
     if (stocks && stocks.dataset.ordered !== 'true') {
-      const panels = ['reserve-panel', 'waste-panel', 'export-panel', 'ship-stock-panel'].map(name => stocks.querySelector(`.${name}`)).filter(Boolean);
-      if (panels.length === 4) { stocks.replaceChildren(...panels); stocks.dataset.ordered = 'true'; }
+      const panels = ['reserve-panel', 'export-panel', 'ship-stock-panel'].map(name => stocks.querySelector(`.${name}`)).filter(Boolean);
+      if (panels.length === 3) { stocks.replaceChildren(...panels); stocks.dataset.ordered = 'true'; }
     }
     placeControls();
   }
