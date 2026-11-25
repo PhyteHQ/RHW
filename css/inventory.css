@@ -531,6 +531,23 @@ html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel #shipStockList { display
 html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel .inventory-ship-row { padding:8px 12px;border-bottom:1px solid var(--line); }
 html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel .inventory-other-ships { grid-column:1/-1;padding:4px 12px; }
 @media(max-width:760px) {
+  html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel #reserveList>li.overview-stock-row {
+    display:grid;
+    grid-template-columns:minmax(0,1fr) auto;
+    gap:4px 10px;
+    padding-inline:12px;
+  }
+  html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel #reserveList .overview-row-meta { display:contents; }
+  html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel #reserveList .overview-stock-value {
+    grid-column:2;
+    grid-row:1;
+    align-self:center;
+    text-align:right;
+  }
+  #reserveList .overview-item-copy { grid-column:1;grid-row:1; }
+  #reserveList .pill { grid-column:1;grid-row:2;justify-self:start; }
+  #reserveList .overview-stock-detail { grid-column:2;grid-row:2;text-align:right; }
+  #reserveList>li>:is(.inventory-pool-parts,.stock-capacity,.inventory-reserve-inputs) { grid-column:1/-1; }
   html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel #exportList { grid-template-columns:minmax(0,1fr); }
   html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel #exportList>li.overview-stock-row { border-right:0;border-bottom:1px solid var(--line); }
   html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel #exportList .overview-item-copy { min-height:0; }
