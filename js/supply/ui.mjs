@@ -160,7 +160,7 @@ async function prepare(force, signal, progress = () => {}) {
     if (!data.length) throw Error('Empty feed');
     accept(data);
   }).catch(error => {
-    const failure = Error(`LIVE SEARCH PAUSED · ${description} unavailable · RETRY SEARCH. Previous quotes are out of date. ${error.message}`);
+    const failure = Error(`LIVE SEARCH PAUSED · ${description} unavailable · RETRY SEARCH. ${error.message}`);
     failure.feed = path; throw failure;
   }));
   // Each quote requires fresh markets, while map updates have their own
@@ -471,7 +471,9 @@ async function search(force = false) {
     controller.abort();
     if (token === request && dialog.open) {
       setBusy(false, timedOut ? 'UPLINK TIMED OUT · RETRY OR REFRESH MARKETS' : error.message);
-      $('supplySource').textContent = 'REFRESH FAILED · PREVIOUS QUOTES ARE OUT OF DATE · ' + sourceMarkup();
+      const priorQuotes = $('supplyResults').querySelector('.supply-result');
+      $('supplySource').textContent = priorQuotes ? 'REFRESH FAILED · PREVIOUS QUOTES ARE OUT OF DATE · ' + sourceMarkup()
+        : 'NO LIVE QUOTE AVAILABLE';
     }
   } finally { clearTimeout(timeout); }
 }

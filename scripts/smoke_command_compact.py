@@ -242,7 +242,7 @@ def main() -> int:
                 })()""")
                 if geometry['overflow']>2 or geometry['scrollDeck']>2 or len(geometry['cards'])!=5 or not geometry['labelsFit'] or geometry['contentOverflow']:
                     layout_failures.append(f'Inventory overflow at {width}px: {geometry}')
-                if geometry['rows']!=['maintenanceList','reserveList','byproductList','exportList','shipStockList']:
+                if geometry['rows']!=['maintenanceList','reserveList','exportList','shipStockList']:
                     layout_failures.append(f'Inventory reading order at {width}px: {geometry}')
                 cards=geometry['cards']
                 if width>=1201:

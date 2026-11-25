@@ -7691,8 +7691,8 @@ globalThis.RHW_PRODUCTION_VOLUMES = Object.freeze({
     // Full-width sections replace independent columns of unrelated heights.
     const stocks = status.querySelector('.summary-grid');
     if (stocks && stocks.dataset.ordered !== 'true') {
-      const panels = ['reserve-panel', 'waste-panel', 'export-panel', 'ship-stock-panel'].map(name => stocks.querySelector(`.${name}`)).filter(Boolean);
-      if (panels.length === 4) { stocks.replaceChildren(...panels); stocks.dataset.ordered = 'true'; }
+      const panels = ['reserve-panel', 'export-panel', 'ship-stock-panel'].map(name => stocks.querySelector(`.${name}`)).filter(Boolean);
+      if (panels.length === 3) { stocks.replaceChildren(...panels); stocks.dataset.ordered = 'true'; }
     }
     placeControls();
   }
@@ -8699,12 +8699,15 @@ globalThis.RHW_PRODUCTION_VOLUMES = Object.freeze({
     });
     return [...unique.values()].sort((a, b) => a.localeCompare(b));
   }
-  function button(name, mode = 'supply') {
+  function button(name, mode = 'supply', { quantity, purpose = '' } = {}) {
     if (!commodities().some(item => keyFromName(item) === keyFromName(name))) return '';
+    const amount = Math.ceil(quantity);
+    const request = mode === 'supply' && Number.isSafeInteger(amount) && amount > 0
+      ? ` data-supply-quantity="${amount}" data-supply-purpose="${escapeHTML(purpose)}"` : '';
     const label = `${mode === 'export' ? 'Find export buyers' : 'Plan import route'} for ${escapeHTML(name)}`;
     const drawing = mode === 'export' ? '<path d="M14 4h6v6M20 4l-9 9M10 5H4v15h15v-6"/>'
       : '<circle cx="5" cy="5" r="2"/><circle cx="19" cy="19" r="2"/><path d="M7 5h9a3 3 0 0 1 0 6H8a4 4 0 0 0 0 8h9"/>';
-    return `<button type="button" class="rhw-supply-button rhw-supply-icon" data-${mode}-commodity="${escapeHTML(name)}" aria-label="${label}" title="${label}"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">${drawing}</svg></button>`;
+    return `<button type="button" class="rhw-supply-button rhw-supply-icon" data-${mode}-commodity="${escapeHTML(name)}"${request} aria-label="${label}" title="${label}"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">${drawing}</svg></button>`;
   }
   function telemetry() {
     return { pobs: typeof allBases !== 'undefined' ? allBases : [],
@@ -8761,7 +8764,7 @@ globalThis.RHW_PRODUCTION_VOLUMES = Object.freeze({
   });
   app.supplyRoutes = { button, commodities, open, telemetry, showPurchase };
 })();
-function supplyRouteButton(name) { return window.RHWV4?.supplyRoutes?.button(name) || ''; }
+function supplyRouteButton(name, quantity, purpose) { return window.RHWV4?.supplyRoutes?.button(name, 'supply', { quantity, purpose }) || ''; }
 function exportRouteButton(name) { return window.RHWV4?.supplyRoutes?.button(name, 'export') || ''; }
 
 ;

@@ -224,7 +224,7 @@ def main():
                         };
                       });
                     })()""")
-                    assert lanes and all(x['labels']==['Finished stock','Can produce'] and x['columns']==['Material','Stock','Per batch','Short'] for x in lanes), (width, lanes)
+                    assert lanes and all(x['labels']==['In stock','From materials'] and x['columns']==['Material','Stock','Per batch'] for x in lanes), (width, lanes)
                     assert all(x['limitInTable'] and x['separated'] and x['coverage'] and x['headerFits'] and x['chamfered']
                                and x['cardGap']>=10 and x['border']>=1 and x['overflow']<=2 for x in lanes), (width, lanes)
                 if width <= 760 and workspace == 'operations':
@@ -381,7 +381,7 @@ def main():
             surfaces:[stock.closest('.alert-card'),forum.closest('.comms-panel')].every(n=>n.classList.contains('rhw-surface'))};
         })()""")
         assert shared_design['stock']==shared_design['forum'] and shared_design['surfaces'], ('Forum and Overview must use the same section typography',shared_design)
-        assert shared_design['sections']==['reserveList','byproductList','exportList','shipStockList'], shared_design
+        assert shared_design['sections']==['reserveList','exportList','shipStockList'], shared_design
 
         # Production uses current stock only; manual planning is fully retired.
         independent = base.ev(cdp, """(()=>{
@@ -440,9 +440,9 @@ def main():
           const target=recipe=>productionGrid.querySelector(`[data-production-recipe="${recipe}"] .production-batch-target`);
           const first=target('recipe_gold_advanced'), third=target('recipe_weapon_part_focusing_chamber');
           return {
-            shortage:gold.querySelector('.production-input-gap')?.textContent==='425'&&gold.querySelector('.production-input-stock>strong').textContent==='0'
+            stock:gold.querySelector('.production-input-stock>strong').textContent==='0'
               &&gold.querySelector('.production-input-required').textContent==='425',
-            unknown:niobium.querySelector('.production-input-stock>strong').textContent==='Unknown'&&!niobium.querySelector('.production-input-gap'),
+            unknown:niobium.querySelector('.production-input-stock>strong').textContent==='Unknown',
             pooled:fuel.querySelector('.production-input-stock>strong').textContent===number(10234),
             firstBatch:first.querySelector('.production-batch-label').textContent==='First batch'
               &&first.querySelector('.production-shortage').textContent==='Missing 425 Gold Ore'
@@ -474,7 +474,9 @@ def main():
             overview = base.ev(cdp, """(()=>{
               const cards=[...productionGrid.querySelectorAll('.production-card')];
               const heights=cards.map(c=>c.getBoundingClientRect().height);
-              return {columns:getComputedStyle(productionGrid).gridTemplateColumns.split(' ').length,
+              const groups=[...productionGrid.querySelectorAll('[data-production-group]')];
+              return {columns:groups.map(group=>getComputedStyle(group.querySelector('.production-group-cards')).gridTemplateColumns.split(' ').length),
+                groups:groups.map(group=>group.dataset.productionGroup),
                 panelWidth:productionPanel.clientWidth,
                 height:Math.max(...heights),
                 valuesFit:cards.every(c=>[...c.querySelectorAll('.production-stat strong')].every(n=>n.scrollWidth<=n.clientWidth+1)),
@@ -483,14 +485,13 @@ def main():
                   return summary.scrollWidth<=summary.clientWidth+1&&[...summary.querySelectorAll('td')].every(n=>n.scrollWidth<=n.clientWidth+1);
                 }),
                 actions:cards.every(c=>c.querySelectorAll('.production-card-actions>button').length===2),
-                order:cards.map(c=>c.querySelector('.production-title').textContent),
-                priorities:cards.map(c=>['critical','low','waiting','ok'].indexOf(c.dataset.productionState))};
+                order:cards.map(c=>c.querySelector('.production-title').textContent)};
             })()""")
             columns = 3 if overview['panelWidth'] >= 1320 else 2 if overview['panelWidth'] >= 760 else 1
-            assert overview['columns'] == columns and overview['height'] < 460, (width, overview)
+            assert overview['columns'] == [columns, columns] and overview['height'] < 460, (width, overview)
             assert overview['actions'] and overview['valuesFit'] and overview['materialsFit'], (width, overview)
-            assert len(overview['order']) == 8 and set(overview['order']) == {'Multi-Mode Focusing Chamber','Reactor Systems','Superstructure Systems','Basic Alloy','Gold','Niobium','Prototype Components','MOX'}, overview
-            assert overview['priorities'] == sorted(overview['priorities']) and overview['priorities'][0] != overview['priorities'][-1], overview
+            assert overview['groups'] == ['exports','internal'], overview
+            assert overview['order'] == ['Multi-Mode Focusing Chamber','Reactor Systems','Superstructure Systems','Basic Alloy','Gold','Niobium','Prototype Components','MOX'], overview
             disclosure = base.ev(cdp, """(()=>{
               const card=productionGrid.querySelector('.production-card'),toggle=card.querySelector('.production-card-toggle');
               const hidden=!card.querySelector('.production-materials').getClientRects().length;

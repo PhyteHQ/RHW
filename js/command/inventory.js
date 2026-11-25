@@ -50,10 +50,10 @@ function telemetryPlaceholderRow() {
 }
 
 function renderOverviewTelemetryState(message, state = 'low') {
-  [els.maintenanceList, els.exportList, els.byproductList, els.reserveList, els.shipStockList].forEach(target => {
+  [els.maintenanceList, els.exportList, els.reserveList, els.shipStockList].forEach(target => {
     if (target) target.innerHTML = telemetryPlaceholderRow(message, state);
   });
-  [els.maintenanceCount, els.exportCount, els.byproductCount, els.reserveCount, els.shipStockCount].forEach(target => {
+  [els.maintenanceCount, els.exportCount, els.reserveCount, els.shipStockCount].forEach(target => {
     if (target) target.textContent = '–';
   });
 }
@@ -163,9 +163,14 @@ function renderList(target, list, emptyText, roleOverride = null, population = n
 }
 
 function inventoryInputRow(name, recipeId) {
-  const entry = window.RHWV4.inventoryModel.input(name, recipeId);
-  const hint = entry.cycles === null ? 'INPUT UNKNOWN' : entry.cycles === 0 ? 'NO BATCH READY' : `${number(entry.cycles)} INPUT BATCHES`;
-  return `<div class="inventory-input-row" data-input-name="${escapeHTML(name)}"><span>INPUT</span><button type="button" data-inventory-recipe="${escapeHTML(recipeId)}">${escapeHTML(name)}</button><strong>${number(entry.stock)}</strong><small>${hint}</small></div>`;
+  const model = window.RHWV4.inventoryModel;
+  const moxFeedstock = keyFromName(name) === 'toxic waste';
+  const entry = moxFeedstock ? model.moxFeedstock() : model.input(name, recipeId);
+  const batches = entry.cycles === 1 ? 'input batch' : 'input batches';
+  const hint = entry.stock === null ? 'Stock unknown' : entry.cycles === null ? 'Recipe unknown'
+    : `${number(entry.cycles)} ${batches}${moxFeedstock ? ` · ${entry.variant} MOX` : ''}`;
+  const limits = moxFeedstock && entry.stock !== null ? renderStockCapacity(entry.item, entry.state) : '';
+  return `<div class="inventory-input-row" data-input-name="${escapeHTML(name)}"><span>Input</span><button type="button" data-inventory-recipe="${escapeHTML(recipeId)}">${escapeHTML(name)}</button><strong>${number(entry.stock)}</strong><small>${hint}</small>${limits}</div>`;
 }
 
 function renderShipStock() {
@@ -229,16 +234,13 @@ function renderOverview() {
   const byName = (a, b) => displayName(a).localeCompare(displayName(b));
   const maintenance = source.filter(item => hasAssetRole(item, 'maintenance')).sort(byName);
   const exports = source.filter(item => hasAssetRole(item, 'export')).sort((a, b) => EXPORT_ORDER.indexOf(displayName(a)) - EXPORT_ORDER.indexOf(displayName(b)));
-  const byproducts = source.filter(item => hasAssetRole(item, 'byproduct')).sort(byName);
   scrambleText(els.maintenanceCount, maintenance.length);
   scrambleText(els.exportCount, exports.length);
-  scrambleText(els.byproductCount, byproducts.length);
   scrambleText(els.reserveCount, DASHBOARD_CONFIG.reserveCards.length);
   renderList(els.maintenanceList, maintenance, 'FACILITY RESERVES STABLE', 'maintenance', population);
   const alloy = [...els.maintenanceList.children].find(row => row.dataset.inventoryRecipe === 'recipe_scrap_advanced');
   alloy?.insertAdjacentHTML('beforeend', inventoryInputRow('Scrap Metal', 'recipe_scrap_advanced'));
   renderList(els.exportList, exports, 'NO EXPORT ASSETS DETECTED', 'export');
-  renderList(els.byproductList, byproducts, 'NO REPORTED MOX FEEDSTOCK', 'byproduct');
   els.reserveList.innerHTML = DASHBOARD_CONFIG.reserveCards.map(spec => {
     const reserve = model.reserve(spec.key);
     const breakdown = spec.members.length > 1 ? `<div class="inventory-pool-parts">${reserve.parts.map(part => `<span><span>${escapeHTML(part.name)}</span><strong>${number(reserve.stock === null ? part.stock : part.stock ?? 0)}</strong></span>`).join('')}</div>` : '';

@@ -223,11 +223,11 @@ html.rhw-focus-pass #inventoryStatusPanel .alert-card:first-child .alert-title {
 
 html.rhw-focus-pass #inventoryStatusPanel .alert-title > span:first-child { color: var(--gold); }
 
-html.rhw-focus-pass #inventoryStatusPanel :is(.waste-panel,.confiscated-panel) { border-top: 1px solid var(--palette-line-bright);background: #0e0f13;box-shadow: inset 0 1px #ffffff04; }
+html.rhw-focus-pass #inventoryStatusPanel .confiscated-panel { border-top: 1px solid var(--palette-line-bright);background: #0e0f13;box-shadow: inset 0 1px #ffffff04; }
 
-html.rhw-focus-pass #inventoryStatusPanel :is(.waste-panel,.confiscated-panel) .alert-title { min-height: 52px;padding-block:var(--rhw-space-card);background:var(--rhw-head-fill);font-size:var(--rhw-panel-title-size); }
+html.rhw-focus-pass #inventoryStatusPanel .confiscated-panel .alert-title { min-height: 52px;padding-block:var(--rhw-space-card);background:var(--rhw-head-fill);font-size:var(--rhw-panel-title-size); }
 
-html.rhw-focus-pass #inventoryStatusPanel :is(.waste-panel,.confiscated-panel) .alert-title > span:first-child { color:var(--gold); }
+html.rhw-focus-pass #inventoryStatusPanel .confiscated-panel .alert-title > span:first-child { color:var(--gold); }
 
 html.rhw-focus-pass #inventoryStatusPanel .alert-list { padding-inline: 16px; }
 

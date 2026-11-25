@@ -43,18 +43,21 @@ def main():
         state = base.ev(cdp, """(()=>({counts:[maintenanceList.children.length,reserveList.children.length,exportList.children.length],
           gold:reserveList.children[0].innerText,stocks:[...reserveList.querySelectorAll('.overview-row-qty')].map(n=>n.textContent),
           inputs:[...inventoryStatusPanel.querySelectorAll('[data-input-name]')].map(n=>n.dataset.inputName),
-          bars:[...inventoryStatusPanel.querySelectorAll('[data-input-name] .progress-wrap')].length,
+          inputMeters:[...inventoryStatusPanel.querySelectorAll('[data-input-name] [role="meter"]')].map(n=>n.closest('[data-input-name]').dataset.inputName),
           ships:[...shipStockList.querySelectorAll(':scope>.inventory-ship-row button')].map(n=>n.textContent),
           phantom:[...v40PriorityList.querySelectorAll('strong')].some(n=>n.textContent.startsWith('EXPORT // GOLD')||n.textContent.startsWith('SEIZED // WILDCAT')),
           exports:[...exportList.querySelectorAll('[data-export-commodity]')].map(n=>n.dataset.exportCommodity)}))()""")
         assert state['counts'] == [3, 4, 3], state
         assert state['stocks'] == ['8.600', '9.519', '40', '8.381'], state
-        assert 'Wildcat Gold' in state['gold'] and 'NO BATCH READY' in state['gold'], state
-        assert not state['phantom'] and state['bars'] == 0, state
+        assert 'Wildcat Gold' in state['gold'] and '0 input batches' in state['gold'].lower(), state
+        assert not state['phantom'] and state['inputMeters'] == ['Toxic Waste'], state
         assert sorted(state['inputs']) == sorted(['Gold Ore', 'Niobium Ore', 'Military Salvage', 'Scrap Metal', 'Toxic Waste']), state
         assert len(state['ships']) == 2 and any('Archon' in n and '2' in n for n in state['ships']), state
         assert not any(n in state['exports'] for n in ['Gold', 'Wildcat Gold', 'Niobium', 'Prototype Components', 'MOX']), state
-        assert base.ev(cdp, "byproductList.textContent.includes('MOX FEEDSTOCK') && byproductList.textContent.includes('TW FOR 10 BASIC MOX BATCHES') && !byproductList.textContent.includes('DISPOSAL')")
+        assert base.ev(cdp, """(()=>{const waste=reserveList.lastElementChild.querySelector('[data-input-name="Toxic Waste"]');
+          return inventoryStatusPanel.querySelectorAll('[data-input-name="Toxic Waste"]').length===1
+            &&waste.textContent.includes('10.200')&&waste.textContent.includes('10 input batches · BASIC MOX')
+            &&waste.querySelector('.stock-capacity-max-label').textContent==='Max 100.000';})()""")
         reported_population = "['2.900 · Darkstat', '2.900 · Darkstat cache'].includes(rhwPopulationTotal.textContent)"
         assert base.ev(cdp, f"""maintenanceList.querySelectorAll('[role="meter"]').length===3 &&
           !reserveList.firstElementChild.querySelector('[role="meter"]') &&
@@ -84,20 +87,18 @@ def main():
             geometry = base.ev(cdp, """(()=>{
               const r=n=>n.getBoundingClientRect();
               const panel=name=>inventoryStatusPanel.querySelector('.'+name);
-              const maintenance=r(panel('maintenance-panel')),reserve=r(panel('reserve-panel')),exports=r(panel('export-panel'));
-              const waste=r(panel('waste-panel')),ships=r(panel('ship-stock-panel'));
+              const reserve=r(panel('reserve-panel')),exports=r(panel('export-panel')),ships=r(panel('ship-stock-panel'));
               return {overflow:document.documentElement.scrollWidth>innerWidth+2,
                 internal:inventoryStatusPanel.scrollWidth>inventoryStatusPanel.clientWidth+2,
-                sectionsAligned:[reserve,waste,exports,ships].every(x=>Math.abs(x.left-reserve.left)<2&&Math.abs(x.width-reserve.width)<2),
-                ordered:reserve.bottom<=waste.top&&waste.bottom<=exports.top&&exports.bottom<=ships.top,
-                wasteGap:waste.top-maintenance.bottom,shipGap:ships.top-exports.bottom,
-                wasteAligned:Math.abs(waste.left-maintenance.left)<2&&Math.abs(waste.width-maintenance.width)<2,
-                shipsAligned:Math.abs(ships.left-exports.left)<2&&Math.abs(ships.width-exports.width)<2,
-                tabletMarketAligned:Math.abs(exports.top-ships.top)<2&&ships.left>exports.left,
+                sectionsAligned:[exports,ships].every(x=>Math.abs(x.left-reserve.left)<2&&Math.abs(x.width-reserve.width)<2),
+                ordered:reserve.bottom<=exports.top&&exports.bottom<=ships.top,
+                reserveColumns:getComputedStyle(reserveList).gridTemplateColumns.split(' ').length,
+                reserveCardsFit:[...reserveList.children].every(card=>card.scrollWidth<=card.clientWidth+1),
                 touch:[...inventoryStatusPanel.querySelectorAll('button')].filter(n=>n.getClientRects().length).every(n=>r(n).height>=(innerWidth<760?43:27))};
             })()""")
             assert not geometry['overflow'] and not geometry['internal'] and geometry['touch'], (width, geometry)
             assert geometry['sectionsAligned'] and geometry['ordered'], 'Inventory must use aligned full-width sections: '+str(geometry)
+            assert geometry['reserveCardsFit'] and geometry['reserveColumns'] == (4 if width >= 1440 else 2 if width >= 820 else 1), (width, geometry)
             (out / f'inventory-reserves-{width}.png').write_bytes(base64.b64decode(cdp.call('Page.captureScreenshot', {'format': 'png'})['data']))
         # Raw manifest entries stay separate, including a real zero Gold stock.
         base.ev(cdp, "(()=>{inventoryManifestTab.click();roleFilter.value='reserve';roleFilter.dispatchEvent(new Event('change'));return true;})()")
@@ -119,7 +120,7 @@ def main():
         assert base.ev(cdp, "document.querySelector('.inventory-target .production-cycle-time').textContent.includes('2h 5m') && JSON.stringify(items)===inventoryBefore")
         # MOX reserve inputs, navigation and calculator stay on the same variant.
         base.ev(cdp, "(()=>{const s=document.querySelector('[data-production-mox]');s.value='recipe_mox_fuel_advanced';s.dispatchEvent(new Event('change',{bubbles:true}));RHWV4.itemDetails.close();RHWV4.navigate('command','inventory');return true;})()")
-        assert base.ev(cdp, "(()=>{const r=reserveList.lastElementChild;return r.dataset.inventoryRecipe==='recipe_mox_fuel_advanced'&&r.textContent.includes('INTERNAL USE')&&r.querySelectorAll('[data-input-name]').length===2&&!!r.querySelector('[data-input-name=\"Uranium\"]')})()")
+        assert base.ev(cdp, "(()=>{const r=reserveList.lastElementChild;return r.dataset.inventoryRecipe==='recipe_mox_fuel_advanced'&&r.textContent.includes('INTERNAL USE')&&r.querySelectorAll('[data-input-name]').length===2&&!!r.querySelector('[data-input-name=\"Uranium\"]')&&r.textContent.includes('ADVANCED MOX')})()")
         base.ev(cdp, "reserveList.lastElementChild.querySelector('.inventory-production-link').click()")
         wait(cdp, "!!document.querySelector('.inventory-target[data-production-recipe=\"recipe_mox_fuel_advanced\"]')")
         assert base.ev(cdp, "JSON.stringify(items)===inventoryBefore&&RHWV4.productionPricing.findRecipeForLabel('MOX').id==='recipe_mox_fuel_advanced'")
@@ -133,7 +134,10 @@ def main():
         base.ev(cdp, "(()=>{items.find(n=>n.name==='Prototype Components').quantity=null;RHWV4.itemDetails.close();RHWV4.navigate('command','inventory');renderOverview();return true;})()")
         assert base.ev(cdp, "reserveList.children[2].classList.contains('alert-waiting') && reserveList.children[2].querySelector('.overview-row-qty').textContent==='–'")
         base.ev(cdp, "(()=>{items.filter(n=>['Basic Alloy','Toxic Waste'].includes(n.name)).forEach(n=>n.quantity=null);renderOverview();return true;})()")
-        assert base.ev(cdp, "maintenanceList.firstElementChild.textContent.includes('STOCK UNKNOWN') && !maintenanceList.firstElementChild.querySelector('[role=meter]') && !maintenanceList.firstElementChild.textContent.includes('FACILITY STABLE') && byproductList.textContent.includes('STOCK UNKNOWN') && !byproductList.textContent.includes('CONTAINMENT CRITICAL')"), 'Unknown stock must not claim stability, capacity or overflow'
+        assert base.ev(cdp, """(()=>{const waste=reserveList.querySelector('[data-input-name="Toxic Waste"]');
+          return maintenanceList.firstElementChild.textContent.includes('STOCK UNKNOWN') && !maintenanceList.firstElementChild.querySelector('[role=meter]')
+            && !maintenanceList.firstElementChild.textContent.includes('FACILITY STABLE') && waste.textContent.includes('Stock unknown')
+            && !waste.querySelector('[role=meter]') && !waste.textContent.includes('CONTAINMENT CRITICAL');})()"""), 'Unknown stock must not claim stability, capacity or overflow'
         base.ev(cdp, """(()=>{
           const stock=(name,quantity)=>({name,quantity,min_stock:0,max_stock:1000000,category:'commodity'});
           const names=new Set();

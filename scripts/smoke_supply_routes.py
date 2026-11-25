@@ -137,6 +137,10 @@ def main():
         wait_for(cdp, "document.documentElement.dataset.v40Ready==='true' && !!document.querySelector('.production-card [data-supply-commodity=\"Ablative Armor Plating\"]')")
         if base.ev(cdp, "supplyRequests.includes('commodities')"):
             raise RuntimeError('Supply market must not load before the feature is opened')
+        # Start with a full-hold scenario. Give the display enough of this
+        # ingredient while the independent trade fixture still needs restock.
+        wait_for(cdp, "hasVerifiedTelemetry() && !!findCommodity('Ablative Armor Plating')")
+        base.ev(cdp, "(()=>{findCommodity('Ablative Armor Plating').quantity=100000;renderProductionModules();return true})()")
         # Context actions stay beside the material name. Verify the actual
         # desktop cascade and phone touch target, not just the SVG's dimensions.
         out = Path(__file__).resolve().parents[1] / 'artifacts/interface'
@@ -427,6 +431,25 @@ def main():
         if not base.ev(cdp, "supplyQuantity.value==='123' && !!supplyResults.querySelector('.supply-result') && [...supplyResults.querySelectorAll('.supply-metrics>div:first-child strong')].every(n=>Number(n.textContent.replace(/[^0-9]/g,''))<=123)"):
             raise RuntimeError('Restock entry quantity must reach the real route form and cap the delivery')
         base.ev(cdp, "supplyClose.click()")
+        # A direct Import icon in the actual recipe drawer must target the next
+        # batch shortage, even for an ingredient outside the POB scan tabs.
+        base.ev(cdp, """(()=>{
+          const recipe=RHWV4.production.recipes().find(entry=>entry.product==='Superstructure Systems');
+          const target='Ablative Armor Plating';
+          const covered=recipe.ingredients.map(([name,required])=>({name,quantity:3*required-(name===target?7:0)}));
+          const keys=new Set(recipe.ingredients.flatMap(([name])=>recipe.inputOptions[name]||[name]).map(keyFromName));
+          items=[...items.filter(item=>!keys.has(commodityKey(item))),...covered];
+          rebuildItemCaches();
+          RHWV4.navigate('command','production');renderProductionModules();
+          document.querySelector('[data-production-recipe="ship_part_superstructure"] .production-card-toggle').click();
+          return true;
+        })()""")
+        wait_for(cdp, "rhwItemDetails.open && !!rhwItemDetails.querySelector('[data-supply-commodity=\"Ablative Armor Plating\"]')")
+        base.ev(cdp, "rhwItemDetails.querySelector('[data-supply-commodity=\"Ablative Armor Plating\"]').click()")
+        wait_for(cdp, "rhwSupplyDialog.open && supplyResults.dataset.stale==='false'")
+        if not base.ev(cdp, "supplyQuantity.value==='7' && supplyPurchaseRequest.textContent==='Requested: 7 Ablative Armor Plating for Superstructure Systems batch 3' && document.querySelector('.supply-metrics strong')?.textContent==='7'"):
+            raise RuntimeError('The recipe icon must carry the third-batch shortage through the real route search')
+        base.ev(cdp, "(()=>{supplyClose.click();RHWV4.itemDetails.close();return true})()")
         base.ev(cdp, "RHWV4.logisticsNavigation.openPurchaseSource('Gold',87,'batch 1')")
         wait_for(cdp, "logisticsPurchaseRequest.textContent==='87 Gold for batch 1'")
         base.ev(cdp, "document.querySelector('.rhw-supply-launcher [data-trade-desk]').click()")
@@ -436,6 +459,10 @@ def main():
         base.ev(cdp, "(()=>{supplyClose.click();logisticsClearRequest.click();return true})()")
         if not base.ev(cdp, "logisticsClearRequest.hidden && logisticsPurchaseRequest.textContent===''"):
             raise RuntimeError('Logistics must allow the prepared request to be cleared')
+        base.ev(cdp, "(()=>{window.supplyOffline=true;document.querySelector('.header-trade-button').click();return true})()")
+        wait_for(cdp, "rhwSupplyDialog.open && !supplySearch.disabled && supplyStatus.textContent.includes('fresh POB stock unavailable')")
+        if not base.ev(cdp, "supplySource.textContent==='NO LIVE QUOTE AVAILABLE' && !supplyResults.querySelector('.supply-result') && supplyResults.dataset.stale==='true'"):
+            raise RuntimeError('A failed search without past quotes must report that no live quote is available')
         print('Trade Desk browser passed: independent background map updates, cold/warm/reload persistence, map outages and cancellation, fresh stock, route-first ranking, compatible IDs, four haulers, import/export, focus and 360/390/1440px layouts.')
     finally:
         if cdp:
