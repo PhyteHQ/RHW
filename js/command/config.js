@@ -137,7 +137,7 @@ const DASHBOARD_CONFIG = Object.freeze({
     ])
   }),
   reserveCards: Object.freeze([
-    Object.freeze({ key: 'gold', label: 'Gold Supply', members: ['Gold', 'Wildcat Gold'], recipeId: 'recipe_gold_advanced', input: 'Gold Ore' }),
+    Object.freeze({ key: 'gold', label: 'Gold', members: ['Gold', 'Wildcat Gold'], recipeId: 'recipe_gold_advanced', input: 'Gold Ore' }),
     Object.freeze({ key: 'niobium', label: 'Niobium', members: ['Niobium'], recipeId: 'recipe_niobium_advanced', input: 'Niobium Ore' }),
     Object.freeze({ key: 'prototype components', label: 'Prototype Components', members: ['Prototype Components'], recipeId: 'recipe_milsal', input: 'Military Salvage' }),
     Object.freeze({ key: 'mox', label: 'MOX', members: ['MOX'], recipeId: 'recipe_mox_fuel_basic', input: 'Toxic Waste' })

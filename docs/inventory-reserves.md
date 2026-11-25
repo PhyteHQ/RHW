@@ -1,15 +1,12 @@
 # Inventory roles and production links
 
-The Status Board has three independent stacks: Facility Maintenance (Basic
-Alloy, Consumer Goods, Food Rations) with MOX Feedstock directly below; Production
-Reserves (Gold Supply, Niobium, Prototype Components, MOX); and Export Inventory
-(Chambers, Reactors, Superstructures) with Ship Stock directly below. Taller
-reserves cannot push the two secondary cards down. Tablets put Exports and
-Ship Stock side by side beneath the first two stacks; phones read each group
-in DOM order, in one column.
+The Status Board shows Facility Supplies (Basic Alloy, Consumer Goods, Food
+Rations), followed by Production Reserves (Gold, Niobium, Prototype Components,
+MOX), Export Inventory (Chambers, Reactors, Superstructures), and Ship Stock.
+The reserve cards sit side by side on wider screens and stack on phones.
 
-Gold Supply is an additive Gold / Wildcat Gold pool. Its breakdown preserves
-the individual stocks; Full Manifest continues to list every original item.
+The Gold card labels its combined Gold and Wildcat Gold stock as Total. The
+breakdown and Full Manifest list the individual stocks.
 An absent alternative contributes zero only when another pool member is
 reported. Malformed reported stock, or a wholly unreported pool, stays unknown.
 Neither the pool nor role assignment modifies API stock, prices or reserves.
@@ -50,7 +47,7 @@ surplus quantity. Nothing changes the in-game market configuration.
 
 Stock links open the matching recipe in the shared detail modal, reset view
 filters and briefly highlight its production row. Input lines open their consumer.
-Gold Supply offers its refinery plus consuming modules. Toxic Waste opens a
+Gold offers its refinery plus consuming modules. Toxic Waste opens a
 material detail with the selected MOX conversion, TW batch coverage and connected
 recipes. TW has no disposal or overflow threshold: fewer than one MOX batch is
 critical, one batch is low and at least two are available feedstock. This is TW
