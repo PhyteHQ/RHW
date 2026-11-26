@@ -2,6 +2,8 @@
 import { Navigator } from './core/navigation.mjs';
 import { shipFlightRules } from './ship-profiles.mjs';
 
+export const DOCK_SECONDS = 30;
+
 export class ShipNavigator extends Navigator {
   constructor(navigation, bases, profile, settings = {}) {
     const flight = shipFlightRules(profile);

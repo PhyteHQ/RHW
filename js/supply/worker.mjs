@@ -2,11 +2,16 @@ import { searchSupply } from './planner.mjs';
 import { searchExports } from './export-planner.mjs';
 import { searchIdentities } from './identity-planner.mjs';
 import { comparisonFleet } from './comparison-fleet.mjs';
+import { estimateRoundTrips } from '../price-check/hourly.mjs';
 let generation = 0;
 self.onmessage = async ({ data }) => {
   const token = ++generation;
   if (data.type === 'cancel') return;
   try {
+    if (data.type === 'price-check') {
+      self.postMessage({ type: 'result', result: estimateRoundTrips(data) });
+      return;
+    }
     if (data.options?.fleetOnly) data.profiles = comparisonFleet(data.profiles);
     const search = data.options?.mode === 'export' ? searchExports : searchSupply;
     const invoke = data.scopes?.length

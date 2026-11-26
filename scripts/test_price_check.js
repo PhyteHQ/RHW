@@ -164,3 +164,54 @@ const originalCurrent = app.state.comms;
 assert.throws(() => app.storage.importPayload(badBackup, { sections: ['priceCheckOverrides', 'current'] }));
 assert.equal(app.state.comms, originalCurrent, 'Invalid prices fail before unrelated backup sections mutate');
 console.log('Price Check backup passed: detached export, round trip, zero prices and validation before mutations');
+
+async function checkHourlyTarget() {
+  const { estimateRoundTrips, fixedRouteHome, quoteHourly } = await import('../js/price-check/hourly.mjs');
+  const { comparisonFleet } = await import('../js/supply/comparison-fleet.mjs');
+  const { FALLBACK_SHIPS } = await import('../js/supply/ship-profiles.mjs');
+  const home = fixedRouteHome({ nickname: 'rhw', system_nickname: 'br01', base_pos: { X: 0, Y: 0, Z: 0 } });
+  assert.deepEqual(home, { id: 'rhw', system: 'br01', pos: [0, 0, 0] });
+  assert.equal(fixedRouteHome({ nickname: 'rhw', system_nickname: 'br01' }), null);
+  const navigation = { schema: 1, nodes: [
+    { id: 'home', system: 'br01', pos: [0, 0, 0], kind: 'base', allows: ['medium', 'large'] },
+    { id: 'thames', system: 'br01', pos: [50000, 0, 0], kind: 'base', allows: ['medium'] },
+    { id: 'oder', system: 'rh01', pos: [0, 0, 0], kind: 'base', allows: ['medium'] }
+  ], baseNodes: { rhw: 'home', br01_06_base: 'thames', rh01_02_base: 'oder' }, links: [
+    { from: 'home', to: 'thames', kind: 'lane', speed: 2500 },
+    { from: 'home', to: 'oder', kind: 'jump' }
+  ] };
+  const routes = [
+    { key: 'mox', sourceId: 'br01_06_base', system: 'br01', goodId: 'commodity_mox' },
+    { key: 'moved', sourceId: 'br01_06_base', system: 'br03', goodId: 'commodity_mox' },
+    { key: 'unknown-good', sourceId: 'br01_06_base', system: 'br01', goodId: 'unknown' },
+    { key: 'one-way', sourceId: 'rh01_02_base', system: 'rh01', goodId: 'commodity_mox' }
+  ];
+  const { mox, moved, 'unknown-good': unknown, 'one-way': oneWay } = estimateRoundTrips({ home, routes,
+    navigation, ships: comparisonFleet(FALLBACK_SHIPS), goods: [{ id: 'commodity_mox', volume: 1, volumes: { 9: 2 } }] });
+  const train = mox.candidates.find(candidate => candidate.hauler === 'transport-5000');
+  assert.equal(train.units, 2500, 'Cargo volume depends on the selected hull class');
+  assert.equal(train.seconds, 30 + (50000 / 350 + 5) + 90, 'One-way lane changes the return time and each dock is counted');
+  const barge = mox.candidates.find(candidate => candidate.hauler === 'barge');
+  assert.ok(Math.abs(barge.seconds - (2 * (50000 / 90 + 15) + 90)) < 1e-6, 'Barge cannot use the outbound lane');
+  assert.ok(!mox.candidates.some(candidate => candidate.hauler === 'pilgrim'), 'An incompatible docking class has no quote');
+  assert.equal(moved.candidates.length, 0, 'A moved supplier cannot borrow its old docking position');
+  assert.equal(unknown.candidates.length, 0, 'Missing volume has no guessed default');
+  assert.equal(oneWay.candidates.length, 0, 'A route without a usable return has no quote');
+
+  const example = [{ hauler: 'transport-5000', ship: 'Advanced Train', units: 5000, seconds: 900 }];
+  const options = { hauler: 'auto', quantity: null, sourcePrice: 200, payout: 220, target: 500000 };
+  const quotes = [250000, 500000, 750000, 1000000].map(target => quoteHourly(example, { ...options, target }));
+  assert.deepEqual(quotes.map(quote => quote.targetPrice), [213, 225, 238, 250], 'Round target up to a whole per-unit price');
+  assert.ok(quotes.every(quote => quote.currentRate === 400000), 'Changing the target does not change today’s profit');
+  assert.equal(quoteHourly(example, { ...options, quantity: 2500 }).targetPrice, 250);
+  assert.equal(quoteHourly(example, { ...options, quantity: 6000 }).units, 5000);
+  assert.equal(quoteHourly(example, { ...options, payout: 190 }).currentRate, -200000);
+  assert.equal(quoteHourly(example, { ...options, payout: null }).currentRate, null);
+  assert.equal(quoteHourly(example, { ...options, sourcePrice: null }), null);
+  assert.equal(quoteHourly(example, { ...options, hauler: 'pilgrim' }), null);
+  const auto = quoteHourly(mox.candidates, { ...options, quantity: 1000 });
+  assert.equal(auto.hauler, 'transport-3600', 'Auto chooses the highest throughput for the entered load');
+  console.log('Price Check targets passed: fixed route, directed travel, hull volumes, docking, selectable cargo and integer payouts');
+}
+
+checkHourlyTarget().catch(error => { console.error(error); process.exitCode = 1; });
