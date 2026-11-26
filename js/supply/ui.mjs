@@ -1,17 +1,15 @@
 import { normalizeDarkstat, validateDataset } from './core/trade.mjs';
-import { validateNavigation } from './core/navigation.mjs';
 import { FALLBACK_SHIPS, normalizeShipRegistry, shipFlightRules, isSelectableShip } from './ship-profiles.mjs';
 import { haulerCategories, haulerCategory, matchesHauler } from './hauler-categories.mjs';
 import { dockingAccess, BMM_ID } from './access.mjs';
 import { normalize, findRhw } from './planner.mjs';
 import { commodityGroups } from './commodity-groups.mjs';
 import { identityRegistry, parseIdentityRules, identityShipCheck, PREFERRED_TRADER_IDS } from './identity-profiles.mjs';
-import { createMapCache, MAP_MAX_AGE_MS } from './map-cache.mjs';
+import { MAP_MAX_AGE_MS } from './map-cache.mjs';
+import { database, read, loadNavigation, mapCache, mapUpdates } from './routing-data.mjs';
 import { comparisonFleet, COMPARISON_FLEET } from './comparison-fleet.mjs';
 import { normalizeNpcMarket } from './npc-market.mjs';
 
-const API = 'https://darkstat.dd84ai.com/api/';
-const CACHE = 'rhw-supply-market-v1';
 const FIVE_MINUTES = 300000, SIX_HOURS = 21600000, DAY = 86400000;
 const esc = value => String(value ?? '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]);
 const count = value => Math.round(value).toLocaleString('en-GB');
@@ -20,13 +18,7 @@ const duration = seconds => `${Math.floor(Math.round(seconds) / 60)}:${String(Ma
 const date = value => new Date(value).toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
 const mapDate = value => new Date(value).toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 let dialog, context, worker, abort, request = 0, prepared = null, result = null, busy = false;
-const mapCache = createMapCache({
-  fetchSystems: signal => read('systems', undefined, signal),
-  loadBundled: () => compressedJson('navigation-last-verified.json.gz'),
-  readCache: () => database('get', undefined, 'navigation'),
-  writeCache: snapshot => database('put', snapshot, 'navigation'),
-  onChange: () => { if (dialog?.open) mapStatus(); }
-});
+mapUpdates.addEventListener('change', () => { if (dialog?.open) mapStatus(); });
 const selectedByMode = { supply: '', export: '' };
 const $ = id => dialog.querySelector('#' + id);
 const exporting = () => $('supplyMode').value === 'export';
@@ -59,52 +51,6 @@ function updateMode(selected = $('supplyCommodity').value) {
     : 'Import priority defaults to the lowest material buy price within the time and delivery-rate limit. Equal prices favor the best whole-trip $/hour. You can also prioritize hauler income or supply speed. Standard imports buy at or below RHW’s payout; their delivery speed sets the allowance. Faster-return alternatives must keep a comparable hourly delivery. Higher material prices appear separately as express options with a visible delivery loss. Every run starts and ends at RHW.';
 }
 
-async function database(action, value, key = 'latest') {
-  if (!globalThis.indexedDB) return null;
-  return new Promise((resolve, reject) => {
-    const open = indexedDB.open(CACHE, 1);
-    open.onupgradeneeded = () => open.result.createObjectStore('market');
-    open.onerror = () => reject(open.error);
-    open.onsuccess = () => {
-      const db = open.result, tx = db.transaction('market', action === 'get' ? 'readonly' : 'readwrite');
-      const operation = action === 'get' ? tx.objectStore('market').get(key) : tx.objectStore('market').put(value, key);
-      let data;
-      operation.onsuccess = () => { data = operation.result; };
-      tx.oncomplete = () => { db.close(); resolve(data || null); };
-      tx.onerror = () => { db.close(); reject(tx.error); };
-    };
-  });
-}
-async function read(path, body, signal) {
-  const init = { method: 'POST', headers: { Accept: 'application/json' }, cache: 'no-store', signal };
-  if (body !== undefined) { init.body = JSON.stringify(body); init.headers['Content-Type'] = 'application/json'; }
-  let response = await fetch(API + path, init);
-  if (response.status === 405) {
-    if (Array.isArray(body) || Object.values(body || {}).some(Array.isArray)) throw Error(`${path}: this API operation requires POST support`);
-    const query = body ? '?' + new URLSearchParams(Object.entries(body).map(([key, value]) => [key, String(value)])) : '';
-    response = await fetch(API + path + query, { headers: { Accept: 'application/json' }, cache: 'no-store', signal });
-  }
-  if (!response.ok) throw Error(`${path}: HTTP ${response.status}`);
-  const text = await response.text();
-  if (text.length > 70 * 1024 * 1024) throw Error(`${path}: market response too large`);
-  const data = JSON.parse(text);
-  if (!Array.isArray(data)) throw Error(`${path}: invalid response`);
-  return data;
-}
-async function compressedJson(path, signal) {
-  const response = await fetch(new URL('../../assets/' + path, import.meta.url), { signal });
-  if (!response.ok) throw Error('Navigation map unavailable');
-  const bytes = new Uint8Array(await response.arrayBuffer());
-  const text = bytes[0] === 31 && bytes[1] === 139
-    ? await new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'))).text()
-    : new TextDecoder().decode(bytes);
-  return JSON.parse(text);
-}
-async function loadNavigation(signal) {
-  const raw = await compressedJson('navigation.json.gz', signal);
-  raw.links = raw.links.map(link => link.kind === 'lane' ? { ...link, speed: 2500 } : link);
-  return validateNavigation(raw);
-}
 function mapStatus() {
   const { current, updating, error } = mapCache.state();
   const used = prepared?.mapSnapshot || current;

@@ -78,9 +78,12 @@
     "./js/core/boot.js"
   ],
   "modules": [
+    "./js/price-check/hourly.mjs",
+    "./js/price-check/trip-data.mjs",
     "./js/supply/ui.mjs",
     "./js/supply/npc-market.mjs",
     "./js/supply/map-cache.mjs",
+    "./js/supply/routing-data.mjs",
     "./js/supply/planner.mjs",
     "./js/supply/export-planner.mjs",
     "./js/supply/export-quote.mjs",

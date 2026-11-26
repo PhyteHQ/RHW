@@ -25,7 +25,8 @@ STOCK = {'Basic Alloy': 19129, 'Consumer Goods': 24793, 'Food Rations': 22451,
          'Military Salvage': 7300, 'Hull Panels': 25000, 'Energy Field Equipment': 20000,
          'Industrial Materials': 20000, 'Uranium': 0, 'Super Alloy': 5000,
          'Hydrocarbons': 20000, 'Titanium': 5000, 'Ablative Armor Plating': 20000}
-DATA = [{'name': 'Resolution Heavy Works', 'system_name': 'New London', 'money': 46385683,
+DATA = [{'name': 'Resolution Heavy Works', 'nickname': 'fixture-rhw', 'system_name': 'New London',
+         'system_nickname': 'br01', 'base_pos': {'X': -23000, 'Y': 0, 'Z': 52000}, 'money': 46385683,
          'cargospace': 63777, 'health': 24000000,
          'shop_items': [{'name': k, 'quantity': v, 'sell_price': 100, 'buy_price': 80} for k, v in STOCK.items()]},
         {'name': 'Lissheen Logistics Depot', 'system_name': 'Dublin', 'shop_items': [
@@ -37,13 +38,27 @@ DATA[0]['shop_items'] += [
 ]
 
 NPC_DATA = [{'name': name, 'nickname': nickname, 'system_name': system,
-             'market_goods': [{'name': commodity, 'base_sells': True, 'price_base_sells_for': 80}
+             'system_nickname': {'Cambridge': 'br03', 'New London': 'br01', 'New Berlin': 'rh01'}[system],
+             'market_goods': [{'name': commodity, 'nickname': commodity.lower().replace(' ', '_'),
+                               'base_sells': True, 'price_base_sells_for': 80}
                               for commodity in ('Hull Panels', 'Industrial Materials', 'MOX', 'Niobium', 'Titanium',
                                                 'Energy Field Equipment', 'Super Alloy', 'Ablative Armor Plating',
                                                 'Food Rations', 'Hydrocarbons', 'Consumer Goods', 'Mining Machinery')]}
             for name, nickname, system in (('Portsmouth Shipyard', 'br01_02_base', 'Cambridge'), ('Planet New London', 'br01_01_base', 'New London'),
                 ('Thames Outpost', 'br01_06_base', 'New London'), ('Kensington Shipping Platform', 'br01_07_base', 'New London'),
                 ('Planet Cambridge', 'br03_01_base', 'Cambridge'), ('Waterloo Station', 'br01_04_base', 'New London'), ('Oder Shipyard', 'rh01_02_base', 'New Berlin'))]
+PRICE_CHECK_FIXTURES = {
+    '/__rhw_test_pobs': DATA,
+    '/__rhw_test_npc': NPC_DATA,
+    '/__rhw_test_commodities': [{'nickname': good['nickname'], 'name': good['name'], 'volume': 1}
+                                for good in NPC_DATA[0]['market_goods']],
+    '/__rhw_test_ships': [
+        {'nickname': 'dsy_advanced_train', 'name': 'Advanced Train', 'class': 9, 'hold_size': 5000,
+         'cruise_speed': 350, 'dock_type': 2},
+        {'nickname': 'dsy_firefly', 'name': 'Serenity', 'class': 6, 'hold_size': 3600,
+         'cruise_speed': 500, 'dock_type': 2},
+    ],
+}
 
 
 class QuietHandler(http.server.SimpleHTTPRequestHandler):
@@ -51,10 +66,10 @@ class QuietHandler(http.server.SimpleHTTPRequestHandler):
         pass
 
     def do_POST(self):
-        if self.path not in ('/__rhw_test_pobs', '/__rhw_test_npc'):
+        if self.path not in PRICE_CHECK_FIXTURES:
             self.send_error(404)
             return
-        payload = json.dumps(NPC_DATA if self.path == '/__rhw_test_npc' else DATA).encode()
+        payload = json.dumps(PRICE_CHECK_FIXTURES[self.path]).encode()
         self.send_response(200)
         self.send_header('Content-Type', 'application/json')
         self.send_header('Content-Length', str(len(payload)))
@@ -116,6 +131,9 @@ def main():
               window.__rhwNpcRequests++;
               return original('/__rhw_test_npc', options);
             }
+            if (String(input?.url || input).includes('darkstat.dd84ai.com/api/commodities')) return original('/__rhw_test_commodities', options);
+            if (String(input?.url || input).includes('darkstat.dd84ai.com/api/ships')) return original('/__rhw_test_ships', options);
+            if (String(input?.url || input).includes('darkstat.dd84ai.com/api/systems')) return Promise.reject(Error('Use bundled verified map'));
             return original(input, options);
           };
         })();"""
@@ -610,6 +628,31 @@ def main():
             emptyStyleMarkers:document.querySelectorAll('style[data-stylesheet]').length};})()""")
         assert price_focus['same'] and price_focus['focused'] and price_focus['price'] == '$80' and price_focus['stored'] == 0 and price_focus['editors'] == 0, price_focus
         assert price_focus['live'] == 'NPC MARKET LIVE' and price_focus['emptyStyleMarkers'] == 0, price_focus
+        deadline = time.monotonic() + 10
+        while base.ev(cdp, "document.querySelectorAll('.pricecheck-target b').length") != 11:
+            if time.monotonic() >= deadline:
+                details = base.ev(cdp, "({status:priceCheckTripStatus.textContent, rows:[...document.querySelectorAll('.pricecheck-target')].map(row=>row.textContent)})")
+                raise AssertionError(f'Price Check did not quote the 11 fixed routes: {details}')
+            time.sleep(.05)
+        hourly_target = base.ev(cdp, """(()=>{
+          const row=document.querySelector('[data-route-key="mox"]');
+          const select=(node,value)=>{node.value=value;node.dispatchEvent(new Event('change',{bubbles:true}));};
+          const quantity=value=>{priceCheckQuantity.value=value;priceCheckQuantity.dispatchEvent(new Event('input',{bubbles:true}));};
+          const quote=()=>Number(row.querySelector('.pricecheck-target b').textContent.replace(/[^0-9]/g,''));
+          const current=()=>row.querySelector('.pricecheck-hourly b').textContent;
+          select(priceCheckHauler,'transport-5000');
+          const initial=quote(), rate=current(), before=Number(priceCheckTarget.value);
+          select(priceCheckTarget,'750000');const above=quote();
+          select(priceCheckTarget,'1000000');const highest=quote(), sameRate=current()===rate;
+          quantity('1000');const smaller=quote(), label=row.querySelector('.pricecheck-trip').textContent;
+          const width=document.documentElement.scrollWidth;
+          select(priceCheckTarget,'500000');select(priceCheckHauler,'auto');quantity('');
+          return {before,initial,above,highest,smaller,sameRate,label,width,viewport:innerWidth,
+            original:row.querySelector('.pricecheck-difference strong').textContent};
+        })()""")
+        assert hourly_target['before'] == 500000 and hourly_target['initial'] < hourly_target['above'] < hourly_target['highest'] < hourly_target['smaller'], hourly_target
+        assert hourly_target['sameRate'] and 'Advanced Train' in hourly_target['label'] and '1,000 units' in hourly_target['label'], hourly_target
+        assert hourly_target['width'] <= hourly_target['viewport'] + 1 and hourly_target['original'] == '+$20', hourly_target
         # Updated NPC quotes must handle zero, losses and large amounts without
         # introducing editable controls or clipping a phone card.
         price_edit = base.ev(cdp, """(()=>{

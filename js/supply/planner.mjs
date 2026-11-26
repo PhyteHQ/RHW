@@ -1,7 +1,7 @@
 /* RHW supply planning with exact cargo accounting and bounded approach search. */
 import solver from './core/vendor/lp-solver.mjs';
 import { makeLeg, simulate, volumeFor, validateDataset, baseProblems } from './core/trade.mjs';
-import { ShipNavigator, flightKey } from './navigation.mjs';
+import { DOCK_SECONDS, ShipNavigator, flightKey } from './navigation.mjs';
 import { trimRouteCache } from './return-planner.mjs';
 import { isSelectableShip } from './ship-profiles.mjs';
 
@@ -216,7 +216,7 @@ export async function searchSupply(dataset, navigation, profiles, options = {}, 
   const byId = new Map(bases.map(base => [base.id, base])), routes = [], contexts = [], navigators = new Map(), reverseNavigators = new Map();
   let checked = 0, searchedSources = 0, pruned = false, timedOut = false;
   const withinBudget = () => !canceled() && performance.now() - began < timeLimit;
-  const settings = { dock: 30, jump: 15, lane: 10, charge: 5, ...options.timeModel };
+  const settings = { dock: DOCK_SECONDS, jump: 15, lane: 10, charge: 5, ...options.timeModel };
   const extraPercent = Math.min(50, Math.max(0, Number(options.extraPercent) || 0));
   const budget = { capital: finite(options.capital) ? Math.max(0, options.capital) : null,
     quantity: finite(options.quantity) && options.quantity > 0 ? Math.floor(options.quantity) : null };

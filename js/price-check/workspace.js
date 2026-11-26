@@ -12,6 +12,7 @@
   const MARKET_API = 'https://darkstat.dd84ai.com/api/npc_bases';
   const AUTO_REFRESH_MS = 300000;
   const SOURCE_RESOLVE_RETRY_MS = 21600000;
+  const PROFIT_TARGETS = Array.from({ length: 20 }, (_, index) => (index + 1) * 250000);
   const STORAGE = Object.freeze({
     overrides: app.config.storageKeys.priceCheckOverrides || 'rhw-webapp-v4:price-check-overrides',
     sources: 'rhw-webapp-v4:price-check-sources',
@@ -55,8 +56,12 @@
     lastError: '',
     receivedAt: 0,
     sort: 'source',
-    quantity: null
+    quantity: null,
+    hourlyTarget: 500000,
+    hauler: 'auto'
   };
+  let tripModule, tripLoader, tripRequest, tripData, currentMapAt;
+  let tripKey = '', tripError = '', nextTripAttempt = 0;
 
   const refreshTask = window.RHWRuntime.createRefreshTask({
     interval: AUTO_REFRESH_MS,
@@ -119,7 +124,11 @@
       <div class="pricecheck-controls">
         <label for="priceCheckSort">Sort by<select id="priceCheckSort"><option value="source">Source</option><option value="best">Highest difference / unit</option><option value="worst">Lowest difference / unit</option></select></label>
         <label for="priceCheckQuantity">Quantity · optional<input id="priceCheckQuantity" type="number" min="1" step="1" inputmode="numeric" placeholder="Units per route"></label>
+        <label for="priceCheckTarget">Trader profit target<select id="priceCheckTarget">${PROFIT_TARGETS.map(value => `<option value="${value}"${value === state.hourlyTarget ? ' selected' : ''}>${money(value)}/h</option>`).join('')}</select></label>
+        <label for="priceCheckHauler">Hauler<select id="priceCheckHauler"><option value="auto">Auto · most units/hour</option></select></label>
       </div>
+      <p class="pricecheck-trip-note">RHW round trip with an empty outbound leg. Quantity caps the load. Check docking permissions and RHW buying limits before trading.</p>
+      <p class="pricecheck-trip-note" id="priceCheckTripStatus" role="status"></p>
       <div class="pricecheck-table-wrap"><table class="pricecheck-table">
         <thead><tr><th>COMMODITY</th><th>SOURCE</th><th>NPC PRICE</th><th>RHW PAYS</th><th>DIFFERENCE / UNIT</th></tr></thead>
         <tbody id="priceCheckRows"></tbody>
@@ -177,6 +186,15 @@
     panel.querySelector('#priceCheckQuantity').addEventListener('input', event => {
       const value = event.target.valueAsNumber;
       state.quantity = Number.isSafeInteger(value) && value > 0 ? value : null;
+      render();
+    });
+    panel.querySelector('#priceCheckTarget').addEventListener('change', event => {
+      const value = Number(event.target.value);
+      if (PROFIT_TARGETS.includes(value)) state.hourlyTarget = value;
+      render();
+    });
+    panel.querySelector('#priceCheckHauler').addEventListener('change', event => {
+      state.hauler = event.target.value;
       render();
     });
   }
@@ -333,6 +351,7 @@
         sourceNickname: sources[route.key]?.nickname || previous[route.key]?.sourceNickname || '',
         sourceName: source?.name || sources[route.key]?.name || previous[route.key]?.sourceName || route.source,
         system: baseSystem(source) || sources[route.key]?.system || previous[route.key]?.system || route.system,
+        systemNickname: String(source?.system_nickname || good?.system_nick || ''),
         goodNickname: good?.nickname || previous[route.key]?.goodNickname || '',
         livePrice,
         checkedAt,
@@ -400,7 +419,7 @@
       }
     } finally {
       state.loading = false;
-      render();
+      render({ forceTrips: forceResolve });
     }
   }
 
@@ -458,6 +477,82 @@
       <article class="pricecheck-status" data-tone="${unknown ? 'warn' : rhwTone}"><small>DATA STATUS</small><strong>${!hasComparison ? 'Awaiting prices' : unknown ? `${unknown} MISSING` : esc(rhw.label || 'RHW READY')}</strong></article>`;
   }
 
+  function loadTripModule() {
+    tripLoader ||= import(new URL('./js/price-check/trip-data.mjs', document.baseURI).href).then(module => {
+      tripModule = module;
+      const selector = document.getElementById('priceCheckHauler');
+      module.COMPARISON_FLEET.forEach(slot => selector.add(new Option(slot.name, slot.id)));
+      module.onMapUpdate(at => {
+        if (at === currentMapAt) return;
+        currentMapAt = at;
+        if (tripData) render();
+      });
+      return module;
+    }).catch(error => { tripLoader = null; throw error; });
+    return tripLoader;
+  }
+
+  function updateTrips(rows, force) {
+    const base = typeof rhwBase !== 'undefined' ? rhwBase : null;
+    const routes = rows.filter(row => row.live !== null && row.market.goodNickname).map(({ route, market }) => ({
+      key: route.key, sourceId: route.sourceNickname, goodId: market.goodNickname, system: market.systemNickname || ''
+    }));
+    const key = JSON.stringify([base?.nickname, base?.system_nickname, base?.base_pos ?? base?.pos, routes]);
+    if (key !== tripKey) {
+      tripRequest?.abort();
+      tripRequest = null;
+      tripData = null;
+      tripError = '';
+      nextTripAttempt = 0;
+      tripKey = key;
+    }
+    const mapChanged = tripData && currentMapAt && tripData.mapAt !== currentMapAt;
+    if (!base || !routes.length || tripRequest || (!force && !mapChanged && Date.now() < nextTripAttempt)) return;
+    const request = tripRequest = new AbortController();
+    loadTripModule().then(module => {
+      const home = module.fixedRouteHome(base);
+      if (!home) throw Error('RHW coordinates unavailable');
+      return module.loadTrips(home, routes, { force, signal: request.signal });
+    }).then(data => {
+      if (tripRequest !== request) return;
+      tripData = data;
+      currentMapAt = data.latestMapAt;
+      tripError = '';
+    }).catch(error => {
+      if (tripRequest === request) {
+        tripData = null;
+        tripError = error.message || 'Route data unavailable';
+      }
+    }).finally(() => {
+      if (tripRequest !== request) return;
+      tripRequest = null;
+      nextTripAttempt = Date.now() + (!tripData || tripData.savedReferences ? AUTO_REFRESH_MS : 86400000);
+      render();
+    });
+  }
+
+  function hourlyEstimate(row) {
+    const route = tripData?.trips[row.route.key];
+    const quote = route && tripModule.quoteHourly(route.candidates, { hauler: state.hauler, quantity: state.quantity,
+      sourcePrice: row.live, payout: row.payout, target: state.hourlyTarget });
+    if (quote) return { quote };
+    if (row.live === null) return { reason: 'Source price unavailable' };
+    if (tripRequest) return { reason: 'Checking round trip…' };
+    return { reason: route?.candidates.length ? 'No estimate for selected hauler' : route?.reason || 'Round trip unavailable' };
+  }
+
+  function targetMarkup({ quote, reason }, fresh) {
+    const label = `For ${money(state.hourlyTarget)}/h`;
+    if (!quote) return `<span class="pricecheck-target"><small>${label}</small><small>${esc(reason)}</small></span>`;
+    return `<span class="pricecheck-target"${fresh ? '' : ' title="Calculated with the cached NPC price"'}><small>${label}</small><b>${money(quote.targetPrice)} / unit</b></span>`;
+  }
+
+  function tripMarkup(quote) {
+    if (!quote) return '';
+    const time = Math.ceil(quote.seconds);
+    return `<small class="pricecheck-trip">${esc(quote.ship)} · ${quote.units.toLocaleString('en-US')} units · ${Math.floor(time / 60)}m ${time % 60}s</small>`;
+  }
+
   function rowMarkup(row) {
     const { route, market, live, payout, difference, tone, fresh, priceAt, rhw } = row;
     const sourceName = market.sourceName || route.source;
@@ -470,16 +565,19 @@
     const liveCopy = live === null ? 'SOURCE PRICE UNAVAILABLE' : `${fresh ? 'LIVE' : 'CACHED'} · ${stamp}`;
     const payoutCopy = payout === null ? 'RHW PRICE UNAVAILABLE' : money(payout);
     const total = state.quantity && difference !== null ? `<small class="pricecheck-total"><b>${signedMoney(difference * state.quantity)}</b> total for ${state.quantity.toLocaleString('en-US')}</small>` : '';
+    const estimate = hourlyEstimate(row);
+    const hourly = estimate.quote?.currentRate;
+    const hourlyCopy = hourly == null ? '' : `<small class="pricecheck-hourly" title="Estimated trader profit at the current RHW payout">Est. <b>${signedMoney(hourly)}/h</b></small>`;
     return `<tr class="pricecheck-row" data-route-key="${esc(route.key)}">
       <td class="pricecheck-item-cell"><span class="pricecheck-mobile-label">COMMODITY</span><span class="pricecheck-commodity"><strong>${esc(route.commodity)}</strong><small>${route.sourceType === 'pob' ? 'FIXED POB ROUTE' : 'FIXED NPC ROUTE'}</small></span></td>
-      <td class="pricecheck-source-cell"><span class="pricecheck-mobile-label">SOURCE</span><span class="pricecheck-source"><strong>${esc(sourceName)}</strong><small>${esc(system)}<span class="${sourceMetaClass}"> // ${esc(sourceMeta)}</span></small></span></td>
+      <td class="pricecheck-source-cell"><span class="pricecheck-mobile-label">SOURCE</span><span class="pricecheck-source"><strong>${esc(sourceName)}</strong><small>${esc(system)}<span class="${sourceMetaClass}"> // ${esc(sourceMeta)}</span></small>${tripMarkup(estimate.quote)}</span></td>
       <td class="pricecheck-price-cell"><span class="pricecheck-mobile-label">NPC PRICE</span><div class="pricecheck-price-quote"><strong class="pricecheck-source-price">${money(live)}</strong><small class="pricecheck-live">${liveCopy}</small></div></td>
-      <td class="pricecheck-payout-cell"><span class="pricecheck-mobile-label">RHW PAYS</span><span class="pricecheck-payout"><strong>${payoutCopy}</strong><small class="${rhw.available && !rhw.stale ? 'pricecheck-current' : ''}">${!rhw.available ? 'RHW DATA UNAVAILABLE' : rhw.stale ? 'RHW CACHED' : 'CURRENT RHW BUY'}</small></span></td>
-      <td class="pricecheck-difference ${tone}"><span class="pricecheck-mobile-label">DIFFERENCE / UNIT</span><strong>${signedMoney(difference)}</strong>${total}${difference !== null && (!fresh || rhw.stale) ? '<small class="pricecheck-estimate">FROM CACHED PRICES</small>' : ''}</td>
+      <td class="pricecheck-payout-cell"><span class="pricecheck-mobile-label">RHW PAYS</span><span class="pricecheck-payout"><strong>${payoutCopy}</strong><small class="${rhw.available && !rhw.stale ? 'pricecheck-current' : ''}">${!rhw.available ? 'RHW DATA UNAVAILABLE' : rhw.stale ? 'RHW CACHED' : 'CURRENT RHW BUY'}</small></span>${targetMarkup(estimate, fresh)}</td>
+      <td class="pricecheck-difference ${tone}"><span class="pricecheck-mobile-label">DIFFERENCE / UNIT</span><strong>${signedMoney(difference)}</strong>${total}${hourlyCopy}${difference !== null && (!fresh || rhw.stale) ? '<small class="pricecheck-estimate">FROM CACHED PRICES</small>' : ''}</td>
     </tr>`;
   }
 
-  function render() {
+  function render({ forceTrips = false } = {}) {
     if (app.state.activeWorkspace !== 'pricecheck') return;
     const grid = document.getElementById('priceCheckStatusGrid');
     const rowsNode = document.getElementById('priceCheckRows');
@@ -488,6 +586,10 @@
     if (!grid || !rowsNode || !note) return;
 
     const rows = DISPLAY_ROUTES.map(effectiveRow);
+    updateTrips(rows, forceTrips);
+    const tripStatus = document.getElementById('priceCheckTripStatus');
+    const tripCopy = tripError || (tripData ? `Route map checked ${new Date(tripData.mapAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}${tripData.savedReferences ? ' · saved ship or cargo data' : ''}` : '');
+    if (tripStatus && tripStatus.textContent !== tripCopy) tripStatus.textContent = tripCopy;
     if (state.sort !== 'source') {
       const direction = state.sort === 'best' ? -1 : 1;
       rows.sort((a, b) => {

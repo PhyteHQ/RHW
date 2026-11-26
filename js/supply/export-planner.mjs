@@ -1,7 +1,7 @@
 /* RHW exports with optional verified return cargo. Quote only supported loads;
    keep DTR's shared market/navigation/accounting owners unchanged. */
 import { validateDataset } from './core/trade.mjs';
-import { ShipNavigator, flightKey } from './navigation.mjs';
+import { DOCK_SECONDS, ShipNavigator, flightKey } from './navigation.mjs';
 import { isSelectableShip } from './ship-profiles.mjs';
 import { findRhw, findCommodity } from './planner.mjs';
 import { quoteExport } from './export-quote.mjs';
@@ -41,7 +41,7 @@ export async function searchExports(dataset, navigation, profiles, options = {},
   if (!bases.some(base => base.id === rhw.id)) throw Error('RHW is excluded by the docking profile.');
   const byId = new Map(bases.map(base => [base.id, base])), navigators = new Map(), flights = new Map(), reverseFlights = new Map(), routes = [];
   const started = performance.now(), timeLimit = Math.min(30000, Math.max(1000, options.searchMs || 18000));
-  const settings = { dock: 30, jump: 15, lane: 10, charge: 5, ...options.timeModel };
+  const settings = { dock: DOCK_SECONDS, jump: 15, lane: 10, charge: 5, ...options.timeModel };
   const returnEnabled = options.returnCargo !== false;
   const extraPercent = Math.min(50, Math.max(0, Number(options.extraPercent ?? 20) || 0));
   const directLimit = returnEnabled ? timeLimit * .6 : timeLimit;
