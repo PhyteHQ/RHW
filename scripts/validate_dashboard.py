@@ -81,7 +81,7 @@ def main():
         if old in public or target not in public:
             errors.append(f'Invalid redirect: {old} -> {target}')
     pwa = json.loads((ROOT / 'manifest.webmanifest').read_text())
-    for key, value in {'id': './', 'scope': './', 'display': 'standalone', 'start_url': './#command/inventory'}.items():
+    for key, value in {'id': '/RHW/', 'scope': './', 'display': 'standalone', 'start_url': './#command/inventory'}.items():
         if pwa.get(key) != value:
             errors.append(f'PWA {key} must be {value!r}.')
     if 'window-controls-overlay' in pwa.get('display_override', []):
