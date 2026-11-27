@@ -197,7 +197,9 @@
     const appLabel = state.prompting ? 'INSTALLING…' : installed ? 'APP INSTALLED' : ready ? 'INSTALL APP' : 'APP STATUS';
     const button = document.getElementById('rhwPwaInstallBtn');
     if (button) {
-      button.hidden = !update && isStandalone();
+      // Installation and ordinary status belong in Tools / System + Data.
+      // Keep genuine pending updates visible so users can activate them.
+      button.hidden = !update;
       button.disabled = busy;
       button.dataset.installReady = String(ready && !update);
       button.querySelector('span').textContent = update ? 'UPDATE' : appLabel;
