@@ -38,7 +38,7 @@ const RHW_APP_CONFIG = Object.freeze({
   }),
   forum: Object.freeze({
     // Exported BBCode needs an absolute public URL; the local preview works offline.
-    logoUrl: 'https://phytehq.github.io/RHW/assets/rhw-forum-logo.png',
+    logoUrl: 'https://i.ibb.co/bMDBZBRJ/Resolution-Heavy-Works-Heraldic-Crest.png',
     previewLogoUrl: './assets/rhw-forum-logo.png',
     logoWidth: 240,
     logoHeight: 299,

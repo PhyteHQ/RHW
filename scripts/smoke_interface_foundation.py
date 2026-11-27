@@ -914,7 +914,7 @@ def main():
         })()""")
         assert forum_offline['images'] == [[320, 399, True], [360, 107, True]], forum_offline
         assert forum_offline['crest'] == [240, 299], forum_offline
-        assert forum_offline['order'] == ['https://phytehq.github.io/RHW/assets/rhw-forum-logo.png',
+        assert forum_offline['order'] == ['https://i.ibb.co/bMDBZBRJ/Resolution-Heavy-Works-Heraldic-Crest.png',
                                           'https://phytehq.github.io/RHW/assets/rhw-forum-footer.png'], forum_offline
         assert forum_offline['details'] == ['FROM', 'TO', 'ISSUED AT', 'SECURITY'], forum_offline
         assert all(forum_offline[key] for key in ('identity', 'stamp', 'footer', 'style')), forum_offline
