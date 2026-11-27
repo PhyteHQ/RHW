@@ -3,6 +3,7 @@
 from collections import Counter
 from html.parser import HTMLParser
 from pathlib import Path
+from urllib.parse import urlsplit
 import json
 import re
 import struct
@@ -89,7 +90,7 @@ def main():
         if shortcut.get('url', '').removeprefix('./#') not in public:
             errors.append(f'PWA shortcut points to a retired route: {shortcut}')
     for icon in pwa.get('icons', []):
-        path = ROOT / icon['src']
+        path = ROOT / urlsplit(icon['src']).path
         data = path.read_bytes()
         if data[:8] != b'\x89PNG\r\n\x1a\n':
             errors.append(f'Invalid PNG: {path.name}')
