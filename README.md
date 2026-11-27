@@ -58,9 +58,9 @@ Trade Desk refreshes POB stock for **every search**. Failed POB requests pause c
 
 Open **`https://phytehq.github.io/RHW/`** in the browser you want to use for installation.
 
-Open **TOOLS → INSTALL RHW** when your browser offers the install dialog. **INSTALL HELP** shows the steps for your browser. In Samsung Internet, tap the install (+) icon in the address bar if it appears, or use the browser menu and choose **Add page to → Home screen**. In Chrome for Android, open the menu (⋮) and look for **Install app** or **Install and create shortcut → Install**. On iPhone or iPad, open RHW in Safari and tap **Share → Add to Home Screen**. Open the new icon to launch RHW in its own app window.
+Tap **INSTALL · PHONE APP** in the header. If the browser offers installation, choose **INSTALL** in the RHW dialog and confirm the browser prompt. The same dialog gives the browser-menu steps when needed. In the installed app, **TOOLS → SYSTEM + DATA** shows **APP INSTALLED**.
 
-The app bundles, local fonts, icons and recipe catalog are cached together for offline access. RHW always labels offline mode clearly and never presents failed live telemetry as current data. New service-worker versions are checked automatically. An update waits for the explicit **UPDATE NOW** action before activating and reloading, preserving an in-progress calculation.
+The app bundles, local fonts, icons and recipe catalog are cached together for offline access. RHW always labels offline mode clearly and never presents failed live telemetry as current data. When a new version is ready, the header shows **UPDATE · APP READY**. Choose **UPDATE NOW** in that dialog to activate it and reload.
 
 ### Migration from the old `rhw-0` GitHub username
 

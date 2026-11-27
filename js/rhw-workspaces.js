@@ -5669,9 +5669,7 @@ globalThis.RHW_PRODUCTION_VOLUMES = Object.freeze({
     button.setAttribute('aria-controls', 'rhwDiagnosticsPanel');
     button.setAttribute('aria-expanded', 'false');
     button.innerHTML = '<span>SYS CHECK</span><small>APP HEALTH</small>';
-    const installButton = document.getElementById('rhwPwaInstallBtn');
-    if (installButton?.parentElement === brand) brand.insertBefore(button, installButton);
-    else brand.appendChild(button);
+    brand.appendChild(button);
 
     document.body.insertAdjacentHTML('beforeend', `<aside class="rhw-diagnostics-overlay" id="rhwDiagnosticsPanel" role="dialog" aria-modal="true" aria-labelledby="rhwDiagnosticsTitle" hidden>
       <section class="rhw-diagnostics-sheet">
@@ -5685,7 +5683,7 @@ globalThis.RHW_PRODUCTION_VOLUMES = Object.freeze({
         <p class="rhw-diagnostics-privacy"><strong>PRIVACY SAFE:</strong> No drafts, messages, sender profiles, material prices or inventory values are read into the report.</p>
         <footer class="rhw-diagnostics-actions">
           <span id="rhwDiagnosticsActionStatus" data-tone="muted" aria-live="polite">READY</span>
-          <div><button type="button" id="rhwDiagnosticsRun">RUN SELF-CHECK</button><button type="button" class="primary" id="rhwDiagnosticsCopy">COPY REPORT</button></div>
+          <div><button type="button" id="rhwDiagnosticsRun">RUN SELF-CHECK</button><button type="button" class="primary" id="rhwDiagnosticsCopy">COPY REPORT</button><button type="button" id="rhwDiagnosticsApp" aria-haspopup="dialog" aria-controls="rhwPwaPanel">INSTALL APP</button></div>
         </footer>
       </section>
     </aside>`);
@@ -5694,6 +5692,11 @@ globalThis.RHW_PRODUCTION_VOLUMES = Object.freeze({
     document.getElementById('rhwDiagnosticsClose')?.addEventListener('click', close);
     document.getElementById('rhwDiagnosticsRun')?.addEventListener('click', runNow);
     document.getElementById('rhwDiagnosticsCopy')?.addEventListener('click', copyReport);
+    document.getElementById('rhwDiagnosticsApp')?.addEventListener('click', () => {
+      close();
+      window.RHWPWA?.showInstallHelp();
+    });
+    window.RHWPWA?.syncInstallState();
     document.getElementById('rhwDiagnosticsPanel')?.addEventListener('click', event => {
       if (event.target.id === 'rhwDiagnosticsPanel') close();
     });
@@ -7642,7 +7645,7 @@ globalThis.RHW_PRODUCTION_VOLUMES = Object.freeze({
       const tool = TOOL_META[key];
       return `<button type="button" class="rhw-focus-tool-card" data-rhw-tool="${key}"><span class="rhw-focus-tool-index">${index}</span><span class="rhw-focus-tool-copy"><strong>${tool.label}</strong><small>${tool.sub}</small></span><span class="rhw-focus-tool-arrow" aria-hidden="true">›</span></button>`;
     }).join('');
-    return `<aside class="rhw-focus-tools-overlay" id="rhwFocusToolsPanel" role="dialog" aria-modal="true" aria-labelledby="rhwFocusToolsTitle" data-focus-trap="true" hidden><section class="rhw-focus-tools-sheet"><header class="rhw-focus-tools-head"><div><strong id="rhwFocusToolsTitle">TOOLS</strong></div><button type="button" id="rhwFocusToolsClose">CLOSE</button></header><div class="rhw-mobile-workspaces">${shortcuts}</div><div class="rhw-focus-tools-grid">${cards}</div><div id="rhwToolsInstallSlot" class="rhw-tools-install-slot"></div></section></aside>`;
+    return `<aside class="rhw-focus-tools-overlay" id="rhwFocusToolsPanel" role="dialog" aria-modal="true" aria-labelledby="rhwFocusToolsTitle" data-focus-trap="true" hidden><section class="rhw-focus-tools-sheet"><header class="rhw-focus-tools-head"><div><strong id="rhwFocusToolsTitle">TOOLS</strong></div><button type="button" id="rhwFocusToolsClose">CLOSE</button></header><div class="rhw-mobile-workspaces">${shortcuts}</div><div class="rhw-focus-tools-grid">${cards}</div></section></aside>`;
   }
 
   function toolsFocusable(panel = document.getElementById('rhwFocusToolsPanel')) {
@@ -7692,15 +7695,10 @@ globalThis.RHW_PRODUCTION_VOLUMES = Object.freeze({
       button.setAttribute('aria-controls', 'rhwFocusToolsPanel');
       button.setAttribute('aria-expanded', 'false');
       button.innerHTML = '<span>TOOLS</span>';
-      const install = document.getElementById('rhwPwaInstallBtn');
-      if (install?.parentElement === brand) brand.insertBefore(button, install);
-      else brand.appendChild(button);
+      brand.appendChild(button);
     }
     if (!document.getElementById('rhwFocusToolsPanel')) document.body.insertAdjacentHTML('beforeend', toolsMarkup());
     const panel = document.getElementById('rhwFocusToolsPanel');
-    const install = document.getElementById('rhwPwaInstallBtn');
-    const installSlot = document.getElementById('rhwToolsInstallSlot');
-    if (install && installSlot && install.parentElement !== installSlot) installSlot.appendChild(install);
     if (panel) panel.dataset.focusTrap = 'true';
     if (button.dataset.rhwFocusBound !== 'true') {
       button.dataset.rhwFocusBound = 'true';

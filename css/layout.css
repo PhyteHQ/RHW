@@ -115,14 +115,6 @@ html.rhw-focus-pass #inventoryStatusPanel .telemetry-placeholder { border: 0 !im
 
 html.rhw-focus-pass #inventoryStatusPanel .telemetry-placeholder strong { color: var(--muted);font: 22px var(--font-tech); }
 
-html.rhw-focus-pass .rhw-tools-install-slot { padding: 14px 20px;border-top: 1px solid var(--rhw-border); }
-
-html.rhw-focus-pass .rhw-tools-install-slot:has([hidden]), html.rhw-focus-pass .rhw-tools-install-slot:empty { display: none; }
-
-html.rhw-focus-pass #rhwToolsInstallSlot #rhwPwaInstallBtn { width: 100%;min-height: 48px; }
-
-html.rhw-focus-pass #rhwToolsInstallSlot #rhwPwaInstallBtn small { display: block !important;margin-top: 4px;font: 12px var(--font-main);color: var(--muted); }
-
 
 
 @media (min-width: 761px) and (max-width: 1100px) {
@@ -457,6 +449,7 @@ html.rhw-focus-pass.rhw-workbench .command-header-inner .crest-frame { position:
 html.rhw-focus-pass.rhw-workbench .command-header-inner .crest { position:static;inset:auto;display:block;width:104px;height:144px;object-fit:contain;filter:drop-shadow(0 6px 15px #0008); }
 html.rhw-focus-pass.rhw-workbench .crest-frame::before { display:none !important; }
 html.rhw-focus-pass.rhw-workbench .brand-copy { grid-column:auto;grid-row:auto;display:block;min-width:0; }
+.brand-title-row { display:flex;align-items:center;justify-content:space-between;gap:8px;min-width:0; }
 html.rhw-focus-pass.rhw-workbench .header-watermark { display:none !important; }
 html.rhw-focus-pass.rhw-workbench .command-header h1 { grid-column:auto;display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 12px;margin:0;color:var(--text);font:600 60px/.95 var(--font-title);letter-spacing:.04em;white-space:normal;text-shadow:none; }
 html.rhw-focus-pass.rhw-workbench .brand-command { color:var(--gold);font:500 30px/1 var(--font-title);letter-spacing:.12em; }
@@ -609,7 +602,8 @@ html.rhw-focus-pass.rhw-workbench body:not([data-workspace="command"][data-comma
  html.rhw-focus-pass.rhw-workbench .command-header-inner .crest { width:38px;height:46px; }
  html.rhw-focus-pass.rhw-workbench .brand-copy { display:contents; }
  html.rhw-focus-pass.rhw-workbench .brand-subtitle { display:none; }
- html.rhw-focus-pass.rhw-workbench .command-header h1 { grid-column:2;flex-wrap:nowrap;gap:6px;font-size:34px; }
+ html.rhw-focus-pass.rhw-workbench .brand-title-row { grid-column:2;grid-row:1; }
+ html.rhw-focus-pass.rhw-workbench .command-header h1 { flex-wrap:nowrap;gap:6px;font-size:34px; }
  html.rhw-focus-pass.rhw-workbench .brand-command { font-size:19px;letter-spacing:.06em; }
  html.rhw-focus-pass.rhw-workbench .base-telemetry-bar { grid-column:1/-1;grid-template-columns:1fr 1.3fr 1fr;margin:0;padding-block:3px; }
  html.rhw-focus-pass.rhw-workbench :is(.base-telemetry-stat,.base-telemetry-stat:first-child) { padding-inline:8px; }

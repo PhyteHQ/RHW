@@ -64,7 +64,7 @@
       const tool = TOOL_META[key];
       return `<button type="button" class="rhw-focus-tool-card" data-rhw-tool="${key}"><span class="rhw-focus-tool-index">${index}</span><span class="rhw-focus-tool-copy"><strong>${tool.label}</strong><small>${tool.sub}</small></span><span class="rhw-focus-tool-arrow" aria-hidden="true">›</span></button>`;
     }).join('');
-    return `<aside class="rhw-focus-tools-overlay" id="rhwFocusToolsPanel" role="dialog" aria-modal="true" aria-labelledby="rhwFocusToolsTitle" data-focus-trap="true" hidden><section class="rhw-focus-tools-sheet"><header class="rhw-focus-tools-head"><div><strong id="rhwFocusToolsTitle">TOOLS</strong></div><button type="button" id="rhwFocusToolsClose">CLOSE</button></header><div class="rhw-mobile-workspaces">${shortcuts}</div><div class="rhw-focus-tools-grid">${cards}</div><div id="rhwToolsInstallSlot" class="rhw-tools-install-slot"></div></section></aside>`;
+    return `<aside class="rhw-focus-tools-overlay" id="rhwFocusToolsPanel" role="dialog" aria-modal="true" aria-labelledby="rhwFocusToolsTitle" data-focus-trap="true" hidden><section class="rhw-focus-tools-sheet"><header class="rhw-focus-tools-head"><div><strong id="rhwFocusToolsTitle">TOOLS</strong></div><button type="button" id="rhwFocusToolsClose">CLOSE</button></header><div class="rhw-mobile-workspaces">${shortcuts}</div><div class="rhw-focus-tools-grid">${cards}</div></section></aside>`;
   }
 
   function toolsFocusable(panel = document.getElementById('rhwFocusToolsPanel')) {
@@ -114,15 +114,10 @@
       button.setAttribute('aria-controls', 'rhwFocusToolsPanel');
       button.setAttribute('aria-expanded', 'false');
       button.innerHTML = '<span>TOOLS</span>';
-      const install = document.getElementById('rhwPwaInstallBtn');
-      if (install?.parentElement === brand) brand.insertBefore(button, install);
-      else brand.appendChild(button);
+      brand.appendChild(button);
     }
     if (!document.getElementById('rhwFocusToolsPanel')) document.body.insertAdjacentHTML('beforeend', toolsMarkup());
     const panel = document.getElementById('rhwFocusToolsPanel');
-    const install = document.getElementById('rhwPwaInstallBtn');
-    const installSlot = document.getElementById('rhwToolsInstallSlot');
-    if (install && installSlot && install.parentElement !== installSlot) installSlot.appendChild(install);
     if (panel) panel.dataset.focusTrap = 'true';
     if (button.dataset.rhwFocusBound !== 'true') {
       button.dataset.rhwFocusBound = 'true';

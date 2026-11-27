@@ -185,21 +185,24 @@ def main():
         install = base.ev(cdp, """(async()=>{
           const pending=window.__rhwEarlyInstall;
           const button=document.getElementById('rhwPwaInstallBtn');
-          const label=button.querySelector('span').textContent;
-          RHWV4.toolsNavigation.openTools();
+          const inHeader=!!button.closest('.command-header');
+          const ready=button.querySelector('small').textContent;
+          const panel=document.getElementById('rhwPwaPanel');
+          const primary=document.getElementById('rhwPwaPrimary');
           button.click();
+          const confirm=panel.open && primary.textContent==='INSTALL' && !pending.calls;
+          primary.click();
           const disabled=button.disabled;
-          const direct=document.getElementById('rhwPwaPanel').hidden;
-          button.click();
+          primary.click();
           pending.finish?.({outcome:'dismissed'});
           await Promise.resolve();
-          return {workspacesReady:pending.workspacesReady,captured:pending.captured,label,
-            calls:pending.calls,disabled,direct,promptCleared:!RHWPWA.state.installPrompt,
-            enabled:!button.disabled,help:button.querySelector('span').textContent==='INSTALL HELP'};
+          return {workspacesReady:pending.workspacesReady,captured:pending.captured,inHeader,ready,
+            calls:pending.calls,disabled,confirm,promptCleared:!RHWPWA.state.installPrompt,
+            enabled:!button.disabled,closed:!panel.open,phone:button.querySelector('small').textContent};
         })()""")
-        assert install == {'workspacesReady': False, 'captured': True, 'label': 'INSTALL RHW',
-                           'calls': 1, 'disabled': True, 'direct': True,
-                           'promptCleared': True, 'enabled': True, 'help': True}, install
+        assert install == {'workspacesReady': False, 'captured': True, 'inHeader': True, 'ready': 'APP READY',
+                           'calls': 1, 'disabled': True, 'confirm': True,
+                           'promptCleared': True, 'enabled': True, 'closed': True, 'phone': 'PHONE APP'}, install
         # Boot and service-worker readiness can precede the async cache read
         # and first fixture fetch. Check the stock view only after that fetch.
         stock_deadline = time.monotonic() + 15

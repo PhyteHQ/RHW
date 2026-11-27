@@ -205,9 +205,7 @@
     button.setAttribute('aria-controls', 'rhwDiagnosticsPanel');
     button.setAttribute('aria-expanded', 'false');
     button.innerHTML = '<span>SYS CHECK</span><small>APP HEALTH</small>';
-    const installButton = document.getElementById('rhwPwaInstallBtn');
-    if (installButton?.parentElement === brand) brand.insertBefore(button, installButton);
-    else brand.appendChild(button);
+    brand.appendChild(button);
 
     document.body.insertAdjacentHTML('beforeend', `<aside class="rhw-diagnostics-overlay" id="rhwDiagnosticsPanel" role="dialog" aria-modal="true" aria-labelledby="rhwDiagnosticsTitle" hidden>
       <section class="rhw-diagnostics-sheet">
@@ -221,7 +219,7 @@
         <p class="rhw-diagnostics-privacy"><strong>PRIVACY SAFE:</strong> No drafts, messages, sender profiles, material prices or inventory values are read into the report.</p>
         <footer class="rhw-diagnostics-actions">
           <span id="rhwDiagnosticsActionStatus" data-tone="muted" aria-live="polite">READY</span>
-          <div><button type="button" id="rhwDiagnosticsRun">RUN SELF-CHECK</button><button type="button" class="primary" id="rhwDiagnosticsCopy">COPY REPORT</button></div>
+          <div><button type="button" id="rhwDiagnosticsRun">RUN SELF-CHECK</button><button type="button" class="primary" id="rhwDiagnosticsCopy">COPY REPORT</button><button type="button" id="rhwDiagnosticsApp" aria-haspopup="dialog" aria-controls="rhwPwaPanel">INSTALL APP</button></div>
         </footer>
       </section>
     </aside>`);
@@ -230,6 +228,11 @@
     document.getElementById('rhwDiagnosticsClose')?.addEventListener('click', close);
     document.getElementById('rhwDiagnosticsRun')?.addEventListener('click', runNow);
     document.getElementById('rhwDiagnosticsCopy')?.addEventListener('click', copyReport);
+    document.getElementById('rhwDiagnosticsApp')?.addEventListener('click', () => {
+      close();
+      window.RHWPWA?.showInstallHelp();
+    });
+    window.RHWPWA?.syncInstallState();
     document.getElementById('rhwDiagnosticsPanel')?.addEventListener('click', event => {
       if (event.target.id === 'rhwDiagnosticsPanel') close();
     });
