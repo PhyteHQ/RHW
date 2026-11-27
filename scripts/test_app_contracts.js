@@ -11,7 +11,8 @@ const context = vm.createContext({ console, setTimeout, clearTimeout,
   localStorage: { getItem: key => memory.get(key) ?? null, setItem: (key, value) => memory.set(key, value), removeItem: key => memory.delete(key) }
 });
 context.window = context;
-for (const file of ['build-info', 'core/refresh', 'core/lifecycle', 'core/routes', 'core/config', 'core/app']) {
+for (const file of ['build-info', 'core/refresh', 'core/lifecycle', 'core/routes', 'core/config', 'core/app',
+  'data/storage', 'forum/composer']) {
   vm.runInContext(fs.readFileSync(path.join(__dirname, '../js', file + '.js'), 'utf8'), context, { filename: file });
 }
 const app = context.RHWV4;
@@ -60,6 +61,30 @@ assert.match(app.config.forum.logoUrl, /^https:\/\//, 'Exported forum images nee
 assert.equal(app.config.forum.previewLogoUrl, './assets/rhw-forum-logo.png');
 assert.equal(app.config.forum.footerUrl, 'https://phytehq.github.io/RHW/assets/rhw-forum-footer.png');
 assert.equal(app.config.forum.previewFooterUrl, './assets/rhw-forum-footer.png');
+
+const official = app.comms.buildBbcode(app.storage.defaultState());
+assert.match(official, /^\[align=center\]\[img=240x299\]/);
+assert.ok(official.includes('[color=#CDD4DC]HEAVY WORKS') && official.includes('Under the Crown. For the Crown.'));
+assert.ok(official.includes('Official Corporate Correspondence') && official.includes('OFFICE OF THE CHIEF EXECUTIVE'));
+assert.ok(official.includes('[color=#80AAD8]REGARDING') && official.includes('UNTITLED CORRESPONDENCE'));
+assert.ok(official.includes('Chief Executive Officer') && official.includes('Industry in Service of the Crown.'));
+assert.ok(official.includes('SECURE TRANSMISSION · RES OFFICIAL[br][RES] SYSTEM TIME: UNSET'));
+
+const legacy = app.storage.normalizeState({
+  classification: 'RHW OFFICIAL', footerMotto: 'CONNECTION SECURE /// BUILT IN BRETONIA - BUILT FOR THE CROWN',
+  message: 'Previously saved body'
+});
+assert.equal(legacy.classification, 'RES OFFICIAL');
+assert.equal(legacy.footerMotto, 'Industry in Service of the Crown.');
+assert.equal(legacy.message, 'Previously saved body');
+const longRecipient = 'Admiralty Procurement, Civil Docking and Shipyard Liaison Office';
+const custom = app.storage.normalizeState({
+  senderKey: '__custom__', customSenderName: 'Custom Sender', signatureTitle: 'Docking Officer',
+  footerMotto: 'Custom footer line', classification: 'CROWN RESTRICTED', recipient: longRecipient
+});
+const customCode = app.comms.buildBbcode(custom);
+assert.ok(customCode.includes(longRecipient) && customCode.includes('Custom Sender') && customCode.includes('Docking Officer'));
+assert.ok(customCode.includes('Custom footer line') && customCode.includes('SECURE TRANSMISSION · CROWN RESTRICTED'));
 
 const lifecycle = context.createRhwLifecycle();
 const calls = [];

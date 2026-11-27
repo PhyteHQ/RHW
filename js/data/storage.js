@@ -7,6 +7,7 @@
   const app = window.RHWV4;
   if (!app) return;
   const keys = app.config.storageKeys;
+  const LEGACY_FOOTER_MOTTO = 'CONNECTION SECURE /// BUILT IN BRETONIA - BUILT FOR THE CROWN';
 
   function defaultState() {
     const sender = app.config.senders[0];
@@ -21,7 +22,7 @@
       recipient: template.recipient || '',
       location: sender.location || '',
       encryption: template.encryption || sender.encryption || '',
-      classification: template.classification || 'RHW OFFICIAL',
+      classification: template.classification || 'RES OFFICIAL',
       salutation: template.salutation || 'Dear Sir or Madam,',
       subject: '',
       message: '',
@@ -40,6 +41,8 @@
       if (typeof raw[key] === 'string') state[key] = raw[key];
     });
     if (!app.config.templates.some(template => template.key === state.templateKey)) state.templateKey = fallback.templateKey;
+    if (state.classification === 'RHW OFFICIAL') state.classification = fallback.classification;
+    if (state.footerMotto === LEGACY_FOOTER_MOTTO) state.footerMotto = fallback.footerMotto;
     if (!state.classification) state.classification = app.template(state.templateKey).classification || fallback.classification;
     if (!state.salutation) state.salutation = app.template(state.templateKey).salutation || fallback.salutation;
     if (!state.closing) state.closing = app.template(state.templateKey).closing || fallback.closing;

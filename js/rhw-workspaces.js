@@ -112,20 +112,26 @@ const RHW_APP_CONFIG = Object.freeze({
     // Exported BBCode needs an absolute public URL; the local preview works offline.
     logoUrl: 'https://phytehq.github.io/RHW/assets/rhw-forum-logo.png',
     previewLogoUrl: './assets/rhw-forum-logo.png',
+    logoWidth: 240,
+    logoHeight: 299,
     footerUrl: 'https://phytehq.github.io/RHW/assets/rhw-forum-footer.png',
     previewFooterUrl: './assets/rhw-forum-footer.png',
-    organisation: 'RESOLUTION HEAVY WORKS',
-    subline: 'INDUSTRIAL MANUFACTURING HUB | NEW LONDON',
+    brandName: 'RESOLUTION',
+    brandDivision: 'HEAVY WORKS',
+    affiliation: 'BRETONIA MINING AND MANUFACTURING',
+    headerMotto: 'Under the Crown. For the Crown.',
+    locationLine: 'NEW LONDON · BRETONIA',
     brandColor: '#C9AA70',
-    textColor: '#E1E7EF',
-    mutedColor: '#B5C2D0',
+    textColor: '#E4E8EE',
+    steelColor: '#CDD4DC',
+    mutedColor: '#8995A5',
     lineColor: '#426B98',
-    cipherColor: '#80AAD8',
-    footerMotto: 'CONNECTION SECURE /// BUILT IN BRETONIA - BUILT FOR THE CROWN'
+    blueColor: '#80AAD8',
+    footerMotto: 'Industry in Service of the Crown.'
   }),
   classifications: Object.freeze([
     'PUBLIC RELEASE',
-    'RHW OFFICIAL',
+    'RES OFFICIAL',
     'RHW INTERNAL',
     'COMMERCIAL CONFIDENTIAL',
     'BMM CONFIDENTIAL',
@@ -136,7 +142,7 @@ const RHW_APP_CONFIG = Object.freeze({
   ]),
   classificationColors: Object.freeze({
     'PUBLIC RELEASE': '#78ad8a',
-    'RHW OFFICIAL': '#C9AA70',
+    'RES OFFICIAL': '#C9AA70',
     'RHW INTERNAL': '#80AAD8',
     'COMMERCIAL CONFIDENTIAL': '#c6a75a',
     'BMM CONFIDENTIAL': '#c6a75a',
@@ -169,7 +175,7 @@ const RHW_APP_CONFIG = Object.freeze({
     Object.freeze({
       key: 'alistair-thorne',
       name: 'Alistair Thorne',
-      title: 'CEO | Resolution Heavy Works',
+      title: 'Chief Executive Officer',
       organisation: 'Resolution Heavy Works',
       location: 'Resolution Heavy Works, New London',
       encryption: 'RHW-RESOLUTION/V · KEY THORNE-07'
@@ -177,11 +183,12 @@ const RHW_APP_CONFIG = Object.freeze({
   ]),
   templates: Object.freeze([
     Object.freeze({
-      key: 'formal', label: 'FORMAL TRANSMISSION', documentLabel: 'RHW SECURE TRANSMISSION',
+      key: 'formal', label: 'FORMAL TRANSMISSION', documentLabel: 'Official Corporate Correspondence',
+      officeLabel: 'OFFICE OF THE CHIEF EXECUTIVE',
       description: 'Official RHW correspondence with complete routing and security metadata.',
-      recipient: '', encryption: 'CROWN-TYPEX/VIII · KEY LION-01', classification: 'RHW OFFICIAL',
+      recipient: '', encryption: 'CROWN-TYPEX/VIII · KEY LION-01', classification: 'RES OFFICIAL',
       closing: 'Yours faithfully,', salutation: 'Dear Sir or Madam,',
-      subjectPlaceholder: 'Transmission subject'
+      subjectPlaceholder: 'Correspondence subject'
     }),
     Object.freeze({
       key: 'procurement', label: 'PROCUREMENT', documentLabel: 'ADMIRALTY PROCUREMENT FILE',
@@ -741,6 +748,7 @@ const RHW_APP_CONFIG = Object.freeze({
   const app = window.RHWV4;
   if (!app) return;
   const keys = app.config.storageKeys;
+  const LEGACY_FOOTER_MOTTO = 'CONNECTION SECURE /// BUILT IN BRETONIA - BUILT FOR THE CROWN';
 
   function defaultState() {
     const sender = app.config.senders[0];
@@ -755,7 +763,7 @@ const RHW_APP_CONFIG = Object.freeze({
       recipient: template.recipient || '',
       location: sender.location || '',
       encryption: template.encryption || sender.encryption || '',
-      classification: template.classification || 'RHW OFFICIAL',
+      classification: template.classification || 'RES OFFICIAL',
       salutation: template.salutation || 'Dear Sir or Madam,',
       subject: '',
       message: '',
@@ -774,6 +782,8 @@ const RHW_APP_CONFIG = Object.freeze({
       if (typeof raw[key] === 'string') state[key] = raw[key];
     });
     if (!app.config.templates.some(template => template.key === state.templateKey)) state.templateKey = fallback.templateKey;
+    if (state.classification === 'RHW OFFICIAL') state.classification = fallback.classification;
+    if (state.footerMotto === LEGACY_FOOTER_MOTTO) state.footerMotto = fallback.footerMotto;
     if (!state.classification) state.classification = app.template(state.templateKey).classification || fallback.classification;
     if (!state.salutation) state.salutation = app.template(state.templateKey).salutation || fallback.salutation;
     if (!state.closing) state.closing = app.template(state.templateKey).closing || fallback.closing;
@@ -1551,7 +1561,7 @@ const RHW_APP_CONFIG = Object.freeze({
             <section class="comms-document-control">
               <div class="comms-document-control-grid">
                 <label class="comms-field"><span>DOCUMENT TYPE</span><select id="commsTemplate">${templateOptions()}</select><small id="templateDescription"></small></label>
-                <label class="comms-field"><span>SECURITY CLASSIFICATION</span><select id="commsClassification">${classificationOptions()}</select><small>DISPLAYED AS ITS OWN SECURITY BANNER</small></label>
+                <label class="comms-field"><span>SECURITY CLASSIFICATION</span><select id="commsClassification">${classificationOptions()}</select><small>SHOWN IN THE FOOTER STAMP</small></label>
               </div>
             </section>
 
@@ -1561,7 +1571,7 @@ const RHW_APP_CONFIG = Object.freeze({
               <label class="comms-field comms-wide"><span>SALUTATION / OPENING</span><select id="commsSalutation">${selectOptions(app.config.salutations)}</select><input id="commsSalutationCustom" type="text" maxlength="160" placeholder="Custom opening" hidden /><small>OPTIONAL OPENING BASED ON RECIPIENT CONTEXT</small></label>
               <label class="comms-field"><span>SIGN-OFF / CLOSING</span><select id="commsClosing">${selectOptions(app.config.closings)}</select><input id="commsClosingCustom" type="text" maxlength="100" placeholder="Custom sign-off" hidden /><small>PRESETS BY RECIPIENT CONTEXT</small></label>
               <label class="comms-field"><span>RP SYSTEM DATE</span><input id="commsSystemDate" type="text" maxlength="40" placeholder="05/08/836" /></label>
-                <label class="comms-field comms-wide"><span>FOOTER / SECURITY STAMP</span><input id="commsFooterMotto" type="text" maxlength="180" /></label>
+                <label class="comms-field comms-wide"><span>FOOTER MOTTO</span><input id="commsFooterMotto" type="text" maxlength="180" /></label>
               </div>
             </details>
             <div class="comms-actions">
@@ -1716,16 +1726,16 @@ const RHW_APP_CONFIG = Object.freeze({
     const classification = state.classification || template.classification;
     const field = (name, fallback) => String(state[name] || '').trim() || fallback;
     return {
-      sender, template, classification, subject: field('subject', 'UNTITLED TRANSMISSION'),
+      sender, template, classification, subject: field('subject', 'UNTITLED CORRESPONDENCE'),
       salutation: resolvedSalutation(state),
       closing: field('closing', template.closing),
       systemDate: field('systemDate', 'UNSET'),
       footerMotto: field('footerMotto', app.config.forum.footerMotto),
       details: [
-        ['SENDER ID', sender.name],
-        ['RECIPIENT ID', field('recipient', 'UNSPECIFIED RECIPIENT')],
-        ['LOCATION', field('location', 'Resolution Heavy Works, New London')],
-        ['ENCRYPTION', field('encryption', template.encryption), 'encrypted']
+        ['FROM', sender.name],
+        ['TO', field('recipient', 'UNSPECIFIED RECIPIENT')],
+        ['ISSUED AT', field('location', 'Resolution Heavy Works, New London')],
+        ['SECURITY', field('encryption', template.encryption || '—'), 'encrypted']
       ]
     };
   }
@@ -1733,56 +1743,40 @@ const RHW_APP_CONFIG = Object.freeze({
   function buildBbcode(state = app.state.comms) {
     const f = app.config.forum;
     const { sender, template, classification, subject, salutation, closing, systemDate, footerMotto, details } = transmission(state);
-    const classificationColor = app.classificationColor(classification);
     const body = [salutation, bodyToBbcode(state.message, f.brandColor)].filter(Boolean).join('\n\n');
-    const rows = details.map(([label, value, kind]) => `[tr]
-[td][font=Consolas][b][color=${f.brandColor}]${label}:[/color][/b][/font][/td]
-[td][font=Consolas][color=${kind === 'encrypted' ? f.cipherColor : f.textColor}]${value}[/color][/font][/td]
-[/tr]`).join('\n');
-    const rule = `[hrc]${f.lineColor}[/hrc]`;
+    // Keep the reference's columns while allowing field values to wrap.
+    const space = '\u00a0';
+    const valueWidth = 34;
+    const rows = details.map(([label, value, kind]) => {
+      const paddedLabel = label.padEnd(10).replaceAll(' ', space);
+      const paddedValue = value.padEnd(valueWidth, space);
+      return `[b][color=${f.brandColor}]${paddedLabel}[/color][/b][color=${f.lineColor}]${space}│${space}[/color][color=${kind === 'encrypted' ? f.blueColor : f.steelColor}]${paddedValue}[/color]`;
+    }).join('[br]');
+    const brassRule = `[hrc]${f.brandColor}[/hrc]`;
+    const role = sender.title ? `[br][font=Georgia][size=small][color=${f.steelColor}]${sender.title}[/color][/size][/font]` : '';
+    const organisation = sender.organisation ? `[br][font=Consolas][size=small][color=${f.blueColor}]${sender.organisation}[/color][/size][/font]` : '';
 
-    return `[align=center]
-[img]${f.logoUrl}[/img]
-[font=Consolas][size=small][color=${f.mutedColor}]${f.subline}[/color][/size][/font]
+    return `[align=center][img=${f.logoWidth}x${f.logoHeight}]${f.logoUrl}[/img][br][size=xx-large][font=Georgia][b][color=${f.brandColor}]${f.brandName}[/color][/b][/font][/size][br][size=large][font=Georgia][color=${f.steelColor}]${f.brandDivision}[/color][/font][/size][br][size=small][font=Consolas][color=${f.blueColor}]${f.affiliation}[/color][/font][/size][br][font=Georgia][i][color=${f.brandColor}]${f.headerMotto}[/color][/i][/font][br][size=small][font=Consolas][color=${f.mutedColor}]${f.locationLine}[/color][/font][/size][/align]
 
-[font=Consolas][size=x-small][color=${f.mutedColor}]${template.documentLabel} // ${template.label}[/color][/size][/font]
-[font=Consolas][size=small][b][color=${classificationColor}]CLASSIFICATION // ${classification}[/color][/b][/size][/font]
-[/align]
-${rule}
+${brassRule}
+[align=center][font=Georgia][size=large][color=${f.brandColor}]${template.documentLabel}[/color][/size][/font][br][font=Consolas][size=small][color=${f.blueColor}]${template.officeLabel || template.label}[/color][/size][/font][/align]
+[hrc]${f.lineColor}[/hrc]
 
-[align=center]
-[table=${f.lineColor}]
-${rows}
-[/table]
-[/align]
+[align=center][font=Consolas][size=small]${rows}[/size][/font][/align]
 
-${rule}
-[align=center]
-[font=Consolas][size=x-small][color=${f.mutedColor}]SUBJECT[/color][/size][/font]
-[font=Georgia][size=x-large][b][color=${f.brandColor}]${subject}[/color][/b][/size][/font]
-[/align]
-${rule}
+${brassRule}
+[align=center][font=Consolas][size=small][color=${f.blueColor}]REGARDING[/color][/size][/font][br][font=Georgia][size=x-large][b][color=${f.brandColor}]${subject}[/color][/b][/size][/font][/align]
+${brassRule}
 
-[pi amount=12][font=Georgia][color=${f.textColor}]
+[pi amount=12][font=Georgia][size=large][color=${f.textColor}]
 
 ${body}
 
-[/color][/font][/pi]
+[/color][/size][/font][/pi]
 
-[align=right]
-[font=Georgia][size=large][i][color=${f.textColor}]${closing}[/color][/i][/size][/font]
-[font=Georgia][size=large][b][color=${f.brandColor}]${sender.name}[/color][/b][/size][/font]
-[font=Consolas][size=small][color=${f.mutedColor}]${sender.title || ''}[/color][/size][/font]
-[/align]
+[pi amount=12][align=right][font=Georgia][i][color=${f.steelColor}]${closing}[/color][/i][/font][br][size=x-large][font=Georgia][i][color=${f.brandColor}]${sender.name}[/color][/i][/font][/size]${role}${organisation}[/align][/pi]
 
-[align=center]
-[img]${f.footerUrl}[/img]
-[font=Consolas][size=x-small][color=${f.mutedColor}]
-${footerMotto}
-TRANSMISSION CLASS // ${classification}
-[RHW] SYSTEM TIME: ${systemDate}
-[/color][/size][/font]
-[/align]`;
+[align=center][img]${f.footerUrl}[/img][br][font=Georgia][size=large][i][color=${f.brandColor}]${footerMotto}[/color][/i][/size][/font][br][font=Consolas][size=small][color=${f.blueColor}]${f.brandName} ${f.brandDivision}[/color][/size][/font][br][font=Consolas][size=x-small][color=${f.mutedColor}]SECURE TRANSMISSION · ${classification}[br][RES] SYSTEM TIME: ${systemDate}[/color][/size][/font][/align]`;
   }
 
   function renderPreview(state = app.state.comms) {
@@ -1793,27 +1787,38 @@ TRANSMISSION CLASS // ${classification}
     const esc = app.util.escape;
     target.style.setProperty('--forum-brass', f.brandColor);
     target.style.setProperty('--forum-rule', f.lineColor);
-    target.style.setProperty('--forum-steel', f.mutedColor);
-    target.style.setProperty('--forum-blue', f.cipherColor);
+    target.style.setProperty('--forum-steel', f.steelColor);
+    target.style.setProperty('--forum-muted', f.mutedColor);
+    target.style.setProperty('--forum-blue', f.blueColor);
     target.style.setProperty('--forum-text', f.textColor);
-    target.style.setProperty('--classification-color', app.classificationColor(classification));
     target.innerHTML = `
       <div class="forum-preview-identity">
-        <div class="forum-preview-logo-wrap"><img class="forum-preview-header-art" src="${esc(f.previewLogoUrl)}" width="320" height="399" alt="${esc(f.organisation)}" loading="lazy" onerror="this.hidden=true;this.nextElementSibling.hidden=false" /><div class="forum-preview-logo-fallback" hidden>${esc(f.organisation)}</div></div>
-        <div class="forum-preview-subline">${esc(f.subline)}</div>
-        <div class="forum-preview-document-type">${esc(template.documentLabel)} // ${esc(template.label)}</div>
-        <div class="forum-preview-classification">CLASSIFICATION // ${esc(classification)}</div>
+        <img class="forum-preview-header-art" src="${esc(f.previewLogoUrl)}" width="${f.logoWidth}" height="${f.logoHeight}" alt="" loading="lazy" />
+        <div class="forum-preview-brand-name">${esc(f.brandName)}</div>
+        <div class="forum-preview-brand-division">${esc(f.brandDivision)}</div>
+        <div class="forum-preview-affiliation">${esc(f.affiliation)}</div>
+        <div class="forum-preview-motto">${esc(f.headerMotto)}</div>
+        <div class="forum-preview-place">${esc(f.locationLine)}</div>
       </div>
-      <div class="forum-preview-rule"></div>
-      <div class="forum-preview-meta">
-        ${details.map(([label, value, kind]) => `<div class="forum-preview-meta-row"><strong>${label}:</strong><span${kind === 'encrypted' ? ' class="encryption"' : ''}>${esc(value)}</span></div>`).join('')}
+      <div class="forum-preview-document">
+        <strong>${esc(template.documentLabel)}</strong>
+        <span>${esc(template.officeLabel || template.label)}</span>
       </div>
-      <div class="forum-preview-subject"><small>SUBJECT</small><strong>${esc(subject)}</strong></div>
-      <div class="forum-preview-body">${salutation ? `<p class="forum-preview-salutation">${esc(salutation)}</p>` : ''}${String(state.message || '').trim() ? bodyToPreview(state.message) : '<span class="preview-placeholder">AWAITING TRANSMISSION BODY</span>'}</div>
-      <div class="forum-preview-signature"><em>${esc(closing)}</em><strong>${esc(sender.name)}</strong><small>${esc(sender.title || '')}</small></div>
+      <dl class="forum-preview-meta">
+        ${details.map(([label, value, kind]) => `<dt>${label}</dt><dd${kind === 'encrypted' ? ' class="encryption"' : ''}><span aria-hidden="true">│</span><span>${esc(value)}</span></dd>`).join('')}
+      </dl>
+      <div class="forum-preview-subject"><small>REGARDING</small><strong>${esc(subject)}</strong></div>
+      <div class="forum-preview-body">${salutation ? `<p class="forum-preview-salutation">${esc(salutation)}</p>` : ''}${String(state.message || '').trim() ? bodyToPreview(state.message) : '<span class="preview-placeholder">AWAITING CORRESPONDENCE BODY</span>'}</div>
+      <div class="forum-preview-signature">
+        <em>${esc(closing)}</em><strong>${esc(sender.name)}</strong>
+        ${sender.title ? `<small>${esc(sender.title)}</small>` : ''}
+        ${sender.organisation ? `<span>${esc(sender.organisation)}</span>` : ''}
+      </div>
       <div class="forum-preview-footer">
         <img class="forum-preview-footer-art" src="${esc(f.previewFooterUrl)}" width="360" height="107" alt="" loading="lazy" />
-        <span>${esc(footerMotto)}</span><span>TRANSMISSION CLASS // ${esc(classification)}</span><span>[RHW] SYSTEM TIME: ${esc(systemDate)}</span>
+        <div class="forum-preview-motto">${esc(footerMotto)}</div>
+        <div class="forum-preview-affiliation">${esc(f.brandName)} ${esc(f.brandDivision)}</div>
+        <div class="forum-preview-stamp">SECURE TRANSMISSION · ${esc(classification)}<br>[RES] SYSTEM TIME: ${esc(systemDate)}</div>
       </div>`;
     app.rendered?.('forum-preview');
   }
@@ -6411,8 +6416,7 @@ globalThis.RHW_PRODUCTION_VOLUMES = Object.freeze({
     try {
       const sample = {
         ...app.state.comms,
-        recipient: 'AUDIT RECIPIENT', subject: 'AUDIT SUBJECT', message: 'AUDIT MESSAGE',
-        classification: app.state.comms?.classification || 'RHW OFFICIAL'
+        recipient: 'AUDIT RECIPIENT', subject: 'AUDIT SUBJECT', message: 'AUDIT MESSAGE'
       };
       const output = app.comms.buildBbcode(sample);
       const ready = ['AUDIT RECIPIENT', 'AUDIT SUBJECT', 'AUDIT MESSAGE'].every(marker => output.includes(marker));

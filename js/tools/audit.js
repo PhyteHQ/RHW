@@ -162,8 +162,7 @@
     try {
       const sample = {
         ...app.state.comms,
-        recipient: 'AUDIT RECIPIENT', subject: 'AUDIT SUBJECT', message: 'AUDIT MESSAGE',
-        classification: app.state.comms?.classification || 'RHW OFFICIAL'
+        recipient: 'AUDIT RECIPIENT', subject: 'AUDIT SUBJECT', message: 'AUDIT MESSAGE'
       };
       const output = app.comms.buildBbcode(sample);
       const ready = ['AUDIT RECIPIENT', 'AUDIT SUBJECT', 'AUDIT MESSAGE'].every(marker => output.includes(marker));
