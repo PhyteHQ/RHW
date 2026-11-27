@@ -855,23 +855,32 @@ def main():
         forum_offline = base.ev(cdp, """(async()=>{
           RHWV4.navigate('comms','forum');
           const preview=document.getElementById('forumLivePreview');
+          RHWV4.comms.renderPreview(RHWV4.storage.defaultState());
           const images=[...preview.querySelectorAll('img')];
           await Promise.all(images.map(img=>{img.loading='eager';return img.decode();}));
           const state={...RHWV4.state.comms,templateKey:'incident',classification:'',subject:'Docking Notice',
-            message:'## Yard access\\n!warning Berth 2 closed.',footerMotto:'For the Crown',systemDate:'27/11/836'};
+            message:'## Yard access\\n!warning Berth 2 closed.',footerMotto:'Custom transmission motto',systemDate:'27/11/836'};
           const bbcode=RHWV4.comms.buildBbcode(state);
           return {images:images.map(img=>[img.naturalWidth,img.naturalHeight,new URL(img.src).origin===location.origin]),
-            order:[...bbcode.matchAll(/\\[img\\](.*?)\\[\\/img\\]/g)].map(match=>match[1]),
+            crest:[images[0].width,images[0].height],
+            order:[...bbcode.matchAll(/\\[img(?:=[^\\]]+)?\\](.*?)\\[\\/img\\]/g)].map(match=>match[1]),
+            identity:preview.querySelector('.forum-preview-brand-name').textContent==='RESOLUTION'
+              &&preview.querySelector('.forum-preview-document').textContent.includes('OFFICE OF THE CHIEF EXECUTIVE'),
+            details:[...preview.querySelectorAll('.forum-preview-meta dt')].map(label=>label.textContent),
+            stamp:preview.querySelector('.forum-preview-stamp').textContent.includes('SECURE TRANSMISSION · RES OFFICIAL')
+              &&preview.querySelector('.forum-preview-stamp').textContent.includes('[RES] SYSTEM TIME: UNSET'),
             footer:bbcode.indexOf('[align=right]')<bbcode.indexOf('rhw-forum-footer.png')
-              &&bbcode.indexOf('rhw-forum-footer.png')<bbcode.indexOf('For the Crown'),
-            style:bbcode.includes('[table=#426B98]')&&bbcode.includes('[font=Georgia][size=x-large][b][color=#C9AA70]Docking Notice')
-              &&bbcode.includes('[color=#c75e5e]CLASSIFICATION // PRIORITY // RESTRICTED')
+              &&bbcode.indexOf('rhw-forum-footer.png')<bbcode.indexOf('Custom transmission motto'),
+            style:!bbcode.includes('[table')&&bbcode.includes('[font=Georgia][size=x-large][b][color=#C9AA70]Docking Notice')
+              &&bbcode.includes('SECURE TRANSMISSION · PRIORITY // RESTRICTED[br][RES] SYSTEM TIME: 27/11/836')
               &&bbcode.includes('Berth 2 closed.')&&bbcode.includes('27/11/836')};
         })()""")
         assert forum_offline['images'] == [[320, 399, True], [360, 107, True]], forum_offline
+        assert forum_offline['crest'] == [240, 299], forum_offline
         assert forum_offline['order'] == ['https://phytehq.github.io/RHW/assets/rhw-forum-logo.png',
                                           'https://phytehq.github.io/RHW/assets/rhw-forum-footer.png'], forum_offline
-        assert forum_offline['footer'] and forum_offline['style'], forum_offline
+        assert forum_offline['details'] == ['FROM', 'TO', 'ISSUED AT', 'SECURITY'], forum_offline
+        assert all(forum_offline[key] for key in ('identity', 'stamp', 'footer', 'style')), forum_offline
         (OUT / 'checks.json').write_text(json.dumps({'layouts': report, 'connectionHeaders': header_states, 'shipyard': shipyard, 'shipyardRowHeaders': row_header_checks, 'marketLayouts': market_layouts, 'disclosure': disclosure, 'commandSearch': command_search, 'retired': retired, 'keyboard': focused, 'priceFocus': price_focus, 'priceEdit': price_edit, 'productionRecipe': production_recipe, 'failedSave': failed_save, 'offlinePrices': offline_prices, 'offline': offline}, indent=2))
         print(f'Bundled interface passed: {len(report)} layouts, production recipe, rejected save, cached prices, keyboard focus, local fonts and offline reload.')
         return 0

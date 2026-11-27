@@ -40,20 +40,26 @@ const RHW_APP_CONFIG = Object.freeze({
     // Exported BBCode needs an absolute public URL; the local preview works offline.
     logoUrl: 'https://phytehq.github.io/RHW/assets/rhw-forum-logo.png',
     previewLogoUrl: './assets/rhw-forum-logo.png',
+    logoWidth: 240,
+    logoHeight: 299,
     footerUrl: 'https://phytehq.github.io/RHW/assets/rhw-forum-footer.png',
     previewFooterUrl: './assets/rhw-forum-footer.png',
-    organisation: 'RESOLUTION HEAVY WORKS',
-    subline: 'INDUSTRIAL MANUFACTURING HUB | NEW LONDON',
+    brandName: 'RESOLUTION',
+    brandDivision: 'HEAVY WORKS',
+    affiliation: 'BRETONIA MINING AND MANUFACTURING',
+    headerMotto: 'Under the Crown. For the Crown.',
+    locationLine: 'NEW LONDON · BRETONIA',
     brandColor: '#C9AA70',
-    textColor: '#E1E7EF',
-    mutedColor: '#B5C2D0',
+    textColor: '#E4E8EE',
+    steelColor: '#CDD4DC',
+    mutedColor: '#8995A5',
     lineColor: '#426B98',
-    cipherColor: '#80AAD8',
-    footerMotto: 'CONNECTION SECURE /// BUILT IN BRETONIA - BUILT FOR THE CROWN'
+    blueColor: '#80AAD8',
+    footerMotto: 'Industry in Service of the Crown.'
   }),
   classifications: Object.freeze([
     'PUBLIC RELEASE',
-    'RHW OFFICIAL',
+    'RES OFFICIAL',
     'RHW INTERNAL',
     'COMMERCIAL CONFIDENTIAL',
     'BMM CONFIDENTIAL',
@@ -64,7 +70,7 @@ const RHW_APP_CONFIG = Object.freeze({
   ]),
   classificationColors: Object.freeze({
     'PUBLIC RELEASE': '#78ad8a',
-    'RHW OFFICIAL': '#C9AA70',
+    'RES OFFICIAL': '#C9AA70',
     'RHW INTERNAL': '#80AAD8',
     'COMMERCIAL CONFIDENTIAL': '#c6a75a',
     'BMM CONFIDENTIAL': '#c6a75a',
@@ -97,7 +103,7 @@ const RHW_APP_CONFIG = Object.freeze({
     Object.freeze({
       key: 'alistair-thorne',
       name: 'Alistair Thorne',
-      title: 'CEO | Resolution Heavy Works',
+      title: 'Chief Executive Officer',
       organisation: 'Resolution Heavy Works',
       location: 'Resolution Heavy Works, New London',
       encryption: 'RHW-RESOLUTION/V · KEY THORNE-07'
@@ -105,11 +111,12 @@ const RHW_APP_CONFIG = Object.freeze({
   ]),
   templates: Object.freeze([
     Object.freeze({
-      key: 'formal', label: 'FORMAL TRANSMISSION', documentLabel: 'RHW SECURE TRANSMISSION',
+      key: 'formal', label: 'FORMAL TRANSMISSION', documentLabel: 'Official Corporate Correspondence',
+      officeLabel: 'OFFICE OF THE CHIEF EXECUTIVE',
       description: 'Official RHW correspondence with complete routing and security metadata.',
-      recipient: '', encryption: 'CROWN-TYPEX/VIII · KEY LION-01', classification: 'RHW OFFICIAL',
+      recipient: '', encryption: 'CROWN-TYPEX/VIII · KEY LION-01', classification: 'RES OFFICIAL',
       closing: 'Yours faithfully,', salutation: 'Dear Sir or Madam,',
-      subjectPlaceholder: 'Transmission subject'
+      subjectPlaceholder: 'Correspondence subject'
     }),
     Object.freeze({
       key: 'procurement', label: 'PROCUREMENT', documentLabel: 'ADMIRALTY PROCUREMENT FILE',
