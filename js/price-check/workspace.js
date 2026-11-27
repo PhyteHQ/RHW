@@ -1,7 +1,6 @@
 /* ========================================================================== */
 /* RHW PRICE CHECK                                                            */
-/* Fixed procurement routes only. Compares live source prices against RHW payout. */
-/* RHW's current PoB purchase prices. Variable PoB goods stay in Network Scan.*/
+/* NPC commodity offers compared with RHW's current purchase prices.         */
 /* ========================================================================== */
 (function initRhwPriceCheck() {
   'use strict';
@@ -11,55 +10,44 @@
 
   const MARKET_API = 'https://darkstat.dd84ai.com/api/npc_bases';
   const AUTO_REFRESH_MS = 300000;
-  const SOURCE_RESOLVE_RETRY_MS = 21600000;
-  const PROFIT_TARGETS = Array.from({ length: 20 }, (_, index) => (index + 1) * 250000);
+  const PAGE_SIZE = 24;
+  const MARKET_SCHEMA = 2;
+  const PROFIT_TARGETS = [[500000, '$500k/h'], [750000, '$750k/h'], [1000000, '$1M/h']];
   const STORAGE = Object.freeze({
     overrides: app.config.storageKeys.priceCheckOverrides || 'rhw-webapp-v4:price-check-overrides',
-    sources: 'rhw-webapp-v4:price-check-sources',
     market: 'rhw-webapp-v4:price-check-market-cache'
   });
 
-  /* Only fixed purchase routes belong here. Produced, mined and variable
-     PoB-system goods are intentionally excluded and remain owned by the
-     Production/Network Scan workflows. */
-  const ROUTES = Object.freeze([
-    Object.freeze({ key: 'hull-panels', commodity: 'Hull Panels', source: 'Portsmouth Shipyard', sourceNickname: 'br01_02_base', system: 'Cambridge' }),
-    Object.freeze({ key: 'industrial-materials', commodity: 'Industrial Materials', source: 'Planet New London', sourceNickname: 'br01_01_base', system: 'New London' }),
-    Object.freeze({ key: 'mox', commodity: 'MOX', source: 'Thames Outpost', sourceNickname: 'br01_06_base', system: 'New London' }),
-    Object.freeze({ key: 'titanium', commodity: 'Titanium', source: 'Kensington Shipping Platform', sourceNickname: 'br01_07_base', system: 'New London' }),
-    Object.freeze({ key: 'energy-field-equipment', commodity: 'Energy Field Equipment', source: 'Planet Cambridge', sourceNickname: 'br03_01_base', system: 'Cambridge' }),
-    Object.freeze({ key: 'super-alloy', commodity: 'Super Alloy', source: 'Waterloo Station', sourceNickname: 'br01_04_base', system: 'New London' }),
-    Object.freeze({ key: 'ablative-armor-plating', commodity: 'Ablative Armor Plating', source: 'Oder Shipyard', sourceNickname: 'rh01_02_base', system: 'New Berlin' }),
-    Object.freeze({ key: 'food-rations', commodity: 'Food Rations', source: 'Planet New London', sourceNickname: 'br01_01_base', system: 'New London' }),
-    Object.freeze({ key: 'hydrocarbons', commodity: 'Hydrocarbons', source: 'Thames Outpost', sourceNickname: 'br01_06_base', system: 'New London' }),
-    Object.freeze({ key: 'consumer-goods', commodity: 'Consumer Goods', source: 'Planet New London', sourceNickname: 'br01_01_base', system: 'New London' }),
-    Object.freeze({ key: 'mining-machinery', commodity: 'Mining Machinery', source: 'Thames Outpost', sourceNickname: 'br01_06_base', system: 'New London' })
+  // Retain the old manual-price backup schema independently of the live offers.
+  const LEGACY_OVERRIDE_KEYS = new Set([
+    'hull-panels', 'industrial-materials', 'mox', 'titanium', 'energy-field-equipment', 'super-alloy',
+    'ablative-armor-plating', 'food-rations', 'hydrocarbons', 'consumer-goods', 'mining-machinery', 'copper', 'niobium'
   ]);
-  const DISPLAY_ROUTES = Object.freeze([...ROUTES].sort((a, b) =>
-    a.source.localeCompare(b.source, 'en') || a.commodity.localeCompare(b.commodity, 'en')));
-  // A different source must never inherit the old station's price or identity.
-  const SOURCE_REVISION = ROUTES.map(route => `${route.key}:${route.sourceNickname}`).join('|');
-  const storedSources = app.store.get(STORAGE.sources, {}) || {};
-  const storedMarket = app.store.get(STORAGE.market, {}) || {};
-  // Keep historical manual prices portable, but never use them for NPC pricing.
-  const LEGACY_OVERRIDE_KEYS = Object.freeze(['copper', 'niobium']);
+  const storedMarket = app.store.get(STORAGE.market, null);
+  const savedRoutes = storedMarket?.schema === MARKET_SCHEMA && Array.isArray(storedMarket.routes)
+    && Number.isFinite(Date.parse(storedMarket.fetchedAt));
 
   const state = {
     initialized: false,
     loading: false,
     overrides: app.store.get(STORAGE.overrides, {}) || {},
-    sourceCache: storedSources.sourceRevision === SOURCE_REVISION ? storedSources : {},
-    marketCache: storedMarket.sourceRevision === SOURCE_REVISION ? storedMarket : {},
+    marketCache: savedRoutes ? { ...storedMarket, routes: storedMarket.routes.filter(route =>
+      route && ['key', 'sourceNickname', 'source', 'goodNickname', 'commodity', 'system', 'systemNickname']
+        .every(field => typeof route[field] === 'string')
+      && route.key === `${route.sourceNickname}/${route.goodNickname}`) } : { routes: [] },
     marketTone: 'waiting',
     marketLabel: 'AWAITING MARKET DATA',
     marketDetail: '',
     lastError: '',
     receivedAt: 0,
-    sort: 'source',
+    sort: 'commodity',
+    query: '',
+    page: 0,
     quantity: null,
-    hourlyTarget: 500000,
+    hourlyTarget: PROFIT_TARGETS[0][0],
     hauler: 'auto'
   };
+  let producedGoods = null;
   let tripModule, tripLoader, tripRequest, tripData, currentMapAt;
   let tripKey = '', tripError = '', nextTripAttempt = 0;
 
@@ -73,23 +61,20 @@
   const normalize = value => String(value ?? '')
     .toLowerCase()
     .normalize('NFKD')
-    .replace(/[’']/g, '')
+    .replace(/[’'\u0300-\u036f]/g, '')
     .replace(/[^a-z0-9]+/g, ' ')
     .trim()
     .replace(/\s+/g, ' ');
 
   function finite(value) {
-    if (value === null || value === undefined || value === '') return null;
+    if ((typeof value !== 'number' && typeof value !== 'string') || String(value).trim() === '') return null;
     const parsed = Number(value);
     return Number.isFinite(parsed) && parsed >= 0 ? parsed : null;
   }
 
-  function money(value, { signed = false } = {}) {
+  function money(value) {
     const parsed = finite(value);
-    if (parsed === null) return '—';
-    const rounded = Math.round(parsed);
-    const prefix = signed && rounded > 0 ? '+' : '';
-    return `${prefix}$${Math.abs(rounded).toLocaleString('en-US')}`.replace('$-', '-$');
+    return parsed === null ? '—' : `$${Math.round(parsed).toLocaleString('en-US')}`;
   }
 
   function signedMoney(value) {
@@ -116,19 +101,29 @@
   function workspaceMarkup() {
     return `<div class="pricecheck-frame" data-pricecheck-panel="routes">
       <header class="pricecheck-heading">
-        <div><h2>PRICE CHECK</h2><p>FIXED PROCUREMENT // SOURCE COST VS RHW PAYOUT</p></div>
+        <div><h2>PRICE CHECK</h2><p>NPC COMMODITIES // SOURCE COST VS RHW PAYOUT</p></div>
         <button type="button" class="pricecheck-refresh" id="priceCheckRefresh">REFRESH MARKET</button>
       </header>
       <div class="pricecheck-status-grid" id="priceCheckStatusGrid"></div>
       <div class="pricecheck-note" id="priceCheckNote">MARKET DATA LOADS WHEN PRICE CHECK OPENS.</div>
       <div class="pricecheck-controls">
-        <label for="priceCheckSort">Sort by<select id="priceCheckSort"><option value="source">Source</option><option value="best">Highest difference / unit</option><option value="worst">Lowest difference / unit</option></select></label>
+        <label class="pricecheck-search" for="priceCheckSearch">Search<input id="priceCheckSearch" type="search" maxlength="160" placeholder="Commodity, station or system"></label>
+        <label for="priceCheckSort">Sort by<select id="priceCheckSort"><option value="commodity">Commodity</option><option value="source">Source</option><option value="best">Highest difference / unit</option><option value="worst">Lowest difference / unit</option></select></label>
         <label for="priceCheckQuantity">Quantity · optional<input id="priceCheckQuantity" type="number" min="1" step="1" inputmode="numeric" placeholder="Units per route"></label>
-        <label for="priceCheckTarget">Trader profit target<select id="priceCheckTarget">${PROFIT_TARGETS.map(value => `<option value="${value}"${value === state.hourlyTarget ? ' selected' : ''}>${money(value)}/h</option>`).join('')}</select></label>
+        <fieldset class="pricecheck-target-picker" id="priceCheckTarget"><legend>Trader profit target</legend>
+          <div class="pricecheck-target-options">${PROFIT_TARGETS.map(([value, label]) => `<label><input type="radio" name="price-check-profit" value="${value}"${value === state.hourlyTarget ? ' checked' : ''}><span>${label}</span></label>`).join('')}</div>
+        </fieldset>
         <label for="priceCheckHauler">Hauler<select id="priceCheckHauler"><option value="auto">Auto · most units/hour</option></select></label>
       </div>
       <p class="pricecheck-trip-note">RHW round trip with an empty outbound leg. Quantity caps the load. Check docking permissions and RHW buying limits before trading.</p>
       <p class="pricecheck-trip-note" id="priceCheckTripStatus" role="status"></p>
+      <div class="pricecheck-results">
+        <p id="priceCheckResultCount" role="status"></p>
+        <div class="pricecheck-page-nav" id="priceCheckPageNav" role="group" aria-label="Offer pages" hidden>
+          <button type="button" id="priceCheckPrev" aria-controls="priceCheckRows">Previous</button>
+          <button type="button" id="priceCheckNext" aria-controls="priceCheckRows">Next</button>
+        </div>
+      </div>
       <div class="pricecheck-table-wrap"><table class="pricecheck-table">
         <thead><tr><th>COMMODITY</th><th>SOURCE</th><th>NPC PRICE</th><th>RHW PAYS</th><th>DIFFERENCE / UNIT</th></tr></thead>
         <tbody id="priceCheckRows"></tbody>
@@ -148,7 +143,7 @@
       button.dataset.workspace = 'pricecheck';
       button.setAttribute('aria-controls', 'workspacePricecheck');
       button.setAttribute('aria-label', 'Price Check');
-      button.innerHTML = '<span>PRICE CHECK</span><small>FIXED ROUTES</small>';
+      button.innerHTML = '<span>PRICE CHECK</span><small>NPC MARKET</small>';
       const forum = tabs.querySelector('[data-workspace="comms"]');
       tabs.insertBefore(button, forum || null);
     }
@@ -173,14 +168,15 @@
   function bindUi(panel) {
     if (!panel || panel.dataset.priceCheckBound === 'true') return;
     panel.dataset.priceCheckBound = 'true';
-    panel.addEventListener('click', event => {
-      if (event.target.closest('#priceCheckRefresh')) {
-        refreshTask.refresh({ forceResolve: true });
-        return;
-      }
+    panel.querySelector('#priceCheckRefresh').addEventListener('click', () => refreshTask.refresh({ forceTrips: true }));
+    panel.querySelector('#priceCheckSearch').addEventListener('input', event => {
+      state.query = normalize(event.target.value);
+      state.page = 0;
+      render();
     });
     panel.querySelector('#priceCheckSort').addEventListener('change', event => {
       state.sort = event.target.value;
+      state.page = 0;
       render();
     });
     panel.querySelector('#priceCheckQuantity').addEventListener('input', event => {
@@ -190,99 +186,44 @@
     });
     panel.querySelector('#priceCheckTarget').addEventListener('change', event => {
       const value = Number(event.target.value);
-      if (PROFIT_TARGETS.includes(value)) state.hourlyTarget = value;
+      if (PROFIT_TARGETS.some(([target]) => target === value)) state.hourlyTarget = value;
       render();
     });
     panel.querySelector('#priceCheckHauler').addEventListener('change', event => {
       state.hauler = event.target.value;
       render();
     });
-  }
-
-  function marketGoodFor(baseEntry, commodity) {
-    const target = normalize(commodity);
-    const candidates = Array.isArray(baseEntry?.market_goods) ? baseEntry.market_goods : [];
-    const matches = candidates.filter(good => normalize(good?.name || good?.nickname) === target);
-    if (!matches.length) return null;
-    return matches.find(good => good?.base_sells === true && finite(good?.price_base_sells_for) !== null)
-      || matches.find(good => finite(good?.price_base_sells_for) !== null)
-      || matches[0];
-  }
-
-
-  function pobGoodFor(baseEntry, commodity) {
-    const target = normalize(commodity);
-    const candidates = Array.isArray(baseEntry?.shop_items) ? baseEntry.shop_items : [];
-    return candidates.find(good => normalize(good?.name || good?.item_name) === target)
-      || candidates.find(good => normalize(good?.nickname) === `commodity ${target}`)
-      || null;
-  }
-
-  function pobSourceFor(route) {
-    try {
-      const pobs = typeof allBases !== 'undefined' && Array.isArray(allBases) ? allBases : [];
-      const nickname = normalize(route?.sourceNickname || route?.source);
-      const name = normalize(route?.source);
-      return pobs.find(baseEntry => normalize(baseEntry?.nickname) === nickname)
-        || pobs.find(baseEntry => normalize(baseEntry?.name) === name)
-        || null;
-    } catch {
-      return null;
+    for (const [id, direction] of [['priceCheckPrev', -1], ['priceCheckNext', 1]]) {
+      panel.querySelector(`#${id}`).addEventListener('click', event => {
+        const wasFocused = document.activeElement === event.currentTarget;
+        state.page += direction;
+        render();
+        if (wasFocused && event.currentTarget.disabled) panel.querySelector(direction > 0 ? '#priceCheckPrev' : '#priceCheckNext').focus();
+      });
     }
   }
 
-  function baseSystem(baseEntry) {
-    return String(baseEntry?.system_name || baseEntry?.system || '').trim();
+  function classifyGoods(catalog) {
+    if (!catalog?.recipes?.length) return;
+    producedGoods = new Set();
+    for (const recipe of catalog.recipes) {
+      // Opening sealed freight recovers existing cargo rather than making it.
+      if (recipe.id.startsWith('recipe_container_opening_')) continue;
+      for (const output of recipe.outputs || []) producedGoods.add(output.id.toLowerCase());
+    }
   }
 
-  function sourceScore(baseEntry, route) {
-    const name = normalize(baseEntry?.name);
-    if (!name || !String(baseEntry?.nickname || '').trim()) return -1;
-    const system = normalize(baseSystem(baseEntry));
-    const aliases = [...new Set([route.source, ...(route.aliases || [])].map(normalize).filter(Boolean))];
-    let nameScore = 0;
-    for (const alias of aliases) {
-      if (name === alias) nameScore = Math.max(nameScore, 120);
-      else if (alias.length >= 5 && (name.includes(alias) || alias.includes(name))) nameScore = Math.max(nameScore, 75);
-    }
-    if (!nameScore) return -1;
-    let score = nameScore;
-    if (system && normalize(route.system) === system) score += 25;
-    if (marketGoodFor(baseEntry, route.commodity)) score += 35;
-    return score;
-  }
-
-  function resolveSource(route, bases) {
-    if (route.sourceNickname) {
-      const exact = (bases || []).filter(baseEntry => baseEntry?.nickname === route.sourceNickname);
-      return exact.length === 1 ? exact[0] : null;
-    }
-    let best = null;
-    let bestScore = -1;
-    let ambiguous = false;
-    for (const baseEntry of bases || []) {
-      const score = sourceScore(baseEntry, route);
-      if (score > bestScore) {
-        best = baseEntry;
-        bestScore = score;
-        ambiguous = false;
-      } else if (score === bestScore && best?.nickname !== baseEntry?.nickname) {
-        ambiguous = true;
-      }
-    }
-    return bestScore >= 75 && !ambiguous ? best : null;
+  function marketRoutes() {
+    return producedGoods ? state.marketCache.routes.filter(route => !producedGoods.has(route.goodNickname.toLowerCase())) : [];
   }
 
   function rhwPrice(route) {
-    try {
-      const finder = typeof findCommodity === 'function' ? findCommodity : window.findCommodity;
-      const item = typeof finder === 'function' ? finder(route.commodity) : null;
-      if (!item || item.missing) return null;
-      // Asking prices are not evidence of what RHW pays the delivering player.
-      return [item.price_to_sell_to_base, item.sell_price, item.price_sell].map(finite).find(value => value !== null) ?? null;
-    } catch {
-      return null;
-    }
+    const named = typeof findCommodity === 'function' ? findCommodity(route.commodity) : null;
+    const shop = typeof rhwBase !== 'undefined' ? rhwBase?.shop_items : null;
+    const exact = shop?.find(item => item?.nickname === route.goodNickname);
+    const item = exact ?? (named?.nickname && named.nickname !== route.goodNickname ? null : named);
+    if (!item || item.missing) return null;
+    return [item.price_to_sell_to_base, item.sell_price, item.price_sell].map(finite).find(value => value !== null) ?? null;
   }
 
   function rhwSnapshot() {
@@ -293,14 +234,15 @@
     return { available: false, stale: false, label: 'RHW PRICE DATA UNAVAILABLE', detail: '' };
   }
 
-  async function fetchJson(body) {
+  async function fetchMarketBases() {
     const controller = new AbortController();
     const timeout = window.setTimeout(() => controller.abort(), 18000);
     try {
       const response = await fetch(MARKET_API, {
         method: 'POST',
+        cache: 'no-store',
         headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
+        body: JSON.stringify({ include_market_goods: true, filter_to_useful: true, filter_market_good_category: ['commodity'] }),
         signal: controller.signal
       });
       if (!response.ok) throw new Error(`MARKET HTTP ${response.status}`);
@@ -312,73 +254,39 @@
     }
   }
 
-  async function fetchMarketBases({ full = false } = {}) {
-    const sourceMap = state.sourceCache?.sources || {};
-    const nicknames = [...new Set(Object.values(sourceMap).map(entry => entry?.nickname).filter(Boolean))];
-    const body = {
-      include_market_goods: true,
-      filter_to_useful: true,
-      filter_market_good_category: ['commodity']
-    };
-    if (!full && nicknames.length) body.filter_nicknames = nicknames;
-    return fetchJson(body);
-  }
-
-  function snapshotRoutes(bases, { resolve = false } = {}) {
-    const previous = state.marketCache?.routes || {};
-    const checkedAt = new Date().toISOString();
-    state.receivedAt = Date.now();
-    const next = {};
-    const sources = { ...(state.sourceCache?.sources || {}) };
-
-    for (const route of ROUTES.filter(route => route.sourceType !== 'pob')) {
-      let source = route.sourceNickname ? resolveSource(route, bases) : null;
-      const known = sources[route.key];
-      if (!route.sourceNickname) {
-        if (known?.nickname) source = (bases || []).find(baseEntry => String(baseEntry?.nickname || '') === String(known.nickname));
-        if (!source && resolve) source = resolveSource(route, bases);
+  function snapshotRoutes(bases) {
+    const offers = new Map();
+    for (const base of bases) {
+      const sourceNickname = base?.nickname;
+      if (typeof sourceNickname !== 'string' || !sourceNickname || base.IsPob || base.is_pob || base.kind === 'pob') continue;
+      if (!Array.isArray(base.market_goods)) continue;
+      for (const good of base.market_goods) {
+        const goodNickname = good?.nickname;
+        if (typeof goodNickname !== 'string' || !goodNickname || good.base_sells !== true
+            || good.PoB || good.PoBGood || (good.category && good.category !== 'commodity')) continue;
+        const key = `${sourceNickname}/${goodNickname}`;
+        const livePrice = finite(good.price_base_sells_for);
+        const existing = offers.get(key);
+        if (existing) {
+          if (existing.livePrice !== livePrice) existing.livePrice = null;
+          continue;
+        }
+        offers.set(key, {
+          key, sourceNickname, goodNickname, livePrice,
+          source: String(base.name || sourceNickname), commodity: String(good.name || goodNickname),
+          system: String(base.system_name || good.system_name || base.system || ''),
+          systemNickname: String(base.system_nickname || good.system_nick || '')
+        });
       }
-      if (source) {
-        sources[route.key] = {
-          nickname: String(source.nickname || ''),
-          name: String(source.name || route.source),
-          system: baseSystem(source) || route.system
-        };
-      }
-      const good = source ? marketGoodFor(source, route.commodity) : null;
-      const livePrice = good?.base_sells === false ? null : finite(good?.price_base_sells_for);
-      next[route.key] = {
-        sourceNickname: sources[route.key]?.nickname || previous[route.key]?.sourceNickname || '',
-        sourceName: source?.name || sources[route.key]?.name || previous[route.key]?.sourceName || route.source,
-        system: baseSystem(source) || sources[route.key]?.system || previous[route.key]?.system || route.system,
-        systemNickname: String(source?.system_nickname || good?.system_nick || ''),
-        goodNickname: good?.nickname || previous[route.key]?.goodNickname || '',
-        livePrice,
-        checkedAt,
-        priceAt: livePrice !== null ? checkedAt : null,
-        found: Boolean(source),
-        sold: good ? good.base_sells !== false : false
-      };
     }
-
-    state.sourceCache = { sourceRevision: SOURCE_REVISION, resolvedAt: resolve ? Date.now() : Number(state.sourceCache?.resolvedAt) || 0, sources };
-    app.store.set(STORAGE.sources, state.sourceCache);
-    state.marketCache = { sourceRevision: SOURCE_REVISION, fetchedAt: checkedAt, routes: next };
+    const fetchedAt = new Date().toISOString();
+    state.receivedAt = Date.now();
+    state.marketCache = { schema: MARKET_SCHEMA, fetchedAt, routes: [...offers.values()].sort((a, b) => a.key.localeCompare(b.key)) };
     app.store.set(STORAGE.market, state.marketCache);
   }
 
-  function shouldResolveSources(forceResolve) {
-    if (forceResolve) return true;
-    const sources = state.sourceCache?.sources || {};
-    const missing = ROUTES.filter(route => route.sourceType !== 'pob').some(route => !sources[route.key]?.nickname);
-    const age = Date.now() - (Number(state.sourceCache?.resolvedAt) || 0);
-    return missing && age >= SOURCE_RESOLVE_RETRY_MS;
-  }
-
-  async function refreshMarket({ forceResolve = false, quiet = false } = {}) {
-    if (state.loading) return;
+  async function refreshMarket({ forceTrips = false, quiet = false } = {}) {
     state.loading = true;
-    state.lastError = '';
     if (!quiet) {
       state.marketTone = 'waiting';
       state.marketLabel = 'REFRESHING MARKET';
@@ -386,29 +294,14 @@
       render();
     }
     try {
-      const full = shouldResolveSources(forceResolve) || !Object.keys(state.sourceCache?.sources || {}).length;
-      let bases = await fetchMarketBases({ full });
-      snapshotRoutes(bases, { resolve: full });
-
-      /* A cached nickname can disappear after a Discovery data change. One full
-         resolution pass repairs renamed/replaced sources without making every
-         normal five-minute refresh expensive. */
-      const missingKnownBase = !full && ROUTES.filter(route => route.sourceType !== 'pob').some(route => {
-        const nickname = state.sourceCache?.sources?.[route.key]?.nickname;
-        return nickname && !bases.some(baseEntry => String(baseEntry?.nickname || '') === String(nickname));
-      });
-      if (missingKnownBase) {
-        bases = await fetchMarketBases({ full: true });
-        snapshotRoutes(bases, { resolve: true });
-      }
-
-      const complete = ROUTES.filter(route => route.sourceType !== 'pob').every(route => finite(state.marketCache.routes[route.key]?.livePrice) !== null);
-      state.marketTone = complete ? 'positive' : 'warn';
-      state.marketLabel = complete ? 'NPC MARKET LIVE' : 'MARKET UPDATED · SOME PRICES UNAVAILABLE';
-      state.marketDetail = `UPDATED ${new Date().toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}`;
+      snapshotRoutes(await fetchMarketBases());
+      state.lastError = '';
+      state.marketTone = 'positive';
+      state.marketLabel = 'NPC MARKET LIVE';
+      state.marketDetail = `UPDATED ${new Date(state.marketCache.fetchedAt).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}`;
     } catch (error) {
       state.lastError = String(error?.message || error || 'MARKET UPLINK FAILED');
-      if (state.marketCache?.fetchedAt && Object.keys(state.marketCache?.routes || {}).length) {
+      if (state.marketCache.fetchedAt) {
         state.marketTone = 'warn';
         state.marketLabel = 'CACHED MARKET';
         state.marketDetail = `LIVE REFRESH FAILED // SNAPSHOT ${new Date(state.marketCache.fetchedAt).toLocaleString('de-DE')}`;
@@ -419,62 +312,30 @@
       }
     } finally {
       state.loading = false;
-      render({ forceTrips: forceResolve });
+      render({ forceTrips });
     }
   }
 
-  function effectiveRow(route) {
-    const rhw = rhwSnapshot();
-    let market = state.marketCache?.routes?.[route.key] || {};
-    if (route.sourceNickname && market.sourceNickname !== route.sourceNickname) {
-      market = { found: false, sold: false };
-    }
-    if (route.sourceType === 'pob') {
-      const source = pobSourceFor(route);
-      const good = source ? pobGoodFor(source, route.commodity) : null;
-      // PoB shop semantics: price = player buys from base; sell_price = base buys from player.
-      const pobLivePrice = finite(good?.price ?? good?.price_to_buy_from_base ?? good?.buy_price);
-      if (source) {
-        market = {
-          ...market,
-          sourceNickname: String(source.nickname || route.sourceNickname || ''),
-          sourceName: String(source.name || route.source),
-          system: String(source.system_name || source.system || route.system),
-          goodNickname: String(good?.nickname || ''),
-          livePrice: pobLivePrice,
-          found: true,
-          sold: pobLivePrice !== null,
-          sourceType: 'pob',
-          priceAt: rhw.fetchedAt || null
-        };
-      } else market = { found: false, sold: false, sourceType: 'pob' };
-    }
-    const live = market.found === false || market.sold === false ? null : finite(market.livePrice);
-    const priceAt = market.priceAt || state.marketCache?.fetchedAt;
+  function effectiveRow(route, rhw = rhwSnapshot(), payout = rhw.available ? rhwPrice(route) : null) {
+    const live = finite(route.livePrice);
+    const priceAt = state.marketCache.fetchedAt;
     const age = Date.now() - Date.parse(priceAt || '');
-    const fresh = route.sourceType === 'pob'
-      ? rhw.available && !rhw.stale
-      : navigator.onLine !== false && state.receivedAt > 0 && Number.isFinite(age) && age >= 0 && age < AUTO_REFRESH_MS * 2 && !state.lastError;
-    const sourcePrice = live;
-    const payout = rhw.available ? rhwPrice(route) : null;
-    const difference = sourcePrice !== null && payout !== null ? payout - sourcePrice : null;
+    const fresh = navigator.onLine !== false && state.receivedAt > 0 && age >= 0 && age < AUTO_REFRESH_MS * 2 && !state.lastError;
+    const difference = live !== null && payout !== null ? payout - live : null;
     const tone = difference === null ? 'unknown' : (difference > 0 ? 'positive' : (difference < 0 ? 'negative' : 'neutral'));
-    return { route, market, live, sourcePrice, payout, difference, tone, fresh, priceAt, rhw };
+    return { route, live, payout, difference, tone, fresh, priceAt, rhw };
   }
 
   function statusMarkup(rows) {
-    const positive = rows.filter(row => row.difference !== null && row.difference > 0).length;
-    const negative = rows.filter(row => row.difference !== null && row.difference < 0).length;
-    const neutral = rows.filter(row => row.difference === 0).length;
-    const unknown = rows.length - positive - negative - neutral;
-    const hasComparison = unknown < rows.length;
-    const rhw = rhwSnapshot();
-    const rhwTone = rhw.available && !rhw.stale ? 'positive' : 'warn';
+    const commodities = new Set(rows.map(row => row.route.goodNickname)).size;
+    const positive = rows.filter(row => row.difference > 0).length;
+    const negative = rows.filter(row => row.difference < 0).length;
+    const hasComparison = rows.some(row => row.difference !== null);
     return `
-      <article class="pricecheck-status"><small>FIXED ROUTES</small><strong>${ROUTES.length}</strong></article>
-      <article class="pricecheck-status" data-tone="${positive ? 'positive' : 'neutral'}"><small>POSITIVE</small><strong>${hasComparison ? positive : '—'}</strong></article>
-      <article class="pricecheck-status" data-tone="${negative ? 'negative' : 'neutral'}"><small>LOSS</small><strong>${hasComparison ? negative : '—'}</strong></article>
-      <article class="pricecheck-status" data-tone="${unknown ? 'warn' : rhwTone}"><small>DATA STATUS</small><strong>${!hasComparison ? 'Awaiting prices' : unknown ? `${unknown} MISSING` : esc(rhw.label || 'RHW READY')}</strong></article>`;
+      <article class="pricecheck-status"><small>NPC COMMODITIES</small><strong>${commodities.toLocaleString('en-US')}</strong></article>
+      <article class="pricecheck-status"><small>STATION OFFERS</small><strong>${rows.length.toLocaleString('en-US')}</strong></article>
+      <article class="pricecheck-status" data-tone="${positive ? 'positive' : 'neutral'}"><small>POSITIVE</small><strong>${hasComparison ? positive.toLocaleString('en-US') : '—'}</strong></article>
+      <article class="pricecheck-status" data-tone="${negative ? 'negative' : 'neutral'}"><small>LOSS</small><strong>${hasComparison ? negative.toLocaleString('en-US') : '—'}</strong></article>`;
   }
 
   function loadTripModule() {
@@ -492,10 +353,10 @@
     return tripLoader;
   }
 
-  function updateTrips(rows, force) {
+  function updateTrips(offers, force) {
     const base = typeof rhwBase !== 'undefined' ? rhwBase : null;
-    const routes = rows.filter(row => row.live !== null && row.market.goodNickname).map(({ route, market }) => ({
-      key: route.key, sourceId: route.sourceNickname, goodId: market.goodNickname, system: market.systemNickname || ''
+    const routes = offers.filter(offer => finite(offer.livePrice) !== null).map(offer => ({
+      key: offer.key, sourceId: offer.sourceNickname, goodId: offer.goodNickname, system: offer.systemNickname
     }));
     const key = JSON.stringify([base?.nickname, base?.system_nickname, base?.base_pos ?? base?.pos, routes]);
     if (key !== tripKey) {
@@ -554,27 +415,75 @@
   }
 
   function rowMarkup(row) {
-    const { route, market, live, payout, difference, tone, fresh, priceAt, rhw } = row;
-    const sourceName = market.sourceName || route.source;
-    const system = market.system || route.system;
-    const sourceMeta = market.sourceType === 'pob'
-      ? `POB ${market.sourceNickname || route.sourceNickname || route.source}`
-      : (market.sourceNickname || 'SOURCE MATCH PENDING');
-    const sourceMetaClass = market.sourceType === 'pob' || market.sourceNickname ? 'pricecheck-source-id' : 'pricecheck-source-warning';
+    const { route, live, payout, difference, tone, fresh, priceAt, rhw } = row;
     const stamp = Number.isFinite(Date.parse(priceAt || '')) ? new Date(priceAt).toLocaleString('de-DE', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : 'TIME UNKNOWN';
     const liveCopy = live === null ? 'SOURCE PRICE UNAVAILABLE' : `${fresh ? 'LIVE' : 'CACHED'} · ${stamp}`;
-    const payoutCopy = payout === null ? 'RHW PRICE UNAVAILABLE' : money(payout);
+    const payoutCopy = payout === null ? (rhw.available ? 'RHW PRICE UNAVAILABLE' : 'RHW DATA UNAVAILABLE') : money(payout);
+    const payoutStatus = payout === null ? '' : `<small class="${rhw.stale ? '' : 'pricecheck-current'}">${rhw.stale ? 'RHW CACHED' : 'CURRENT RHW BUY'}</small>`;
     const total = state.quantity && difference !== null ? `<small class="pricecheck-total"><b>${signedMoney(difference * state.quantity)}</b> total for ${state.quantity.toLocaleString('en-US')}</small>` : '';
     const estimate = hourlyEstimate(row);
     const hourly = estimate.quote?.currentRate;
     const hourlyCopy = hourly == null ? '' : `<small class="pricecheck-hourly" title="Estimated trader profit at the current RHW payout">Est. <b>${signedMoney(hourly)}/h</b></small>`;
     return `<tr class="pricecheck-row" data-route-key="${esc(route.key)}">
-      <td class="pricecheck-item-cell"><span class="pricecheck-mobile-label">COMMODITY</span><span class="pricecheck-commodity"><strong>${esc(route.commodity)}</strong><small>${route.sourceType === 'pob' ? 'FIXED POB ROUTE' : 'FIXED NPC ROUTE'}</small></span></td>
-      <td class="pricecheck-source-cell"><span class="pricecheck-mobile-label">SOURCE</span><span class="pricecheck-source"><strong>${esc(sourceName)}</strong><small>${esc(system)}<span class="${sourceMetaClass}"> // ${esc(sourceMeta)}</span></small>${tripMarkup(estimate.quote)}</span></td>
+      <td class="pricecheck-item-cell"><span class="pricecheck-mobile-label">COMMODITY</span><span class="pricecheck-commodity"><strong>${esc(route.commodity)}</strong></span></td>
+      <td class="pricecheck-source-cell"><span class="pricecheck-mobile-label">SOURCE</span><span class="pricecheck-source"><strong>${esc(route.source)}</strong><small>${esc(route.system)}<span class="pricecheck-source-id">${route.system ? ' // ' : ''}${esc(route.sourceNickname)}</span></small>${tripMarkup(estimate.quote)}</span></td>
       <td class="pricecheck-price-cell"><span class="pricecheck-mobile-label">NPC PRICE</span><div class="pricecheck-price-quote"><strong class="pricecheck-source-price">${money(live)}</strong><small class="pricecheck-live">${liveCopy}</small></div></td>
-      <td class="pricecheck-payout-cell"><span class="pricecheck-mobile-label">RHW PAYS</span><span class="pricecheck-payout"><strong>${payoutCopy}</strong><small class="${rhw.available && !rhw.stale ? 'pricecheck-current' : ''}">${!rhw.available ? 'RHW DATA UNAVAILABLE' : rhw.stale ? 'RHW CACHED' : 'CURRENT RHW BUY'}</small></span>${targetMarkup(estimate, fresh)}</td>
+      <td class="pricecheck-payout-cell"><span class="pricecheck-mobile-label">RHW PAYS</span><span class="pricecheck-payout"><strong>${payoutCopy}</strong>${payoutStatus}</span>${targetMarkup(estimate, fresh)}</td>
       <td class="pricecheck-difference ${tone}"><span class="pricecheck-mobile-label">DIFFERENCE / UNIT</span><strong>${signedMoney(difference)}</strong>${total}${hourlyCopy}${difference !== null && (!fresh || rhw.stale) ? '<small class="pricecheck-estimate">FROM CACHED PRICES</small>' : ''}</td>
     </tr>`;
+  }
+
+  function compareRows(a, b) {
+    const sourceOrder = a.route.source.localeCompare(b.route.source, 'en');
+    const commodityOrder = a.route.commodity.localeCompare(b.route.commodity, 'en');
+    if (state.sort === 'source') return sourceOrder || commodityOrder;
+    if (state.sort === 'commodity') return commodityOrder || ((a.live ?? Infinity) - (b.live ?? Infinity)) || sourceOrder;
+    if (a.difference === null) return b.difference === null ? sourceOrder : 1;
+    if (b.difference === null) return -1;
+    return (a.difference - b.difference) * (state.sort === 'best' ? -1 : 1) || sourceOrder;
+  }
+
+  function renderResults(rowsNode, rows) {
+    const terms = state.query.split(' ').filter(Boolean);
+    const results = rows.filter(({ route }) => {
+      if (!terms.length) return true;
+      const text = normalize(`${route.commodity} ${route.source} ${route.system} ${route.goodNickname} ${route.sourceNickname}`);
+      return terms.every(term => text.includes(term));
+    }).sort(compareRows);
+    const pages = Math.max(1, Math.ceil(results.length / PAGE_SIZE));
+    state.page = Math.min(Math.max(0, state.page), pages - 1);
+    const first = state.page * PAGE_SIZE;
+    const last = Math.min(first + PAGE_SIZE, results.length);
+    const count = document.getElementById('priceCheckResultCount');
+    const summary = results.length ? `${first + 1}–${last} of ${results.length.toLocaleString('en-US')} offers`
+      : !producedGoods ? 'Discovery recipe catalog unavailable.'
+      : !state.marketCache.fetchedAt ? 'Awaiting NPC market offers.'
+      : state.query ? 'No offers match your search.' : 'No eligible NPC offers reported.';
+    if (count.textContent !== summary) count.textContent = summary;
+    document.getElementById('priceCheckPageNav').hidden = pages === 1;
+    document.getElementById('priceCheckPrev').disabled = state.page === 0;
+    document.getElementById('priceCheckNext').disabled = state.page === pages - 1;
+
+    const existingRows = new Map([...rowsNode.children].map(row => [row.dataset.routeKey, row]));
+    results.slice(first, last).forEach((row, index) => {
+      const key = row.route.key;
+      const existing = existingRows.get(key);
+      const fragment = document.createElement('tbody');
+      fragment.innerHTML = rowMarkup(row);
+      const next = fragment.firstElementChild;
+      if (!existing) {
+        rowsNode.insertBefore(next, rowsNode.children[index] || null);
+        return;
+      }
+      existingRows.delete(key);
+      if (rowsNode.children[index] !== existing) rowsNode.insertBefore(existing, rowsNode.children[index] || null);
+      [...next.children].forEach((cell, cellIndex) => {
+        const current = existing.children[cellIndex];
+        current.className = cell.className;
+        if (current.innerHTML !== cell.innerHTML) current.innerHTML = cell.innerHTML;
+      });
+    });
+    existingRows.forEach(row => row.remove());
   }
 
   function render({ forceTrips = false } = {}) {
@@ -585,37 +494,21 @@
     const refresh = document.getElementById('priceCheckRefresh');
     if (!grid || !rowsNode || !note) return;
 
-    const rows = DISPLAY_ROUTES.map(effectiveRow);
-    updateTrips(rows, forceTrips);
+    const offers = marketRoutes();
+    const rhw = rhwSnapshot();
+    const payouts = new Map();
+    const rows = offers.map(route => {
+      if (!payouts.has(route.goodNickname)) payouts.set(route.goodNickname, rhw.available ? rhwPrice(route) : null);
+      return effectiveRow(route, rhw, payouts.get(route.goodNickname));
+    });
+    updateTrips(offers, forceTrips);
     const tripStatus = document.getElementById('priceCheckTripStatus');
     const tripCopy = tripError || (tripData ? `Route map checked ${new Date(tripData.mapAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}${tripData.savedReferences ? ' · saved ship or cargo data' : ''}` : '');
     if (tripStatus && tripStatus.textContent !== tripCopy) tripStatus.textContent = tripCopy;
-    if (state.sort !== 'source') {
-      const direction = state.sort === 'best' ? -1 : 1;
-      rows.sort((a, b) => {
-        if (a.difference === null) return b.difference === null ? 0 : 1;
-        if (b.difference === null) return -1;
-        return (a.difference - b.difference) * direction;
-      });
-    }
     const status = statusMarkup(rows);
     if (grid.innerHTML !== status) grid.innerHTML = status;
-    rows.forEach((row, index) => {
-      const key = row.route.key;
-      const existing = rowsNode.querySelector(`[data-route-key="${key}"]`);
-      if (!existing) { rowsNode.insertAdjacentHTML('beforeend', rowMarkup(row)); return; }
-      if (rowsNode.children[index] !== existing) rowsNode.insertBefore(existing, rowsNode.children[index] || null);
-      const fragment = document.createElement('tbody');
-      fragment.innerHTML = rowMarkup(row);
-      const next = fragment.firstElementChild;
-      [...next.children].forEach((cell, index) => {
-        const current = existing.children[index];
-        current.className = cell.className;
-        if (current.innerHTML !== cell.innerHTML) current.innerHTML = cell.innerHTML;
-      });
-    });
+    renderResults(rowsNode, rows);
 
-    const rhw = rhwSnapshot();
     const parts = [state.marketLabel];
     if (state.marketDetail) parts.push(state.marketDetail);
     if (rhw?.detail) parts.push(rhw.detail);
@@ -631,7 +524,7 @@
     if (!raw || typeof raw !== 'object' || Array.isArray(raw)) throw new Error('INVALID PRICE CHECK OVERRIDES');
     const result = {};
     for (const [key, value] of Object.entries(raw)) {
-      if (!ROUTES.some(route => route.key === key) && !LEGACY_OVERRIDE_KEYS.includes(key)) throw new Error('UNKNOWN PRICE CHECK ROUTE');
+      if (!LEGACY_OVERRIDE_KEYS.has(key)) throw new Error('UNKNOWN PRICE CHECK ROUTE');
       if (typeof value !== 'number' || finite(value) === null) throw new Error('INVALID SOURCE PRICE');
       result[key] = value;
     }
@@ -659,13 +552,17 @@
     init();
     app.state.pricecheckNode = 'routes';
     document.body.dataset.pricecheckNode = 'routes';
-    app.setActiveNode('PRICE CHECK / FIXED ROUTES');
+    app.setActiveNode('PRICE CHECK / NPC MARKET');
     render();
     if (updateRoute) app.route.write('pricecheck', 'routes');
     return 'routes';
   }
 
   app.lifecycle.on('shell:ready', 'price-check', 30, ensureShell);
+  app.lifecycle.on('catalog:loaded', 'price-check-commodity-scope', 45, ({ catalog }) => {
+    classifyGoods(catalog);
+    render();
+  });
 
   // RHW payout changes arrive through the same telemetry notifications as COMMAND.
   app.onUiUpdate(() => {
@@ -676,23 +573,21 @@
     const failures = [];
     if (!document.querySelector('.app-tabs [data-workspace="pricecheck"]')) failures.push('tab');
     if (!document.getElementById('workspacePricecheck')) failures.push('workspace');
-    if (ROUTES.length !== 11) failures.push('route-count');
+    if ([...document.querySelectorAll('#priceCheckTarget input')].map(input => input.value).join(',') !== '500000,750000,1000000') failures.push('profit-targets');
     if (document.querySelector('#priceCheckRows input')) failures.push('editable-npc-price');
     if (document.querySelector('#rhwFocusToolsPanel [data-rhw-tool="build-queue"]')) failures.push('obsolete-build-queue');
     return failures;
   }
 
   app.pricecheck = {
-    routes: DISPLAY_ROUTES,
+    get routes() { return marketRoutes(); },
     state,
     init,
     activate,
     render,
     refresh: options => refreshTask.refresh(options || {}),
     selfTest,
-    resolveSource,
-    marketGoodFor,
-    snapshotRoutes, shouldResolveSources, effectiveRow, rowMarkup,
+    snapshotRoutes, effectiveRow, rowMarkup,
     importOverrides(raw) {
       const merged = { ...state.overrides, ...normalizeOverrides(raw) };
       if (app.store.set(STORAGE.overrides, merged) === false) throw new Error('PRICE CHECK IMPORT COULD NOT BE SAVED');
