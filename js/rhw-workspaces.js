@@ -1570,7 +1570,7 @@ const RHW_APP_CONFIG = Object.freeze({
               <label class="comms-field"><span>ENCRYPTION</span><div class="comms-inline-control"><input id="commsEncryption" type="text" maxlength="120" /><button type="button" id="randomizeCipherBtn" class="comms-mini-action">↻ ROLL CIPHER</button></div><small>RP CIPHER DESIGNATION // DOES NOT ENCRYPT THE POST</small></label>
               <label class="comms-field comms-wide"><span>SALUTATION / OPENING</span><select id="commsSalutation">${selectOptions(app.config.salutations)}</select><input id="commsSalutationCustom" type="text" maxlength="160" placeholder="Custom opening" hidden /><small>OPTIONAL OPENING BASED ON RECIPIENT CONTEXT</small></label>
               <label class="comms-field"><span>SIGN-OFF / CLOSING</span><select id="commsClosing">${selectOptions(app.config.closings)}</select><input id="commsClosingCustom" type="text" maxlength="100" placeholder="Custom sign-off" hidden /><small>PRESETS BY RECIPIENT CONTEXT</small></label>
-              <label class="comms-field"><span>SYSTEM TIME</span><input id="commsSystemDate" type="text" maxlength="40" placeholder="Today's date" /><small>AUTOMATIC LOCAL DATE // LEAVE EMPTY FOR TODAY</small></label>
+              <label class="comms-field"><span>SYSTEM TIME</span><input id="commsSystemDate" type="text" maxlength="40" placeholder="Today's date" /><small>AUTOMATIC SIRIUS DATE // LEAVE EMPTY FOR TODAY</small></label>
                 <label class="comms-field comms-wide"><span>FOOTER MOTTO</span><input id="commsFooterMotto" type="text" maxlength="180" /></label>
               </div>
             </details>
@@ -1725,7 +1725,9 @@ const RHW_APP_CONFIG = Object.freeze({
   function todaySystemDate() {
     const now = new Date();
     const pad = value => String(value).padStart(2, '0');
-    return `${pad(now.getDate())}/${pad(now.getMonth() + 1)}/${now.getFullYear()}`;
+    // Discovery's RP calendar follows local day/month with 2026 = 836.
+    const siriusYear = now.getFullYear() - 1190;
+    return `${pad(now.getDate())}/${pad(now.getMonth() + 1)}/${siriusYear}`;
   }
 
   function systemDateOverride(state) {

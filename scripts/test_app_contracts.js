@@ -69,19 +69,23 @@ assert.ok(official.includes('Official Corporate Correspondence') && official.inc
 assert.ok(official.includes('[color=#80AAD8]REGARDING') && official.includes('UNTITLED CORRESPONDENCE'));
 assert.ok(official.includes('Chief Executive Officer') && official.includes('Industry in Service of the Crown.'));
 const today = new Date();
-const todayStamp = [String(today.getDate()).padStart(2, '0'), String(today.getMonth() + 1).padStart(2, '0'), today.getFullYear()].join('/');
+const todayStamp = [String(today.getDate()).padStart(2, '0'), String(today.getMonth() + 1).padStart(2, '0'), today.getFullYear() - 1190].join('/');
 assert.ok(official.includes('SECURE TRANSMISSION · RES OFFICIAL[br]SYSTEM TIME: ' + todayStamp));
 assert.ok(!official.includes('[RES] SYSTEM TIME') && !official.includes('SYSTEM TIME: UNSET'));
 const autoState = app.storage.defaultState();
 assert.equal(autoState.systemDate, '', 'Automatic dates must not be persisted in drafts');
-let fakeDay = 27;
+let fakeYear = 2026, fakeMonth = 10, fakeDay = 27;
 context.Date = class extends Date {
-  constructor(...args) { super(...(args.length ? args : [2026, 10, fakeDay, 12])); }
+  constructor(...args) { super(...(args.length ? args : [fakeYear, fakeMonth, fakeDay, 12])); }
 };
-assert.ok(app.comms.buildBbcode(autoState).includes('SYSTEM TIME: 27/11/2026'));
+assert.ok(app.comms.buildBbcode(autoState).includes('SYSTEM TIME: 27/11/836'));
 fakeDay = 28;
-assert.ok(app.comms.buildBbcode(autoState).includes('SYSTEM TIME: 28/11/2026'), 'An existing automatic draft uses the current day when exported');
-assert.ok(app.comms.buildBbcode({...autoState, systemDate:'UNSET'}).includes('SYSTEM TIME: 28/11/2026'));
+assert.ok(app.comms.buildBbcode(autoState).includes('SYSTEM TIME: 28/11/836'), 'An existing automatic draft uses the current day when exported');
+assert.ok(app.comms.buildBbcode({...autoState, systemDate:'UNSET'}).includes('SYSTEM TIME: 28/11/836'));
+fakeMonth = 11; fakeDay = 31;
+assert.ok(app.comms.buildBbcode(autoState).includes('SYSTEM TIME: 31/12/836'));
+fakeYear = 2027; fakeMonth = 0; fakeDay = 1;
+assert.ok(app.comms.buildBbcode(autoState).includes('SYSTEM TIME: 01/01/837'), 'The Sirius year advances automatically at New Year');
 assert.ok(app.comms.buildBbcode({...autoState, systemDate:'27/11/836'}).includes('SYSTEM TIME: 27/11/836'), 'Explicit historical RP dates are preserved');
 delete context.Date;
 
