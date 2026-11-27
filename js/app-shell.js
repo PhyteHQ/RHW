@@ -11,6 +11,7 @@ self.RHW_APP_SHELL = [
   "./assets/discovery-status.json",
   "./assets/rhw-crest.png",
   "./assets/rhw-forum-logo.png",
+  "./assets/rhw-forum-footer.png",
   "./assets/favicon.png",
   "./assets/apple-touch-icon.png",
   "./assets/pwa-icon-192.png",

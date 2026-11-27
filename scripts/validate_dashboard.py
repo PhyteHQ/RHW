@@ -103,8 +103,9 @@ def main():
     for name, content in outputs.items():
         if not (ROOT / name).is_file() or (ROOT / name).read_text() != content:
             errors.append(f'Stale generated file: {name}')
-    if './assets/rhw-forum-logo.png' not in shell:
-        errors.append('Forum preview logo is missing from the offline shell.')
+    for filename in ['rhw-forum-logo.png', 'rhw-forum-footer.png']:
+        if f'./assets/{filename}' not in shell:
+            errors.append(f'Forum image is missing from the offline shell: {filename}')
     css = outputs['css/rhw-app.css']
     if re.search(r'url\([\s"\']*https?://', css):
         errors.append('Runtime CSS must not depend on external images or fonts.')

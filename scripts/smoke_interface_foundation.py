@@ -850,16 +850,28 @@ def main():
         restored_market = base.ev(cdp, """(()=>({at:RHWV4.pricecheck.state.marketCache.fetchedAt,
           label:RHWV4.pricecheck.state.marketLabel,warning:!!document.getElementById('rhwStorageWarning')}))()""")
         assert restored_market == {'at': price_cache['at'], 'label': 'CACHED MARKET', 'warning': False}, restored_market
-        # The Forum preview is local/offline; exported BBCode stays portable.
+        # Both Forum images work offline and export in their intended order.
         cdp.call('Emulation.setDeviceMetricsOverride', {'width': 1366, 'height': 940, 'deviceScaleFactor': 1, 'mobile': False})
         forum_offline = base.ev(cdp, """(async()=>{
           RHWV4.navigate('comms','forum');
-          const img=document.querySelector('#forumLivePreview img');img.loading='eager';
-          await img.decode();
-          return {loaded:img.naturalWidth>0,local:new URL(img.src).origin===location.origin,
-            portable:/\\[img\\]https:\\/\\//.test(RHWV4.comms.buildBbcode())};
+          const preview=document.getElementById('forumLivePreview');
+          const images=[...preview.querySelectorAll('img')];
+          await Promise.all(images.map(img=>{img.loading='eager';return img.decode();}));
+          const state={...RHWV4.state.comms,templateKey:'incident',classification:'',subject:'Docking Notice',
+            message:'## Yard access\\n!warning Berth 2 closed.',footerMotto:'For the Crown',systemDate:'27/11/836'};
+          const bbcode=RHWV4.comms.buildBbcode(state);
+          return {images:images.map(img=>[img.naturalWidth,img.naturalHeight,new URL(img.src).origin===location.origin]),
+            order:[...bbcode.matchAll(/\\[img\\](.*?)\\[\\/img\\]/g)].map(match=>match[1]),
+            footer:bbcode.indexOf('[align=right]')<bbcode.indexOf('rhw-forum-footer.png')
+              &&bbcode.indexOf('rhw-forum-footer.png')<bbcode.indexOf('For the Crown'),
+            style:bbcode.includes('[table=#426B98]')&&bbcode.includes('[font=Georgia][size=x-large][b][color=#C9AA70]Docking Notice')
+              &&bbcode.includes('[color=#c75e5e]CLASSIFICATION // PRIORITY // RESTRICTED')
+              &&bbcode.includes('Berth 2 closed.')&&bbcode.includes('27/11/836')};
         })()""")
-        assert all(forum_offline.values()), forum_offline
+        assert forum_offline['images'] == [[320, 399, True], [360, 107, True]], forum_offline
+        assert forum_offline['order'] == ['https://phytehq.github.io/RHW/assets/rhw-forum-logo.png',
+                                          'https://phytehq.github.io/RHW/assets/rhw-forum-footer.png'], forum_offline
+        assert forum_offline['footer'] and forum_offline['style'], forum_offline
         (OUT / 'checks.json').write_text(json.dumps({'layouts': report, 'connectionHeaders': header_states, 'shipyard': shipyard, 'shipyardRowHeaders': row_header_checks, 'marketLayouts': market_layouts, 'disclosure': disclosure, 'commandSearch': command_search, 'retired': retired, 'keyboard': focused, 'priceFocus': price_focus, 'priceEdit': price_edit, 'productionRecipe': production_recipe, 'failedSave': failed_save, 'offlinePrices': offline_prices, 'offline': offline}, indent=2))
         print(f'Bundled interface passed: {len(report)} layouts, production recipe, rejected save, cached prices, keyboard focus, local fonts and offline reload.')
         return 0

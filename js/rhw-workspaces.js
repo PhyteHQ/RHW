@@ -112,13 +112,15 @@ const RHW_APP_CONFIG = Object.freeze({
     // Exported BBCode needs an absolute public URL; the local preview works offline.
     logoUrl: 'https://phytehq.github.io/RHW/assets/rhw-forum-logo.png',
     previewLogoUrl: './assets/rhw-forum-logo.png',
+    footerUrl: 'https://phytehq.github.io/RHW/assets/rhw-forum-footer.png',
+    previewFooterUrl: './assets/rhw-forum-footer.png',
     organisation: 'RESOLUTION HEAVY WORKS',
     subline: 'INDUSTRIAL MANUFACTURING HUB | NEW LONDON',
-    brandColor: '#d4af37',
-    textColor: '#E0E0E0',
-    mutedColor: '#808080',
-    darkLineColor: '#333333',
-    footerColor: '#555555',
+    brandColor: '#C9AA70',
+    textColor: '#E1E7EF',
+    mutedColor: '#B5C2D0',
+    lineColor: '#426B98',
+    cipherColor: '#80AAD8',
     footerMotto: 'CONNECTION SECURE /// BUILT IN BRETONIA - BUILT FOR THE CROWN'
   }),
   classifications: Object.freeze([
@@ -134,13 +136,13 @@ const RHW_APP_CONFIG = Object.freeze({
   ]),
   classificationColors: Object.freeze({
     'PUBLIC RELEASE': '#78ad8a',
-    'RHW OFFICIAL': '#d4af37',
-    'RHW INTERNAL': '#7da7ea',
+    'RHW OFFICIAL': '#C9AA70',
+    'RHW INTERNAL': '#80AAD8',
     'COMMERCIAL CONFIDENTIAL': '#c6a75a',
     'BMM CONFIDENTIAL': '#c6a75a',
     'CROWN RESTRICTED': '#c98b2c',
     'ADMIRALTY EYES ONLY': '#c75e5e',
-    'RHW EXECUTIVE': '#d4af37',
+    'RHW EXECUTIVE': '#C9AA70',
     'PRIORITY // RESTRICTED': '#c75e5e'
   }),
   closings: Object.freeze([
@@ -167,8 +169,8 @@ const RHW_APP_CONFIG = Object.freeze({
     Object.freeze({
       key: 'alistair-thorne',
       name: 'Alistair Thorne',
-      title: 'CEO | Thorne Industrial Group',
-      organisation: 'Thorne Industrial Group',
+      title: 'CEO | Resolution Heavy Works',
+      organisation: 'Resolution Heavy Works',
       location: 'Resolution Heavy Works, New London',
       encryption: 'RHW-RESOLUTION/V · KEY THORNE-07'
     })
@@ -178,7 +180,7 @@ const RHW_APP_CONFIG = Object.freeze({
       key: 'formal', label: 'FORMAL TRANSMISSION', documentLabel: 'RHW SECURE TRANSMISSION',
       description: 'Official RHW correspondence with complete routing and security metadata.',
       recipient: '', encryption: 'CROWN-TYPEX/VIII · KEY LION-01', classification: 'RHW OFFICIAL',
-      closing: 'Yours faithfully,', salutation: 'Dear Sir or Madam,', accent: '#d4af37',
+      closing: 'Yours faithfully,', salutation: 'Dear Sir or Madam,',
       subjectPlaceholder: 'Transmission subject'
     }),
     Object.freeze({
@@ -187,35 +189,35 @@ const RHW_APP_CONFIG = Object.freeze({
       recipient: 'Bretonia Armed Forces | Admiralty Procurement Office',
       encryption: 'ADMIRALTY-IRONCLAD/VI · KEY VICTORIA-03', classification: 'CROWN RESTRICTED',
       closing: 'Respectfully,', salutation: 'To the appropriate officers of the Bretonia Armed Forces,',
-      accent: '#d4af37', subjectPlaceholder: 'Procurement subject'
+      subjectPlaceholder: 'Procurement subject'
     }),
     Object.freeze({
       key: 'trade', label: 'TRADE OFFER', documentLabel: 'COMMERCIAL OFFER FILE',
       description: 'Commercial proposal, supply agreement or external industrial negotiation.',
       recipient: '', encryption: 'BMM-BLACKTHORN/IV · KEY THAMES-11',
       classification: 'COMMERCIAL CONFIDENTIAL', closing: 'With highest regards,',
-      salutation: 'To our valued commercial partner,', accent: '#c6a75a', subjectPlaceholder: 'Commercial subject'
+      salutation: 'To our valued commercial partner,', subjectPlaceholder: 'Commercial subject'
     }),
     Object.freeze({
       key: 'operations', label: 'OPERATIONS BULLETIN', documentLabel: 'YARD OPERATIONS BULLETIN',
       description: 'Internal production, logistics, maintenance or yard-control transmission.',
       recipient: 'RHW Operations Network', encryption: 'RHW-RESOLUTION/V · KEY NEW-LONDON-06',
       classification: 'RHW INTERNAL', closing: 'For Resolution Heavy Works,',
-      salutation: 'To the relevant RHW/BMM departments,', accent: '#7da7ea', subjectPlaceholder: 'Operations subject'
+      salutation: 'To the relevant RHW/BMM departments,', subjectPlaceholder: 'Operations subject'
     }),
     Object.freeze({
       key: 'incident', label: 'INCIDENT REPORT', documentLabel: 'PRIORITY INCIDENT FILE',
       description: 'Priority security, facility or operational incident report.',
       recipient: 'RHW Command', encryption: 'CROWN-SOVEREIGN/IX · KEY RED-LION-01',
       classification: 'PRIORITY // RESTRICTED', closing: 'Respectfully,',
-      salutation: 'To the relevant RHW/BMM departments,', accent: '#c75e5e', subjectPlaceholder: 'Incident subject'
+      salutation: 'To the relevant RHW/BMM departments,', subjectPlaceholder: 'Incident subject'
     }),
     Object.freeze({
       key: 'announcement', label: 'GENERAL ANNOUNCEMENT', documentLabel: 'PUBLIC INDUSTRIAL NOTICE',
       description: 'Public-facing RHW statement, yard announcement or corporate bulletin.',
       recipient: 'Open Broadcast', encryption: 'RHW-HERALD/II · KEY CROWN-04',
       classification: 'PUBLIC RELEASE', closing: 'For Resolution Heavy Works,',
-      salutation: '__none__', accent: '#78ad8a', subjectPlaceholder: 'Announcement subject'
+      salutation: '__none__', subjectPlaceholder: 'Announcement subject'
     })
   ]),
   cipher: Object.freeze({
@@ -1675,7 +1677,7 @@ const RHW_APP_CONFIG = Object.freeze({
     return String(value || '').replace(/\r/g, '').split('\n').map(line => {
       const trimmed = line.trim();
       if (!trimmed) return '';
-      if (trimmed.startsWith('## ')) return `[font=Agency FB][size=large][b][color=${accent}]${inlineBbcode(trimmed.slice(3))}[/color][/b][/size][/font]`;
+      if (trimmed.startsWith('## ')) return `[font=Georgia][size=large][b][color=${accent}]${inlineBbcode(trimmed.slice(3))}[/color][/b][/size][/font]`;
       if (/^!warning\s+/i.test(trimmed)) return `[color=#c98b2c][b]WARNING //[/b] ${inlineBbcode(trimmed.replace(/^!warning\s+/i, ''))}[/color]`;
       if (/^!status\s+/i.test(trimmed)) return `[color=#78ad8a][b]STATUS //[/b] ${inlineBbcode(trimmed.replace(/^!status\s+/i, ''))}[/color]`;
       if (/^-\s+/.test(trimmed)) return `[b]•[/b] ${inlineBbcode(trimmed.replace(/^-\s+/, ''))}`;
@@ -1708,83 +1710,111 @@ const RHW_APP_CONFIG = Object.freeze({
     return blocks.join('');
   }
 
-  function buildBbcode(state = app.state.comms) {
-    const f = app.config.forum;
+  function transmission(state) {
     const sender = app.storage.resolveSender(state);
     const template = app.template(state.templateKey);
-    const accent = template.accent || f.brandColor;
     const classification = state.classification || template.classification;
-    const classificationColor = app.classificationColor(classification);
-    const recipient = String(state.recipient || '').trim() || 'UNSPECIFIED RECIPIENT';
-    const location = String(state.location || '').trim() || 'Resolution Heavy Works, New London';
-    const encryption = String(state.encryption || '').trim() || template.encryption;
-    const subject = String(state.subject || '').trim() || 'UNTITLED TRANSMISSION';
-    const salutation = resolvedSalutation(state);
-    const body = bodyToBbcode(state.message, accent);
-    const bodyWithOpening = [salutation, body].filter(Boolean).join('\n\n');
-    const closing = String(state.closing || '').trim() || template.closing;
-    const systemDate = String(state.systemDate || '').trim() || 'UNSET';
-    const footerMotto = String(state.footerMotto || '').trim() || f.footerMotto;
+    const field = (name, fallback) => String(state[name] || '').trim() || fallback;
+    return {
+      sender, template, classification, subject: field('subject', 'UNTITLED TRANSMISSION'),
+      salutation: resolvedSalutation(state),
+      closing: field('closing', template.closing),
+      systemDate: field('systemDate', 'UNSET'),
+      footerMotto: field('footerMotto', app.config.forum.footerMotto),
+      details: [
+        ['SENDER ID', sender.name],
+        ['RECIPIENT ID', field('recipient', 'UNSPECIFIED RECIPIENT')],
+        ['LOCATION', field('location', 'Resolution Heavy Works, New London')],
+        ['ENCRYPTION', field('encryption', template.encryption), 'encrypted']
+      ]
+    };
+  }
 
-    return `[align=center]\n` +
-`[img]${f.logoUrl}[/img]\n` +
-`[size=xx-large][font=Agency FB][b][color=${f.brandColor}]${f.organisation}[/color][/b][/font][/size]\n` +
-`[size=small][font=Consolas][color=${f.mutedColor}]${f.subline}[/color][/font][/size]\n` +
-`[/align]\n\n` +
-`[hrc]${f.brandColor}[/hrc]\n` +
-`[align=center][font=Consolas][size=x-small][color=${f.mutedColor}]${template.documentLabel} // ${template.label}[/color][/size][/font][br]\n` +
-`[font=Consolas][size=small][b][color=${classificationColor}]CLASSIFICATION // ${classification}[/color][/b][/size][/font][/align]\n` +
-`[hrc]${f.darkLineColor}[/hrc]\n\n` +
-`[align=center]\n[table=${f.brandColor}]\n` +
-`[tr]\n[td][font=Consolas][b][color=${f.brandColor}]SENDER ID:[/color][/b][/font][/td]\n[td][font=Consolas]      [/font][/td]\n[td][font=Consolas]${sender.name}[/font][/td]\n[/tr]\n` +
-`[tr]\n[td][font=Consolas][b][color=${f.brandColor}]RECIPIENT ID:[/color][/b][/font][/td]\n[td][font=Consolas]      [/font][/td]\n[td][font=Consolas]${recipient}[/font][/td]\n[/tr]\n` +
-`[tr]\n[td][font=Consolas][b][color=${f.brandColor}]LOCATION:[/color][/b][/font][/td]\n[td][font=Consolas]      [/font][/td]\n[td][font=Consolas]${location}[/font][/td]\n[/tr]\n` +
-`[tr]\n[td][font=Consolas][b][color=${f.brandColor}]ENCRYPTION:[/color][/b][/font][/td]\n[td][font=Consolas]      [/font][/td]\n[td][font=Consolas][color=#9FB6D9]${encryption}[/color][/font][/td]\n[/tr]\n` +
-`[/table]\n[/align]\n\n` +
-`[hrc]${accent}[/hrc]\n` +
-`[align=center][font=Consolas][size=x-small][color=${f.mutedColor}]SUBJECT[/color][/size][/font][br]\n` +
-`[font=Agency FB][size=x-large][b][color=${accent}]${subject}[/color][/b][/size][/font][/align]\n` +
-`[hrc]${accent}[/hrc]\n[br]\n` +
-`[pi amount=12][font=Tahoma][color=${f.textColor}]\n\n${bodyWithOpening}\n\n[/color][/font][/pi]\n` +
-`[br]\n[align=right]\n` +
-`[font=Agency FB][size=large][i]${closing}[/i][/size][/font]\n` +
-`[size=large][b][font=Agency FB][color=${f.brandColor}]${sender.name}[/color][/font][/b][/size]\n` +
-`[font=Consolas][size=small][color=${f.mutedColor}]${sender.title || ''}[/color][/size][/font]\n` +
-`[/align]\n\n[hrc]${f.darkLineColor}[/hrc]\n` +
-`[align=center][font=Consolas][size=x-small][color=${f.footerColor}]\n${footerMotto}\nTRANSMISSION CLASS // ${classification}\n[RHW] SYSTEM TIME: ${systemDate}\n[/color][/size][/font][/align]`;
+  function buildBbcode(state = app.state.comms) {
+    const f = app.config.forum;
+    const { sender, template, classification, subject, salutation, closing, systemDate, footerMotto, details } = transmission(state);
+    const classificationColor = app.classificationColor(classification);
+    const body = [salutation, bodyToBbcode(state.message, f.brandColor)].filter(Boolean).join('\n\n');
+    const rows = details.map(([label, value, kind]) => `[tr]
+[td][font=Consolas][b][color=${f.brandColor}]${label}:[/color][/b][/font][/td]
+[td][font=Consolas][color=${kind === 'encrypted' ? f.cipherColor : f.textColor}]${value}[/color][/font][/td]
+[/tr]`).join('\n');
+    const rule = `[hrc]${f.lineColor}[/hrc]`;
+
+    return `[align=center]
+[img]${f.logoUrl}[/img]
+[font=Consolas][size=small][color=${f.mutedColor}]${f.subline}[/color][/size][/font]
+
+[font=Consolas][size=x-small][color=${f.mutedColor}]${template.documentLabel} // ${template.label}[/color][/size][/font]
+[font=Consolas][size=small][b][color=${classificationColor}]CLASSIFICATION // ${classification}[/color][/b][/size][/font]
+[/align]
+${rule}
+
+[align=center]
+[table=${f.lineColor}]
+${rows}
+[/table]
+[/align]
+
+${rule}
+[align=center]
+[font=Consolas][size=x-small][color=${f.mutedColor}]SUBJECT[/color][/size][/font]
+[font=Georgia][size=x-large][b][color=${f.brandColor}]${subject}[/color][/b][/size][/font]
+[/align]
+${rule}
+
+[pi amount=12][font=Georgia][color=${f.textColor}]
+
+${body}
+
+[/color][/font][/pi]
+
+[align=right]
+[font=Georgia][size=large][i][color=${f.textColor}]${closing}[/color][/i][/size][/font]
+[font=Georgia][size=large][b][color=${f.brandColor}]${sender.name}[/color][/b][/size][/font]
+[font=Consolas][size=small][color=${f.mutedColor}]${sender.title || ''}[/color][/size][/font]
+[/align]
+
+[align=center]
+[img]${f.footerUrl}[/img]
+[font=Consolas][size=x-small][color=${f.mutedColor}]
+${footerMotto}
+TRANSMISSION CLASS // ${classification}
+[RHW] SYSTEM TIME: ${systemDate}
+[/color][/size][/font]
+[/align]`;
   }
 
   function renderPreview(state = app.state.comms) {
     const target = document.getElementById('forumLivePreview');
     if (!target || !state) return;
     const f = app.config.forum;
-    const sender = app.storage.resolveSender(state);
-    const template = app.template(state.templateKey);
-    const classification = state.classification || template.classification;
-    const salutation = resolvedSalutation(state);
-    target.dataset.template = template.key;
-    target.style.setProperty('--comms-accent', template.accent || f.brandColor);
+    const { sender, template, classification, subject, salutation, closing, systemDate, footerMotto, details } = transmission(state);
+    const esc = app.util.escape;
+    target.style.setProperty('--forum-brass', f.brandColor);
+    target.style.setProperty('--forum-rule', f.lineColor);
+    target.style.setProperty('--forum-steel', f.mutedColor);
+    target.style.setProperty('--forum-blue', f.cipherColor);
+    target.style.setProperty('--forum-text', f.textColor);
     target.style.setProperty('--classification-color', app.classificationColor(classification));
     target.innerHTML = `
       <div class="forum-preview-identity">
-        <div class="forum-preview-logo-wrap"><img src="${app.util.escape(f.previewLogoUrl)}" alt="RHW communication crest" loading="lazy" onerror="this.hidden=true;this.nextElementSibling.hidden=false" /><div class="forum-preview-logo-fallback" hidden>RHW</div></div>
-        <div class="forum-preview-title">${app.util.escape(f.organisation)}</div>
-        <div class="forum-preview-subline">${app.util.escape(f.subline)}</div>
-        <div class="forum-preview-document-type">${app.util.escape(template.documentLabel)} // ${app.util.escape(template.label)}</div>
-        <div class="forum-preview-classification">CLASSIFICATION // ${app.util.escape(classification)}</div>
+        <div class="forum-preview-logo-wrap"><img class="forum-preview-header-art" src="${esc(f.previewLogoUrl)}" width="320" height="399" alt="${esc(f.organisation)}" loading="lazy" onerror="this.hidden=true;this.nextElementSibling.hidden=false" /><div class="forum-preview-logo-fallback" hidden>${esc(f.organisation)}</div></div>
+        <div class="forum-preview-subline">${esc(f.subline)}</div>
+        <div class="forum-preview-document-type">${esc(template.documentLabel)} // ${esc(template.label)}</div>
+        <div class="forum-preview-classification">CLASSIFICATION // ${esc(classification)}</div>
       </div>
       <div class="forum-preview-rule"></div>
       <div class="forum-preview-meta">
-        <div class="forum-preview-meta-row"><strong>SENDER ID:</strong><span>${app.util.escape(sender.name || '—')}</span></div>
-        <div class="forum-preview-meta-row"><strong>RECIPIENT ID:</strong><span>${app.util.escape(state.recipient || '—')}</span></div>
-        <div class="forum-preview-meta-row"><strong>LOCATION:</strong><span>${app.util.escape(state.location || '—')}</span></div>
-        <div class="forum-preview-meta-row"><strong>ENCRYPTION:</strong><span class="encryption">${app.util.escape(state.encryption || '—')}</span></div>
+        ${details.map(([label, value, kind]) => `<div class="forum-preview-meta-row"><strong>${label}:</strong><span${kind === 'encrypted' ? ' class="encryption"' : ''}>${esc(value)}</span></div>`).join('')}
       </div>
-      <div class="forum-preview-subject"><small>SUBJECT</small><strong>${app.util.escape(state.subject || 'UNTITLED TRANSMISSION')}</strong></div>
-      <div class="forum-preview-rule"></div>
-      <div class="forum-preview-body">${salutation ? `<p class="forum-preview-salutation">${app.util.escape(salutation)}</p>` : ''}${String(state.message || '').trim() ? bodyToPreview(state.message) : '<span class="preview-placeholder">AWAITING TRANSMISSION BODY</span>'}</div>
-      <div class="forum-preview-signature"><em>${app.util.escape(state.closing || template.closing)}</em><strong>${app.util.escape(sender.name)}</strong><small>${app.util.escape(sender.title || '')}</small></div>
-      <div class="forum-preview-footer"><span>${app.util.escape(state.footerMotto || f.footerMotto)}</span><span>TRANSMISSION CLASS // ${app.util.escape(classification)}</span><span>[RHW] SYSTEM TIME: ${app.util.escape(state.systemDate || 'UNSET')}</span></div>`;
+      <div class="forum-preview-subject"><small>SUBJECT</small><strong>${esc(subject)}</strong></div>
+      <div class="forum-preview-body">${salutation ? `<p class="forum-preview-salutation">${esc(salutation)}</p>` : ''}${String(state.message || '').trim() ? bodyToPreview(state.message) : '<span class="preview-placeholder">AWAITING TRANSMISSION BODY</span>'}</div>
+      <div class="forum-preview-signature"><em>${esc(closing)}</em><strong>${esc(sender.name)}</strong><small>${esc(sender.title || '')}</small></div>
+      <div class="forum-preview-footer">
+        <img class="forum-preview-footer-art" src="${esc(f.previewFooterUrl)}" width="360" height="107" alt="" loading="lazy" />
+        <span>${esc(footerMotto)}</span><span>TRANSMISSION CLASS // ${esc(classification)}</span><span>[RHW] SYSTEM TIME: ${esc(systemDate)}</span>
+      </div>`;
     app.rendered?.('forum-preview');
   }
 

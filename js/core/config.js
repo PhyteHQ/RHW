@@ -40,13 +40,15 @@ const RHW_APP_CONFIG = Object.freeze({
     // Exported BBCode needs an absolute public URL; the local preview works offline.
     logoUrl: 'https://phytehq.github.io/RHW/assets/rhw-forum-logo.png',
     previewLogoUrl: './assets/rhw-forum-logo.png',
+    footerUrl: 'https://phytehq.github.io/RHW/assets/rhw-forum-footer.png',
+    previewFooterUrl: './assets/rhw-forum-footer.png',
     organisation: 'RESOLUTION HEAVY WORKS',
     subline: 'INDUSTRIAL MANUFACTURING HUB | NEW LONDON',
-    brandColor: '#d4af37',
-    textColor: '#E0E0E0',
-    mutedColor: '#808080',
-    darkLineColor: '#333333',
-    footerColor: '#555555',
+    brandColor: '#C9AA70',
+    textColor: '#E1E7EF',
+    mutedColor: '#B5C2D0',
+    lineColor: '#426B98',
+    cipherColor: '#80AAD8',
     footerMotto: 'CONNECTION SECURE /// BUILT IN BRETONIA - BUILT FOR THE CROWN'
   }),
   classifications: Object.freeze([
@@ -62,13 +64,13 @@ const RHW_APP_CONFIG = Object.freeze({
   ]),
   classificationColors: Object.freeze({
     'PUBLIC RELEASE': '#78ad8a',
-    'RHW OFFICIAL': '#d4af37',
-    'RHW INTERNAL': '#7da7ea',
+    'RHW OFFICIAL': '#C9AA70',
+    'RHW INTERNAL': '#80AAD8',
     'COMMERCIAL CONFIDENTIAL': '#c6a75a',
     'BMM CONFIDENTIAL': '#c6a75a',
     'CROWN RESTRICTED': '#c98b2c',
     'ADMIRALTY EYES ONLY': '#c75e5e',
-    'RHW EXECUTIVE': '#d4af37',
+    'RHW EXECUTIVE': '#C9AA70',
     'PRIORITY // RESTRICTED': '#c75e5e'
   }),
   closings: Object.freeze([
@@ -95,8 +97,8 @@ const RHW_APP_CONFIG = Object.freeze({
     Object.freeze({
       key: 'alistair-thorne',
       name: 'Alistair Thorne',
-      title: 'CEO | Thorne Industrial Group',
-      organisation: 'Thorne Industrial Group',
+      title: 'CEO | Resolution Heavy Works',
+      organisation: 'Resolution Heavy Works',
       location: 'Resolution Heavy Works, New London',
       encryption: 'RHW-RESOLUTION/V · KEY THORNE-07'
     })
@@ -106,7 +108,7 @@ const RHW_APP_CONFIG = Object.freeze({
       key: 'formal', label: 'FORMAL TRANSMISSION', documentLabel: 'RHW SECURE TRANSMISSION',
       description: 'Official RHW correspondence with complete routing and security metadata.',
       recipient: '', encryption: 'CROWN-TYPEX/VIII · KEY LION-01', classification: 'RHW OFFICIAL',
-      closing: 'Yours faithfully,', salutation: 'Dear Sir or Madam,', accent: '#d4af37',
+      closing: 'Yours faithfully,', salutation: 'Dear Sir or Madam,',
       subjectPlaceholder: 'Transmission subject'
     }),
     Object.freeze({
@@ -115,35 +117,35 @@ const RHW_APP_CONFIG = Object.freeze({
       recipient: 'Bretonia Armed Forces | Admiralty Procurement Office',
       encryption: 'ADMIRALTY-IRONCLAD/VI · KEY VICTORIA-03', classification: 'CROWN RESTRICTED',
       closing: 'Respectfully,', salutation: 'To the appropriate officers of the Bretonia Armed Forces,',
-      accent: '#d4af37', subjectPlaceholder: 'Procurement subject'
+      subjectPlaceholder: 'Procurement subject'
     }),
     Object.freeze({
       key: 'trade', label: 'TRADE OFFER', documentLabel: 'COMMERCIAL OFFER FILE',
       description: 'Commercial proposal, supply agreement or external industrial negotiation.',
       recipient: '', encryption: 'BMM-BLACKTHORN/IV · KEY THAMES-11',
       classification: 'COMMERCIAL CONFIDENTIAL', closing: 'With highest regards,',
-      salutation: 'To our valued commercial partner,', accent: '#c6a75a', subjectPlaceholder: 'Commercial subject'
+      salutation: 'To our valued commercial partner,', subjectPlaceholder: 'Commercial subject'
     }),
     Object.freeze({
       key: 'operations', label: 'OPERATIONS BULLETIN', documentLabel: 'YARD OPERATIONS BULLETIN',
       description: 'Internal production, logistics, maintenance or yard-control transmission.',
       recipient: 'RHW Operations Network', encryption: 'RHW-RESOLUTION/V · KEY NEW-LONDON-06',
       classification: 'RHW INTERNAL', closing: 'For Resolution Heavy Works,',
-      salutation: 'To the relevant RHW/BMM departments,', accent: '#7da7ea', subjectPlaceholder: 'Operations subject'
+      salutation: 'To the relevant RHW/BMM departments,', subjectPlaceholder: 'Operations subject'
     }),
     Object.freeze({
       key: 'incident', label: 'INCIDENT REPORT', documentLabel: 'PRIORITY INCIDENT FILE',
       description: 'Priority security, facility or operational incident report.',
       recipient: 'RHW Command', encryption: 'CROWN-SOVEREIGN/IX · KEY RED-LION-01',
       classification: 'PRIORITY // RESTRICTED', closing: 'Respectfully,',
-      salutation: 'To the relevant RHW/BMM departments,', accent: '#c75e5e', subjectPlaceholder: 'Incident subject'
+      salutation: 'To the relevant RHW/BMM departments,', subjectPlaceholder: 'Incident subject'
     }),
     Object.freeze({
       key: 'announcement', label: 'GENERAL ANNOUNCEMENT', documentLabel: 'PUBLIC INDUSTRIAL NOTICE',
       description: 'Public-facing RHW statement, yard announcement or corporate bulletin.',
       recipient: 'Open Broadcast', encryption: 'RHW-HERALD/II · KEY CROWN-04',
       classification: 'PUBLIC RELEASE', closing: 'For Resolution Heavy Works,',
-      salutation: '__none__', accent: '#78ad8a', subjectPlaceholder: 'Announcement subject'
+      salutation: '__none__', subjectPlaceholder: 'Announcement subject'
     })
   ]),
   cipher: Object.freeze({
