@@ -103,23 +103,23 @@ html.rhw-focus-pass.rhw-workbench .rhw-item-detail::backdrop { background:#0007;
 
 /* Overview pairs the station readout with the live action queue. */
 html.rhw-focus-pass.rhw-workbench .command-briefing {
-  --overview-rim:#39464e;
-  --overview-steel:#182229;
-  --overview-recess:#10171b;
   display:grid;
-  grid-template-columns:minmax(0,1fr) minmax(0,1.35fr);
-  gap:16px;
+  grid-template-columns:minmax(0,1fr) minmax(0,1.25fr);
+  gap:var(--rhw-space-panel);
   margin-bottom:20px;
 }
 .overview-station,.overview-next {
   min-width:0;
-  border:1px solid var(--overview-rim);
-  background:var(--overview-recess);
+  overflow:hidden;
+  border:1px solid var(--line);
+  border-top-color:var(--palette-line-bright);
+  border-radius:var(--rhw-surface-radius);
+  background:var(--panel);
+  box-shadow:var(--rhw-card-shadow);
 }
 .overview-station {
   display:flex;
   flex-direction:column;
-  border-top:3px solid var(--gold);
 }
 .overview-operations { display:grid; }
 html.rhw-focus-pass.rhw-workbench .overview-operation {
@@ -140,15 +140,11 @@ html.rhw-focus-pass.rhw-workbench .overview-operation {
 }
 html.rhw-focus-pass.rhw-workbench .overview-production {
   grid-template-columns:minmax(0,1fr) auto;
-  gap:clamp(14px,2.2vw,34px);
-  min-height:188px;
-  padding:18px 30px;
-  border-bottom:1px solid var(--overview-rim);
-  background:
-    linear-gradient(90deg,transparent 0%,var(--overview-steel) 78%),
-    repeating-linear-gradient(90deg,#a5b7c00b 0 1px,transparent 1px 22px),
-    repeating-linear-gradient(0deg,#a5b7c00b 0 1px,transparent 1px 22px),
-    linear-gradient(118deg,#202d32,var(--overview-steel));
+  gap:clamp(14px,1.6vw,25px);
+  min-height:142px;
+  padding:18px 22px;
+  border-bottom:1px solid var(--line);
+  background:var(--surface-raised);
 }
 html.rhw-focus-pass.rhw-workbench .overview-production:has(.overview-coverage-meter) {
   grid-template-columns:auto minmax(0,1fr) auto;
@@ -159,47 +155,47 @@ html.rhw-focus-pass.rhw-workbench .overview-production:has(.overview-coverage-me
   flex-direction:column;
   align-items:center;
   justify-content:center;
-  width:clamp(110px,11vw,150px);
+  width:clamp(86px,8.5vw,112px);
   aspect-ratio:1;
   border-radius:50%;
   background:
-    repeating-conic-gradient(transparent 0 calc(var(--segment) - 3deg),var(--overview-steel) 0 var(--segment)),
-    conic-gradient(var(--good) 0deg var(--coverage),#545f64 var(--coverage) 360deg);
+    repeating-conic-gradient(transparent 0 calc(var(--segment) - 3deg),var(--surface-raised) 0 var(--segment)),
+    conic-gradient(var(--good) 0deg var(--coverage),var(--palette-line-bright) var(--coverage) 360deg);
 }
 .overview-coverage-meter::before {
   position:absolute;
-  inset:8px;
-  border:5px solid #202e34;
+  inset:5px;
+  border:2px solid var(--line);
   border-radius:50%;
-  background:var(--overview-recess);
+  background:var(--surface-input);
   content:"";
 }
 .overview-coverage-meter>strong,.overview-coverage-meter>small { position:relative; }
 .overview-coverage-meter>strong {
   color:var(--text);
-  font:600 clamp(33px,3.4vw,49px)/1 var(--font-title);
+  font:clamp(25px,2.5vw,34px)/1 var(--font-tech);
   white-space:nowrap;
 }
-.overview-coverage-meter>strong span { color:#a1b0b6;font-size:.64em; }
+.overview-coverage-meter>strong span { color:var(--muted);font-size:.68em; }
 .overview-coverage-meter>small {
-  margin-top:6px;
-  color:#b8c6cb;
+  margin-top:4px;
+  color:var(--muted);
   font:11px/1.2 var(--font-main);
-  letter-spacing:.11em;
+  letter-spacing:.06em;
   text-transform:uppercase;
 }
-.overview-operation-copy { display:grid;gap:7px;min-width:0; }
+.overview-operation-copy { display:grid;gap:5px;min-width:0; }
 .overview-operation-label {
-  color:var(--gold);
+  color:var(--palette-text-soft);
   font:600 12px/1.3 var(--font-main);
-  letter-spacing:.12em;
+  letter-spacing:.075em;
   text-transform:uppercase;
 }
-.overview-operation-copy>strong { color:var(--text);font:500 clamp(23px,2.4vw,37px)/1.06 var(--font-title); }
-.overview-production[data-state="advisory"] .overview-operation-copy>strong { color:#ffd38a; }
+.overview-operation-copy>strong { color:var(--text);font:600 clamp(19px,1.7vw,25px)/1.25 var(--font-main); }
+.overview-production[data-state="advisory"] .overview-operation-label { color:var(--warn); }
 .overview-operation-copy>small,.overview-shipyard>small {
-  color:#b9c3c9;
-  font:13px/1.5 var(--font-main);
+  color:var(--muted);
+  font:14px/1.45 var(--font-main);
   overflow-wrap:anywhere;
 }
 .overview-operation-arrow {
@@ -232,10 +228,10 @@ html.rhw-focus-pass.rhw-workbench .overview-shipyard {
   grid-template-columns:auto auto minmax(0,1fr) auto;
   gap:12px;
   padding:11px 22px;
-  background:#172027;
+  background:var(--panel);
 }
-.overview-shipyard>strong { color:var(--text);font:500 18px/1.2 var(--font-title); }
-.overview-shipyard>small { padding-inline-start:12px;border-inline-start:1px solid var(--overview-rim); }
+.overview-shipyard>strong { color:var(--text);font:600 15px/1.3 var(--font-main); }
+.overview-shipyard>small { padding-inline-start:12px;border-inline-start:1px solid var(--line); }
 html.rhw-focus-pass.rhw-workbench .overview-operation:is(:hover,:focus-visible) {
   outline:2px solid var(--gold);
   outline-offset:-2px;
@@ -249,18 +245,18 @@ html.rhw-focus-pass.rhw-workbench #commandBriefing .maintenance-panel {
   min-width:0;
   margin:0;
   border:0;
-  border-top:1px solid var(--overview-rim);
+  border-top:1px solid var(--line);
   border-radius:0;
-  background:var(--overview-recess);
+  background:var(--surface-input);
 }
 html.rhw-focus-pass.rhw-workbench #commandBriefing .maintenance-panel .alert-title {
   min-height:0;
   padding:13px 22px 0;
   border:0;
   background:transparent;
-  color:var(--gold);
+  color:var(--palette-text-soft);
   font:600 12px/1.3 var(--font-main);
-  letter-spacing:.12em;
+  letter-spacing:.075em;
   text-transform:uppercase;
 }
 html.rhw-focus-pass.rhw-workbench #commandBriefing .maintenance-panel .alert-title>span:first-child { font:inherit;letter-spacing:inherit;text-transform:inherit; }
@@ -280,7 +276,7 @@ html.rhw-focus-pass.rhw-workbench #commandBriefing #maintenanceList>li.overview-
   margin:0;
   padding:0 14px;
   border:0;
-  border-right:1px solid var(--overview-rim);
+  border-right:1px solid var(--line);
   background:transparent;
 }
 html.rhw-focus-pass.rhw-workbench #commandBriefing #maintenanceList>li:last-child { border-right:0; }
@@ -309,7 +305,6 @@ html.rhw-focus-pass #commandBriefing .maintenance-panel .overview-stock-detail {
   display:flex;
   flex-direction:column;
   align-self:start;
-  border-top:3px solid #546571;
 }
 .overview-section-head {
   display:flex;
@@ -317,28 +312,28 @@ html.rhw-focus-pass #commandBriefing .maintenance-panel .overview-stock-detail {
   justify-content:space-between;
   gap:12px;
   padding:14px 19px;
-  border-bottom:1px solid var(--overview-rim);
-  background:#181f23;
+  border-bottom:1px solid var(--line);
+  background:var(--surface-raised);
 }
-.overview-section-head h3 { margin:0;color:var(--text);font:500 23px/1.2 var(--font-title); }
-.overview-section-head>span { color:#b9c3c9;font:12px/1.4 var(--font-main); }
+.overview-section-head h3 { margin:0;color:var(--text);font:600 20px/1.25 var(--font-main); }
+.overview-section-head>span { color:var(--muted);font:13px/1.4 var(--font-main); }
 .overview-next-actions { display:grid;min-width:0; }
 html.rhw-focus-pass.rhw-workbench .overview-next .command-priority-entry {
   display:grid;
   grid-template-columns:minmax(0,1fr) auto;
   align-items:center;
   gap:8px;
-  padding:5px 18px;
+  padding:7px 18px;
   border:0;
-  border-bottom:1px solid #2e383f;
+  border-bottom:1px solid var(--line);
   background:transparent;
 }
 html.rhw-focus-pass.rhw-workbench .overview-next .command-priority-entry:last-child { border-bottom:0; }
 html.rhw-focus-pass.rhw-workbench .overview-next .command-priority-entry:first-child {
-  padding-block:13px;
-  border-left:3px solid var(--gold);
-  padding-inline-start:15px;
-  background:linear-gradient(112deg,#2b2920,#171c20 78%);
+  padding-block:12px;
+  border-left:2px solid var(--gold);
+  padding-inline-start:16px;
+  background:var(--rhw-selected-fill);
 }
 html.rhw-focus-pass.rhw-workbench .overview-next .state-critical:first-child { border-left-color:var(--danger); }
 html.rhw-focus-pass.rhw-workbench .overview-next .command-priority-item {
@@ -358,8 +353,8 @@ html.rhw-focus-pass.rhw-workbench .overview-next .command-priority-item {
 .overview-next .command-priority-item>span { min-width:0; }
 .overview-next .command-priority-item .priority-state {
   display:block;
-  font:600 11px/1.35 var(--font-main);
-  letter-spacing:.06em;
+  font:600 12px/1.35 var(--font-main);
+  letter-spacing:.03em;
 }
 html.rhw-focus-pass.rhw-workbench .overview-next .command-priority-item strong {
   display:block;
@@ -369,32 +364,33 @@ html.rhw-focus-pass.rhw-workbench .overview-next .command-priority-item strong {
   overflow-wrap:anywhere;
 }
 html.rhw-focus-pass.rhw-workbench .overview-next .command-priority-entry:first-child strong {
-  font:500 clamp(22px,2vw,31px)/1.1 var(--font-title);
+  font:600 clamp(18px,1.5vw,22px)/1.25 var(--font-main);
 }
 .overview-next .command-priority-item small {
   display:block;
   margin-top:3px;
-  color:#b9c3c9;
-  font:12px/1.4 var(--font-main);
+  color:var(--muted);
+  font:13px/1.4 var(--font-main);
   white-space:normal;
 }
-.overview-next .command-priority-item .priority-effects { font-size:11px; }
 html.rhw-focus-pass.rhw-workbench .overview-next .priority-supply-button {
   min-height:44px;
   margin:0;
-  padding:7px 10px;
-  border:1px solid #59646a;
-  border-radius:2px;
-  background:transparent;
+  padding:7px 12px;
+  border:1px solid var(--palette-line-bright);
+  border-radius:var(--rhw-surface-radius);
+  background:var(--rhw-control-fill);
   color:var(--gold);
-  font:600 12px/1.4 var(--font-main);
+  font:600 13px/1.4 var(--font-main);
+  letter-spacing:0;
   white-space:nowrap;
 }
 html.rhw-focus-pass.rhw-workbench .overview-next .command-priority-entry:first-child .priority-supply-button {
-  border-color:#e3b96f;
-  background:#e3b96f;
-  color:#191711;
+  border-color:var(--gold);
+  background:var(--gold);
+  color:var(--palette-canvas-deep);
 }
+html.rhw-focus-pass.rhw-workbench #overviewMoreTasks:focus-visible { outline-offset:-3px; }
 html.rhw-focus-pass.rhw-workbench .overview-next :is(.priority-supply-button,.command-priority-item,#overviewMoreTasks):hover {
   text-decoration:underline;
 }
@@ -409,11 +405,11 @@ html.rhw-focus-pass.rhw-workbench #overviewMoreTasks {
   margin:0;
   padding:10px 18px;
   border:0;
-  border-top:1px solid var(--overview-rim);
+  border-top:1px solid var(--line);
   border-radius:0;
-  background:#181f23;
+  background:var(--surface-raised);
   color:var(--gold);
-  font:12px/1.4 var(--font-main);
+  font:500 13px/1.4 var(--font-main);
   text-align:left;
 }
 html.rhw-focus-pass.rhw-workbench #overviewMoreTasks[hidden] { display:none; }
@@ -431,9 +427,9 @@ html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel :is(.export-panel,.reser
 }
 @media(max-width:760px) {
   html.rhw-focus-pass.rhw-workbench .overview-production { min-height:97px;gap:12px;padding:10px 13px; }
-  .overview-coverage-meter { width:64px; }
-  .overview-coverage-meter::before { inset:5px;border-width:2px; }
-  .overview-coverage-meter>strong { font-size:27px; }
+  .overview-coverage-meter { width:56px; }
+  .overview-coverage-meter::before { inset:4px; }
+  .overview-coverage-meter>strong { font-size:22px; }
   .overview-coverage-meter>small { display:none; }
   html.rhw-focus-pass.rhw-workbench .overview-shipyard { grid-template-columns:auto minmax(0,1fr) auto;gap:4px 10px;padding:10px 13px; }
   .overview-shipyard>small { grid-column:1/-1;grid-row:2;padding:0;border:0; }
@@ -449,7 +445,17 @@ html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel :is(.export-panel,.reser
 /* Stock sections share a reading order, with each reserve in its own card. */
 html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel { container:stock-board / inline-size; }
 html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel .summary-grid { display:grid;grid-template-columns:minmax(0,1fr);gap:16px;width:100%;align-items:stretch; }
-html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel .summary-grid>.alert-card { grid-column:1;width:100%;min-width:0;margin:0;align-self:stretch; }
+html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel .summary-grid>.alert-card {
+  grid-column:1;
+  width:100%;
+  min-width:0;
+  margin:0;
+  align-self:stretch;
+  border-top-color:var(--palette-line-bright);
+  border-radius:var(--rhw-surface-radius);
+  background:var(--panel);
+}
+html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel .summary-grid .alert-title { background:var(--surface-raised);border-color:var(--line); }
 html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel #reserveList {
   display:grid;
   grid-template-columns:minmax(0,1fr);
@@ -466,7 +472,7 @@ html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel #reserveList>li.overview
   min-width:0;
   padding:10px 14px;
   border:0;
-  background:linear-gradient(160deg,#1d2329,#101419 72%);
+  background:var(--surface-input);
 }
 #reserveList .pill { align-self:flex-start; }
 html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel #reserveList .overview-row-meta {
@@ -520,7 +526,7 @@ html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel #reserveList .inventory-
   html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel #reserveList { grid-template-columns:repeat(4,minmax(0,1fr)); }
 }
 html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel #exportList { display:grid;grid-template-columns:repeat(3,minmax(0,1fr));align-items:stretch;gap:0;padding:0;list-style:none; }
-html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel #exportList>li.overview-stock-row { display:flex;flex-direction:column;align-items:stretch;gap:8px;padding:16px;border:0;border-right:1px solid var(--line);min-width:0; }
+html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel #exportList>li.overview-stock-row { display:flex;flex-direction:column;align-items:stretch;gap:8px;padding:16px;border:0;border-right:1px solid var(--line);min-width:0;background:var(--surface-input); }
 html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel #exportList>li:last-child { border-right:0; }
 html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel #exportList .overview-item-copy { min-height:44px; }
 html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel #exportList .inventory-production-link { min-height:44px;font:600 15px/1.45 var(--font-main); }
@@ -600,24 +606,12 @@ html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel .overview-next .command-
 .stock-capacity-min-label { color:#c2d8fa; }
 .stock-capacity-max-label { margin-inline-start:auto; }
 
-html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel .summary-grid>.alert-card {
-  border-radius:2px;
-  border-top-color:var(--palette-gold-muted);
-  background:linear-gradient(155deg,#1c2025,#0e1115 52%);
-}
-html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel .summary-grid .alert-title {
-  background:repeating-linear-gradient(90deg,#e9be7710 0 1px,transparent 1px 24px),linear-gradient(100deg,#392d1d 0,#1a1d22 62%,#111419);
-  border-color:var(--line);
-}
-html.rhw-focus-pass.rhw-workbench #inventoryStatusPanel #exportList>li.overview-stock-row {
-  background:linear-gradient(160deg,#1d2329aa,#101419 62%);
-}
 #inventoryStatusPanel .overview-stock-row>.stock-capacity { grid-column:1/-1; }
 #inventoryStatusPanel #reserveList>li>.stock-capacity { margin-block:4px 2px; }
 #commandBriefing #maintenanceList .stock-capacity { grid-column:1;grid-row:5;margin-block:5px 2px; }
 #dataTable .manifest-stock .stock-capacity { min-width:76px;margin-block-start:4px; }
 
-.facility-population { border-top:1px solid var(--overview-rim); }
+.facility-population { border-top:1px solid var(--line); }
 .facility-population>summary {
   display:flex;
   align-items:center;

@@ -106,7 +106,7 @@
   --text: var(--palette-text);
   --muted: var(--palette-muted);
   --gold: var(--palette-gold);
-  --gold-soft: rgba(240,197,107,.1);
+  --gold-soft: color-mix(in srgb,var(--gold) 10%,transparent);
   --danger: var(--palette-danger);
   --warn: var(--palette-warning);
   --good: var(--palette-positive);
