@@ -77,19 +77,19 @@
   'use strict';
   if (window.RHWPWA) return;
 
-  const state = { installPrompt: null, prompting: false, installed: false, registration: null,
+  const state = { installPrompt: window.__RHW_EARLY_INSTALL_PROMPT__ || null, prompting: false, installed: false, registration: null,
     updateWorker: null, restartAvailable: false, reloading: false, restartRequested: false, updateTask: null };
+  delete window.__RHW_EARLY_INSTALL_PROMPT__;
   const appDisplay = window.matchMedia?.('(display-mode: standalone), (display-mode: minimal-ui)');
   const isStandalone = () => appDisplay?.matches === true || navigator.standalone === true;
   const isInstalled = () => state.installed || isStandalone();
-  const isIos = (userAgent = navigator.userAgent, platform = navigator.platform, maxTouchPoints = navigator.maxTouchPoints) =>
-    /iPad|iPhone|iPod/i.test(userAgent) || (platform === 'MacIntel' && maxTouchPoints > 1);
+  const canInstall = () => !isInstalled() && (Boolean(state.installPrompt) || typeof navigator.install === 'function');
 
   function markup() {
     return `<div class="rhw-pwa-offline" id="rhwPwaOffline" role="status" aria-live="polite" hidden><strong>OFFLINE MODE</strong><span>CACHED APP DATA ONLY // LIVE TELEMETRY PAUSED</span></div>
       <dialog class="rhw-pwa-panel" id="rhwPwaPanel" aria-labelledby="rhwPwaTitle" aria-describedby="rhwPwaMessage" hidden>
         <div class="rhw-pwa-panel-copy"><small>RHW COMMAND APP</small><strong id="rhwPwaTitle"></strong><span id="rhwPwaMessage"></span></div>
-        <div class="rhw-pwa-panel-actions"><button type="button" class="primary" id="rhwPwaPrimary" autofocus>INSTALL</button><button type="button" id="rhwPwaClose">LATER</button></div>
+        <div class="rhw-pwa-panel-actions"><button type="button" class="primary" id="rhwPwaPrimary" autofocus></button><button type="button" id="rhwPwaClose">LATER</button></div>
       </dialog>`;
   }
 
@@ -98,7 +98,7 @@
     if (!document.getElementById('rhwPwaPanel')) {
       document.body.insertAdjacentHTML('beforeend', markup());
       document.getElementById('rhwPwaClose')?.addEventListener('click', hidePanel);
-      document.getElementById('rhwPwaInstallBtn')?.addEventListener('click', showInstallHelp);
+      document.getElementById('rhwPwaInstallBtn')?.addEventListener('click', runAppAction);
       const panel = document.getElementById('rhwPwaPanel');
       panel.addEventListener('cancel', event => {
         event.preventDefault();
@@ -117,7 +117,7 @@
     };
   }
 
-  function showPanel({ title, message, primaryLabel, onPrimary, mode = 'install', singleAction = false }) {
+  function showPanel({ title, message, primaryLabel, onPrimary, mode, singleAction = false }) {
     const elements = panelElements();
     if (!elements.panel) return;
     elements.title.textContent = title;
@@ -137,55 +137,40 @@
     if (panel) panel.hidden = true;
   }
 
-  function installPanelOpen() {
-    const panel = document.getElementById('rhwPwaPanel');
-    return panel?.open && panel.dataset.mode === 'install';
-  }
-
   async function requestInstall() {
-    if (state.prompting || isInstalled()) return;
+    if (state.prompting || !canInstall()) return;
     const prompt = state.installPrompt;
-    if (!prompt) return showManualInstructions();
     state.installPrompt = null;
     state.prompting = true;
-    const { primary } = panelElements();
-    primary.disabled = true;
-    primary.textContent = 'OPENING…';
     syncInstallState();
+    const installStatus = document.documentElement.dataset;
     try {
-      const result = await prompt.prompt();
-      const choice = result?.outcome ? result : await prompt.userChoice;
-      if (choice?.outcome === 'accepted') document.documentElement.dataset.rhwPwaInstall = 'accepted';
-      if (installPanelOpen()) hidePanel();
+      if (prompt) {
+        const result = await prompt.prompt();
+        const choice = result?.outcome ? result : await prompt.userChoice;
+        if (choice?.outcome) installStatus.rhwPwaInstall = choice.outcome;
+      } else {
+        await navigator.install();
+        state.installed = true;
+        installStatus.rhwPwaInstall = 'accepted';
+      }
     } catch (error) {
-      document.documentElement.dataset.rhwPwaInstall = 'prompt-failed';
+      if (error?.name === 'AbortError') {
+        installStatus.rhwPwaInstall = 'dismissed';
+        return;
+      }
+      installStatus.rhwPwaInstall = 'prompt-failed';
       console.warn('RHW APP INSTALL PROMPT FAILED:', String(error?.message || error));
-      if (installPanelOpen()) showManualInstructions();
+      showPanel({ title: 'INSTALLATION COULD NOT START',
+        message: 'The browser could not start the RHW app installation.',
+        primaryLabel: 'CLOSE', onPrimary: hidePanel, mode: 'install-error', singleAction: true });
     } finally {
       state.prompting = false;
       syncInstallState();
     }
   }
 
-  function manualInstructions(userAgent = navigator.userAgent, platform = navigator.platform, maxTouchPoints = navigator.maxTouchPoints) {
-    const title = 'ADD RHW TO THIS DEVICE';
-    if (isIos(userAgent, platform, maxTouchPoints)) return { title, message: 'In Safari, tap Share, then choose Add to Home Screen.' };
-    if (/SamsungBrowser/i.test(userAgent)) return { title, message: 'In Samsung Internet, open the browser menu and choose Add page to → Home screen.' };
-    return { title, message: 'Open your browser menu and choose Install app or Add to Home screen.' };
-  }
-
-  function showManualInstructions() {
-    const instructions = manualInstructions();
-    showPanel({ ...instructions, primaryLabel: 'CLOSE', onPrimary: hidePanel, singleAction: true });
-  }
-
-  function showInstallOffer() {
-    showPanel({ title: 'INSTALL ON THIS DEVICE',
-      message: 'Add RHW to your home screen for quick access and offline startup.',
-      primaryLabel: 'INSTALL', onPrimary: requestInstall });
-  }
-
-  function showInstallHelp() {
+  function runAppAction() {
     if (state.prompting || state.restartRequested) return;
     const worker = state.updateWorker;
     if (worker || state.restartAvailable) {
@@ -195,25 +180,32 @@
     } else if (isInstalled()) {
       showPanel({ title: 'RHW IS INSTALLED', message: 'RHW is already installed on this device.',
         primaryLabel: 'CLOSE', onPrimary: hidePanel, mode: 'installed', singleAction: true });
-    } else if (state.installPrompt) showInstallOffer();
-    else showManualInstructions();
+    } else return requestInstall();
   }
 
   function syncInstallState() {
     const installed = isInstalled();
     const update = Boolean(state.updateWorker || state.restartAvailable);
-    const ready = Boolean(state.installPrompt);
+    const ready = canInstall();
+    const busy = state.prompting || state.restartRequested;
+    const installLabel = state.prompting ? 'INSTALLING…' : 'INSTALL APP';
     const button = document.getElementById('rhwPwaInstallBtn');
     if (button) {
-      button.hidden = installed && !update;
-      button.disabled = state.prompting || state.restartRequested;
-      button.dataset.installReady = String(ready);
-      button.querySelector('span').textContent = update ? 'UPDATE' : 'INSTALL';
-      button.querySelector('small').textContent = update || ready ? 'APP READY' : 'PHONE APP';
+      button.hidden = !update && (installed || (!ready && !busy));
+      button.disabled = busy;
+      button.dataset.installReady = String(ready && !update);
+      button.querySelector('span').textContent = update ? 'UPDATE' : installLabel;
+      button.querySelector('small').hidden = !update;
+      if (update) button.setAttribute('aria-controls', 'rhwPwaPanel');
+      else button.removeAttribute('aria-controls');
       button.setAttribute('aria-label', update ? 'Update RHW Command' : 'Install RHW Command');
     }
     const system = document.getElementById('rhwDiagnosticsApp');
-    if (system) system.textContent = update ? 'UPDATE APP' : installed ? 'APP INSTALLED' : 'INSTALL APP';
+    if (system) {
+      system.hidden = !update && !installed && !ready && !busy;
+      system.disabled = busy;
+      system.textContent = update ? 'UPDATE APP' : installed ? 'APP INSTALLED' : installLabel;
+    }
   }
 
   function syncConnectionState() {
@@ -288,18 +280,16 @@
     }
   }
 
-  // Listen in the initial dashboard bundle, before the deferred workspaces mount.
   window.addEventListener('beforeinstallprompt', event => {
     if (isInstalled() || typeof event.prompt !== 'function') return;
     event.preventDefault();
     state.installPrompt = event;
     mount();
-    if (installPanelOpen()) showInstallOffer();
   });
   window.addEventListener('appinstalled', () => {
     state.installed = true;
     state.installPrompt = null;
-    if (installPanelOpen()) hidePanel();
+    document.documentElement.dataset.rhwPwaInstall = 'accepted';
     syncInstallState();
   });
   window.addEventListener('online', syncConnectionState);
@@ -319,8 +309,8 @@
     }
   });
 
-  window.RHWPWA = { state, register, announceUpdate, requestRestart, hasSessionPrices, showInstallHelp,
-    showManualInstructions, manualInstructions, syncConnectionState, syncInstallState, isStandalone };
+  window.RHWPWA = { state, register, announceUpdate, requestRestart, hasSessionPrices, runAppAction,
+    syncConnectionState, syncInstallState, isStandalone };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', register, { once: true });
   else register();
 })();

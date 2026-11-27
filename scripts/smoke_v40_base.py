@@ -21,8 +21,9 @@ ROUTES = [(workspace, node) for workspace, nodes in ROUTE_MODEL['routes'].items(
 _ASSETS = json.loads((ROOT / 'scripts/runtime-assets.json').read_text())
 V4_CSS = []  # the HTML stylesheet contains the exact complete production cascade
 V4_JS = [p.removeprefix('./') for p in _ASSETS['workspaces']]
-# The install workflows supply explicit offers for their timing and fallback tests.
-BLOCK_NATIVE_INSTALL_OFFER = """window.addEventListener('beforeinstallprompt', event => {
+# The install workflows supply explicit native API and event fixtures.
+BLOCK_NATIVE_INSTALL_OFFER = """Object.defineProperty(navigator, 'install', {configurable: true, value: undefined});
+window.addEventListener('beforeinstallprompt', event => {
   if (!event.isTrusted) return;
   event.preventDefault();
   event.stopImmediatePropagation();

@@ -219,7 +219,7 @@
         <p class="rhw-diagnostics-privacy"><strong>PRIVACY SAFE:</strong> No drafts, messages, sender profiles, material prices or inventory values are read into the report.</p>
         <footer class="rhw-diagnostics-actions">
           <span id="rhwDiagnosticsActionStatus" data-tone="muted" aria-live="polite">READY</span>
-          <div><button type="button" id="rhwDiagnosticsRun">RUN SELF-CHECK</button><button type="button" class="primary" id="rhwDiagnosticsCopy">COPY REPORT</button><button type="button" id="rhwDiagnosticsApp" aria-haspopup="dialog" aria-controls="rhwPwaPanel">INSTALL APP</button></div>
+          <div><button type="button" id="rhwDiagnosticsRun">RUN SELF-CHECK</button><button type="button" class="primary" id="rhwDiagnosticsCopy">COPY REPORT</button><button type="button" id="rhwDiagnosticsApp" aria-haspopup="dialog" aria-controls="rhwPwaPanel" hidden>INSTALL APP</button></div>
         </footer>
       </section>
     </aside>`);
@@ -230,7 +230,7 @@
     document.getElementById('rhwDiagnosticsCopy')?.addEventListener('click', copyReport);
     document.getElementById('rhwDiagnosticsApp')?.addEventListener('click', () => {
       close();
-      window.RHWPWA?.showInstallHelp();
+      window.RHWPWA?.runAppAction();
     });
     window.RHWPWA?.syncInstallState();
     document.getElementById('rhwDiagnosticsPanel')?.addEventListener('click', event => {

@@ -215,7 +215,7 @@
   function pwaContract() {
     const api = window.RHWPWA;
     const manifest = document.querySelector('link[rel="manifest"]');
-    const ready = manifest && typeof api?.isStandalone === 'function' && typeof api?.showInstallHelp === 'function';
+    const ready = manifest && typeof api?.isStandalone === 'function' && typeof api?.runAppAction === 'function';
     return ready
       ? makeResult('pwa-contract', 'APP INSTALL CONTRACT', 'good', api.isStandalone() ? 'STANDALONE' : 'READY', 'Manifest and install helpers are available.')
       : makeResult('pwa-contract', 'APP INSTALL CONTRACT', 'danger', 'INCOMPLETE', 'Manifest or installed-app helper is missing.');

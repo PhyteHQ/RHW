@@ -5683,7 +5683,7 @@ globalThis.RHW_PRODUCTION_VOLUMES = Object.freeze({
         <p class="rhw-diagnostics-privacy"><strong>PRIVACY SAFE:</strong> No drafts, messages, sender profiles, material prices or inventory values are read into the report.</p>
         <footer class="rhw-diagnostics-actions">
           <span id="rhwDiagnosticsActionStatus" data-tone="muted" aria-live="polite">READY</span>
-          <div><button type="button" id="rhwDiagnosticsRun">RUN SELF-CHECK</button><button type="button" class="primary" id="rhwDiagnosticsCopy">COPY REPORT</button><button type="button" id="rhwDiagnosticsApp" aria-haspopup="dialog" aria-controls="rhwPwaPanel">INSTALL APP</button></div>
+          <div><button type="button" id="rhwDiagnosticsRun">RUN SELF-CHECK</button><button type="button" class="primary" id="rhwDiagnosticsCopy">COPY REPORT</button><button type="button" id="rhwDiagnosticsApp" aria-haspopup="dialog" aria-controls="rhwPwaPanel" hidden>INSTALL APP</button></div>
         </footer>
       </section>
     </aside>`);
@@ -5694,7 +5694,7 @@ globalThis.RHW_PRODUCTION_VOLUMES = Object.freeze({
     document.getElementById('rhwDiagnosticsCopy')?.addEventListener('click', copyReport);
     document.getElementById('rhwDiagnosticsApp')?.addEventListener('click', () => {
       close();
-      window.RHWPWA?.showInstallHelp();
+      window.RHWPWA?.runAppAction();
     });
     window.RHWPWA?.syncInstallState();
     document.getElementById('rhwDiagnosticsPanel')?.addEventListener('click', event => {
@@ -6229,7 +6229,7 @@ globalThis.RHW_PRODUCTION_VOLUMES = Object.freeze({
   function pwaContract() {
     const api = window.RHWPWA;
     const manifest = document.querySelector('link[rel="manifest"]');
-    const ready = manifest && typeof api?.isStandalone === 'function' && typeof api?.showInstallHelp === 'function';
+    const ready = manifest && typeof api?.isStandalone === 'function' && typeof api?.runAppAction === 'function';
     return ready
       ? makeResult('pwa-contract', 'APP INSTALL CONTRACT', 'good', api.isStandalone() ? 'STANDALONE' : 'READY', 'Manifest and install helpers are available.')
       : makeResult('pwa-contract', 'APP INSTALL CONTRACT', 'danger', 'INCOMPLETE', 'Manifest or installed-app helper is missing.');

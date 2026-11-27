@@ -492,24 +492,18 @@ def test_pr4_pwa(cdp, workspace, node):
     })
     try:
         result = base.ev(cdp, """(async()=>{
-          const installHeight=document.getElementById('rhwPwaInstallBtn')?.getBoundingClientRect().height||0;
-          document.getElementById('rhwPwaInstallBtn')?.click();
-          Object.defineProperty(navigator,'onLine',{configurable:true,get:()=>false});
-          RHWPWA.syncConnectionState();
           const install=document.getElementById('rhwPwaInstallBtn');
           const panel=document.getElementById('rhwPwaPanel');
           const primary=document.getElementById('rhwPwaPrimary');
           const later=document.getElementById('rhwPwaClose');
           const offline=document.getElementById('rhwPwaOffline');
+          install.click();
+          Object.defineProperty(navigator,'onLine',{configurable:true,get:()=>false});
+          RHWPWA.syncConnectionState();
           const snapshot={
-            api:!!window.RHWPWA, install:!!install, installHeight,
+            api:!!window.RHWPWA,
             inHeader:!!install.closest('.command-header'),
-            ios:RHWPWA.manualInstructions('Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X)','iPhone',5),
-            samsung:RHWPWA.manualInstructions('Mozilla/5.0 (Linux; Android 16) SamsungBrowser/29.0'),
-            phone:install.querySelector('small').textContent,
-            manualClose:primary.textContent==='CLOSE' && later.hidden,
-            panelVisible:panel.open, primaryHeight:primary?.getBoundingClientRect().height||0,
-            message:document.getElementById('rhwPwaMessage')?.textContent||'',
+            unavailable:install.hidden && !panel.open,
             network:document.documentElement.dataset.rhwNetwork,
             offlineVisible:!offline?.hidden,
             headerDisabled:!!document.getElementById('headerRefreshBtn')?.disabled,
@@ -518,15 +512,35 @@ def test_pr4_pwa(cdp, workspace, node):
           };
           delete navigator.onLine;
           RHWPWA.syncConnectionState();
+          let legacyCalls=0;
           const event=new Event('beforeinstallprompt',{cancelable:true});
-          event.prompt=()=>Promise.reject(new Error('EXPECTED PROMPT FAILURE'));
+          event.prompt=()=>{
+            legacyCalls++;
+            return Promise.reject(new Error('EXPECTED PROMPT FAILURE'));
+          };
           window.dispatchEvent(event);
-          snapshot.lateOffer=event.defaultPrevented && panel.open && primary.textContent==='INSTALL';
-          await primary.onclick?.();
+          snapshot.installHeight=install.getBoundingClientRect().height;
+          snapshot.lateOffer=event.defaultPrevented && !panel.open && install.querySelector('span').textContent==='INSTALL APP';
+          install.click();
+          snapshot.oneTap=legacyCalls===1 && !panel.open;
+          await Promise.resolve();
           snapshot.promptFailure=document.documentElement.dataset.rhwPwaInstall||'';
-          snapshot.promptFallback=document.getElementById('rhwPwaTitle')?.textContent||'';
+          snapshot.errorSheet=panel.open && primary.textContent==='CLOSE' && later.hidden
+            && document.getElementById('rhwPwaTitle').textContent==='INSTALLATION COULD NOT START';
           primary.click();
           snapshot.closed=!panel.open;
+          let nativeCalls=0;
+          Object.defineProperty(navigator,'install',{configurable:true, value:()=>{
+            nativeCalls++;
+            return Promise.reject(new DOMException('Closed','AbortError'));
+          }});
+          RHWPWA.syncInstallState();
+          snapshot.nativeReady=!install.hidden;
+          install.click();
+          await Promise.resolve();
+          snapshot.nativeCancel=nativeCalls===1 && !panel.open && !install.disabled
+            && document.documentElement.dataset.rhwPwaInstall==='dismissed';
+          Object.defineProperty(navigator,'install',{configurable:true, value:undefined});
           Object.defineProperty(navigator,'standalone',{configurable:true,value:true});
           RHWPWA.syncInstallState();
           RHWV4.toolsNavigation.openTool('system');
@@ -549,20 +563,16 @@ def test_pr4_pwa(cdp, workspace, node):
         })()""")
     finally:
         cdp.call("Emulation.clearDeviceMetricsOverride")
-    if (not result.get("api") or not result.get("install") or result.get("installHeight", 0) < 43.5
+    if (not result.get("api") or result.get("installHeight", 0) < 43.5
             or not result.get("inHeader")
-            or "Safari" not in result.get("ios", {}).get("message", "")
-            or result.get("ios", {}).get("title") != "ADD RHW TO THIS DEVICE"
-            or "Add page to → Home screen" not in result.get("samsung", {}).get("message", "")
-            or result.get("phone") != "PHONE APP" or not result.get("manualClose")
-            or not result.get("panelVisible") or result.get("primaryHeight", 0) < 43.5
-            or "home screen" not in result.get("message", "").lower() or result.get("network") != "offline"
+            or result.get("network") != "offline"
             or not result.get("offlineVisible") or not result.get("headerDisabled")
             or not result.get("tableDisabled") or result.get("overflow", 0) > 2
-            or not all(result.get(key) for key in ('lateOffer', 'closed', 'installed', 'installedSheet', 'updateReady', 'updateSheet'))
-            or result.get("promptFailure") != "prompt-failed" or result.get("promptFallback") != "ADD RHW TO THIS DEVICE"):
+            or not all(result.get(key) for key in ('unavailable', 'lateOffer', 'oneTap', 'errorSheet', 'closed',
+                       'nativeReady', 'nativeCancel', 'installed', 'installedSheet', 'updateReady', 'updateSheet'))
+            or result.get("promptFailure") != "prompt-failed"):
         raise RuntimeError(f"PR4 PWA mobile/install/offline state failed: {result}")
-    print("PWA smoke passed: header install and update, system installed status, prompt fallback and offline state")
+    print("PWA smoke passed: one-tap native install, installed and update status, and offline state")
 
 
 
