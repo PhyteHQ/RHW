@@ -179,8 +179,8 @@
   function priceCheckContract() {
     const failures = app.pricecheck?.selfTest?.() || ['module'];
     return failures.length
-      ? makeResult('pricecheck', 'PRICE CHECK', 'danger', 'INCOMPLETE', 'Fixed-route controls or data contracts are unavailable.')
-      : makeResult('pricecheck', 'PRICE CHECK', 'good', 'READY', 'Fixed sources, automatic NPC prices and data provenance are available.');
+      ? makeResult('pricecheck', 'PRICE CHECK', 'danger', 'INCOMPLETE', 'NPC market controls or data contracts are unavailable.')
+      : makeResult('pricecheck', 'PRICE CHECK', 'good', 'READY', 'NPC offer search, trader profit targets and price provenance are available.');
   }
 
   function catalogTruth() {

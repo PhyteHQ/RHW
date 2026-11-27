@@ -31,15 +31,19 @@ export function estimateRoundTrips({ home, routes, goods, ships, navigation }) {
   for (const ship of ships) {
     const outbound = new ShipNavigator(navigation, locations, ship);
     const inbound = new ShipNavigator(navigation, locations, ship, { reverse: true });
+    const roundTrips = new Map();
     for (const { source, dock, good, output } of stops) {
       if (!dock.includes(ship.dock)) continue;
       const volume = volumeFor(good, ship);
       const units = volume === null ? 0 : Math.floor(ship.cargo / volume);
       if (!Number.isSafeInteger(units) || units < 1) continue;
-      const there = outbound.route(home.id, source.id);
-      const back = inbound.route(home.id, source.id);
-      if (!there || !back) continue;
-      const seconds = there.seconds + back.seconds + 3 * DOCK_SECONDS;
+      if (!roundTrips.has(source.id)) {
+        const there = outbound.route(home.id, source.id);
+        const back = inbound.route(home.id, source.id);
+        roundTrips.set(source.id, there && back ? there.seconds + back.seconds + 3 * DOCK_SECONDS : null);
+      }
+      const seconds = roundTrips.get(source.id);
+      if (seconds === null) continue;
       output.candidates.push({ hauler: ship.fleetId, ship: ship.name, units, seconds });
     }
   }
