@@ -132,11 +132,22 @@ def main():
         cdp = base.CDP(target['webSocketDebuggerUrl'])
         for method in ('Page.enable', 'Runtime.enable', 'Network.enable'):
             cdp.call(method)
-        # Only external game data is synthetic. HTML, bundles, fonts and SW are
-        # served unchanged, so a broken loader/cache cannot pass an inline fixture.
+        # Serve the real HTML, bundles, fonts and worker. Mock external game
+        # data and the install event that can arrive during app startup.
         fixture = """(() => {
           const original = window.fetch;
           window.__rhwNpcRequests = 0;
+          window.addEventListener('DOMContentLoaded', () => {
+            if (sessionStorage.getItem('rhw-install-fixture')) return;
+            sessionStorage.setItem('rhw-install-fixture', 'sent');
+            const pending = window.__rhwEarlyInstall = {workspacesReady: !!window.RHWV4, calls: 0};
+            const event = new Event('beforeinstallprompt', {cancelable: true});
+            event.prompt = () => {
+              pending.calls++;
+              return new Promise(resolve => { pending.finish = resolve; });
+            };
+            pending.captured = !window.dispatchEvent(event);
+          }, {once: true});
           const marketKey = 'rhw-webapp-v4:price-check-market-cache';
           const write = Storage.prototype.setItem;
           if (!sessionStorage.getItem('market-cache-fixture')) {
@@ -171,6 +182,24 @@ def main():
         cdp.call('Page.navigate', {'url': f'http://127.0.0.1:{server.server_port}/index.html#command/inventory'})
         wait_ready(cdp)
         base.ev(cdp, 'navigator.serviceWorker.ready.then(()=>true)')
+        install = base.ev(cdp, """(async()=>{
+          const pending=window.__rhwEarlyInstall;
+          const button=document.getElementById('rhwPwaInstallBtn');
+          const label=button.querySelector('span').textContent;
+          RHWV4.toolsNavigation.openTools();
+          button.click();
+          const disabled=button.disabled;
+          const direct=document.getElementById('rhwPwaPanel').hidden;
+          button.click();
+          pending.finish?.({outcome:'dismissed'});
+          await Promise.resolve();
+          return {workspacesReady:pending.workspacesReady,captured:pending.captured,label,
+            calls:pending.calls,disabled,direct,promptCleared:!RHWPWA.state.installPrompt,
+            enabled:!button.disabled,help:button.querySelector('span').textContent==='INSTALL HELP'};
+        })()""")
+        assert install == {'workspacesReady': False, 'captured': True, 'label': 'INSTALL RHW',
+                           'calls': 1, 'disabled': True, 'direct': True,
+                           'promptCleared': True, 'enabled': True, 'help': True}, install
         # Boot and service-worker readiness can precede the async cache read
         # and first fixture fetch. Check the stock view only after that fetch.
         stock_deadline = time.monotonic() + 15
