@@ -137,6 +137,12 @@ def main():
         fixture = """(() => {
           const original = window.fetch;
           window.__rhwNpcRequests = 0;
+          // Full Chrome can offer installation itself while this test is running.
+          window.addEventListener('beforeinstallprompt', event => {
+            if (!event.isTrusted) return;
+            event.preventDefault();
+            event.stopImmediatePropagation();
+          }, {capture: true});
           window.addEventListener('DOMContentLoaded', () => {
             if (sessionStorage.getItem('rhw-install-fixture')) return;
             sessionStorage.setItem('rhw-install-fixture', 'sent');
