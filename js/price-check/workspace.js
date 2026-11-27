@@ -1,6 +1,6 @@
 /* ========================================================================== */
 /* RHW PRICE CHECK                                                            */
-/* NPC commodity offers compared with RHW's current purchase prices.         */
+/* NPC offers for Full Manifest goods compared with RHW's purchase prices.   */
 /* ========================================================================== */
 (function initRhwPriceCheck() {
   'use strict';
@@ -11,30 +11,21 @@
   const MARKET_API = 'https://darkstat.dd84ai.com/api/npc_bases';
   const AUTO_REFRESH_MS = 300000;
   const PAGE_SIZE = 24;
-  const MARKET_SCHEMA = 2;
+  const MARKET_SCHEMA = 3;
+  const LEGACY_MARKET_KEY = 'rhw-webapp-v4:price-check-market-cache';
   const PROFIT_TARGETS = [[500000, '$500k/h'], [750000, '$750k/h'], [1000000, '$1M/h']];
-  const STORAGE = Object.freeze({
-    overrides: app.config.storageKeys.priceCheckOverrides || 'rhw-webapp-v4:price-check-overrides',
-    market: 'rhw-webapp-v4:price-check-market-cache'
-  });
+  const OVERRIDES_KEY = app.config.storageKeys.priceCheckOverrides || 'rhw-webapp-v4:price-check-overrides';
 
   // Retain the old manual-price backup schema independently of the live offers.
   const LEGACY_OVERRIDE_KEYS = new Set([
     'hull-panels', 'industrial-materials', 'mox', 'titanium', 'energy-field-equipment', 'super-alloy',
     'ablative-armor-plating', 'food-rations', 'hydrocarbons', 'consumer-goods', 'mining-machinery', 'copper', 'niobium'
   ]);
-  const storedMarket = app.store.get(STORAGE.market, null);
-  const savedRoutes = storedMarket?.schema === MARKET_SCHEMA && Array.isArray(storedMarket.routes)
-    && Number.isFinite(Date.parse(storedMarket.fetchedAt));
-
   const state = {
     initialized: false,
     loading: false,
-    overrides: app.store.get(STORAGE.overrides, {}) || {},
-    marketCache: savedRoutes ? { ...storedMarket, routes: storedMarket.routes.filter(route =>
-      route && ['key', 'sourceNickname', 'source', 'goodNickname', 'commodity', 'system', 'systemNickname']
-        .every(field => typeof route[field] === 'string')
-      && route.key === `${route.sourceNickname}/${route.goodNickname}`) } : { routes: [] },
+    overrides: app.store.get(OVERRIDES_KEY, {}) || {},
+    marketCache: { routes: [] },
     marketTone: 'waiting',
     marketLabel: 'AWAITING MARKET DATA',
     marketDetail: '',
@@ -48,16 +39,18 @@
     hauler: 'auto'
   };
   let producedGoods = null;
+  let indexedShop, manifestIndex, scheduledScope, cacheReady = false;
   let tripModule, tripLoader, tripRequest, tripData, currentMapAt;
   let tripKey = '', tripError = '', nextTripAttempt = 0;
 
   const refreshTask = window.RHWRuntime.createRefreshTask({
     interval: AUTO_REFRESH_MS,
-    enabled: () => state.initialized && app.state.activeWorkspace === 'pricecheck',
+    enabled: () => cacheReady && app.state.activeWorkspace === 'pricecheck' && producedGoods && manifestScope(),
     run: (options = { quiet: true }) => refreshMarket(options)
   });
 
   const esc = value => app.util.escape(value);
+  const itemId = value => typeof value === 'string' ? value.trim().toLowerCase() : '';
   const normalize = value => String(value ?? '')
     .toLowerCase()
     .normalize('NFKD')
@@ -101,7 +94,7 @@
   function workspaceMarkup() {
     return `<div class="pricecheck-frame" data-pricecheck-panel="routes">
       <header class="pricecheck-heading">
-        <div><h2>PRICE CHECK</h2><p>NPC COMMODITIES // SOURCE COST VS RHW PAYOUT</p></div>
+        <div><h2>PRICE CHECK</h2><p>FULL MANIFEST // NPC SOURCE COST VS RHW PAYOUT</p></div>
         <button type="button" class="pricecheck-refresh" id="priceCheckRefresh">REFRESH MARKET</button>
       </header>
       <div class="pricecheck-status-grid" id="priceCheckStatusGrid"></div>
@@ -211,19 +204,67 @@
       if (recipe.id.startsWith('recipe_container_opening_')) continue;
       for (const output of recipe.outputs || []) producedGoods.add(output.id.toLowerCase());
     }
+    indexedShop = undefined;
   }
 
-  function marketRoutes() {
-    return producedGoods ? state.marketCache.routes.filter(route => !producedGoods.has(route.goodNickname.toLowerCase())) : [];
-  }
-
-  function rhwPrice(route) {
-    const named = typeof findCommodity === 'function' ? findCommodity(route.commodity) : null;
+  function manifestScope() {
+    // The raw RHW shop is also the source of Full Manifest's reported rows.
     const shop = typeof rhwBase !== 'undefined' ? rhwBase?.shop_items : null;
-    const exact = shop?.find(item => item?.nickname === route.goodNickname);
-    const item = exact ?? (named?.nickname && named.nickname !== route.goodNickname ? null : named);
-    if (!item || item.missing) return null;
+    if (!Array.isArray(shop)) return null;
+    if (shop === indexedShop) return manifestIndex;
+    const byId = new Map();
+    const byName = new Map();
+    for (const item of shop) {
+      if (!item || item.synthetic || item.missing || item.ship_class != null || (item.category && item.category !== 'commodity')) continue;
+      const id = itemId(item.nickname);
+      const name = commodityKey(item);
+      if (id && !producedGoods?.has(id) && !byId.has(id)) byId.set(id, item);
+      // An exact nickname takes precedence over display names. Name matching
+      // is reserved for unambiguous older shop rows that lack a nickname.
+      if (name) byName.set(name, id || byName.has(name) ? null : item);
+    }
+    const names = [...byName].filter(([, item]) => item).map(([name]) => name);
+    const key = JSON.stringify([[...byId.keys()].sort(), names.sort()]);
+    indexedShop = shop;
+    return manifestIndex = { byId, byName, key };
+  }
+
+  function manifestItem(scope, nickname, name) {
+    return scope?.byId.get(itemId(nickname)) || scope?.byName.get(keyFromName(name)) || null;
+  }
+
+  function marketRoutes(scope = manifestScope()) {
+    if (!scope || !producedGoods) return [];
+    return state.marketCache.routes.filter(route => !producedGoods.has(itemId(route.goodNickname))
+      && manifestItem(scope, route.goodNickname, route.commodity));
+  }
+
+  function rhwPrice(item) {
+    if (!item) return null;
     return [item.price_to_sell_to_base, item.sell_price, item.price_sell].map(finite).find(value => value !== null) ?? null;
+  }
+
+  function scheduleMarket() {
+    if (!cacheReady || !producedGoods) return;
+    const scopeKey = manifestScope()?.key ?? null;
+    if (scheduledScope === scopeKey) return;
+    scheduledScope = scopeKey;
+    const at = Date.parse(state.marketCache.fetchedAt);
+    refreshTask.setDueAt(state.marketCache.scope === scopeKey && Number.isFinite(at)
+      ? Math.min(at, Date.now()) + AUTO_REFRESH_MS : Date.now());
+  }
+
+  async function restoreMarket() {
+    const saved = await window.RHWTelemetryCache?.readMarket?.().catch(() => null);
+    if (state.marketCache.fetchedAt || saved?.schema !== MARKET_SCHEMA || typeof saved.scope !== 'string'
+        || !Array.isArray(saved.routes) || !Number.isFinite(Date.parse(saved.fetchedAt))) return;
+    state.marketCache = { ...saved, routes: saved.routes.filter(route =>
+      route && ['key', 'sourceNickname', 'source', 'goodNickname', 'commodity', 'system', 'systemNickname']
+        .every(field => typeof route[field] === 'string')
+      && route.key === `${route.sourceNickname}/${route.goodNickname}`) };
+    state.marketTone = 'warn';
+    state.marketLabel = 'CACHED MARKET';
+    state.marketDetail = `SNAPSHOT ${new Date(saved.fetchedAt).toLocaleString('de-DE')}`;
   }
 
   function rhwSnapshot() {
@@ -255,15 +296,25 @@
   }
 
   function snapshotRoutes(bases) {
+    const scope = manifestScope();
+    if (!scope || !producedGoods) return false;
     const offers = new Map();
+    const fallbackIds = new Map();
     for (const base of bases) {
       const sourceNickname = base?.nickname;
       if (typeof sourceNickname !== 'string' || !sourceNickname || base.IsPob || base.is_pob || base.kind === 'pob') continue;
       if (!Array.isArray(base.market_goods)) continue;
       for (const good of base.market_goods) {
         const goodNickname = good?.nickname;
-        if (typeof goodNickname !== 'string' || !goodNickname || good.base_sells !== true
+        const id = itemId(goodNickname);
+        if (!id || producedGoods.has(id) || good.base_sells !== true
             || good.PoB || good.PoBGood || (good.category && good.category !== 'commodity')) continue;
+        if (!manifestItem(scope, goodNickname, good.name)) continue;
+        const commodity = String(good.name || goodNickname);
+        if (!scope.byId.has(id)) {
+          const name = keyFromName(commodity);
+          fallbackIds.set(name, !fallbackIds.has(name) || fallbackIds.get(name) === id ? id : null);
+        }
         const key = `${sourceNickname}/${goodNickname}`;
         const livePrice = finite(good.price_base_sells_for);
         const existing = offers.get(key);
@@ -273,7 +324,7 @@
         }
         offers.set(key, {
           key, sourceNickname, goodNickname, livePrice,
-          source: String(base.name || sourceNickname), commodity: String(good.name || goodNickname),
+          source: String(base.name || sourceNickname), commodity,
           system: String(base.system_name || good.system_name || base.system || ''),
           systemNickname: String(base.system_nickname || good.system_nick || '')
         });
@@ -281,11 +332,17 @@
     }
     const fetchedAt = new Date().toISOString();
     state.receivedAt = Date.now();
-    state.marketCache = { schema: MARKET_SCHEMA, fetchedAt, routes: [...offers.values()].sort((a, b) => a.key.localeCompare(b.key)) };
-    app.store.set(STORAGE.market, state.marketCache);
+    const routes = [...offers.values()].filter(route => scope.byId.has(itemId(route.goodNickname))
+      || fallbackIds.get(keyFromName(route.commodity)) === itemId(route.goodNickname));
+    state.marketCache = { schema: MARKET_SCHEMA, scope: scope.key, fetchedAt, routes: routes.sort((a, b) => a.key.localeCompare(b.key)) };
+    // This snapshot is disposable and may exceed localStorage's quota. A
+    // blocked or full IndexedDB still leaves the current live prices usable.
+    void window.RHWTelemetryCache?.writeMarket?.(state.marketCache).catch(() => {});
+    return true;
   }
 
   async function refreshMarket({ forceTrips = false, quiet = false } = {}) {
+    if (!producedGoods || !manifestScope()) return;
     state.loading = true;
     if (!quiet) {
       state.marketTone = 'waiting';
@@ -294,7 +351,7 @@
       render();
     }
     try {
-      snapshotRoutes(await fetchMarketBases());
+      if (!snapshotRoutes(await fetchMarketBases())) return;
       state.lastError = '';
       state.marketTone = 'positive';
       state.marketLabel = 'NPC MARKET LIVE';
@@ -316,7 +373,8 @@
     }
   }
 
-  function effectiveRow(route, rhw = rhwSnapshot(), payout = rhw.available ? rhwPrice(route) : null) {
+  function effectiveRow(route, rhw = rhwSnapshot(), item = manifestItem(manifestScope(), route.goodNickname, route.commodity)) {
+    const payout = rhw.available ? rhwPrice(item) : null;
     const live = finite(route.livePrice);
     const priceAt = state.marketCache.fetchedAt;
     const age = Date.now() - Date.parse(priceAt || '');
@@ -332,7 +390,7 @@
     const negative = rows.filter(row => row.difference < 0).length;
     const hasComparison = rows.some(row => row.difference !== null);
     return `
-      <article class="pricecheck-status"><small>NPC COMMODITIES</small><strong>${commodities.toLocaleString('en-US')}</strong></article>
+      <article class="pricecheck-status"><small>MANIFEST COMMODITIES</small><strong>${commodities.toLocaleString('en-US')}</strong></article>
       <article class="pricecheck-status"><small>STATION OFFERS</small><strong>${rows.length.toLocaleString('en-US')}</strong></article>
       <article class="pricecheck-status" data-tone="${positive ? 'positive' : 'neutral'}"><small>POSITIVE</small><strong>${hasComparison ? positive.toLocaleString('en-US') : '—'}</strong></article>
       <article class="pricecheck-status" data-tone="${negative ? 'negative' : 'neutral'}"><small>LOSS</small><strong>${hasComparison ? negative.toLocaleString('en-US') : '—'}</strong></article>`;
@@ -368,7 +426,8 @@
       tripKey = key;
     }
     const mapChanged = tripData && currentMapAt && tripData.mapAt !== currentMapAt;
-    if (!base || !routes.length || tripRequest || (!force && !mapChanged && Date.now() < nextTripAttempt)) return;
+    if (!base?.nickname || !base.system_nickname || !routes.length || tripRequest
+        || (!force && !mapChanged && Date.now() < nextTripAttempt)) return;
     const request = tripRequest = new AbortController();
     loadTripModule().then(module => {
       const home = module.fixedRouteHome(base);
@@ -443,7 +502,7 @@
     return (a.difference - b.difference) * (state.sort === 'best' ? -1 : 1) || sourceOrder;
   }
 
-  function renderResults(rowsNode, rows) {
+  function renderResults(rowsNode, rows, scope) {
     const terms = state.query.split(' ').filter(Boolean);
     const results = rows.filter(({ route }) => {
       if (!terms.length) return true;
@@ -456,6 +515,7 @@
     const last = Math.min(first + PAGE_SIZE, results.length);
     const count = document.getElementById('priceCheckResultCount');
     const summary = results.length ? `${first + 1}–${last} of ${results.length.toLocaleString('en-US')} offers`
+      : !scope ? 'Waiting for the RHW Full Manifest.'
       : !producedGoods ? 'Discovery recipe catalog unavailable.'
       : !state.marketCache.fetchedAt ? 'Awaiting NPC market offers.'
       : state.query ? 'No offers match your search.' : 'No eligible NPC offers reported.';
@@ -494,28 +554,25 @@
     const refresh = document.getElementById('priceCheckRefresh');
     if (!grid || !rowsNode || !note) return;
 
-    const offers = marketRoutes();
+    const scope = manifestScope();
+    const offers = marketRoutes(scope);
     const rhw = rhwSnapshot();
-    const payouts = new Map();
-    const rows = offers.map(route => {
-      if (!payouts.has(route.goodNickname)) payouts.set(route.goodNickname, rhw.available ? rhwPrice(route) : null);
-      return effectiveRow(route, rhw, payouts.get(route.goodNickname));
-    });
+    const rows = offers.map(route => effectiveRow(route, rhw, manifestItem(scope, route.goodNickname, route.commodity)));
     updateTrips(offers, forceTrips);
     const tripStatus = document.getElementById('priceCheckTripStatus');
     const tripCopy = tripError || (tripData ? `Route map checked ${new Date(tripData.mapAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}${tripData.savedReferences ? ' · saved ship or cargo data' : ''}` : '');
     if (tripStatus && tripStatus.textContent !== tripCopy) tripStatus.textContent = tripCopy;
     const status = statusMarkup(rows);
     if (grid.innerHTML !== status) grid.innerHTML = status;
-    renderResults(rowsNode, rows);
+    renderResults(rowsNode, rows, scope);
 
-    const parts = [state.marketLabel];
-    if (state.marketDetail) parts.push(state.marketDetail);
+    const parts = [scope ? state.marketLabel : 'AWAITING RHW FULL MANIFEST'];
+    if (scope && state.marketDetail) parts.push(state.marketDetail);
     if (rhw?.detail) parts.push(rhw.detail);
     note.textContent = parts.join(' // ');
     note.dataset.tone = state.marketTone === 'negative' ? 'error' : (state.marketTone === 'warn' || rhw.stale || !rhw.available ? 'warn' : 'good');
     if (refresh) {
-      refresh.disabled = state.loading;
+      refresh.disabled = state.loading || !scope || !producedGoods;
       refresh.textContent = state.loading ? 'REFRESHING…' : 'REFRESH MARKET';
     }
   }
@@ -535,16 +592,15 @@
     ensureShell();
     if (state.initialized) return true;
     state.initialized = true;
-    render();
-    const cachedAt = state.marketCache?.fetchedAt ? new Date(state.marketCache.fetchedAt).getTime() : 0;
-    if (cachedAt) {
-      state.marketTone = 'warn';
-      state.marketLabel = 'CACHED MARKET';
-      state.marketDetail = `SNAPSHOT ${new Date(cachedAt).toLocaleString('de-DE')}`;
+    // The former cache contained the galaxy market and shared the quota
+    // for preferences and drafts. Only this disposable entry is retired.
+    try { window.localStorage.removeItem(LEGACY_MARKET_KEY); } catch { /* Optional cache cleanup. */ }
+    void restoreMarket().finally(() => {
+      cacheReady = true;
+      scheduleMarket();
       render();
-    }
-    refreshTask.setDueAt(Number.isFinite(cachedAt) && cachedAt > 0
-      ? Math.min(cachedAt, Date.now()) + AUTO_REFRESH_MS : Date.now());
+    });
+    render();
     return true;
   }
 
@@ -561,12 +617,16 @@
   app.lifecycle.on('shell:ready', 'price-check', 30, ensureShell);
   app.lifecycle.on('catalog:loaded', 'price-check-commodity-scope', 45, ({ catalog }) => {
     classifyGoods(catalog);
+    scheduleMarket();
     render();
   });
 
   // RHW payout changes arrive through the same telemetry notifications as COMMAND.
   app.onUiUpdate(() => {
-    if (state.initialized && app.state.activeWorkspace === 'pricecheck') render();
+    if (state.initialized && app.state.activeWorkspace === 'pricecheck') {
+      scheduleMarket();
+      render();
+    }
   });
 
   function selfTest() {
@@ -590,7 +650,7 @@
     snapshotRoutes, effectiveRow, rowMarkup,
     importOverrides(raw) {
       const merged = { ...state.overrides, ...normalizeOverrides(raw) };
-      if (app.store.set(STORAGE.overrides, merged) === false) throw new Error('PRICE CHECK IMPORT COULD NOT BE SAVED');
+      if (app.store.set(OVERRIDES_KEY, merged) === false) throw new Error('PRICE CHECK IMPORT COULD NOT BE SAVED');
       state.overrides = merged;
       render();
     },

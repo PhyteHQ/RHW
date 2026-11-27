@@ -782,12 +782,13 @@ function formatPosition(value) {
 ;
 
 /* SOURCE: js/data/telemetry-cache.js */
-/* Persist public stock snapshots separately from private drafts and backups. */
+/* Persist public stock and market snapshots separately from private drafts and backups. */
 (function initRhwTelemetryCache() {
   'use strict';
   const DB_NAME = 'rhw-public-stock-v1';
   const STORE = 'snapshots';
-  const KEY = 'pobs';
+  const STOCK_KEY = 'pobs';
+  const MARKET_KEY = 'price-check-market';
   let database;
 
   function valid(snapshot) {
@@ -818,35 +819,47 @@ function formatPosition(value) {
     return database;
   }
 
-  async function read() {
+  async function readSnapshot(key) {
     const db = await open();
     if (!db) return null;
     return new Promise(resolve => {
       try {
         const transaction = db.transaction(STORE, 'readonly');
-        const request = transaction.objectStore(STORE).get(KEY);
-        request.onsuccess = () => resolve(valid(request.result) ? request.result : null);
+        const request = transaction.objectStore(STORE).get(key);
+        request.onsuccess = () => resolve(request.result ?? null);
         request.onerror = transaction.onabort = () => resolve(null);
       } catch { resolve(null); }
     });
   }
 
-  async function write({ bases, fetchedAt }) {
-    const snapshot = { schemaVersion: 1, bases, fetchedAt };
-    if (!valid(snapshot)) return false;
+  async function writeSnapshot(key, snapshot) {
     const db = await open();
     if (!db) return false;
     return new Promise(resolve => {
       try {
         const transaction = db.transaction(STORE, 'readwrite');
-        transaction.objectStore(STORE).put(snapshot, KEY);
+        transaction.objectStore(STORE).put(snapshot, key);
         transaction.oncomplete = () => resolve(true);
         transaction.onerror = transaction.onabort = () => resolve(false);
       } catch { resolve(false); }
     });
   }
 
-  globalThis.RHWTelemetryCache = { read, write, valid };
+  async function read() {
+    const snapshot = await readSnapshot(STOCK_KEY);
+    return valid(snapshot) ? snapshot : null;
+  }
+
+  async function write({ bases, fetchedAt }) {
+    const snapshot = { schemaVersion: 1, bases, fetchedAt };
+    return valid(snapshot) && writeSnapshot(STOCK_KEY, snapshot);
+  }
+
+  globalThis.RHWTelemetryCache = {
+    read, write, valid,
+    readMarket: () => readSnapshot(MARKET_KEY),
+    writeMarket: snapshot => writeSnapshot(MARKET_KEY, snapshot)
+  };
 })();
 
 ;

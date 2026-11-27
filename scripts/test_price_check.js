@@ -10,13 +10,10 @@ class Clock extends Date {
   static now() { return now; }
 }
 const saved = new Map();
-saved.set('rhw-webapp-v4:price-check-sources', { resolvedAt: now,
-  sources: { hydrocarbons: { nickname: 'br01_07_base', name: 'Kensington Shipping Platform' } } });
-saved.set('rhw-webapp-v4:price-check-market-cache', { fetchedAt: new Date(now).toISOString(),
-  routes: { hydrocarbons: { sourceNickname: 'br01_07_base', livePrice: 22, found: true, sold: true } } });
 saved.set('prices', { hydrocarbons: 0 });
 const telemetry = { available: true, stale: false, fetchedAt: new Date(now).toISOString() };
-let payout = { sell_price: 500, price: 900 };
+let savedMarket;
+const commodityName = name => String(name || '').trim().toLowerCase().replace(/^super alloys$/, 'super alloy');
 const app = {
   onUiUpdate() {},
   config: { storageKeys: { priceCheckOverrides: 'prices' } }, state: {},
@@ -24,7 +21,9 @@ const app = {
   store: { get: (k, d) => saved.get(k) ?? d, set: (k, v) => { saved.set(k, v); return true; } }
 };
 const ctx = vm.createContext({ Date: Clock, console, addEventListener() {}, setTimeout() {}, clearTimeout() {}, navigator: { onLine: true },
-  RHWV4: app, telemetrySnapshot: () => telemetry, findCommodity: () => payout, allBases: [],
+  RHWV4: app, telemetrySnapshot: () => telemetry, rhwBase: null,
+  commodityKey: item => commodityName(item.name), keyFromName: commodityName,
+  RHWTelemetryCache: { writeMarket: async value => { savedMarket = value; } },
   document: { addEventListener() {}, getElementById: () => null, createElement: () => ({ dataset: {} }),
     head: { appendChild() {} }, documentElement: { classList: { add() {} } } }
 });
@@ -45,7 +44,6 @@ const catalog = { recipes: [
   { id: 'recipe_gold_basic', outputs: [{ id: 'commodity_gold' }, { id: alternateId }] }
 ] };
 app.lifecycle.emit('catalog:loaded', { catalog });
-assert.equal(api.routes.length, 0, 'An old fixed-route cache cannot masquerade as the expanded NPC feed');
 const good = (nickname, name, price_base_sells_for, extra = {}) =>
   ({ nickname, name, base_sells: true, price_base_sells_for, category: 'commodity', ...extra });
 const hull = good(hullId, 'Hull Panels', 200);
@@ -53,7 +51,11 @@ const source = { name: 'Portsmouth Shipyard', nickname: 'br01_02_base', system_n
   hull, good(moxId, 'MOX', 120), good(oxygenId, 'Oxygen', 90), good(alternateId, 'Wildcat Gold', 600),
   good('commodity_buy_only', 'Bought Here', 99, { base_sells: false }),
   good('weapon', 'Weapon', 15, { category: 'gun' }),
-  good('commodity_pob_offer', 'POB Offer', 15, { PoB: true })
+  good('commodity_pob_offer', 'POB Offer', 15, { PoB: true }),
+  good('commodity_other_hull', 'Hull Panels', 100),
+  good('commodity_synthetic', 'Placeholder', 20),
+  good('commodity_equipment', 'Equipment with a commodity listing', 50),
+  good('commodity_named_a', 'Ambiguous Ore', 22), good('commodity_named_b', 'Ambiguous Ore', 30)
 ] };
 const hydroId = 'commodity_hydrocarbons';
 const hydro = good(hydroId, 'Hydrocarbons', 0);
@@ -61,14 +63,36 @@ const thames = { name: 'Thames Outpost', nickname: 'br01_06_base', system_name: 
   good(hullId, 'Hull Panels', 310), hydro, hydro, good('commodity_missing_quote', 'Missing Quote', null)
 ] };
 const offer = () => api.routes.find(r => r.key === `br01_02_base/${hullId}`);
-const fixture = [source, thames, { ...thames, nickname: 'player-base', IsPob: true }];
+const irrelevant = Array.from({ length: 50 }, (_, index) => ({
+  nickname: `unrelated-base-${index}`, market_goods: Array.from({ length: 54 }, (_, n) => good(`unrelated-${n}`, `Other Good ${n}`, 10))
+}));
+const fixture = [source, thames, { ...thames, nickname: 'player-base', IsPob: true }, ...irrelevant];
+assert.equal(api.snapshotRoutes(fixture), false, 'The NPC response alone cannot define the market list');
+assert.equal(api.routes.length, 0);
+assert.equal(savedMarket, undefined);
+const hullStock = { nickname: hullId, name: 'RHW Hull Parts', sell_price: 500, price: 900 };
+const shop = [
+  hullStock, { name: 'Hydrocarbons', sell_price: 100 }, { nickname: 'commodity_missing_quote', quantity: 0 },
+  { nickname: moxId }, { nickname: oxygenId }, { nickname: alternateId },
+  { nickname: 'commodity_synthetic', name: 'Placeholder', synthetic: true },
+  { nickname: 'commodity_equipment', category: 'gun' }, { name: 'Ambiguous Ore' },
+  { nickname: 'commodity_buy_only' }, { nickname: 'commodity_pob_offer' }
+];
+ctx.rhwBase = { shop_items: shop };
 api.snapshotRoutes(fixture);
 assert.deepEqual(Array.from(api.routes, route => [route.source, route.commodity, route.livePrice]), [
   ['Portsmouth Shipyard', 'Hull Panels', 200], ['Thames Outpost', 'Hydrocarbons', 0],
   ['Thames Outpost', 'Missing Quote', null], ['Thames Outpost', 'Hull Panels', 310]
-], 'Every NPC seller and genuine zero is retained, while POB manufacture, buyers and equipment are excluded');
-assert.equal(saved.get('rhw-webapp-v4:price-check-market-cache').schema, 2);
-assert.equal(saved.get('rhw-webapp-v4:price-check-market-cache').fetchedAt, new Date(now).toISOString());
+], 'Only NPC sellers of eligible Full Manifest commodities are retained');
+assert.equal(savedMarket.routes.length, 4, 'Out-of-scope offers are removed before storing the snapshot');
+assert.equal(savedMarket.schema, 3);
+assert.equal(savedMarket.fetchedAt, new Date(now).toISOString());
+assert.deepEqual(Array.from(saved.keys()), ['prices'], 'Market refreshes never write to the private settings store');
+
+ctx.rhwBase = { shop_items: shop.filter(item => item !== hullStock) };
+assert.equal(offer(), undefined, 'Removing a shop listing immediately hides its saved offers');
+ctx.rhwBase = { shop_items: shop };
+assert.equal(api.effectiveRow(offer()).payout, 500, 'The exact shop nickname works with a different display name');
 
 let row = api.effectiveRow(offer());
 assert.equal(row.difference, 300);
@@ -105,17 +129,14 @@ assert.ok(api.routes.some(r => r.goodNickname === hydroId), 'A catalog change ca
 
 api.state.overrides['hull-panels'] = 9999999;
 assert.equal(api.effectiveRow(offer()).difference, 300, 'Archived overrides never replace NPC prices');
-payout = { sell_price: 200 };
+hullStock.sell_price = 200;
 assert.equal(api.effectiveRow(offer()).tone, 'neutral');
-payout = { sell_price: 100 };
+hullStock.sell_price = 100;
 assert.equal(api.effectiveRow(offer()).tone, 'negative');
 delete api.state.overrides['hull-panels'];
-payout = { price: 900 };
+delete hullStock.sell_price;
 assert.equal(api.effectiveRow(offer()).payout, null, 'RHW asking price is not its purchase price');
-payout = { nickname: 'other', sell_price: 600 };
-assert.equal(api.effectiveRow(offer()).payout, null, 'Identically named goods cannot share RHW purchase prices');
-ctx.rhwBase = { shop_items: [{ nickname: hullId, sell_price: 500 }] };
-assert.equal(api.effectiveRow(offer()).payout, 500, 'The exact RHW shop item wins over name aliases');
+hullStock.sell_price = 500;
 telemetry.available = false;
 assert.equal(api.effectiveRow(offer()).payout, null);
 assert.match(api.rowMarkup(api.effectiveRow(offer())), /RHW DATA UNAVAILABLE/);

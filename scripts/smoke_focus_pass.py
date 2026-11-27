@@ -90,7 +90,11 @@ def main() -> int:
                 station('br01_02_base','Portsmouth Shipyard','Cambridge',[good('ship_hull_panels','Hull Panels',120)]),
                 station('br01_01_base','Planet New London','New London',[good('industrial','Industrial Materials',100),good('food','Food Rations',70),good('consumer_goods','Consumer Goods',90)])
               ];
-              window.findCommodity=name=>({name,missing:false,sell_price:100});
+              rhwBase={shop_items:[
+                good('hydrocarbons','Hydrocarbons',80),good('uranium','Uranium',95),good('mox_fuel','MOX',17),
+                good('ship_hull_panels','Hull Panels',120),good('industrial','Industrial Materials',100),
+                good('food','Food Rations',70),good('consumer_goods','Consumer Goods',90),good('npc_trade','Test Trade Good',120)
+              ].map(({nickname,name})=>({nickname,name,sell_price:100}))};
               window.telemetrySnapshot=()=>({available:true,stale:false,fetchedAt:new Date().toISOString(),label:'LIVE STOCK'});
               RHWV4.pricecheck.snapshotRoutes(window.__priceCheckFixture);RHWV4.pricecheck.render();
               return true;
