@@ -166,9 +166,27 @@ def choose_recipe(cdp, query):
     }})()""")
 
 def test_status_sensor(cdp):
-    result=ev(cdp,"(()=>{window.hasVerifiedTelemetry=()=>true;window.operationalItems=()=>[];window.stockFor=()=>100;window.analyzeRecipe=r=>({recipe:r,possibleCycles:r.product==='Reactor Systems'?2:3,cardState:'low',bottleneck:{name:'test'},nextCycleGap:5});RHWV4.command.updateOverview();return{ship:v40OverviewShipyard.textContent,prod:v40OverviewProduction.textContent}})()")
+    state = ev(cdp, """(() => {
+      const original = {hasVerifiedTelemetry, operationalItems, stockFor, analyzeRecipe};
+      try {
+        window.hasVerifiedTelemetry = () => true;
+        window.operationalItems = () => [];
+        window.stockFor = () => 100;
+        window.analyzeRecipe = recipe => ({recipe, possibleCycles: recipe.product === 'Reactor Systems' ? 2 : 3,
+          cardState: 'low', bottleneck: {name: 'test'}, nextCycleGap: 5});
+        RHWV4.command.updateOverview();
+        const live = {ship: v40OverviewShipyard.textContent, prod: v40OverviewProduction.textContent};
+        window.hasVerifiedTelemetry = () => false;
+        RHWV4.command.updateOverview();
+        const stale = {ship: v40OverviewShipyard.textContent, meta: v40OverviewShipyardMeta.textContent,
+          prod: v40OverviewProductionMeta.textContent, log: v40OverviewLogisticsMeta.textContent};
+        return {live, stale};
+      } finally {
+        Object.assign(window, original);
+      }
+    })()""")
+    result, stale = state["live"], state["stale"]
     if not (result["ship"].startswith("MATERIAL FOR") or result["ship"] == "YARD DATA UNKNOWN") or not result["prod"].startswith("MIN "): raise RuntimeError(f"Overview telemetry analysis failed: {result}")
-    stale=ev(cdp,"(()=>{window.hasVerifiedTelemetry=()=>false;RHWV4.command.updateOverview();return{ship:v40OverviewShipyard.textContent,meta:v40OverviewShipyardMeta.textContent,prod:v40OverviewProductionMeta.textContent,log:v40OverviewLogisticsMeta.textContent}})()")
     if stale["ship"] not in {"CONNECTING", "DATA UNAVAILABLE"} or "NO VERIFIED" not in stale["meta"] or "AWAITING VERIFIED" not in stale["prod"] or "AWAITING VERIFIED" not in stale["log"]: raise RuntimeError(f"Overview stale reset failed: {stale}")
     print("V4 interaction smoke passed: COMMAND status sensor")
 
