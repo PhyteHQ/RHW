@@ -525,7 +525,7 @@ def test_pr4_pwa(cdp, workspace, node):
           event.prompt=()=>Promise.reject(new Error('EXPECTED PROMPT FAILURE'));
           window.dispatchEvent(event);
           snapshot.lateOffer=event.defaultPrevented && !panel.hidden && primary.textContent==='INSTALL RHW';
-          await primary.onclick();
+          await primary.onclick?.();
           snapshot.promptFailure=document.documentElement.dataset.rhwPwaInstall||'';
           snapshot.promptFallback=document.getElementById('rhwPwaTitle')?.textContent||'';
           primary.click();

@@ -21,6 +21,12 @@ ROUTES = [(workspace, node) for workspace, nodes in ROUTE_MODEL['routes'].items(
 _ASSETS = json.loads((ROOT / 'scripts/runtime-assets.json').read_text())
 V4_CSS = []  # the HTML stylesheet contains the exact complete production cascade
 V4_JS = [p.removeprefix('./') for p in _ASSETS['workspaces']]
+# The install workflows supply explicit offers for their timing and fallback tests.
+BLOCK_NATIVE_INSTALL_OFFER = """window.addEventListener('beforeinstallprompt', event => {
+  if (!event.isTrusted) return;
+  event.preventDefault();
+  event.stopImmediatePropagation();
+}, {capture: true});"""
 
 def free_port():
     with socket.socket() as sock:
@@ -89,7 +95,7 @@ def document(route):
     source=re.sub(r'<link\s+rel="stylesheet"\s+href="(\./css/[^"]+)"\s*>',css,source,flags=re.I)
     source=re.sub(r'<script\s+src="(\./js/[^"]+)"\s*></script>',js,source,flags=re.I)
     styles="\n".join(f"<style>{(ROOT/p).read_text(encoding='utf-8')}</style>" for p in V4_CSS)
-    source=source.replace("</head>",f"{styles}<script>window.__RHW_SMOKE_INLINE__=true;history.replaceState(null,'','#{route}');</script></head>")
+    source=source.replace("</head>",f"{styles}<script>window.__RHW_SMOKE_INLINE__=true;{BLOCK_NATIVE_INSTALL_OFFER}history.replaceState(null,'','#{route}');</script></head>")
     scripts="\n".join(f"<script>{safe((ROOT/p).read_text(encoding='utf-8'))}</script>" for p in V4_JS)
     return source.replace("</body>",f"{scripts}</body>")
 

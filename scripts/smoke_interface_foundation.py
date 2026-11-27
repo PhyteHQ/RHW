@@ -137,12 +137,6 @@ def main():
         fixture = """(() => {
           const original = window.fetch;
           window.__rhwNpcRequests = 0;
-          // Full Chrome can offer installation itself while this test is running.
-          window.addEventListener('beforeinstallprompt', event => {
-            if (!event.isTrusted) return;
-            event.preventDefault();
-            event.stopImmediatePropagation();
-          }, {capture: true});
           window.addEventListener('DOMContentLoaded', () => {
             if (sessionStorage.getItem('rhw-install-fixture')) return;
             sessionStorage.setItem('rhw-install-fixture', 'sent');
@@ -184,7 +178,7 @@ def main():
             return original(input, options);
           };
         })();"""
-        cdp.call('Page.addScriptToEvaluateOnNewDocument', {'source': fixture})
+        cdp.call('Page.addScriptToEvaluateOnNewDocument', {'source': base.BLOCK_NATIVE_INSTALL_OFFER + fixture})
         cdp.call('Page.navigate', {'url': f'http://127.0.0.1:{server.server_port}/index.html#command/inventory'})
         wait_ready(cdp)
         base.ev(cdp, 'navigator.serviceWorker.ready.then(()=>true)')
