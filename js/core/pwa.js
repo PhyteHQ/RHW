@@ -6,12 +6,13 @@
   'use strict';
   if (window.RHWPWA) return;
 
-  const state = { installPrompt: window.__RHW_EARLY_INSTALL_PROMPT__ || null, prompting: false, installed: false, registration: null,
+  const state = { installPrompt: window.__RHW_EARLY_INSTALL_PROMPT__ || null, prompting: false, installed: false,
+    relatedInstalled: false, registration: null,
     updateWorker: null, restartAvailable: false, reloading: false, restartRequested: false, updateTask: null };
   delete window.__RHW_EARLY_INSTALL_PROMPT__;
   const appDisplay = window.matchMedia?.('(display-mode: standalone), (display-mode: minimal-ui)');
   const isStandalone = () => appDisplay?.matches === true || navigator.standalone === true;
-  const isInstalled = () => state.installed || isStandalone();
+  const isInstalled = () => state.installed || isStandalone() || (state.relatedInstalled && !state.installPrompt);
   const canInstall = () => !isInstalled() && (Boolean(state.installPrompt) || typeof navigator.install === 'function');
 
   function markup() {
@@ -99,6 +100,13 @@
     }
   }
 
+  function showAppStatus() {
+    const installed = isInstalled();
+    showPanel({ title: installed ? 'RHW IS INSTALLED' : 'INSTALLATION UNAVAILABLE',
+      message: installed ? 'RHW is already installed on this device.' : 'App installation requires an offer from the browser in this tab.',
+      primaryLabel: 'CLOSE', onPrimary: hidePanel, mode: 'install-status', singleAction: true });
+  }
+
   function runAppAction() {
     if (state.prompting || state.restartRequested) return;
     const worker = state.updateWorker;
@@ -106,10 +114,8 @@
       showPanel({ mode: 'update', title: worker ? 'RHW UPDATE READY' : 'RHW RESTART READY',
         message: 'Save your work, then restart RHW to load the latest version.',
         primaryLabel: worker ? 'UPDATE NOW' : 'RESTART', onPrimary: () => requestRestart(state.updateWorker) });
-    } else if (isInstalled()) {
-      showPanel({ title: 'RHW IS INSTALLED', message: 'RHW is already installed on this device.',
-        primaryLabel: 'CLOSE', onPrimary: hidePanel, mode: 'installed', singleAction: true });
-    } else return requestInstall();
+    } else if (canInstall()) return requestInstall();
+    else showAppStatus();
   }
 
   function syncInstallState() {
@@ -117,23 +123,43 @@
     const update = Boolean(state.updateWorker || state.restartAvailable);
     const ready = canInstall();
     const busy = state.prompting || state.restartRequested;
-    const installLabel = state.prompting ? 'INSTALLING…' : 'INSTALL APP';
+    const appLabel = state.prompting ? 'INSTALLING…' : installed ? 'APP INSTALLED' : ready ? 'INSTALL APP' : 'APP STATUS';
     const button = document.getElementById('rhwPwaInstallBtn');
     if (button) {
-      button.hidden = !update && (installed || (!ready && !busy));
+      button.hidden = !update && isStandalone();
       button.disabled = busy;
       button.dataset.installReady = String(ready && !update);
-      button.querySelector('span').textContent = update ? 'UPDATE' : installLabel;
+      button.querySelector('span').textContent = update ? 'UPDATE' : appLabel;
       button.querySelector('small').hidden = !update;
-      if (update) button.setAttribute('aria-controls', 'rhwPwaPanel');
+      if (update || !ready) button.setAttribute('aria-controls', 'rhwPwaPanel');
       else button.removeAttribute('aria-controls');
-      button.setAttribute('aria-label', update ? 'Update RHW Command' : 'Install RHW Command');
+      button.setAttribute('aria-label', update ? 'Update RHW Command' : ready ? 'Install RHW Command' : appLabel);
     }
     const system = document.getElementById('rhwDiagnosticsApp');
     if (system) {
-      system.hidden = !update && !installed && !ready && !busy;
+      system.hidden = false;
       system.disabled = busy;
-      system.textContent = update ? 'UPDATE APP' : installed ? 'APP INSTALLED' : installLabel;
+      system.textContent = update ? 'UPDATE APP' : appLabel;
+    }
+    const panel = document.getElementById('rhwPwaPanel');
+    if (panel?.open && panel.dataset.mode === 'install-status') {
+      if (ready || update) hidePanel();
+      else showAppStatus();
+    }
+  }
+
+  async function checkInstalledApp() {
+    if (isStandalone() || typeof navigator.getInstalledRelatedApps !== 'function') return;
+    const manifestUrl = document.querySelector('link[rel="manifest"]')?.href;
+    if (!manifestUrl) return;
+    const id = new URL('/RHW/', manifestUrl).href;
+    try {
+      const apps = await navigator.getInstalledRelatedApps();
+      state.relatedInstalled = apps.some(app =>
+        app.platform === 'webapp' && (app.url === manifestUrl || (!app.url && app.id === id)));
+      syncInstallState();
+    } catch {
+      // A denied or unavailable query leaves the current status intact.
     }
   }
 
@@ -187,6 +213,7 @@
 
   async function register() {
     mount();
+    void checkInstalledApp();
     if (!('serviceWorker' in navigator)) {
       document.documentElement.dataset.rhwPwa = 'unsupported';
       return;
@@ -210,7 +237,7 @@
   }
 
   window.addEventListener('beforeinstallprompt', event => {
-    if (isInstalled() || typeof event.prompt !== 'function') return;
+    if (isStandalone() || state.installed || typeof event.prompt !== 'function') return;
     event.preventDefault();
     state.installPrompt = event;
     mount();

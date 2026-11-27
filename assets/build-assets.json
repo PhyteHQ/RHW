@@ -6,12 +6,12 @@
   },
   "js/rhw-dashboard.js": {
     "sources": 15,
-    "bytes": 142518,
-    "sha256": "c6831f3e543926640e30b5865dee766d7b09990e94da570ca147dbe29c9d7dfc"
+    "bytes": 143675,
+    "sha256": "00b25915c152fdca235b95df09499133d82be7e2312da87373c76c4fd4dee8cd"
   },
   "js/rhw-workspaces.js": {
     "sources": 45,
-    "bytes": 504949,
-    "sha256": "1b02fd8c3d94bfc4f72499504be89c30c32a7a282ae70a91223266d85cfb9da4"
+    "bytes": 504948,
+    "sha256": "f501b6b45525ee07e67d9287476bce359ea4e3563c4be4b0112461b975650a77"
   }
 }
