@@ -37,21 +37,28 @@ DATA[0]['shop_items'] += [
     {'name': 'Modular Miner', 'nickname': 'medium_miner_package', 'quantity': 2, 'max_stock': 5, 'min_stock': 0, 'price': 18000000},
 ]
 
+NPC_GOODS = {'ship_hull_panels': 'Hull Panels', 'industrial': 'Industrial Materials', 'mox_fuel': 'MOX',
+             'titanium': 'Titanium', 'energy_field_equip': 'Energy Field Equipment', 'super_alloys': 'Super Alloy',
+             'ablativearmor': 'Ablative Armor Plating', 'food': 'Food Rations', 'hydrocarbons': 'Hydrocarbons',
+             'consumer_goods': 'Consumer Goods', 'mining_machinery': 'Mining Machinery', 'uranium': 'Uranium', 'oxygen': 'Oxygen'}
 NPC_DATA = [{'name': name, 'nickname': nickname, 'system_name': system,
              'system_nickname': {'Cambridge': 'br03', 'New London': 'br01', 'New Berlin': 'rh01'}[system],
-             'market_goods': [{'name': commodity, 'nickname': commodity.lower().replace(' ', '_'),
-                               'base_sells': True, 'price_base_sells_for': 80}
-                              for commodity in ('Hull Panels', 'Industrial Materials', 'MOX', 'Niobium', 'Titanium',
-                                                'Energy Field Equipment', 'Super Alloy', 'Ablative Armor Plating',
-                                                'Food Rations', 'Hydrocarbons', 'Consumer Goods', 'Mining Machinery')]}
-            for name, nickname, system in (('Portsmouth Shipyard', 'br01_02_base', 'Cambridge'), ('Planet New London', 'br01_01_base', 'New London'),
-                ('Thames Outpost', 'br01_06_base', 'New London'), ('Kensington Shipping Platform', 'br01_07_base', 'New London'),
-                ('Planet Cambridge', 'br03_01_base', 'Cambridge'), ('Waterloo Station', 'br01_04_base', 'New London'), ('Oder Shipyard', 'rh01_02_base', 'New Berlin'))]
+             'market_goods': [{'name': NPC_GOODS[good], 'nickname': f'commodity_{good}', 'category': 'commodity',
+                               'base_sells': True, 'price_base_sells_for': price} for good, price in offers]}
+            for name, nickname, system, offers in (
+                ('Portsmouth Shipyard', 'br01_02_base', 'Cambridge', [('ship_hull_panels', 80)]),
+                ('Planet New London', 'br01_01_base', 'New London', [('industrial', 80), ('food', 70), ('consumer_goods', 90), ('oxygen', 90)]),
+                ('Thames Outpost', 'br01_06_base', 'New London', [('hydrocarbons', 80), ('mox_fuel', 80), ('mining_machinery', 80), ('uranium', 85)]),
+                ('Kensington Shipping Platform', 'br01_07_base', 'New London', [('titanium', 80), ('hydrocarbons', 95)]),
+                ('Planet Cambridge', 'br03_01_base', 'Cambridge', [('energy_field_equip', 80)]),
+                ('Waterloo Station', 'br01_04_base', 'New London', [('super_alloys', 80), ('mining_machinery', 87)]),
+                ('Oder Shipyard', 'rh01_02_base', 'New Berlin', [('ablativearmor', 80), ('ship_hull_panels', 105)]))]
+PRICE_OFFER_COUNT = 12
 PRICE_CHECK_FIXTURES = {
     '/__rhw_test_pobs': DATA,
     '/__rhw_test_npc': NPC_DATA,
-    '/__rhw_test_commodities': [{'nickname': good['nickname'], 'name': good['name'], 'volume': 1}
-                                for good in NPC_DATA[0]['market_goods']],
+    '/__rhw_test_commodities': [{'nickname': f'commodity_{good}', 'name': name, 'volume': 1}
+                                for good, name in NPC_GOODS.items()],
     '/__rhw_test_ships': [
         {'nickname': 'dsy_advanced_train', 'name': 'Advanced Train', 'class': 9, 'hold_size': 5000,
          'cruise_speed': 350, 'dock_type': 2},
@@ -155,6 +162,8 @@ def main():
             for route in ROUTES:
                 workspace, node = route.split('/')
                 base.ev(cdp, f"(()=>{{RHWV4.navigate('{workspace}','{node}');window.scrollTo(0,0);return true;}})()")
+                if width == WIDTHS[0] and workspace == 'pricecheck':
+                    base.ev(cdp, 'RHWV4.pricecheck.refresh({quiet:true}).then(()=>true)')
                 time.sleep(.35)
                 result = base.ev(cdp, """(()=>{
                   const visible=e=>!!e&&e.getBoundingClientRect().height>0&&!e.closest('[hidden]');
@@ -272,12 +281,12 @@ def main():
                 if width <= 760 and workspace == 'pricecheck':
                     # A phone must show the result at the start of each compact
                     # card, including unknown prices and the longest route names.
-                    assert len(result['priceCards']) == 11, result
+                    assert len(result['priceCards']) == PRICE_OFFER_COUNT, result
                     for card in result['priceCards']:
                         assert card['height'] <= 300 and card['differenceTop'] <= 20, (width, card)
                         assert card['pricesAligned'] and card['readOnly'] and not card['clipped'], (width, card)
                     if width == 390:
-                        capture_card(cdp, '[data-route-key="industrial-materials"]', '390-pricecheck-compact-cards')
+                        capture_card(cdp, '[data-route-key="br01_01_base/commodity_industrial"]', '390-pricecheck-compact-cards')
                 report.append({'width': width, 'route': route, **result})
 
         # Connection labels must fit even when no inventory has arrived.
@@ -621,7 +630,7 @@ def main():
         base.ev(cdp, "RHWV4.pricecheck.refresh({quiet:true}).then(()=>{RHWV4.requestUiUpdate();return true;})")
         time.sleep(.15)
         price_focus = base.ev(cdp, """(()=>{const e=document.getElementById('priceCheckRefresh');
-          const row=document.querySelector('[data-route-key="hull-panels"]');
+          const row=document.querySelector('[data-route-key="br01_02_base/commodity_ship_hull_panels"]');
           return {same:e===window.__rhwFocusedPrice,focused:document.activeElement===e,
             price:row.querySelector('.pricecheck-source-price').textContent,editors:document.querySelectorAll('#priceCheckRows input').length,
             stored:RHWV4.pricecheck.state.overrides['hull-panels'],live:RHWV4.pricecheck.state.marketLabel,
@@ -629,41 +638,47 @@ def main():
         assert price_focus['same'] and price_focus['focused'] and price_focus['price'] == '$80' and price_focus['stored'] == 0 and price_focus['editors'] == 0, price_focus
         assert price_focus['live'] == 'NPC MARKET LIVE' and price_focus['emptyStyleMarkers'] == 0, price_focus
         deadline = time.monotonic() + 10
-        while base.ev(cdp, "document.querySelectorAll('.pricecheck-target b').length") != 11:
+        while base.ev(cdp, "document.querySelectorAll('.pricecheck-target b').length") != PRICE_OFFER_COUNT:
             if time.monotonic() >= deadline:
                 details = base.ev(cdp, "({status:priceCheckTripStatus.textContent, rows:[...document.querySelectorAll('.pricecheck-target')].map(row=>row.textContent)})")
-                raise AssertionError(f'Price Check did not quote the 11 fixed routes: {details}')
+                raise AssertionError(f'Price Check did not quote the eligible NPC offers: {details}')
             time.sleep(.05)
         hourly_target = base.ev(cdp, """(()=>{
-          const row=document.querySelector('[data-route-key="mox"]');
+          const row=document.querySelector('[data-route-key="br01_06_base/commodity_hydrocarbons"]');
           const select=(node,value)=>{node.value=value;node.dispatchEvent(new Event('change',{bubbles:true}));};
+          const targets=[...priceCheckTarget.querySelectorAll('input[type="radio"]')];
+          const choose=value=>targets.find(input=>input.value===value).click();
           const quantity=value=>{priceCheckQuantity.value=value;priceCheckQuantity.dispatchEvent(new Event('input',{bubbles:true}));};
           const quote=()=>Number(row.querySelector('.pricecheck-target b').textContent.replace(/[^0-9]/g,''));
           const current=()=>row.querySelector('.pricecheck-hourly b').textContent;
           select(priceCheckHauler,'transport-5000');
-          const initial=quote(), rate=current(), before=Number(priceCheckTarget.value);
-          select(priceCheckTarget,'750000');const above=quote();
-          select(priceCheckTarget,'1000000');const highest=quote(), sameRate=current()===rate;
+          const initial=quote(), rate=current(), before=Number(targets.find(input=>input.checked).value);
+          choose('750000');const above=quote();
+          choose('1000000');const highest=quote(), sameRate=current()===rate;
           quantity('1000');const smaller=quote(), label=row.querySelector('.pricecheck-trip').textContent;
           const width=document.documentElement.scrollWidth;
-          select(priceCheckTarget,'500000');select(priceCheckHauler,'auto');quantity('');
+          choose('500000');select(priceCheckHauler,'auto');quantity('');
           return {before,initial,above,highest,smaller,sameRate,label,width,viewport:innerWidth,
+            presets:targets.map(input=>Number(input.value)),
             original:row.querySelector('.pricecheck-difference strong').textContent};
         })()""")
         assert hourly_target['before'] == 500000 and hourly_target['initial'] < hourly_target['above'] < hourly_target['highest'] < hourly_target['smaller'], hourly_target
+        assert hourly_target['presets'] == [500000, 750000, 1000000], hourly_target
         assert hourly_target['sameRate'] and 'Advanced Train' in hourly_target['label'] and '1,000 units' in hourly_target['label'], hourly_target
         assert hourly_target['width'] <= hourly_target['viewport'] + 1 and hourly_target['original'] == '+$20', hourly_target
         # Updated NPC quotes must handle zero, losses and large amounts without
         # introducing editable controls or clipping a phone card.
         price_edit = base.ev(cdp, """(()=>{
-          const row=document.querySelector('[data-route-key="food-rations"]');
+          const key='br01_01_base/commodity_industrial';
+          const offer=RHWV4.pricecheck.state.marketCache.routes.find(route=>route.key===key);
+          const row=document.querySelector(`[data-route-key="${key}"]`);
           const states=[0,100,125,9999999].map(value=>{
-            RHWV4.pricecheck.state.marketCache.routes['food-rations'].livePrice=value;RHWV4.pricecheck.render();
+            offer.livePrice=value;RHWV4.pricecheck.render();
             const diff=row.querySelector('.pricecheck-difference');
             return {text:diff.querySelector('strong').textContent,tone:diff.className,
               readOnly:!row.querySelector('input'),clipped:row.scrollWidth>row.clientWidth+1};
           });
-          RHWV4.pricecheck.state.marketCache.routes['food-rations'].livePrice=80;RHWV4.pricecheck.render();
+          offer.livePrice=80;RHWV4.pricecheck.render();
           return {states,
             liveResult:row.querySelector('.pricecheck-difference strong').textContent};
         })()""")
@@ -676,9 +691,8 @@ def main():
           const rows=()=>[...priceCheckRows.querySelectorAll('[data-route-key]')];
           const sort=value=>{priceCheckSort.value=value;priceCheckSort.dispatchEvent(new Event('change',{bubbles:true}));};
           const qty=value=>{priceCheckQuantity.value=value;priceCheckQuantity.dispatchEvent(new Event('input',{bubbles:true}));};
-          const key='food-rations',hull='hull-panels';
-          const market={...original.routes,[key]:{...original.routes[key],livePrice:0}};
-          delete market[hull];
+          const key='br01_01_base/commodity_industrial',hull='br01_02_base/commodity_ship_hull_panels';
+          const market=original.routes.map(route=>route.key===key ? {...route,livePrice:0} : route.key===hull ? {...route,livePrice:null} : route);
           api.state.marketCache={...original,routes:market};
           sort('best');qty('5');
           const unknown=row=>row.querySelector('.pricecheck-difference').classList.contains('unknown');
@@ -686,16 +700,16 @@ def main():
           const result={best:sorted[0].dataset.routeKey,unknownLast:suffix.every(unknown)&&suffix.some(row=>row.dataset.routeKey===hull),
             total:rows()[0].querySelector('.pricecheck-total b')?.textContent};
           sort('worst');result.worst=rows()[0].dataset.routeKey!==key;
-          market[key].livePrice=125;api.render();
+          market.find(route=>route.key===key).livePrice=125;api.render();
           result.loss=rows()[0].querySelector('.pricecheck-total b')?.textContent;
           qty('0');result.noInvalidTotal=!priceCheckRows.querySelector('.pricecheck-total');
-          api.state.marketCache={...original,routes:{}};api.render();
-          result.waiting=priceCheckStatusGrid.textContent.includes('Awaiting prices')
+          api.state.marketCache={...original,routes:[]};api.render();
+          result.waiting=priceCheckResultCount.textContent.includes('No eligible NPC offers reported')
             &&!priceCheckStatusGrid.querySelector('[data-tone="positive"]');
           api.state.marketCache=original;qty('');sort('source');
           return result;
         })()""")
-        assert price_sort == {'best':'food-rations','unknownLast':True,'total':'+$500',
+        assert price_sort == {'best':'br01_01_base/commodity_industrial','unknownLast':True,'total':'+$500',
                               'worst':True,'loss':'-$125','noInvalidTotal':True,'waiting':True}, price_sort
         base.ev(cdp, "(()=>{location.hash='#pricecheck/obsolete';return true;})()")
         time.sleep(.15)
@@ -760,8 +774,9 @@ def main():
         assert all(cached.values()), cached
         offline_prices = base.ev(cdp, """(()=>{
           const a=RHWV4;a.navigate('pricecheck','routes');
-          const row=a.pricecheck.effectiveRow(a.pricecheck.routes.find(r=>r.key==='food-rations'));
-          return {cached:!row.fresh&&row.live!==null,copy:document.querySelector('[data-route-key="food-rations"] .pricecheck-live').textContent};
+          const key='br01_01_base/commodity_industrial';
+          const row=a.pricecheck.effectiveRow(a.pricecheck.routes.find(r=>r.key===key));
+          return {cached:!row.fresh&&row.live!==null,copy:document.querySelector(`[data-route-key="${key}"] .pricecheck-live`).textContent};
         })()""")
         assert offline_prices['cached'] and offline_prices['copy'].startswith('CACHED'), offline_prices
         cdp.call('Page.reload')

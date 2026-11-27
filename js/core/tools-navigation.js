@@ -186,7 +186,7 @@
     const active = document.getElementById('appActiveNode');
     if (!active || app.state.activeWorkspace === 'command') return;
     if (toolKey) active.textContent = `ACTIVE NODE: TOOLS / ${TOOL_META[toolKey]?.label || toolKey.toUpperCase()}`;
-    else active.textContent = `ACTIVE NODE: ${{ operations: 'CALCULATOR', pricecheck: 'PRICE CHECK / FIXED ROUTES', comms: 'FORUM' }[app.state.activeWorkspace]}`;
+    else active.textContent = `ACTIVE NODE: ${{ operations: 'CALCULATOR', pricecheck: 'PRICE CHECK / NPC MARKET', comms: 'FORUM' }[app.state.activeWorkspace]}`;
   }
 
   function sync() {
