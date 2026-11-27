@@ -137,17 +137,20 @@ def main():
         fixture = """(() => {
           const original = window.fetch;
           window.__rhwNpcRequests = 0;
-          window.addEventListener('DOMContentLoaded', () => {
+          const installObserver = new MutationObserver(() => {
+            if (!document.querySelector('link[rel=manifest]')) return;
+            installObserver.disconnect();
             if (sessionStorage.getItem('rhw-install-fixture')) return;
             sessionStorage.setItem('rhw-install-fixture', 'sent');
-            const pending = window.__rhwEarlyInstall = {workspacesReady: !!window.RHWV4, calls: 0};
+            const pending = window.__rhwEarlyInstall = {dashboardReady: !!window.RHWPWA, calls: 0};
             const event = new Event('beforeinstallprompt', {cancelable: true});
             event.prompt = () => {
               pending.calls++;
               return new Promise(resolve => { pending.finish = resolve; });
             };
             pending.captured = !window.dispatchEvent(event);
-          }, {once: true});
+          });
+          installObserver.observe(document, {childList: true, subtree: true});
           const marketKey = 'rhw-webapp-v4:price-check-market-cache';
           const write = Storage.prototype.setItem;
           if (!sessionStorage.getItem('market-cache-fixture')) {
@@ -186,23 +189,21 @@ def main():
           const pending=window.__rhwEarlyInstall;
           const button=document.getElementById('rhwPwaInstallBtn');
           const inHeader=!!button.closest('.command-header');
-          const ready=button.querySelector('small').textContent;
+          const label=button.querySelector('span').textContent;
           const panel=document.getElementById('rhwPwaPanel');
-          const primary=document.getElementById('rhwPwaPrimary');
           button.click();
-          const confirm=panel.open && primary.textContent==='INSTALL' && !pending.calls;
-          primary.click();
           const disabled=button.disabled;
-          primary.click();
+          const direct=pending.calls===1 && !panel.open;
+          button.click();
           pending.finish?.({outcome:'dismissed'});
           await Promise.resolve();
-          return {workspacesReady:pending.workspacesReady,captured:pending.captured,inHeader,ready,
-            calls:pending.calls,disabled,confirm,promptCleared:!RHWPWA.state.installPrompt,
-            enabled:!button.disabled,closed:!panel.open,phone:button.querySelector('small').textContent};
+          return {dashboardReady:pending.dashboardReady,captured:pending.captured,inHeader,label,
+            calls:pending.calls,disabled,direct,promptCleared:!RHWPWA.state.installPrompt,
+            hidden:button.hidden,closed:!panel.open,dismissed:document.documentElement.dataset.rhwPwaInstall};
         })()""")
-        assert install == {'workspacesReady': False, 'captured': True, 'inHeader': True, 'ready': 'APP READY',
-                           'calls': 1, 'disabled': True, 'confirm': True,
-                           'promptCleared': True, 'enabled': True, 'closed': True, 'phone': 'PHONE APP'}, install
+        assert install == {'dashboardReady': False, 'captured': True, 'inHeader': True, 'label': 'INSTALL APP',
+                           'calls': 1, 'disabled': True, 'direct': True,
+                           'promptCleared': True, 'hidden': True, 'closed': True, 'dismissed': 'dismissed'}, install
         # Boot and service-worker readiness can precede the async cache read
         # and first fixture fetch. Check the stock view only after that fetch.
         stock_deadline = time.monotonic() + 15
@@ -676,7 +677,7 @@ def main():
         # The old URL must resolve to a current view; no retired editor is mounted.
         retired = base.ev(cdp, """(()=>{RHWV4.navigate('comms','ticker');return {route:location.hash,
           editor:!!document.getElementById('v40NewswireManager'),orders:!!RHWV4.productionOrders,
-          archive:typeof RHWV4.legacyArchive.prepareImport==='function',scripts:[...document.scripts].map(s=>s.src)};})()""")
+          archive:typeof RHWV4.legacyArchive.prepareImport==='function',scripts:[...document.scripts].filter(s=>s.src).map(s=>s.src)};})()""")
         assert retired['route'] == '#comms/forum' and not retired['editor'] and not retired['orders'] and retired['archive'], retired
         assert len(retired['scripts']) == 4, retired
         # Refreshes keep keyboard focus on the control, while archived manual

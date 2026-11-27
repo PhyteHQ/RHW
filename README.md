@@ -58,7 +58,7 @@ Trade Desk refreshes POB stock for **every search**. Failed POB requests pause c
 
 Open **`https://phytehq.github.io/RHW/`** in the browser you want to use for installation.
 
-Tap **INSTALL · PHONE APP** in the header. If the browser offers installation, choose **INSTALL** in the RHW dialog and confirm the browser prompt. The same dialog gives the browser-menu steps when needed. In the installed app, **TOOLS → SYSTEM + DATA** shows **APP INSTALLED**.
+When your browser makes installation available, **INSTALL APP** appears in the header. Tap it to start the browser's native install flow and confirm if prompted. The installed app has its own Resolution Heavy Works icon. In the installed app, **TOOLS → SYSTEM + DATA** shows **APP INSTALLED**.
 
 The app bundles, local fonts, icons and recipe catalog are cached together for offline access. RHW always labels offline mode clearly and never presents failed live telemetry as current data. When a new version is ready, the header shows **UPDATE · APP READY**. Choose **UPDATE NOW** in that dialog to activate it and reload.
 
