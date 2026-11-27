@@ -174,8 +174,6 @@ html.rhw-focus-pass .crest-frame::before { display: block;opacity: .65; }
 
 html.rhw-focus-pass .brand-copy { min-width: 0; }
 
-html.rhw-focus-pass .brand-kicker { font: 12px/1.25 var(--font-tech);letter-spacing: .2em;margin-bottom: 9px; }
-
 html.rhw-focus-pass .command-header h1 { display: flex;flex-wrap: wrap;align-items: baseline;gap: 8px 18px;color: var(--text);font: 600 76px/.9 var(--font-title);margin: 0;letter-spacing: .07em;text-shadow: 0 0 28px #f0c56b20; }
 
 html.rhw-focus-pass .brand-command { font: 500 37px/1 var(--font-title);letter-spacing: .18em; }
@@ -638,7 +636,6 @@ html.rhw-focus-pass .command-header { padding: 12px; }
 html.rhw-focus-pass .command-header-inner { grid-template-columns: 1fr;gap: 10px; }
 html.rhw-focus-pass .brand-copy { display: contents; }
 html.rhw-focus-pass .crest-frame { grid-column: 1;grid-row: 1 / span 3; }
-html.rhw-focus-pass .brand-kicker { grid-column: 2;margin: 0;align-self: end;font-size: 12px;letter-spacing: .03em; }
 html.rhw-focus-pass .command-header h1 { grid-column: 2;font-size: 43px;gap: 8px;margin: 3px 0 0;letter-spacing: .025em; }
 html.rhw-focus-pass .brand-command { font-size: 24px;letter-spacing: .08em; }
 html.rhw-focus-pass .brand-subtitle { grid-column: 2;align-self: start;font-size: 12px;letter-spacing: .04em;margin-top: 4px; }
