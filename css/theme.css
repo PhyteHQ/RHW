@@ -593,7 +593,7 @@ html.rhw-focus-pass .rhw-diagnostics-overlay { background: #000000b3;backdrop-fi
 @keyframes rhwCoreBreathe { 0%,100% { opacity: .45; } 50% { opacity: .85; } }
 
 @media (prefers-reduced-motion: no-preference) and (min-width: 1001px) {
-html.rhw-focus-pass:not(.eco) .crest-frame::before { animation: rhwCoreBreathe 10s ease-in-out infinite !important; }
+html.rhw-focus-pass:not(.eco,.rhw-workbench) .crest-frame::before { animation: rhwCoreBreathe 10s ease-in-out infinite !important; }
 }
 
 html.rhw-focus-pass.eco .header-watermark, html.rhw-focus-pass.eco .crest-frame::before { display: none !important; }
