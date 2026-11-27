@@ -190,9 +190,12 @@ def main():
         base.ev(cdp, 'navigator.serviceWorker.ready.then(()=>true)')
         install = base.ev(cdp, """(async()=>{
           const pending=window.__rhwEarlyInstall;
-          const button=document.getElementById('rhwPwaInstallBtn');
-          const inHeader=!!button.closest('.command-header');
-          const label=button.querySelector('span').textContent;
+          const header=document.getElementById('rhwPwaInstallBtn');
+          RHWV4.toolsNavigation.openTool('system');
+          const button=document.getElementById('rhwDiagnosticsApp');
+          const inTools=!!button.closest('#rhwDiagnosticsPanel') && !button.closest('[hidden]');
+          const headerHidden=header.hidden && header.getBoundingClientRect().height===0;
+          const label=button.textContent;
           const panel=document.getElementById('rhwPwaPanel');
           button.click();
           const disabled=button.disabled;
@@ -200,12 +203,12 @@ def main():
           button.click();
           pending.finish?.({outcome:'dismissed'});
           await Promise.resolve();
-          return {dashboardReady:pending.dashboardReady,captured:pending.captured,inHeader,label,
+          return {dashboardReady:pending.dashboardReady,captured:pending.captured,inTools,headerHidden,label,
             calls:pending.calls,disabled,direct,promptCleared:!RHWPWA.state.installPrompt,
-            installed:!button.hidden && button.querySelector('span').textContent==='APP INSTALLED',
+            installed:header.hidden && !button.hidden && button.textContent==='APP INSTALLED',
             closed:!panel.open,dismissed:document.documentElement.dataset.rhwPwaInstall};
         })()""")
-        assert install == {'dashboardReady': False, 'captured': True, 'inHeader': True, 'label': 'INSTALL APP',
+        assert install == {'dashboardReady': False, 'captured': True, 'inTools': True, 'headerHidden': True, 'label': 'INSTALL APP',
                            'calls': 1, 'disabled': True, 'direct': True,
                            'promptCleared': True, 'installed': True, 'closed': True, 'dismissed': 'dismissed'}, install
         # Boot and service-worker readiness can precede the async cache read
@@ -893,6 +896,8 @@ def main():
           RHWV4.navigate('comms','forum');
           const preview=document.getElementById('forumLivePreview');
           RHWV4.comms.renderPreview(RHWV4.storage.defaultState());
+          const now=new Date();
+          const today=[String(now.getDate()).padStart(2,'0'),String(now.getMonth()+1).padStart(2,'0'),now.getFullYear()].join('/');
           const images=[...preview.querySelectorAll('img')];
           await Promise.all(images.map(img=>{img.loading='eager';return img.decode();}));
           const state={...RHWV4.state.comms,templateKey:'incident',classification:'',subject:'Docking Notice',
@@ -905,11 +910,12 @@ def main():
               &&preview.querySelector('.forum-preview-document').textContent.includes('OFFICE OF THE CHIEF EXECUTIVE'),
             details:[...preview.querySelectorAll('.forum-preview-meta dt')].map(label=>label.textContent),
             stamp:preview.querySelector('.forum-preview-stamp').textContent.includes('SECURE TRANSMISSION · RES OFFICIAL')
-              &&preview.querySelector('.forum-preview-stamp').textContent.includes('[RES] SYSTEM TIME: UNSET'),
+              &&preview.querySelector('.forum-preview-stamp').textContent.includes('SYSTEM TIME: '+today)
+              &&!preview.querySelector('.forum-preview-stamp').textContent.includes('[RES] SYSTEM TIME'),
             footer:bbcode.indexOf('[align=right]')<bbcode.indexOf('rhw-forum-footer.png')
               &&bbcode.indexOf('rhw-forum-footer.png')<bbcode.indexOf('Custom transmission motto'),
             style:!bbcode.includes('[table')&&bbcode.includes('[font=Georgia][size=x-large][b][color=#C9AA70]Docking Notice')
-              &&bbcode.includes('SECURE TRANSMISSION · PRIORITY // RESTRICTED[br][RES] SYSTEM TIME: 27/11/836')
+              &&bbcode.includes('SECURE TRANSMISSION · PRIORITY // RESTRICTED[br]SYSTEM TIME: 27/11/836')
               &&bbcode.includes('Berth 2 closed.')&&bbcode.includes('27/11/836')};
         })()""")
         assert forum_offline['images'] == [[320, 399, True], [360, 107, True]], forum_offline

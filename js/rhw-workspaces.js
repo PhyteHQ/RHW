@@ -1570,7 +1570,7 @@ const RHW_APP_CONFIG = Object.freeze({
               <label class="comms-field"><span>ENCRYPTION</span><div class="comms-inline-control"><input id="commsEncryption" type="text" maxlength="120" /><button type="button" id="randomizeCipherBtn" class="comms-mini-action">↻ ROLL CIPHER</button></div><small>RP CIPHER DESIGNATION // DOES NOT ENCRYPT THE POST</small></label>
               <label class="comms-field comms-wide"><span>SALUTATION / OPENING</span><select id="commsSalutation">${selectOptions(app.config.salutations)}</select><input id="commsSalutationCustom" type="text" maxlength="160" placeholder="Custom opening" hidden /><small>OPTIONAL OPENING BASED ON RECIPIENT CONTEXT</small></label>
               <label class="comms-field"><span>SIGN-OFF / CLOSING</span><select id="commsClosing">${selectOptions(app.config.closings)}</select><input id="commsClosingCustom" type="text" maxlength="100" placeholder="Custom sign-off" hidden /><small>PRESETS BY RECIPIENT CONTEXT</small></label>
-              <label class="comms-field"><span>RP SYSTEM DATE</span><input id="commsSystemDate" type="text" maxlength="40" placeholder="05/08/836" /></label>
+              <label class="comms-field"><span>SYSTEM TIME</span><input id="commsSystemDate" type="text" maxlength="40" placeholder="Today's date" /><small>AUTOMATIC LOCAL DATE // LEAVE EMPTY FOR TODAY</small></label>
                 <label class="comms-field comms-wide"><span>FOOTER MOTTO</span><input id="commsFooterMotto" type="text" maxlength="180" /></label>
               </div>
             </details>
@@ -1720,6 +1720,31 @@ const RHW_APP_CONFIG = Object.freeze({
     return blocks.join('');
   }
 
+  // Resolve the date on each render/export instead of storing an automatic
+  // date in the draft. Explicit RP dates remain valid historical overrides.
+  function todaySystemDate() {
+    const now = new Date();
+    const pad = value => String(value).padStart(2, '0');
+    return `${pad(now.getDate())}/${pad(now.getMonth() + 1)}/${now.getFullYear()}`;
+  }
+
+  function systemDateOverride(state) {
+    const value = String(state?.systemDate || '').trim();
+    return value.toUpperCase() === 'UNSET' ? '' : value;
+  }
+
+  function refreshSystemDate() {
+    const input = document.getElementById('commsSystemDate');
+    if (!input) return;
+    const today = todaySystemDate();
+    if (input.placeholder === today) return;
+    input.placeholder = today;
+    if (!systemDateOverride(app.state.comms)) {
+      renderPreview();
+      renderBbcode();
+    }
+  }
+
   function transmission(state) {
     const sender = app.storage.resolveSender(state);
     const template = app.template(state.templateKey);
@@ -1729,7 +1754,7 @@ const RHW_APP_CONFIG = Object.freeze({
       sender, template, classification, subject: field('subject', 'UNTITLED CORRESPONDENCE'),
       salutation: resolvedSalutation(state),
       closing: field('closing', template.closing),
-      systemDate: field('systemDate', 'UNSET'),
+      systemDate: systemDateOverride(state) || todaySystemDate(),
       footerMotto: field('footerMotto', app.config.forum.footerMotto),
       details: [
         ['FROM', sender.name],
@@ -1776,7 +1801,7 @@ ${body}
 
 [pi amount=12][align=right][font=Georgia][i][color=${f.steelColor}]${closing}[/color][/i][/font][br][size=x-large][font=Georgia][i][color=${f.brandColor}]${sender.name}[/color][/i][/font][/size]${role}${organisation}[/align][/pi]
 
-[align=center][img]${f.footerUrl}[/img][br][font=Georgia][size=large][i][color=${f.brandColor}]${footerMotto}[/color][/i][/size][/font][br][font=Consolas][size=small][color=${f.blueColor}]${f.brandName} ${f.brandDivision}[/color][/size][/font][br][font=Consolas][size=x-small][color=${f.mutedColor}]SECURE TRANSMISSION · ${classification}[br][RES] SYSTEM TIME: ${systemDate}[/color][/size][/font][/align]`;
+[align=center][img]${f.footerUrl}[/img][br][font=Georgia][size=large][i][color=${f.brandColor}]${footerMotto}[/color][/i][/size][/font][br][font=Consolas][size=small][color=${f.blueColor}]${f.brandName} ${f.brandDivision}[/color][/size][/font][br][font=Consolas][size=x-small][color=${f.mutedColor}]SECURE TRANSMISSION · ${classification}[br]SYSTEM TIME: ${systemDate}[/color][/size][/font][/align]`;
   }
 
   function renderPreview(state = app.state.comms) {
@@ -1818,7 +1843,7 @@ ${body}
         <img class="forum-preview-footer-art" src="${esc(f.previewFooterUrl)}" width="360" height="107" alt="" loading="lazy" />
         <div class="forum-preview-motto">${esc(footerMotto)}</div>
         <div class="forum-preview-affiliation">${esc(f.brandName)} ${esc(f.brandDivision)}</div>
-        <div class="forum-preview-stamp">SECURE TRANSMISSION · ${esc(classification)}<br>[RES] SYSTEM TIME: ${esc(systemDate)}</div>
+        <div class="forum-preview-stamp">SECURE TRANSMISSION · ${esc(classification)}<br>SYSTEM TIME: ${esc(systemDate)}</div>
       </div>`;
     app.rendered?.('forum-preview');
   }
@@ -1885,9 +1910,11 @@ ${body}
       commsTemplate: state.templateKey, commsClassification: state.classification, customSenderName: state.customSenderName,
       commsSignatureTitle: state.signatureTitle, commsRecipient: state.recipient, commsLocation: state.location,
       commsEncryption: state.encryption, commsSubject: state.subject, commsMessage: state.message,
-      commsSystemDate: state.systemDate, commsDraftName: state.draftName, commsFooterMotto: state.footerMotto
+      commsSystemDate: systemDateOverride(state), commsDraftName: state.draftName, commsFooterMotto: state.footerMotto
     };
     Object.entries(map).forEach(([id, value]) => { const el = document.getElementById(id); if (el) el.value = value ?? ''; });
+    const dateInput = document.getElementById('commsSystemDate');
+    if (dateInput) dateInput.placeholder = todaySystemDate();
     setPresetControl('commsClosing', 'commsClosingCustom', state.closing, app.config.closings);
     setPresetControl('commsSalutation', 'commsSalutationCustom', state.salutation, app.config.salutations);
     const subject = document.getElementById('commsSubject');
@@ -2048,6 +2075,7 @@ ${body}
   }
 
   function showForumSurface(surface) {
+    refreshSystemDate();
     const view = ['write', 'preview', 'bbcode'].includes(surface) ? surface : 'write';
     if (window.matchMedia('(max-width: 760px)').matches && app.mobileUi?.setForumView) {
       app.mobileUi.setForumView(view);
@@ -2278,6 +2306,7 @@ ${body}
     const subtitle = document.getElementById('commsWorkspaceSubtitle');
     if (title) title.textContent = copy[0];
     if (subtitle) subtitle.textContent = copy[1];
+    if (valid === 'forum') refreshSystemDate();
     if (valid === 'drafts') renderDrafts();
     if (valid === 'senders') renderSenderRegistry();
     if (app.state.activeWorkspace === 'comms') {
@@ -2296,6 +2325,8 @@ ${body}
       if (button) app.navigate('comms', button.dataset.commsNode);
     });
     bindForum(); bindDrafts(); bindSenders();
+    window.addEventListener('focus', refreshSystemDate);
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshSystemDate(); });
     renderForm(); renderDrafts(); renderSenderRegistry();
     app.lifecycle.emit('forum:ready');
   }

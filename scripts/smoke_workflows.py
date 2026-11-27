@@ -493,17 +493,19 @@ def test_pr4_pwa(cdp, workspace, node):
     try:
         result = base.ev(cdp, """(async()=>{
           const install=document.getElementById('rhwPwaInstallBtn');
+          const appButton=document.getElementById('rhwDiagnosticsApp');
+          const openApp=()=>{RHWV4.toolsNavigation.openTool('system');return appButton;};
           const panel=document.getElementById('rhwPwaPanel');
           const primary=document.getElementById('rhwPwaPrimary');
           const later=document.getElementById('rhwPwaClose');
           const offline=document.getElementById('rhwPwaOffline');
-          install.click();
+          openApp().click();
           Object.defineProperty(navigator,'onLine',{configurable:true,get:()=>false});
           RHWPWA.syncConnectionState();
           const snapshot={
             api:!!window.RHWPWA,
-            inHeader:!!install.closest('.command-header'),
-            unavailable:!install.hidden && install.querySelector('span').textContent==='APP STATUS'
+            inTools:!!appButton.closest('#rhwDiagnosticsPanel'),
+            unavailable:install.hidden && install.getBoundingClientRect().height===0 && appButton.textContent==='APP STATUS'
               && panel.open && document.getElementById('rhwPwaTitle').textContent==='INSTALLATION UNAVAILABLE',
             network:document.documentElement.dataset.rhwNetwork,
             offlineVisible:!offline?.hidden,
@@ -520,31 +522,31 @@ def test_pr4_pwa(cdp, workspace, node):
             return Promise.reject(new Error('EXPECTED PROMPT FAILURE'));
           };
           window.dispatchEvent(event);
-          snapshot.installHeight=install.getBoundingClientRect().height;
-          snapshot.lateOffer=event.defaultPrevented && !panel.open && install.querySelector('span').textContent==='INSTALL APP';
-          install.click();
+          openApp();
+          snapshot.installHeight=appButton.getBoundingClientRect().height;
+          snapshot.lateOffer=event.defaultPrevented && !panel.open && install.hidden && appButton.textContent==='INSTALL APP';
+          appButton.click();
           snapshot.oneTap=legacyCalls===1 && !panel.open;
           await Promise.resolve();
           snapshot.promptFailure=document.documentElement.dataset.rhwPwaInstall||'';
           snapshot.errorSheet=panel.open && primary.textContent==='CLOSE' && later.hidden
             && document.getElementById('rhwPwaTitle').textContent==='INSTALLATION COULD NOT START';
           primary.click();
-          snapshot.closed=!panel.open && !install.hidden && install.querySelector('span').textContent==='APP STATUS';
+          snapshot.closed=!panel.open && install.hidden && appButton.textContent==='APP STATUS';
           let nativeCalls=0;
           Object.defineProperty(navigator,'install',{configurable:true, value:()=>{
             nativeCalls++;
             return Promise.reject(new DOMException('Closed','AbortError'));
           }});
           RHWPWA.syncInstallState();
-          snapshot.nativeReady=!install.hidden;
-          install.click();
+          snapshot.nativeReady=install.hidden && appButton.textContent==='INSTALL APP';
+          openApp().click();
           await Promise.resolve();
-          snapshot.nativeCancel=nativeCalls===1 && !panel.open && !install.disabled
+          snapshot.nativeCancel=nativeCalls===1 && !panel.open && !appButton.disabled
             && document.documentElement.dataset.rhwPwaInstall==='dismissed';
           Object.defineProperty(navigator,'install',{configurable:true, value:undefined});
           RHWPWA.syncInstallState();
-          RHWV4.toolsNavigation.openTool('system');
-          const appButton=document.getElementById('rhwDiagnosticsApp');
+          openApp();
           snapshot.systemStatus=!appButton.hidden && appButton.textContent==='APP STATUS';
           appButton.click();
           snapshot.systemStatus=snapshot.systemStatus && panel.open
@@ -572,7 +574,7 @@ def test_pr4_pwa(cdp, workspace, node):
     finally:
         cdp.call("Emulation.clearDeviceMetricsOverride")
     if (not result.get("api") or result.get("installHeight", 0) < 43.5
-            or not result.get("inHeader")
+            or not result.get("inTools")
             or result.get("network") != "offline"
             or not result.get("offlineVisible") or not result.get("headerDisabled")
             or not result.get("tableDisabled") or result.get("overflow", 0) > 2
@@ -580,7 +582,7 @@ def test_pr4_pwa(cdp, workspace, node):
                        'nativeReady', 'nativeCancel', 'systemStatus', 'installed', 'installedSheet', 'updateReady', 'updateSheet'))
             or result.get("promptFailure") != "prompt-failed"):
         raise RuntimeError(f"PR4 PWA mobile/install/offline state failed: {result}")
-    print("PWA smoke passed: visible app status, one-tap native install, update and offline state")
+    print("PWA smoke passed: Tools app status, one-tap native install, visible updates and offline state")
 
 
 
