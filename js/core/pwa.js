@@ -6,7 +6,8 @@
   'use strict';
   if (window.RHWPWA) return;
 
-  const state = { installPrompt: null, registration: null, updateWorker: null, reloading: false, restartRequested: false, shellObserver: null, updateTask: null };
+  const state = { installPrompt: null, prompting: false, installed: false, registration: null,
+    updateWorker: null, reloading: false, restartRequested: false, shellObserver: null, updateTask: null };
   const isStandalone = () => window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
   const isAndroid = (userAgent = navigator.userAgent) => /Android/i.test(userAgent);
   const isIos = (userAgent = navigator.userAgent, platform = navigator.platform, maxTouchPoints = navigator.maxTouchPoints) =>
@@ -14,7 +15,7 @@
 
   function markup() {
     return `<div class="rhw-pwa-offline" id="rhwPwaOffline" role="status" aria-live="polite" hidden><strong>OFFLINE MODE</strong><span>CACHED APP DATA ONLY // LIVE TELEMETRY PAUSED</span></div>
-      <aside class="rhw-pwa-panel" id="rhwPwaPanel" role="dialog" aria-modal="false" aria-labelledby="rhwPwaTitle" hidden>
+      <aside class="rhw-pwa-panel" id="rhwPwaPanel" role="dialog" aria-modal="false" aria-labelledby="rhwPwaTitle" aria-describedby="rhwPwaMessage" hidden>
         <div class="rhw-pwa-panel-copy"><small id="rhwPwaKicker">RHW COMMAND APP</small><strong id="rhwPwaTitle">INSTALL ON THIS DEVICE</strong><span id="rhwPwaMessage">ADD RHW TO YOUR HOME SCREEN FOR A DEDICATED COMMAND APP WINDOW.</span></div>
         <div class="rhw-pwa-panel-actions"><button type="button" class="primary" id="rhwPwaPrimary">INSTALL APP</button><button type="button" id="rhwPwaClose">LATER</button></div>
       </aside>`;
@@ -24,7 +25,7 @@
     if (document.getElementById('rhwPwaInstallBtn')) return true;
     const brand = document.getElementById('rhwToolsInstallSlot') || document.querySelector('.app-nav-brand');
     if (!brand) return false;
-    brand.insertAdjacentHTML('beforeend', '<button id="rhwPwaInstallBtn" class="rhw-pwa-install" type="button"><span>INSTALL RHW</span><small>PHONE / TABLET APP</small></button>');
+    brand.insertAdjacentHTML('beforeend', '<button id="rhwPwaInstallBtn" class="rhw-pwa-install" type="button"><span>INSTALL HELP</span><small>ADD VIA BROWSER MENU</small></button>');
     document.getElementById('rhwPwaInstallBtn')?.addEventListener('click', showInstallHelp);
     syncInstallState();
     return true;
@@ -55,11 +56,11 @@
     return {
       panel: document.getElementById('rhwPwaPanel'), kicker: document.getElementById('rhwPwaKicker'),
       title: document.getElementById('rhwPwaTitle'), message: document.getElementById('rhwPwaMessage'),
-      primary: document.getElementById('rhwPwaPrimary')
+      primary: document.getElementById('rhwPwaPrimary'), close: document.getElementById('rhwPwaClose')
     };
   }
 
-  function showPanel({ kicker, title, message, primaryLabel, onPrimary }) {
+  function showPanel({ kicker, title, message, primaryLabel, onPrimary, mode = 'update', singleAction = false }) {
     const elements = panelElements();
     if (!elements.panel) return;
     elements.kicker.textContent = kicker;
@@ -67,6 +68,8 @@
     elements.message.textContent = message;
     elements.primary.textContent = primaryLabel;
     elements.primary.onclick = onPrimary;
+    if (elements.close) elements.close.hidden = singleAction;
+    elements.panel.dataset.mode = mode;
     elements.panel.hidden = false;
   }
 
@@ -75,20 +78,29 @@
     if (panel) panel.hidden = true;
   }
 
+  function installPanelOpen() {
+    const panel = document.getElementById('rhwPwaPanel');
+    return panel?.dataset.mode === 'install' && !panel.hidden;
+  }
+
   async function requestInstall() {
+    if (state.prompting || state.installed || isStandalone()) return;
     const prompt = state.installPrompt;
     if (!prompt) return showManualInstructions();
+    state.installPrompt = null;
+    state.prompting = true;
+    if (installPanelOpen()) hidePanel();
+    syncInstallState();
     try {
-      await prompt.prompt();
-      const choice = await prompt.userChoice;
-      hidePanel();
+      const result = await prompt.prompt();
+      const choice = result?.outcome ? result : await prompt.userChoice;
       if (choice?.outcome === 'accepted') document.documentElement.dataset.rhwPwaInstall = 'accepted';
     } catch (error) {
       document.documentElement.dataset.rhwPwaInstall = 'prompt-failed';
       console.warn('RHW APP INSTALL PROMPT FAILED:', String(error?.message || error));
       showManualInstructions();
     } finally {
-      state.installPrompt = null;
+      state.prompting = false;
       syncInstallState();
     }
   }
@@ -97,50 +109,50 @@
     if (isIos(userAgent, platform, maxTouchPoints)) {
       return {
         title: 'INSTALL RHW ON IPHONE / IPAD',
-        message: 'OPEN RHW IN SAFARI, TAP SHARE (SQUARE WITH UP ARROW), THEN CHOOSE ADD TO HOME SCREEN.'
+        message: 'Open RHW in Safari. Tap Share, then Add to Home Screen.'
       };
     }
     if (/SamsungBrowser/i.test(userAgent)) {
       return {
         title: 'INSTALL RHW IN SAMSUNG INTERNET',
-        message: 'OPEN THE SAMSUNG INTERNET MENU (☰), THEN CHOOSE ADD PAGE TO → HOME SCREEN.'
+        message: 'Tap the install (+) icon in the address bar if it appears. You can also open the browser menu at the bottom right, then choose Add page to → Home screen.'
       };
     }
     if (isAndroid(userAgent)) {
       return {
         title: 'INSTALL RHW ON ANDROID',
-        message: 'OPEN THE BROWSER MENU (⋮), THEN CHOOSE INSTALL APP OR ADD TO HOME SCREEN.'
+        message: 'Open the browser menu (⋮). Choose Install app or look under Install and create shortcut or Add to Home screen.'
       };
     }
     return {
       title: 'ADD RHW TO HOME SCREEN',
-      message: 'OPEN YOUR BROWSER MENU AND CHOOSE INSTALL APP OR ADD TO HOME SCREEN.'
+      message: 'Open your browser menu and choose Install app or Add to Home Screen.'
     };
   }
 
   function showManualInstructions() {
     const instructions = manualInstructions();
-    showPanel({ kicker: 'MANUAL INSTALL', ...instructions, primaryLabel: 'GOT IT', onPrimary: hidePanel });
+    showPanel({ kicker: 'BROWSER INSTALLATION', ...instructions, primaryLabel: 'CLOSE',
+      onPrimary: hidePanel, mode: 'install', singleAction: true });
   }
 
   function showInstallHelp() {
-    if (isStandalone()) return;
+    if (state.prompting || state.installed || isStandalone()) return;
     window.RHWV4?.toolsNavigation?.closeTools();
-    if (!state.installPrompt) return showManualInstructions();
-    showPanel({
-      kicker: 'RHW COMMAND APP', title: 'INSTALL ON THIS DEVICE',
-      message: 'ADD RHW TO YOUR HOME SCREEN FOR A DEDICATED APP WINDOW AND AN OFFLINE-READY APP SHELL.',
-      primaryLabel: 'INSTALL APP', onPrimary: requestInstall
-    });
+    return state.installPrompt ? requestInstall() : showManualInstructions();
   }
 
   function syncInstallState() {
     const button = document.getElementById('rhwPwaInstallBtn');
     if (!button) return;
-    const installed = isStandalone();
-    button.hidden = installed;
-    button.dataset.installReady = state.installPrompt ? 'true' : 'false';
-    button.setAttribute('aria-label', installed ? 'RHW is running as an installed app' : 'Install RHW command app');
+    const ready = Boolean(state.installPrompt);
+    const native = ready || state.prompting;
+    button.hidden = state.installed || isStandalone();
+    button.disabled = state.prompting;
+    button.dataset.installReady = String(ready);
+    button.querySelector('span').textContent = native ? 'INSTALL RHW' : 'INSTALL HELP';
+    button.querySelector('small').textContent = native ? 'ON THIS DEVICE' : 'ADD VIA BROWSER MENU';
+    button.setAttribute('aria-label', native ? 'Install RHW Command' : 'Installation help for RHW Command');
   }
 
   function syncConnectionState() {
@@ -210,13 +222,24 @@
     }
   }
 
+  // Listen in the initial dashboard bundle, before the deferred workspaces mount.
   window.addEventListener('beforeinstallprompt', event => {
+    if (state.installed || isStandalone() || typeof event.prompt !== 'function') return;
     event.preventDefault();
     state.installPrompt = event;
     mount();
+    if (installPanelOpen()) {
+      showPanel({ kicker: 'RHW COMMAND APP', title: 'INSTALL RHW',
+        message: 'Your browser is ready to install RHW. Confirm to add it to this device.',
+        primaryLabel: 'INSTALL RHW', onPrimary: requestInstall, mode: 'install' });
+    }
+  });
+  window.addEventListener('appinstalled', () => {
+    state.installed = true;
+    state.installPrompt = null;
+    if (installPanelOpen()) hidePanel();
     syncInstallState();
   });
-  window.addEventListener('appinstalled', () => { state.installPrompt = null; hidePanel(); syncInstallState(); });
   window.addEventListener('online', syncConnectionState);
   window.addEventListener('offline', syncConnectionState);
   navigator.serviceWorker?.addEventListener('controllerchange', () => {
