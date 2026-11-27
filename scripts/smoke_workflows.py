@@ -503,7 +503,8 @@ def test_pr4_pwa(cdp, workspace, node):
           const snapshot={
             api:!!window.RHWPWA,
             inHeader:!!install.closest('.command-header'),
-            unavailable:install.hidden && !panel.open,
+            unavailable:!install.hidden && install.querySelector('span').textContent==='APP STATUS'
+              && panel.open && document.getElementById('rhwPwaTitle').textContent==='INSTALLATION UNAVAILABLE',
             network:document.documentElement.dataset.rhwNetwork,
             offlineVisible:!offline?.hidden,
             headerDisabled:!!document.getElementById('headerRefreshBtn')?.disabled,
@@ -528,7 +529,7 @@ def test_pr4_pwa(cdp, workspace, node):
           snapshot.errorSheet=panel.open && primary.textContent==='CLOSE' && later.hidden
             && document.getElementById('rhwPwaTitle').textContent==='INSTALLATION COULD NOT START';
           primary.click();
-          snapshot.closed=!panel.open;
+          snapshot.closed=!panel.open && !install.hidden && install.querySelector('span').textContent==='APP STATUS';
           let nativeCalls=0;
           Object.defineProperty(navigator,'install',{configurable:true, value:()=>{
             nativeCalls++;
@@ -541,10 +542,17 @@ def test_pr4_pwa(cdp, workspace, node):
           snapshot.nativeCancel=nativeCalls===1 && !panel.open && !install.disabled
             && document.documentElement.dataset.rhwPwaInstall==='dismissed';
           Object.defineProperty(navigator,'install',{configurable:true, value:undefined});
-          Object.defineProperty(navigator,'standalone',{configurable:true,value:true});
           RHWPWA.syncInstallState();
           RHWV4.toolsNavigation.openTool('system');
           const appButton=document.getElementById('rhwDiagnosticsApp');
+          snapshot.systemStatus=!appButton.hidden && appButton.textContent==='APP STATUS';
+          appButton.click();
+          snapshot.systemStatus=snapshot.systemStatus && panel.open
+            && document.getElementById('rhwPwaTitle').textContent==='INSTALLATION UNAVAILABLE';
+          primary.click();
+          Object.defineProperty(navigator,'standalone',{configurable:true,value:true});
+          RHWPWA.syncInstallState();
+          RHWV4.toolsNavigation.openTool('system');
           snapshot.installed=install.hidden && appButton.textContent==='APP INSTALLED';
           appButton.click();
           snapshot.installedSheet=panel.open && document.getElementById('rhwPwaTitle').textContent==='RHW IS INSTALLED'
@@ -569,10 +577,10 @@ def test_pr4_pwa(cdp, workspace, node):
             or not result.get("offlineVisible") or not result.get("headerDisabled")
             or not result.get("tableDisabled") or result.get("overflow", 0) > 2
             or not all(result.get(key) for key in ('unavailable', 'lateOffer', 'oneTap', 'errorSheet', 'closed',
-                       'nativeReady', 'nativeCancel', 'installed', 'installedSheet', 'updateReady', 'updateSheet'))
+                       'nativeReady', 'nativeCancel', 'systemStatus', 'installed', 'installedSheet', 'updateReady', 'updateSheet'))
             or result.get("promptFailure") != "prompt-failed"):
         raise RuntimeError(f"PR4 PWA mobile/install/offline state failed: {result}")
-    print("PWA smoke passed: one-tap native install, installed and update status, and offline state")
+    print("PWA smoke passed: visible app status, one-tap native install, update and offline state")
 
 
 

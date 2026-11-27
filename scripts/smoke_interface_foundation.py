@@ -137,6 +137,9 @@ def main():
         fixture = """(() => {
           const original = window.fetch;
           window.__rhwNpcRequests = 0;
+          Object.defineProperty(navigator, 'getInstalledRelatedApps', {configurable:true, value:async () => [{
+            platform: 'webapp', url: document.querySelector('link[rel=manifest]').href
+          }]});
           const installObserver = new MutationObserver(() => {
             if (!document.querySelector('link[rel=manifest]')) return;
             installObserver.disconnect();
@@ -199,11 +202,12 @@ def main():
           await Promise.resolve();
           return {dashboardReady:pending.dashboardReady,captured:pending.captured,inHeader,label,
             calls:pending.calls,disabled,direct,promptCleared:!RHWPWA.state.installPrompt,
-            hidden:button.hidden,closed:!panel.open,dismissed:document.documentElement.dataset.rhwPwaInstall};
+            installed:!button.hidden && button.querySelector('span').textContent==='APP INSTALLED',
+            closed:!panel.open,dismissed:document.documentElement.dataset.rhwPwaInstall};
         })()""")
         assert install == {'dashboardReady': False, 'captured': True, 'inHeader': True, 'label': 'INSTALL APP',
                            'calls': 1, 'disabled': True, 'direct': True,
-                           'promptCleared': True, 'hidden': True, 'closed': True, 'dismissed': 'dismissed'}, install
+                           'promptCleared': True, 'installed': True, 'closed': True, 'dismissed': 'dismissed'}, install
         # Boot and service-worker readiness can precede the async cache read
         # and first fixture fetch. Check the stock view only after that fetch.
         stock_deadline = time.monotonic() + 15

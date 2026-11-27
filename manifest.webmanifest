@@ -18,6 +18,14 @@
     "productivity",
     "utilities"
   ],
+  "related_applications": [
+    {
+      "platform": "webapp",
+      "url": "./manifest.webmanifest",
+      "id": "https://phytehq.github.io/RHW/"
+    }
+  ],
+  "prefer_related_applications": false,
   "icons": [
     {
       "src": "./assets/pwa-icon-192.png",

@@ -58,7 +58,7 @@ Trade Desk refreshes POB stock for **every search**. Failed POB requests pause c
 
 Open **`https://phytehq.github.io/RHW/`** in the browser you want to use for installation.
 
-When your browser makes installation available, **INSTALL APP** appears in the header. Tap it to start the browser's native install flow and confirm if prompted. The installed app has its own Resolution Heavy Works icon. In the installed app, **TOOLS → SYSTEM + DATA** shows **APP INSTALLED**.
+Open **APP STATUS** in the header or under **TOOLS → SYSTEM + DATA** to check installation availability. When your browser offers installation, this control reads **INSTALL APP** and starts the native install flow directly. The installed app has its own Resolution Heavy Works icon. **APP INSTALLED** appears in the system check and in browsers that confirm the existing installation.
 
 RHW has its own app identifier, `/RHW/`, so it can be installed alongside DTR on the same GitHub Pages domain. An RHW icon created with the former identifier may still appear alongside the new installation.
 

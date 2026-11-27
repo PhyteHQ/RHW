@@ -5683,7 +5683,7 @@ globalThis.RHW_PRODUCTION_VOLUMES = Object.freeze({
         <p class="rhw-diagnostics-privacy"><strong>PRIVACY SAFE:</strong> No drafts, messages, sender profiles, material prices or inventory values are read into the report.</p>
         <footer class="rhw-diagnostics-actions">
           <span id="rhwDiagnosticsActionStatus" data-tone="muted" aria-live="polite">READY</span>
-          <div><button type="button" id="rhwDiagnosticsRun">RUN SELF-CHECK</button><button type="button" class="primary" id="rhwDiagnosticsCopy">COPY REPORT</button><button type="button" id="rhwDiagnosticsApp" aria-haspopup="dialog" aria-controls="rhwPwaPanel" hidden>INSTALL APP</button></div>
+          <div><button type="button" id="rhwDiagnosticsRun">RUN SELF-CHECK</button><button type="button" class="primary" id="rhwDiagnosticsCopy">COPY REPORT</button><button type="button" id="rhwDiagnosticsApp" aria-haspopup="dialog" aria-controls="rhwPwaPanel" hidden>APP STATUS</button></div>
         </footer>
       </section>
     </aside>`);
