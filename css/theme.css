@@ -114,11 +114,11 @@ html.rhw-focus-pass .comms-editor-toolbar button { min-height: 44px;font-size: 1
 html.rhw-focus-pass #rhwDiagnosticsPanel .discovery-data-grid { grid-template-columns: minmax(0,1fr); }
 }
 
-:root { --app-surface: var(--surface-input);--app-surface-soft: var(--surface-raised);--app-blue-line: rgba(181,187,201,.2);--rhw-surface: var(--panel);--rhw-surface-raised: var(--surface-raised);--rhw-border: var(--line);--rhw-gold-rgb: 240,197,107;--rhw-steel-rgb: 181,187,201; }
+:root { --app-surface: var(--surface-input);--app-surface-soft: var(--surface-raised);--app-blue-line: rgba(181,187,201,.2);--rhw-surface: var(--panel);--rhw-surface-raised: var(--surface-raised);--rhw-border: var(--line);--rhw-gold-rgb: 205,176,123;--rhw-steel-rgb: 181,187,201; }
 
-html.rhw-focus-pass body { --app-nav-accent: var(--gold);--app-nav-accent-rgb: var(--rhw-gold-rgb);background: radial-gradient(ellipse at 0% 0%,#f0c56b0e,transparent 55%),var(--bg);font-size: var(--rhw-body-size);line-height: 1.5; }
+html.rhw-focus-pass body { --app-nav-accent: var(--gold);--app-nav-accent-rgb: var(--rhw-gold-rgb);background:var(--bg);font-size: var(--rhw-body-size);line-height: 1.5; }
 
-/* Keep data crisp; identity and section headings can carry a restrained glow. */
+/* Keep the interface and data legible on matte surfaces. */
 html.rhw-focus-pass :is(td,th,input,select,textarea,small,.pill), html.rhw-focus-pass :is(td,th) * { text-shadow: none; }
 
 html.rhw-focus-pass body *:not(.ticker), html.rhw-focus-pass body *::before, html.rhw-focus-pass body *::after { animation: none !important; }
@@ -147,14 +147,14 @@ html.rhw-focus-pass .app-workspace :is(input,select,textarea) { font-size: 16px 
 
 html.rhw-focus-pass .app-workspace button { min-height: var(--rhw-control-height);font: 500 var(--rhw-control-size)/1.4 var(--font-main);letter-spacing: .025em; }
 
-/* Barlow for interface copy, condensed headings, monospace for quantities. */
+/* Barlow for the interface and monospace for quantities. */
 html.rhw-focus-pass :is(.ops-field>span,.ops-form-grid label>span,.comms-field>span,.message-field>label,.supply-fields>label,.production-kicker,.pricecheck-status>small,.shipyard-section-title) { color:var(--muted);font:500 var(--rhw-label-size)/1.5 var(--font-main);letter-spacing:.025em; }
 
 html.rhw-focus-pass :is(.ops-panel-head,.comms-panel-head,.panel-head) { padding:var(--rhw-space-card) var(--rhw-space-panel); }
 
 html.rhw-focus-pass :is(.uplink-button,.ops-button,.comms-button,.pricecheck-refresh,.market-sort-button,.command-refresh-button) { transition: border-color 160ms,background 160ms,box-shadow 160ms; }
 
-html.rhw-focus-pass :is(.uplink-button,.ops-button,.comms-button,.pricecheck-refresh,.market-sort-button,.command-refresh-button):not(:disabled):hover { border-color: var(--gold);box-shadow: 0 0 12px rgba(var(--rhw-gold-rgb),.12); }
+html.rhw-focus-pass :is(.uplink-button,.ops-button,.comms-button,.pricecheck-refresh,.market-sort-button,.command-refresh-button):not(:disabled):hover { border-color: var(--gold); }
 
 html.rhw-focus-pass .command-header { padding: 16px var(--layout-gutter);border-top: 2px solid var(--gold);border-bottom: 1px solid #61553e;backdrop-filter: none; }
 
@@ -210,7 +210,7 @@ html.rhw-focus-pass .uplink-panel.online .live-dot { color: var(--good);backgrou
 
 html.rhw-focus-pass .uplink-panel.online .uplink-value { color: var(--good); }
 
-html.rhw-focus-pass .live-dot { box-shadow: 0 0 8px currentColor; }
+html.rhw-focus-pass .live-dot { box-shadow:none; }
 
 html.rhw-focus-pass .rhw-app-nav { border-color: var(--line);box-shadow: 0 5px 16px #00000030; }
 
@@ -280,11 +280,11 @@ html.rhw-focus-pass .rhw-command-compact-shell { background: var(--bg); }
 
 html.rhw-focus-pass :is(.alert-card,.panel,.ops-panel,.comms-panel,.remote-card,.production-card,.production-module-card,.v40-tool-panel,.capital-shipyard-control) { border-color: var(--rhw-border);border-radius: var(--rhw-surface-radius);clip-path: none; }
 
-html.rhw-focus-pass :is(.alert-title,.panel-head,.ops-panel-head,.comms-panel-head) { background: var(--rhw-head-fill);border-bottom: 1px solid #5d5236; }
+html.rhw-focus-pass :is(.alert-title,.panel-head,.ops-panel-head,.comms-panel-head) { background: var(--rhw-head-fill);border-bottom: 1px solid var(--line); }
 
-html.rhw-focus-pass :is(.alert-title,.panel-title,.shipyard-control-title,.production-title,.production-module-title) { color: var(--gold);font-family: var(--font-title);text-shadow: 0 0 18px #f0c56b12; }
+html.rhw-focus-pass :is(.alert-title,.panel-title,.shipyard-control-title,.production-title,.production-module-title) { color: var(--text);font-family: var(--font-main);font-weight:600;text-shadow:none; }
 
-html.rhw-focus-pass .alert-title { font-size: var(--rhw-panel-title-size);line-height: 1.2;letter-spacing: .045em; }
+html.rhw-focus-pass .alert-title { font-size: var(--rhw-panel-title-size);line-height: 1.2;letter-spacing:0; }
 
 html.rhw-focus-pass .alert-title .section-index { color: var(--gold);font: 12px var(--font-tech); }
 
@@ -292,7 +292,7 @@ html.rhw-focus-pass .alert-card:first-child .alert-title { background: var(--rhw
 
 html.rhw-focus-pass :is(.feedstock-panel,.waste-panel,.confiscated-panel) .alert-title { background: var(--rhw-head-fill); }
 
-html.rhw-focus-pass :is(.panel-title,.shipyard-control-title) { font-size: var(--rhw-title-size);line-height: 1.2;letter-spacing: .045em; }
+html.rhw-focus-pass :is(.panel-title,.shipyard-control-title) { font-size: var(--rhw-title-size);line-height: 1.2;letter-spacing:0; }
 
 html.rhw-focus-pass .workspace-heading { padding: 10px 0;margin-bottom: 16px;border: 0;background: transparent;box-shadow: none; }
 
@@ -312,11 +312,11 @@ html.rhw-focus-pass :is(.section-kicker,.remote-route small) { color: var(--mute
 
 html.rhw-focus-pass .remote-route strong { color: #e2e2e2; }
 
-html.rhw-focus-pass .rhw-logistics-view-nav { border-color: var(--rhw-border);background: #151514; }
+html.rhw-focus-pass .rhw-logistics-view-nav { border-color: var(--rhw-border);background:var(--surface-input); }
 
 html.rhw-focus-pass .rhw-logistics-view-nav button { color: var(--muted);border-color: var(--line-soft);background: transparent; }
 
-html.rhw-focus-pass .rhw-logistics-view-nav button[aria-selected="true"] { color: var(--gold);border-color: #796646;background: linear-gradient(110deg,#30291d,#1d1d1b);box-shadow: inset 0 -2px var(--gold); }
+html.rhw-focus-pass .rhw-logistics-view-nav button[aria-selected="true"] { color: var(--gold);border-color:var(--line);background:var(--rhw-selected-fill);box-shadow: inset 0 -2px var(--gold); }
 
 html.rhw-focus-pass .rhw-logistics-view-nav button small { color: var(--muted); }
 
@@ -326,7 +326,7 @@ html.rhw-focus-pass .logistics-subhead { background: linear-gradient(105deg,#2f2
 
 html.rhw-focus-pass .logistics-subhead-kicker { color: var(--muted);font: 12px var(--font-tech); }
 
-html.rhw-focus-pass .logistics-subhead-title { color: var(--gold);font: 500 var(--rhw-title-size)/1.2 var(--font-title);letter-spacing: .045em; }
+html.rhw-focus-pass .logistics-subhead-title { color:var(--text);font:600 var(--rhw-panel-title-size)/1.25 var(--font-main);letter-spacing:0; }
 
 html.rhw-focus-pass .market-sort-segments { background: #171717;border-color: #5e5e5e; }
 
@@ -696,9 +696,9 @@ html.rhw-focus-pass .market-card .supplier-commodity-metric.price { align-items:
 
 /* Shared application surfaces. The forum document keeps its own content styling. */
 
-html.rhw-focus-pass.rhw-workbench :is(.alert-card,.panel,.ops-panel,.comms-panel,.market-card,.remote-card,.capital-shipyard-control,.sender-registry-card,.sender-editor,.rhw-transfer-center,.rhw-diagnostics-card,.discovery-data-grid article) { border:1px solid var(--line);border-radius:var(--rhw-surface-radius);background:var(--panel);box-shadow:none;clip-path:none; }
+html.rhw-focus-pass.rhw-workbench :is(.alert-card,.panel,.ops-panel,.comms-panel,.market-card,.remote-card,.capital-shipyard-control,.sender-registry-card,.sender-editor,.rhw-transfer-center,.rhw-diagnostics-card,.discovery-data-grid article) { border:1px solid var(--line);border-radius:var(--rhw-surface-radius);background:var(--panel);box-shadow:var(--rhw-card-shadow);clip-path:none; }
 html.rhw-focus-pass.rhw-workbench :is(.panel-head,.ops-panel-head,.comms-panel-head,.logistics-subhead,.rhw-focus-tools-head,.rhw-diagnostics-head,.rhw-transfer-sheet>header,.discovery-data-head,.sender-editor-head) { min-height:56px;padding:14px 18px;background:var(--surface-raised);border-bottom:1px solid var(--line);box-shadow:none; }
-html.rhw-focus-pass.rhw-workbench :is(.ops-panel-head,.comms-panel-head)>div>strong { color:var(--gold);font:500 24px/1.15 var(--font-title);letter-spacing:.025em; }
+html.rhw-focus-pass.rhw-workbench :is(.ops-panel-head,.comms-panel-head)>div>strong { color:var(--text);font:600 20px/1.25 var(--font-main);letter-spacing:0; }
 html.rhw-focus-pass.rhw-workbench :is(.ops-panel-head,.comms-panel-head)>div>span { display:inline-flex;align-items:center;justify-content:center;min-width:26px;min-height:26px;padding:3px;border:1px solid var(--line);border-radius:3px;background:var(--surface-input);color:var(--muted);font:11px/1.3 var(--font-tech);letter-spacing:0; }
 html.rhw-focus-pass.rhw-workbench :is(.ops-panel-head,.comms-panel-head)>small { color:var(--muted);font:11px/1.4 var(--font-main);letter-spacing:.025em; }
 html.rhw-focus-pass.rhw-workbench :is(.comms-actions button,.comms-draft-actions button,.sender-registry-actions button,.sender-editor-head button,.comms-surface-actions button,.comms-mini-action,.comms-panel-head-actions button,.ops-quantity-control button,.ops-mobile-jumps button,.ops-mobile-quote-jump,.comms-mobile-view-switch button,.comms-bbcode-toggle,.rhw-focus-tool-card,.rhw-mobile-workspaces button) { min-height:44px;padding:9px 12px;border:1px solid var(--line);border-radius:var(--rhw-surface-radius);background:var(--rhw-control-fill);color:var(--text);box-shadow:none;clip-path:none;font:500 13px/1.4 var(--font-main);letter-spacing:0; }
@@ -714,9 +714,9 @@ html.rhw-focus-pass.rhw-workbench :is(.ops-material-table,.ops-comparison-table,
 html.rhw-focus-pass.rhw-workbench :is(.ops-material-table,.ops-comparison-table,.pricecheck-table,.shipyard-material-table) tbody :is(th,td) { border-color:var(--line); }
 
 /* Shared app surfaces are assigned by presentation.js on every workspace. */
-html.rhw-focus-pass.rhw-workbench .rhw-surface { border-radius:var(--rhw-surface-radius);background:var(--panel);box-shadow:none; }
+html.rhw-focus-pass.rhw-workbench .rhw-surface { border-radius:var(--rhw-surface-radius);background:var(--panel);box-shadow:var(--rhw-card-shadow); }
 html.rhw-focus-pass.rhw-workbench .rhw-surface-head { display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:52px;padding:12px 16px;border-bottom:1px solid var(--line);background:var(--surface-raised); }
-html.rhw-focus-pass.rhw-workbench .rhw-surface-head :is(.panel-title,h3,.supplier-title),html.rhw-focus-pass.rhw-workbench .rhw-surface-head>div>strong,html.rhw-focus-pass.rhw-workbench .alert-title>span:first-child { margin:0;color:var(--gold);font:500 var(--rhw-section-size)/1.3 var(--font-title);letter-spacing:.02em;text-transform:none; }
+html.rhw-focus-pass.rhw-workbench .rhw-surface-head :is(.panel-title,h3,.supplier-title),html.rhw-focus-pass.rhw-workbench .rhw-surface-head>div>strong,html.rhw-focus-pass.rhw-workbench .alert-title>span:first-child { margin:0;color:var(--text);font:600 var(--rhw-section-size)/1.25 var(--font-main);letter-spacing:0;text-transform:none; }
 html.rhw-focus-pass.rhw-workbench .rhw-surface-head>small { color:var(--muted);font:12px/1.5 var(--font-main);letter-spacing:0; }
 html.rhw-focus-pass.rhw-workbench :is(.ops-panel-head,.comms-panel-head)>div>span:first-child { display:none; }
 html.rhw-focus-pass.rhw-workbench .rhw-surface :is(.footnote,.comms-message-help,.ops-recipe-note) { font:13px/1.5 var(--font-main);letter-spacing:0; }
@@ -731,7 +731,7 @@ html.rhw-focus-pass.rhw-workbench #shipyardControl .shipyard-division-count { co
 html.rhw-focus-pass.rhw-workbench #shipyardControl .shipyard-hull-card { min-height:148px;padding:16px;border:1px solid var(--line);border-radius:4px;background:var(--surface-input);box-shadow:none; }
 html.rhw-focus-pass.rhw-workbench #shipyardControl .shipyard-hull-card[aria-pressed="true"] { border-color:var(--rhw-control-border);background:var(--rhw-selected-fill);box-shadow:inset 3px 0 var(--gold); }
 html.rhw-focus-pass.rhw-workbench #shipyardControl .shipyard-hull-card::after { display:none; }
-html.rhw-focus-pass.rhw-workbench #shipyardControl .shipyard-hull-name { font:500 24px/1.15 var(--font-title);letter-spacing:.02em;text-shadow:none; }
+html.rhw-focus-pass.rhw-workbench #shipyardControl .shipyard-hull-name { font:600 20px/1.25 var(--font-main);letter-spacing:0;text-shadow:none; }
 html.rhw-focus-pass.rhw-workbench #shipyardControl .shipyard-hull-type { font:12px/1.4 var(--font-main);color:var(--muted); }
 html.rhw-focus-pass.rhw-workbench #shipyardControl :is(.shipyard-hull-stock-label,.shipyard-hull-price-label,.shipyard-registry-heading,.shipyard-eyebrow) { font:12px/1.5 var(--font-main);color:var(--muted);letter-spacing:0; }
 html.rhw-focus-pass.rhw-workbench #shipyardControl .shipyard-hull-stock { font:26px/1.3 var(--font-tech); }
