@@ -58,6 +58,8 @@ app.store.set(app.config.storageKeys.calculatorPriceProfiles, [{ prices: { ore: 
 assert.equal(app.store.get(app.config.storageKeys.calculatorPriceProfiles)[0].prices.ore, 0);
 assert.match(app.config.forum.logoUrl, /^https:\/\//, 'Exported forum images need a public URL');
 assert.equal(app.config.forum.previewLogoUrl, './assets/rhw-forum-logo.png');
+assert.equal(app.config.forum.footerUrl, 'https://phytehq.github.io/RHW/assets/rhw-forum-footer.png');
+assert.equal(app.config.forum.previewFooterUrl, './assets/rhw-forum-footer.png');
 
 const lifecycle = context.createRhwLifecycle();
 const calls = [];

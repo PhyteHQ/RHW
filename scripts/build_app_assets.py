@@ -53,7 +53,8 @@ def build(root=ROOT):
                            'sha256': hashlib.sha256(generated[output].encode()).hexdigest()}
     shell = ['./', './index.html', './manifest.webmanifest', './js/build-info.js', './js/00-bootstrap.js',
              *['./' + p for p in OUTPUTS.values()], './assets/discovery-status.json',
-             './assets/rhw-crest.png', './assets/rhw-forum-logo.png', './assets/favicon.png', './assets/apple-touch-icon.png',
+             './assets/rhw-crest.png', './assets/rhw-forum-logo.png', './assets/rhw-forum-footer.png',
+             './assets/favicon.png', './assets/apple-touch-icon.png',
              './assets/pwa-icon-192.png', './assets/pwa-icon-512.png', './assets/pwa-icon-maskable-512.png',
              *assets.get('modules', []),
              *['./' + str(p.relative_to(root)) for p in sorted((root / 'assets/fonts').glob('*')) if p.suffix in {'.woff2', '.woff', '.ttf'}]]
