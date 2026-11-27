@@ -53,7 +53,13 @@ NPC_DATA = [{'name': name, 'nickname': nickname, 'system_name': system,
                 ('Planet Cambridge', 'br03_01_base', 'Cambridge', [('energy_field_equip', 80)]),
                 ('Waterloo Station', 'br01_04_base', 'New London', [('super_alloys', 80), ('mining_machinery', 87)]),
                 ('Oder Shipyard', 'rh01_02_base', 'New Berlin', [('ablativearmor', 80), ('ship_hull_panels', 105)]))]
-PRICE_OFFER_COUNT = 12
+for station in range(50):
+    NPC_DATA.append({'name': f'Unrelated Market {station}', 'nickname': f'other-market-{station}',
+                     'system_name': 'New London', 'system_nickname': 'br01',
+                     'market_goods': [{'name': f'Market Only Good {index}', 'nickname': f'commodity_market_only_{index}',
+                                       'category': 'commodity', 'base_sells': True, 'price_base_sells_for': 70}
+                                      for index in range(54)]})
+PRICE_OFFER_COUNT = 10
 PRICE_CHECK_FIXTURES = {
     '/__rhw_test_pobs': DATA,
     '/__rhw_test_npc': NPC_DATA,
@@ -128,6 +134,20 @@ def main():
         fixture = """(() => {
           const original = window.fetch;
           window.__rhwNpcRequests = 0;
+          const marketKey = 'rhw-webapp-v4:price-check-market-cache';
+          const write = Storage.prototype.setItem;
+          if (!sessionStorage.getItem('market-cache-fixture')) {
+            write.call(sessionStorage, 'market-cache-fixture', 'seeded');
+            write.call(localStorage, marketKey, '{"schema":2,"routes":[]}');
+          }
+          window.__rhwMarketLocalWrites = 0;
+          Storage.prototype.setItem = function(key, value) {
+            if (this === localStorage && key === marketKey) {
+              window.__rhwMarketLocalWrites++;
+              throw new DOMException('Fixture quota exhausted', 'QuotaExceededError');
+            }
+            return write.call(this, key, value);
+          };
           window.fetch = (input, options) => {
             if (String(input?.url || input).includes('darkstat.dd84ai.com/api/pobs')) {
               // Use real transport so the offline check cannot receive an
@@ -637,6 +657,12 @@ def main():
             emptyStyleMarkers:document.querySelectorAll('style[data-stylesheet]').length};})()""")
         assert price_focus['same'] and price_focus['focused'] and price_focus['price'] == '$80' and price_focus['stored'] == 0 and price_focus['editors'] == 0, price_focus
         assert price_focus['live'] == 'NPC MARKET LIVE' and price_focus['emptyStyleMarkers'] == 0, price_focus
+        price_cache = base.ev(cdp, """(async()=>{const cache=await RHWTelemetryCache.readMarket();
+          return {offers:cache?.routes.length,at:cache?.fetchedAt,legacy:localStorage.getItem('rhw-webapp-v4:price-check-market-cache'),
+            localWrites:window.__rhwMarketLocalWrites,warning:!!document.getElementById('rhwStorageWarning'),
+            outside:RHWV4.pricecheck.routes.some(route=>/Market Only|Mining Machinery/.test(route.commodity))};})()""")
+        assert price_cache['offers'] == PRICE_OFFER_COUNT and price_cache['at'], price_cache
+        assert price_cache['legacy'] is None and price_cache['localWrites'] == 0 and not price_cache['warning'] and not price_cache['outside'], price_cache
         deadline = time.monotonic() + 10
         while base.ev(cdp, "document.querySelectorAll('.pricecheck-target b').length") != PRICE_OFFER_COUNT:
             if time.monotonic() >= deadline:
@@ -787,6 +813,15 @@ def main():
         assert offline['available'] and offline['stale'] and offline['notice'] and offline['font'], offline
         assert offline['at'] == stored_snapshot and offline['stock'] == STOCK['Basic Alloy'], offline
         capture(cdp, '390-inventory-offline')
+        base.ev(cdp, "RHWV4.navigate('pricecheck','routes')")
+        deadline = time.monotonic() + 6
+        while base.ev(cdp, 'RHWV4.pricecheck.routes.length') != PRICE_OFFER_COUNT:
+            if time.monotonic() >= deadline:
+                raise AssertionError('Price Check did not restore the scoped snapshot offline')
+            time.sleep(.05)
+        restored_market = base.ev(cdp, """(()=>({at:RHWV4.pricecheck.state.marketCache.fetchedAt,
+          label:RHWV4.pricecheck.state.marketLabel,warning:!!document.getElementById('rhwStorageWarning')}))()""")
+        assert restored_market == {'at': price_cache['at'], 'label': 'CACHED MARKET', 'warning': False}, restored_market
         # The Forum preview is local/offline; exported BBCode stays portable.
         cdp.call('Emulation.setDeviceMetricsOverride', {'width': 1366, 'height': 940, 'deviceScaleFactor': 1, 'mobile': False})
         forum_offline = base.ev(cdp, """(async()=>{
