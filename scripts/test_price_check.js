@@ -23,8 +23,9 @@ const app = {
 const ctx = vm.createContext({ Date: Clock, console, addEventListener() {}, setTimeout() {}, clearTimeout() {}, navigator: { onLine: true },
   RHWV4: app, telemetrySnapshot: () => telemetry, rhwBase: null,
   commodityKey: item => commodityName(item.name), keyFromName: commodityName,
+  displayName: item => item.name || item.nickname,
   RHWTelemetryCache: { writeMarket: async value => { savedMarket = value; } },
-  document: { addEventListener() {}, getElementById: () => null, createElement: () => ({ dataset: {} }),
+  document: { addEventListener() {}, getElementById: () => null, querySelector: () => null, createElement: () => ({ dataset: {} }),
     head: { appendChild() {} }, documentElement: { classList: { add() {} } } }
 });
 ctx.window = ctx;
@@ -37,13 +38,7 @@ const hullId = 'commodity_ship_hull_panels';
 const moxId = 'commodity_mox_fuel';
 const oxygenId = 'commodity_oxygen';
 const alternateId = 'commodity_pirate_gold';
-const catalog = { recipes: [
-  { id: 'recipe_container_opening_hull_panels', outputs: [{ id: hullId }] },
-  { id: 'recipe_mox_fuel_basic', outputs: [{ id: moxId }] },
-  { id: 'recipe_heavy_water_basic', outputs: [{ id: 'commodity_deuterium' }, { id: oxygenId }] },
-  { id: 'recipe_gold_basic', outputs: [{ id: 'commodity_gold' }, { id: alternateId }] }
-] };
-app.lifecycle.emit('catalog:loaded', { catalog });
+assert.equal(api.state.hourlyTarget, 750000, 'The default target is $750k/h');
 const good = (nickname, name, price_base_sells_for, extra = {}) =>
   ({ nickname, name, base_sells: true, price_base_sells_for, category: 'commodity', ...extra });
 const hull = good(hullId, 'Hull Panels', 200);
@@ -76,18 +71,26 @@ const shop = [
   { nickname: moxId }, { nickname: oxygenId }, { nickname: alternateId },
   { nickname: 'commodity_synthetic', name: 'Placeholder', synthetic: true },
   { nickname: 'commodity_equipment', category: 'gun' }, { name: 'Ambiguous Ore' },
-  { nickname: 'commodity_buy_only' }, { nickname: 'commodity_pob_offer' }
+  { nickname: 'commodity_buy_only', name: 'Bought Here' }, { nickname: 'commodity_pob_offer' },
+  { name: 'Named Commodity', category: 'commodity' }, { nickname: 'thruster', category: 'equipment' }
 ];
 ctx.rhwBase = { shop_items: shop };
 api.snapshotRoutes(fixture);
 assert.deepEqual(Array.from(api.routes, route => [route.source, route.commodity, route.livePrice]), [
-  ['Portsmouth Shipyard', 'Hull Panels', 200], ['Thames Outpost', 'Hydrocarbons', 0],
+  ['Portsmouth Shipyard', 'MOX', 120], ['Portsmouth Shipyard', 'Oxygen', 90],
+  ['Portsmouth Shipyard', 'Wildcat Gold', 600], ['Portsmouth Shipyard', 'Hull Panels', 200], ['Thames Outpost', 'Hydrocarbons', 0],
   ['Thames Outpost', 'Missing Quote', null], ['Thames Outpost', 'Hull Panels', 310]
 ], 'Only NPC sellers of eligible Full Manifest commodities are retained');
-assert.equal(savedMarket.routes.length, 4, 'Out-of-scope offers are removed before storing the snapshot');
-assert.equal(savedMarket.schema, 3);
+assert.equal(savedMarket.routes.length, 7, 'Out-of-scope offers are removed before storing the snapshot');
+assert.equal(savedMarket.schema, 4);
 assert.equal(savedMarket.fetchedAt, new Date(now).toISOString());
 assert.deepEqual(Array.from(saved.keys()), ['prices'], 'Market refreshes never write to the private settings store');
+assert.equal(api.rows.filter(row => row.itemKey === hullId).length, 1, 'Two sellers produce one manifest line');
+assert.equal(api.rows.find(row => row.itemKey === hullId).route.key, offer().key, 'The lowest published price wins when no flight is available');
+assert.ok(api.rows.some(row => row.itemKey === moxId && row.route.sourceNickname), 'An NPC selling a commodity with a recipe is still a source');
+assert.equal(api.rows.find(row => row.itemKey === 'commodity_buy_only').missingSource, 'No NPC seller reported');
+assert.ok(api.rows.some(row => row.itemKey === 'name:named commodity' && row.missingSource), 'A category-tagged commodity without an ID still has a row');
+assert.ok(!api.rows.some(row => row.itemKey === 'thruster'), 'Equipment stays outside the commodity list');
 
 ctx.rhwBase = { shop_items: shop.filter(item => item !== hullStock) };
 assert.equal(offer(), undefined, 'Removing a shop listing immediately hides its saved offers');
@@ -122,11 +125,6 @@ api.snapshotRoutes([{ ...source, market_goods: [hull, { ...hull, price_base_sell
 assert.equal(api.effectiveRow(offer()).live, null, 'Conflicting quotes for a station and commodity stay unknown');
 api.snapshotRoutes(fixture);
 
-app.lifecycle.emit('catalog:loaded', { catalog: { recipes: [...catalog.recipes, { id: 'recipe_new_hydrocarbons', outputs: [{ id: hydroId }] }] } });
-assert.ok(!api.routes.some(r => r.goodNickname === hydroId), 'The latest catalog also filters previously received market offers');
-app.lifecycle.emit('catalog:loaded', { catalog });
-assert.ok(api.routes.some(r => r.goodNickname === hydroId), 'A catalog change can restore an eligible commodity without guessing a price');
-
 api.state.overrides['hull-panels'] = 9999999;
 assert.equal(api.effectiveRow(offer()).difference, 300, 'Archived overrides never replace NPC prices');
 hullStock.sell_price = 200;
@@ -141,7 +139,7 @@ telemetry.available = false;
 assert.equal(api.effectiveRow(offer()).payout, null);
 assert.match(api.rowMarkup(api.effectiveRow(offer())), /RHW DATA UNAVAILABLE/);
 telemetry.available = true;
-console.log('Price Check passed: NPC sellers, POB exclusions, exact station and commodity identity, cache and quotes');
+console.log('Price Check passed: one row per Full Manifest commodity, NPC sellers, exact identity, cache and quotes');
 
 // Saved prices from retired list entries remain compatible with old backups.
 api.importOverrides({ 'hull-panels': 125, copper: 0 });
@@ -228,3 +226,16 @@ async function checkHourlyTarget() {
 }
 
 checkHourlyTarget().catch(error => { console.error(error); process.exitCode = 1; });
+
+async function checkEarlierSnapshot() {
+  const previous = { ...savedMarket, schema: 3, routes: [offer()] };
+  ctx.RHWTelemetryCache.readMarket = async () => previous;
+  api.state.marketCache = { routes: [] };
+  api.init();
+  await new Promise(setImmediate);
+  assert.equal(api.state.marketLabel, 'CACHED MARKET');
+  assert.equal(api.rows.find(row => row.itemKey === hullId).live, 200, 'The older market still supplies its known quote');
+  assert.equal(api.rows.find(row => row.itemKey === moxId).missingSource, 'Awaiting NPC market', 'The previous subset does not prove sellers are absent');
+}
+
+checkEarlierSnapshot().catch(error => { console.error(error); process.exitCode = 1; });

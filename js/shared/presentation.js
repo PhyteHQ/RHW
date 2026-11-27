@@ -9,7 +9,7 @@
     'command/shipyard': ['COMMAND', 'Shipyard', 'Choose a hull, check its requirements and source missing components.'],
     'command/logistics': ['COMMAND', 'Logistics', 'Find component and material offers across player bases.'],
     'operations/calculator': ['OPERATIONS', 'Calculator', 'Choose a recipe, enter material prices and review your quote.'],
-    'pricecheck/routes': ['OPERATIONS', 'Price Check', 'Find NPC offers for commodities in the RHW Full Manifest.'],
+    'pricecheck/routes': ['OPERATIONS', 'Price Check', 'Find the best NPC source for each commodity in the RHW Full Manifest.'],
     'comms/forum': ['COMMUNICATIONS', 'Forum', 'Write your transmission, review the preview and copy the forum code.'],
     'comms/drafts': ['TOOLS', 'Backup & Drafts', 'Resume a saved draft or transfer your local RHW work to another device.'],
     'comms/senders': ['COMMUNICATIONS', 'Senders', 'Manage the identities and signatures used in your transmissions.']
