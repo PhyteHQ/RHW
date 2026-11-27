@@ -80,9 +80,21 @@ def main() -> int:
             if not primary.get("priceApi") or primary.get("priceFailures") or not primary.get("toolButton") or primary.get("overflow", 0) > 2:
                 raise RuntimeError(f"Price Check shell failed: {primary}")
 
-            # PRICE CHECK is a first-class route and intentionally contains only
-            # the 11 fixed NPC procurement routes supplied by RHW operations.
-            base.ev(cdp, "(()=>{document.querySelector('.app-tabs [data-workspace=\"pricecheck\"]')?.click();return true;})()")
+            # Supply the NPC feed independently of the old fixed source list.
+            base.ev(cdp, """(()=>{
+              document.querySelector('.app-tabs [data-workspace="pricecheck"]').click();
+              const good=(id,name,price)=>({nickname:`commodity_${id}`,name,base_sells:true,price_base_sells_for:price});
+              const station=(nickname,name,system_name,market_goods)=>({nickname,name,system_name,market_goods});
+              window.__priceCheckFixture=[
+                station('br01_06_base','Thames Outpost','New London',[good('hydrocarbons','Hydrocarbons',80),good('uranium','Uranium',95),good('mox_fuel','MOX',17)]),
+                station('br01_02_base','Portsmouth Shipyard','Cambridge',[good('ship_hull_panels','Hull Panels',120)]),
+                station('br01_01_base','Planet New London','New London',[good('industrial','Industrial Materials',100),good('food','Food Rations',70),good('consumer_goods','Consumer Goods',90)])
+              ];
+              window.findCommodity=name=>({name,missing:false,sell_price:100});
+              window.telemetrySnapshot=()=>({available:true,stale:false,fetchedAt:new Date().toISOString(),label:'LIVE STOCK'});
+              RHWV4.pricecheck.snapshotRoutes(window.__priceCheckFixture);RHWV4.pricecheck.render();
+              return true;
+            })()""")
             settle(.2)
             price = base.ev(cdp, f"""(()=>{{{VISIBLE_HELPER}return{{
               workspace:document.body.dataset.workspace,
@@ -96,49 +108,44 @@ def main() -> int:
             }};}})()""")
             if price.get("workspace") != "pricecheck" or price.get("hash") != "#pricecheck/routes" or not price.get("panel"):
                 raise RuntimeError(f"Price Check route failed: {price}")
-            if price.get("rows") != 11 or price.get("routeCount") != 11 or price.get("context") or price.get("buildQueue") or "PRICE CHECK" not in price.get("active", ""):
+            if price.get("rows") != 4 or price.get("routeCount") != 4 or price.get("context") or price.get("buildQueue") or "NPC MARKET" not in price.get("active", ""):
                 raise RuntimeError(f"Price Check scope/UI failed: {price}")
 
-            # Deterministic math test: positive is green, negative is red and zero
-            # stays neutral. No margin tiers / yellow supplier rating are allowed.
+            # Price signs and archived overrides must follow the actual offer.
             math_state = base.ev(cdp, """(()=>{
-              const originalFind=window.findCommodity,originalPrice=window.priceSell;
-              window.__priceCheckSmokeOriginal={originalFind,originalPrice};
-              window.findCommodity=name=>({name,missing:false,sell_price:100});
-              window.telemetrySnapshot=()=>({available:true,stale:false,fetchedAt:new Date().toISOString(),label:'LIVE STOCK'});
-              window.priceSell=item=>100;
-              const now=new Date().toISOString();
-              RHWV4.pricecheck.state.marketCache={fetchedAt:now,routes:{
-                'mox':{sourceNickname:'br01_06_base',sourceName:'Thames Outpost',system:'New London',livePrice:80,found:true,sold:true},
-                'hull-panels':{sourceNickname:'br01_02_base',sourceName:'Portsmouth Shipyard',system:'Cambridge',livePrice:120,found:true,sold:true},
-                'industrial-materials':{sourceNickname:'br01_01_base',sourceName:'Planet New London',system:'New London',livePrice:100,found:true,sold:true}
-              }};
-              RHWV4.pricecheck.state.marketLabel='SMOKE MARKET';
-              RHWV4.pricecheck.render();
-              const tone=key=>document.querySelector(`[data-route-key="${key}"] .pricecheck-difference`)?.className||'';
-              const text=key=>document.querySelector(`[data-route-key="${key}"] .pricecheck-difference strong`)?.textContent||'';
-              return{positive:tone('mox'),negative:tone('hull-panels'),neutral:tone('industrial-materials'),
-                positiveText:text('mox'),negativeText:text('hull-panels'),neutralText:text('industrial-materials'),
-                yellow:document.querySelectorAll('.pricecheck-difference.low,.pricecheck-difference.warn').length};
+              const api=RHWV4.pricecheck;
+              api.state.overrides.hydrocarbons=150;api.render();
+              const cell=key=>document.querySelector(`[data-route-key="${key}"] .pricecheck-difference`);
+              const read=key=>({tone:cell(key).className,text:cell(key).querySelector('strong').textContent});
+              const hydro=document.querySelector('[data-route-key="br01_06_base/commodity_hydrocarbons"]');
+              return{positive:read('br01_06_base/commodity_hydrocarbons'),negative:read('br01_02_base/commodity_ship_hull_panels'),
+                neutral:read('br01_01_base/commodity_industrial'),
+                editors:document.querySelectorAll('#priceCheckRows input,#priceCheckRows [data-pricecheck-reset]').length,
+                price:hydro.querySelector('.pricecheck-source-price').textContent};
             })()""")
-            if "positive" not in math_state.get("positive", "") or "negative" not in math_state.get("negative", "") or "neutral" not in math_state.get("neutral", ""):
-                raise RuntimeError(f"Price Check sign colors failed: {math_state}")
-            if math_state.get("positiveText") != "+$20" or math_state.get("negativeText") != "-$20" or math_state.get("neutralText") != "$0" or math_state.get("yellow") != 0:
-                raise RuntimeError(f"Price Check math/tiers failed: {math_state}")
+            for tone, value in (('positive', '+$20'), ('negative', '-$20'), ('neutral', '$0')):
+                if tone not in math_state[tone]['tone'] or math_state[tone]['text'] != value:
+                    raise RuntimeError(f"Price Check sign colors failed: {math_state}")
+            if math_state['editors'] or math_state['price'] != '$80':
+                raise RuntimeError(f"Price Check automatic NPC pricing failed: {math_state}")
 
-            # Retained old overrides must not replace automatic NPC prices, and
-            # the comparison must offer no manual price editor.
-            override = base.ev(cdp, """(()=>{
-              RHWV4.pricecheck.state.overrides.mox=150;RHWV4.pricecheck.render();
-              const row=document.querySelector('[data-route-key="mox"]');
-              return{editors:document.querySelectorAll('#priceCheckRows input,#priceCheckRows [data-pricecheck-reset]').length,
-                text:row.querySelector('.pricecheck-difference strong').textContent,
-                source:row.querySelector('.pricecheck-source strong').textContent,
-                price:row.querySelector('.pricecheck-source-price').textContent,
-                mining:!!document.querySelector('[data-route-key="mining-machinery"]')};
+            search = base.ev(cdp, """(()=>{
+              const api=RHWV4.pricecheck, fixture=window.__priceCheckFixture;
+              const filter=value=>{priceCheckSearch.value=value;priceCheckSearch.dispatchEvent(new Event('input',{bubbles:true}));};
+              const count=()=>priceCheckRows.querySelectorAll('.pricecheck-row').length;
+              filter('uranium thames');const uranium=count();
+              filter('cambridge');const system=count();
+              filter('mox');const excluded=count()===0 && priceCheckResultCount.textContent.includes('No offers match');
+              const markets=Array.from({length:26},(_,i)=>({nickname:`extra-${i}`,name:`Market ${i}`,
+                market_goods:[{nickname:'commodity_npc_trade',name:'Test Trade Good',base_sells:true,price_base_sells_for:120}]}));
+              api.snapshotRoutes([...fixture,...markets]);filter('');const first=count();
+              priceCheckNext.click();const second=count(), last=priceCheckNext.disabled;
+              filter('market 25');const found=count(), noPages=priceCheckPageNav.hidden;
+              api.snapshotRoutes(fixture);filter('');
+              return {uranium,system,excluded,first,second,last,found,noPages};
             })()""")
-            if override.get('editors') != 0 or override.get('text') != '+$20' or override.get('source') != 'Thames Outpost' or override.get('price') != '$80' or not override.get('mining'):
-                raise RuntimeError(f"Price Check automatic NPC pricing failed: {override}")
+            if search != {'uranium': 1, 'system': 1, 'excluded': True, 'first': 24, 'second': 6, 'last': True, 'found': 1, 'noPages': True}:
+                raise RuntimeError(f"Price Check search and pagination failed: {search}")
 
             # TOOLS is now genuinely secondary and no longer exposes the obsolete
             # Production Orders / Build Queue or Newswire entries.
@@ -187,7 +194,7 @@ def main() -> int:
                     mastheadHeight:document.querySelector('.command-header-inner')?.getBoundingClientRect().height||0,
                     rowCount:document.querySelectorAll('#priceCheckRows .pricecheck-row').length}};
                 }})()""")
-                if geometry.get("overflow", 0) > 2 or geometry.get("tabs") != 4 or geometry.get("rowCount") != 11:
+                if geometry.get("overflow", 0) > 2 or geometry.get("tabs") != 4 or geometry.get("rowCount") != price["routeCount"]:
                     raise RuntimeError(f"Price Check geometry at {width}px failed: {geometry}")
                 if width < 760 and any(height < 43.5 for height in geometry.get("touch", [])):
                     raise RuntimeError(f"Primary touch targets at {width}px failed: {geometry}")
@@ -201,7 +208,7 @@ def main() -> int:
             if runtime_failures:
                 raise RuntimeError(f"Runtime failures: {runtime_failures}")
 
-            print("Focus Pass + Price Check smoke passed: 4 daily tabs, 11 fixed routes, automatic NPC prices, archived overrides ignored, mobile fit")
+            print("Focus Pass + Price Check smoke passed: 4 daily tabs, NPC offer search, automatic pricing, archived overrides and mobile fit")
             return 0
         finally:
             try:
