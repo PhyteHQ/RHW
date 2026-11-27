@@ -68,7 +68,22 @@ assert.ok(official.includes('[color=#CDD4DC]HEAVY WORKS') && official.includes('
 assert.ok(official.includes('Official Corporate Correspondence') && official.includes('OFFICE OF THE CHIEF EXECUTIVE'));
 assert.ok(official.includes('[color=#80AAD8]REGARDING') && official.includes('UNTITLED CORRESPONDENCE'));
 assert.ok(official.includes('Chief Executive Officer') && official.includes('Industry in Service of the Crown.'));
-assert.ok(official.includes('SECURE TRANSMISSION · RES OFFICIAL[br][RES] SYSTEM TIME: UNSET'));
+const today = new Date();
+const todayStamp = [String(today.getDate()).padStart(2, '0'), String(today.getMonth() + 1).padStart(2, '0'), today.getFullYear()].join('/');
+assert.ok(official.includes('SECURE TRANSMISSION · RES OFFICIAL[br]SYSTEM TIME: ' + todayStamp));
+assert.ok(!official.includes('[RES] SYSTEM TIME') && !official.includes('SYSTEM TIME: UNSET'));
+const autoState = app.storage.defaultState();
+assert.equal(autoState.systemDate, '', 'Automatic dates must not be persisted in drafts');
+let fakeDay = 27;
+context.Date = class extends Date {
+  constructor(...args) { super(...(args.length ? args : [2026, 10, fakeDay, 12])); }
+};
+assert.ok(app.comms.buildBbcode(autoState).includes('SYSTEM TIME: 27/11/2026'));
+fakeDay = 28;
+assert.ok(app.comms.buildBbcode(autoState).includes('SYSTEM TIME: 28/11/2026'), 'An existing automatic draft uses the current day when exported');
+assert.ok(app.comms.buildBbcode({...autoState, systemDate:'UNSET'}).includes('SYSTEM TIME: 28/11/2026'));
+assert.ok(app.comms.buildBbcode({...autoState, systemDate:'27/11/836'}).includes('SYSTEM TIME: 27/11/836'), 'Explicit historical RP dates are preserved');
+delete context.Date;
 
 const legacy = app.storage.normalizeState({
   classification: 'RHW OFFICIAL', footerMotto: 'CONNECTION SECURE /// BUILT IN BRETONIA - BUILT FOR THE CROWN',
