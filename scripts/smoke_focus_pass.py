@@ -88,12 +88,16 @@ def main() -> int:
               window.__priceCheckFixture=[
                 station('br01_06_base','Thames Outpost','New London',[good('hydrocarbons','Hydrocarbons',80),good('uranium','Uranium',95),good('mox_fuel','MOX',17)]),
                 station('br01_02_base','Portsmouth Shipyard','Cambridge',[good('ship_hull_panels','Hull Panels',120)]),
-                station('br01_01_base','Planet New London','New London',[good('industrial','Industrial Materials',100),good('food','Food Rations',70),good('consumer_goods','Consumer Goods',90)])
+                station('br01_01_base','Planet New London','New London',[good('industrial','Industrial Materials',100),good('food','Food Rations',70),good('consumer_goods','Consumer Goods',90)]),
+                ...Array.from({length:20},(_,i)=>station(`extra-${i}`,`Market ${i}`,'New London',[
+                  good('crew','Crew',140-i), ...(i<10 ? [good('ablativearmor','Ablative Armor Plating',101+i)] : [])
+                ]))
               ];
               rhwBase={shop_items:[
                 good('hydrocarbons','Hydrocarbons',80),good('uranium','Uranium',95),good('mox_fuel','MOX',17),
                 good('ship_hull_panels','Hull Panels',120),good('industrial','Industrial Materials',100),
-                good('food','Food Rations',70),good('consumer_goods','Consumer Goods',90),good('npc_trade','Test Trade Good',120)
+                good('food','Food Rations',70),good('consumer_goods','Consumer Goods',90),
+                good('crew','Crew',140),good('ablativearmor','Ablative Armor Plating',101),good('local','Local Feedstock',0)
               ].map(({nickname,name})=>({nickname,name,sell_price:100}))};
               window.telemetrySnapshot=()=>({available:true,stale:false,fetchedAt:new Date().toISOString(),label:'LIVE STOCK'});
               RHWV4.pricecheck.snapshotRoutes(window.__priceCheckFixture);RHWV4.pricecheck.render();
@@ -112,7 +116,7 @@ def main() -> int:
             }};}})()""")
             if price.get("workspace") != "pricecheck" or price.get("hash") != "#pricecheck/routes" or not price.get("panel"):
                 raise RuntimeError(f"Price Check route failed: {price}")
-            if price.get("rows") != 4 or price.get("routeCount") != 4 or price.get("context") or price.get("buildQueue") or "NPC MARKET" not in price.get("active", ""):
+            if price.get("rows") != 10 or price.get("routeCount") != 37 or price.get("context") or price.get("buildQueue") or "NPC MARKET" not in price.get("active", ""):
                 raise RuntimeError(f"Price Check scope/UI failed: {price}")
 
             # Price signs and archived overrides must follow the actual offer.
@@ -134,22 +138,20 @@ def main() -> int:
                 raise RuntimeError(f"Price Check automatic NPC pricing failed: {math_state}")
 
             search = base.ev(cdp, """(()=>{
-              const api=RHWV4.pricecheck, fixture=window.__priceCheckFixture;
               const filter=value=>{priceCheckSearch.value=value;priceCheckSearch.dispatchEvent(new Event('input',{bubbles:true}));};
               const count=()=>priceCheckRows.querySelectorAll('.pricecheck-row').length;
               filter('uranium thames');const uranium=count();
               filter('cambridge');const system=count();
-              filter('mox');const excluded=count()===0 && priceCheckResultCount.textContent.includes('No offers match');
-              const markets=Array.from({length:26},(_,i)=>({nickname:`extra-${i}`,name:`Market ${i}`,
-                market_goods:[{nickname:'commodity_npc_trade',name:'Test Trade Good',base_sells:true,price_base_sells_for:120}]}));
-              api.snapshotRoutes([...fixture,...markets]);filter('');const first=count();
-              priceCheckNext.click();const second=count(), last=priceCheckNext.disabled;
-              filter('market 25');const found=count(), noPages=priceCheckPageNav.hidden;
-              api.snapshotRoutes(fixture);filter('');
-              return {uranium,system,excluded,first,second,last,found,noPages};
+              filter('mox');const mox=count();
+              filter('crew');const crew=count(), crewMarket=priceCheckRows.querySelector('.pricecheck-source strong').textContent;
+              filter('ablative');const ablative=count(), armorMarket=priceCheckRows.querySelector('.pricecheck-source strong').textContent;
+              filter('local feedstock');const local=count(), missing=priceCheckRows.textContent.includes('No NPC seller reported');
+              filter('');const all=count();
+              return {uranium,system,mox,crew,crewMarket,ablative,armorMarket,local,missing,all};
             })()""")
-            if search != {'uranium': 1, 'system': 1, 'excluded': True, 'first': 24, 'second': 6, 'last': True, 'found': 1, 'noPages': True}:
-                raise RuntimeError(f"Price Check search and pagination failed: {search}")
+            if search != {'uranium': 1, 'system': 1, 'mox': 1, 'crew': 1, 'crewMarket': 'Market 19',
+                          'ablative': 1, 'armorMarket': 'Market 0', 'local': 1, 'missing': True, 'all': 10}:
+                raise RuntimeError(f"Price Check search and single source per commodity failed: {search}")
 
             # TOOLS is now genuinely secondary and no longer exposes the obsolete
             # Production Orders / Build Queue or Newswire entries.
@@ -198,7 +200,7 @@ def main() -> int:
                     mastheadHeight:document.querySelector('.command-header-inner')?.getBoundingClientRect().height||0,
                     rowCount:document.querySelectorAll('#priceCheckRows .pricecheck-row').length}};
                 }})()""")
-                if geometry.get("overflow", 0) > 2 or geometry.get("tabs") != 4 or geometry.get("rowCount") != price["routeCount"]:
+                if geometry.get("overflow", 0) > 2 or geometry.get("tabs") != 4 or geometry.get("rowCount") != price["rows"]:
                     raise RuntimeError(f"Price Check geometry at {width}px failed: {geometry}")
                 if width < 760 and any(height < 43.5 for height in geometry.get("touch", [])):
                     raise RuntimeError(f"Primary touch targets at {width}px failed: {geometry}")

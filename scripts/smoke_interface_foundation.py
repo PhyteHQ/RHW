@@ -28,7 +28,8 @@ STOCK = {'Basic Alloy': 19129, 'Consumer Goods': 24793, 'Food Rations': 22451,
 DATA = [{'name': 'Resolution Heavy Works', 'nickname': 'fixture-rhw', 'system_name': 'New London',
          'system_nickname': 'br01', 'base_pos': {'X': -23000, 'Y': 0, 'Z': 52000}, 'money': 46385683,
          'cargospace': 63777, 'health': 24000000,
-         'shop_items': [{'name': k, 'quantity': v, 'sell_price': 100, 'buy_price': 80} for k, v in STOCK.items()]},
+         'shop_items': [{'name': k, 'quantity': v, 'sell_price': 100, 'buy_price': 80,
+                         'category': 'equipment' if k == 'Archon Design Schematics' else 'commodity'} for k, v in STOCK.items()]},
         {'name': 'Lissheen Logistics Depot', 'system_name': 'Dublin', 'shop_items': [
             {'name': k, 'quantity': v, 'sell_price': 105, 'buy_price': 80} for k, v in STOCK.items()]}]
 DATA[0]['shop_items'] += [
@@ -47,7 +48,7 @@ NPC_DATA = [{'name': name, 'nickname': nickname, 'system_name': system,
                                'base_sells': True, 'price_base_sells_for': price} for good, price in offers]}
             for name, nickname, system, offers in (
                 ('Portsmouth Shipyard', 'br01_02_base', 'Cambridge', [('ship_hull_panels', 80)]),
-                ('Planet New London', 'br01_01_base', 'New London', [('industrial', 80), ('food', 70), ('consumer_goods', 90), ('oxygen', 90)]),
+                ('Planet New London', 'br01_01_base', 'New London', [('industrial', 80), ('food', 70), ('consumer_goods', 90), ('oxygen', 90), ('ablativearmor', 90)]),
                 ('Thames Outpost', 'br01_06_base', 'New London', [('hydrocarbons', 80), ('mox_fuel', 80), ('mining_machinery', 80), ('uranium', 85)]),
                 ('Kensington Shipping Platform', 'br01_07_base', 'New London', [('titanium', 80), ('hydrocarbons', 95)]),
                 ('Planet Cambridge', 'br03_01_base', 'Cambridge', [('energy_field_equip', 80)]),
@@ -59,7 +60,9 @@ for station in range(50):
                      'market_goods': [{'name': f'Market Only Good {index}', 'nickname': f'commodity_market_only_{index}',
                                        'category': 'commodity', 'base_sells': True, 'price_base_sells_for': 70}
                                       for index in range(54)]})
-PRICE_OFFER_COUNT = 10
+PRICE_ROW_COUNT = len(STOCK) - 1
+PRICE_SOURCE_COUNT = 11
+PRICE_OFFER_COUNT = 14
 PRICE_CHECK_FIXTURES = {
     '/__rhw_test_pobs': DATA,
     '/__rhw_test_npc': NPC_DATA,
@@ -209,7 +212,7 @@ def main():
                       const box=e.getBoundingClientRect(),diff=e.querySelector('.pricecheck-difference').getBoundingClientRect();
                       const source=e.querySelector('.pricecheck-price-cell').getBoundingClientRect();
                       const payout=e.querySelector('.pricecheck-payout-cell').getBoundingClientRect();
-                      return {key:e.dataset.routeKey,height:box.height,differenceTop:diff.top-box.top,
+                      return {key:e.dataset.commodityKey,height:box.height,differenceTop:diff.top-box.top,
                         pricesAligned:Math.abs(source.top-payout.top)<=1,readOnly:!e.querySelector('input'),
                         clipped:e.scrollWidth>e.clientWidth+1};
                     }),
@@ -301,7 +304,8 @@ def main():
                 if width <= 760 and workspace == 'pricecheck':
                     # A phone must show the result at the start of each compact
                     # card, including unknown prices and the longest route names.
-                    assert len(result['priceCards']) == PRICE_OFFER_COUNT, result
+                    assert len(result['priceCards']) == PRICE_ROW_COUNT, result
+                    assert len({card['key'] for card in result['priceCards']}) == PRICE_ROW_COUNT, result
                     for card in result['priceCards']:
                         assert card['height'] <= 300 and card['differenceTop'] <= 20, (width, card)
                         assert card['pricesAligned'] and card['readOnly'] and not card['clipped'], (width, card)
@@ -664,11 +668,34 @@ def main():
         assert price_cache['offers'] == PRICE_OFFER_COUNT and price_cache['at'], price_cache
         assert price_cache['legacy'] is None and price_cache['localWrites'] == 0 and not price_cache['warning'] and not price_cache['outside'], price_cache
         deadline = time.monotonic() + 10
-        while base.ev(cdp, "document.querySelectorAll('.pricecheck-target b').length") != PRICE_OFFER_COUNT:
+        while base.ev(cdp, "document.querySelectorAll('.pricecheck-target b').length") != PRICE_SOURCE_COUNT:
             if time.monotonic() >= deadline:
                 details = base.ev(cdp, "({status:priceCheckTripStatus.textContent, rows:[...document.querySelectorAll('.pricecheck-target')].map(row=>row.textContent)})")
-                raise AssertionError(f'Price Check did not quote the eligible NPC offers: {details}')
+                raise AssertionError(f'Price Check did not quote one NPC source per commodity: {details}')
             time.sleep(.05)
+        price_winners = base.ev(cdp, """(()=>{
+          const api=RHWV4.pricecheck;
+          const card=name=>[...priceCheckRows.rows].find(row=>row.querySelector('.pricecheck-commodity strong').textContent===name);
+          const armor=card('Ablative Armor Plating');
+          const winner=armor.dataset.routeKey, price=armor.querySelector('.pricecheck-source-price').textContent;
+          const cheaper=api.routes.find(row=>row.key==='rh01_02_base/commodity_ablativearmor').livePrice;
+          const hourly=armor.querySelector('.pricecheck-hourly b')?.textContent;
+          const food=card('Food Rations').dataset.routeKey;
+          const noSource=card('Gold Ore').textContent.includes('No NPC seller reported');
+          const item=rhwBase.shop_items.find(item=>item.name==='Ablative Armor Plating');
+          const payout=item.sell_price;
+          item.sell_price=null;api.render();
+          const targetOnlyWinner=armor.dataset.routeKey;
+          const targetOnly=!!armor.querySelector('.pricecheck-target b')&&!armor.querySelector('.pricecheck-hourly');
+          item.sell_price=payout;api.render();
+          return {winner,price,cheaper,hourly,food,noSource,targetOnlyWinner,targetOnly,
+            count:priceCheckRows.rows.length,distinct:new Set([...priceCheckRows.rows].map(row=>row.dataset.commodityKey)).size};
+        })()""")
+        assert price_winners['winner'] == 'br01_01_base/commodity_ablativearmor' and price_winners['price'] == '$90', price_winners
+        assert price_winners['cheaper'] == 80 and price_winners['hourly'].endswith('/h'), price_winners
+        assert price_winners['food'] == 'br01_01_base/commodity_food' and price_winners['noSource'], price_winners
+        assert price_winners['count'] == price_winners['distinct'] == PRICE_ROW_COUNT, price_winners
+        assert price_winners['targetOnlyWinner'] == price_winners['winner'] and price_winners['targetOnly'], price_winners
         hourly_target = base.ev(cdp, """(()=>{
           const row=document.querySelector('[data-route-key="br01_06_base/commodity_hydrocarbons"]');
           const select=(node,value)=>{node.value=value;node.dispatchEvent(new Event('change',{bubbles:true}));};
@@ -678,17 +705,18 @@ def main():
           const quote=()=>Number(row.querySelector('.pricecheck-target b').textContent.replace(/[^0-9]/g,''));
           const current=()=>row.querySelector('.pricecheck-hourly b').textContent;
           select(priceCheckHauler,'transport-5000');
-          const initial=quote(), rate=current(), before=Number(targets.find(input=>input.checked).value);
+          const before=Number(targets.find(input=>input.checked).value), rate=current();
+          choose('500000');const initial=quote();
           choose('750000');const above=quote();
           choose('1000000');const highest=quote(), sameRate=current()===rate;
           quantity('1000');const smaller=quote(), label=row.querySelector('.pricecheck-trip').textContent;
           const width=document.documentElement.scrollWidth;
-          choose('500000');select(priceCheckHauler,'auto');quantity('');
+          choose('750000');select(priceCheckHauler,'auto');quantity('');
           return {before,initial,above,highest,smaller,sameRate,label,width,viewport:innerWidth,
             presets:targets.map(input=>Number(input.value)),
             original:row.querySelector('.pricecheck-difference strong').textContent};
         })()""")
-        assert hourly_target['before'] == 500000 and hourly_target['initial'] < hourly_target['above'] < hourly_target['highest'] < hourly_target['smaller'], hourly_target
+        assert hourly_target['before'] == 750000 and hourly_target['initial'] < hourly_target['above'] < hourly_target['highest'] < hourly_target['smaller'], hourly_target
         assert hourly_target['presets'] == [500000, 750000, 1000000], hourly_target
         assert hourly_target['sameRate'] and 'Advanced Train' in hourly_target['label'] and '1,000 units' in hourly_target['label'], hourly_target
         assert hourly_target['width'] <= hourly_target['viewport'] + 1 and hourly_target['original'] == '+$20', hourly_target
@@ -717,20 +745,20 @@ def main():
           const rows=()=>[...priceCheckRows.querySelectorAll('[data-route-key]')];
           const sort=value=>{priceCheckSort.value=value;priceCheckSort.dispatchEvent(new Event('change',{bubbles:true}));};
           const qty=value=>{priceCheckQuantity.value=value;priceCheckQuantity.dispatchEvent(new Event('input',{bubbles:true}));};
-          const key='br01_01_base/commodity_industrial',hull='br01_02_base/commodity_ship_hull_panels';
-          const market=original.routes.map(route=>route.key===key ? {...route,livePrice:0} : route.key===hull ? {...route,livePrice:null} : route);
+          const key='br01_01_base/commodity_industrial';
+          const market=original.routes.map(route=>route.key===key ? {...route,livePrice:0} : route);
           api.state.marketCache={...original,routes:market};
           sort('best');qty('5');
-          const unknown=row=>row.querySelector('.pricecheck-difference').classList.contains('unknown');
+          const unknown=row=>!row.querySelector('.pricecheck-hourly');
           const sorted=rows(),suffix=sorted.slice(sorted.findIndex(unknown));
-          const result={best:sorted[0].dataset.routeKey,unknownLast:suffix.every(unknown)&&suffix.some(row=>row.dataset.routeKey===hull),
+          const result={best:sorted[0].dataset.routeKey,unknownLast:suffix.length>0&&suffix.every(unknown),
             total:rows()[0].querySelector('.pricecheck-total b')?.textContent};
           sort('worst');result.worst=rows()[0].dataset.routeKey!==key;
           market.find(route=>route.key===key).livePrice=125;api.render();
           result.loss=rows()[0].querySelector('.pricecheck-total b')?.textContent;
           qty('0');result.noInvalidTotal=!priceCheckRows.querySelector('.pricecheck-total');
           api.state.marketCache={...original,routes:[]};api.render();
-          result.waiting=priceCheckResultCount.textContent.includes('No eligible NPC offers reported')
+          result.waiting=priceCheckRows.textContent.includes('No NPC seller reported')&&!priceCheckRows.querySelector('.pricecheck-hourly')
             &&!priceCheckStatusGrid.querySelector('[data-tone="positive"]');
           api.state.marketCache=original;qty('');sort('source');
           return result;

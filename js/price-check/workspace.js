@@ -10,8 +10,8 @@
 
   const MARKET_API = 'https://darkstat.dd84ai.com/api/npc_bases';
   const AUTO_REFRESH_MS = 300000;
-  const PAGE_SIZE = 24;
-  const MARKET_SCHEMA = 3;
+  const MARKET_SCHEMA = 4;
+  const DEFAULT_PROFIT_TARGET = 750000;
   const LEGACY_MARKET_KEY = 'rhw-webapp-v4:price-check-market-cache';
   const PROFIT_TARGETS = [[500000, '$500k/h'], [750000, '$750k/h'], [1000000, '$1M/h']];
   const OVERRIDES_KEY = app.config.storageKeys.priceCheckOverrides || 'rhw-webapp-v4:price-check-overrides';
@@ -33,19 +33,17 @@
     receivedAt: 0,
     sort: 'commodity',
     query: '',
-    page: 0,
     quantity: null,
-    hourlyTarget: PROFIT_TARGETS[0][0],
+    hourlyTarget: DEFAULT_PROFIT_TARGET,
     hauler: 'auto'
   };
-  let producedGoods = null;
   let indexedShop, manifestIndex, scheduledScope, cacheReady = false;
   let tripModule, tripLoader, tripRequest, tripData, currentMapAt;
   let tripKey = '', tripError = '', nextTripAttempt = 0;
 
   const refreshTask = window.RHWRuntime.createRefreshTask({
     interval: AUTO_REFRESH_MS,
-    enabled: () => cacheReady && app.state.activeWorkspace === 'pricecheck' && producedGoods && manifestScope(),
+    enabled: () => cacheReady && app.state.activeWorkspace === 'pricecheck' && manifestScope(),
     run: (options = { quiet: true }) => refreshMarket(options)
   });
 
@@ -101,22 +99,16 @@
       <div class="pricecheck-note" id="priceCheckNote">MARKET DATA LOADS WHEN PRICE CHECK OPENS.</div>
       <div class="pricecheck-controls">
         <label class="pricecheck-search" for="priceCheckSearch">Search<input id="priceCheckSearch" type="search" maxlength="160" placeholder="Commodity, station or system"></label>
-        <label for="priceCheckSort">Sort by<select id="priceCheckSort"><option value="commodity">Commodity</option><option value="source">Source</option><option value="best">Highest difference / unit</option><option value="worst">Lowest difference / unit</option></select></label>
+        <label for="priceCheckSort">Sort by<select id="priceCheckSort"><option value="commodity">Commodity</option><option value="source">Source</option><option value="best">Highest profit / hour</option><option value="worst">Lowest profit / hour</option></select></label>
         <label for="priceCheckQuantity">Quantity · optional<input id="priceCheckQuantity" type="number" min="1" step="1" inputmode="numeric" placeholder="Units per route"></label>
         <fieldset class="pricecheck-target-picker" id="priceCheckTarget"><legend>Trader profit target</legend>
           <div class="pricecheck-target-options">${PROFIT_TARGETS.map(([value, label]) => `<label><input type="radio" name="price-check-profit" value="${value}"${value === state.hourlyTarget ? ' checked' : ''}><span>${label}</span></label>`).join('')}</div>
         </fieldset>
         <label for="priceCheckHauler">Hauler<select id="priceCheckHauler"><option value="auto">Auto · most units/hour</option></select></label>
       </div>
-      <p class="pricecheck-trip-note">RHW round trip with an empty outbound leg. Quantity caps the load. Check docking permissions and RHW buying limits before trading.</p>
+      <p class="pricecheck-trip-note">One row per commodity. Sellers rank by estimated profit per hour for a round trip to RHW. If the RHW payout is unknown, we pick the lowest unit price needed for your target. Offers without an estimate show the lowest known NPC price.</p>
       <p class="pricecheck-trip-note" id="priceCheckTripStatus" role="status"></p>
-      <div class="pricecheck-results">
-        <p id="priceCheckResultCount" role="status"></p>
-        <div class="pricecheck-page-nav" id="priceCheckPageNav" role="group" aria-label="Offer pages" hidden>
-          <button type="button" id="priceCheckPrev" aria-controls="priceCheckRows">Previous</button>
-          <button type="button" id="priceCheckNext" aria-controls="priceCheckRows">Next</button>
-        </div>
-      </div>
+      <p class="pricecheck-trip-note" id="priceCheckResultCount" role="status"></p>
       <div class="pricecheck-table-wrap"><table class="pricecheck-table">
         <thead><tr><th>COMMODITY</th><th>SOURCE</th><th>NPC PRICE</th><th>RHW PAYS</th><th>DIFFERENCE / UNIT</th></tr></thead>
         <tbody id="priceCheckRows"></tbody>
@@ -164,12 +156,10 @@
     panel.querySelector('#priceCheckRefresh').addEventListener('click', () => refreshTask.refresh({ forceTrips: true }));
     panel.querySelector('#priceCheckSearch').addEventListener('input', event => {
       state.query = normalize(event.target.value);
-      state.page = 0;
       render();
     });
     panel.querySelector('#priceCheckSort').addEventListener('change', event => {
       state.sort = event.target.value;
-      state.page = 0;
       render();
     });
     panel.querySelector('#priceCheckQuantity').addEventListener('input', event => {
@@ -186,25 +176,6 @@
       state.hauler = event.target.value;
       render();
     });
-    for (const [id, direction] of [['priceCheckPrev', -1], ['priceCheckNext', 1]]) {
-      panel.querySelector(`#${id}`).addEventListener('click', event => {
-        const wasFocused = document.activeElement === event.currentTarget;
-        state.page += direction;
-        render();
-        if (wasFocused && event.currentTarget.disabled) panel.querySelector(direction > 0 ? '#priceCheckPrev' : '#priceCheckNext').focus();
-      });
-    }
-  }
-
-  function classifyGoods(catalog) {
-    if (!catalog?.recipes?.length) return;
-    producedGoods = new Set();
-    for (const recipe of catalog.recipes) {
-      // Opening sealed freight recovers existing cargo rather than making it.
-      if (recipe.id.startsWith('recipe_container_opening_')) continue;
-      for (const output of recipe.outputs || []) producedGoods.add(output.id.toLowerCase());
-    }
-    indexedShop = undefined;
   }
 
   function manifestScope() {
@@ -218,15 +189,17 @@
       if (!item || item.synthetic || item.missing || item.ship_class != null || (item.category && item.category !== 'commodity')) continue;
       const id = itemId(item.nickname);
       const name = commodityKey(item);
-      if (id && !producedGoods?.has(id) && !byId.has(id)) byId.set(id, item);
+      if (id && !byId.has(id)) byId.set(id, item);
       // An exact nickname takes precedence over display names. Name matching
       // is reserved for unambiguous older shop rows that lack a nickname.
       if (name) byName.set(name, id || byName.has(name) ? null : item);
     }
-    const names = [...byName].filter(([, item]) => item).map(([name]) => name);
-    const key = JSON.stringify([[...byId.keys()].sort(), names.sort()]);
+    const names = [...byName].filter(([, item]) => item);
+    const goods = [...byId.values(), ...names.map(([, item]) => item)]
+      .filter(item => item.category === 'commodity' || itemId(item.nickname).startsWith('commodity_'));
+    const key = JSON.stringify([[...byId.keys()].sort(), names.map(([name]) => name).sort()]);
     indexedShop = shop;
-    return manifestIndex = { byId, byName, key };
+    return manifestIndex = { byId, byName, goods, key };
   }
 
   function manifestItem(scope, nickname, name) {
@@ -234,9 +207,8 @@
   }
 
   function marketRoutes(scope = manifestScope()) {
-    if (!scope || !producedGoods) return [];
-    return state.marketCache.routes.filter(route => !producedGoods.has(itemId(route.goodNickname))
-      && manifestItem(scope, route.goodNickname, route.commodity));
+    if (!scope) return [];
+    return state.marketCache.routes.filter(route => manifestItem(scope, route.goodNickname, route.commodity));
   }
 
   function rhwPrice(item) {
@@ -244,19 +216,25 @@
     return [item.price_to_sell_to_base, item.sell_price, item.price_sell].map(finite).find(value => value !== null) ?? null;
   }
 
+  function marketCovers(scopeKey) {
+    return state.marketCache.schema === MARKET_SCHEMA && state.marketCache.scope === scopeKey;
+  }
+
   function scheduleMarket() {
-    if (!cacheReady || !producedGoods) return;
+    if (!cacheReady) return;
     const scopeKey = manifestScope()?.key ?? null;
     if (scheduledScope === scopeKey) return;
     scheduledScope = scopeKey;
     const at = Date.parse(state.marketCache.fetchedAt);
-    refreshTask.setDueAt(state.marketCache.scope === scopeKey && Number.isFinite(at)
+    refreshTask.setDueAt(marketCovers(scopeKey) && Number.isFinite(at)
       ? Math.min(at, Date.now()) + AUTO_REFRESH_MS : Date.now());
   }
 
   async function restoreMarket() {
     const saved = await window.RHWTelemetryCache?.readMarket?.().catch(() => null);
-    if (state.marketCache.fetchedAt || saved?.schema !== MARKET_SCHEMA || typeof saved.scope !== 'string'
+    // The previous snapshot can supply cached prices while the expanded
+    // market is fetched, but it cannot establish which goods lack a seller.
+    if (state.marketCache.fetchedAt || ![3, MARKET_SCHEMA].includes(saved?.schema) || typeof saved.scope !== 'string'
         || !Array.isArray(saved.routes) || !Number.isFinite(Date.parse(saved.fetchedAt))) return;
     state.marketCache = { ...saved, routes: saved.routes.filter(route =>
       route && ['key', 'sourceNickname', 'source', 'goodNickname', 'commodity', 'system', 'systemNickname']
@@ -297,7 +275,7 @@
 
   function snapshotRoutes(bases) {
     const scope = manifestScope();
-    if (!scope || !producedGoods) return false;
+    if (!scope) return false;
     const offers = new Map();
     const fallbackIds = new Map();
     for (const base of bases) {
@@ -307,7 +285,7 @@
       for (const good of base.market_goods) {
         const goodNickname = good?.nickname;
         const id = itemId(goodNickname);
-        if (!id || producedGoods.has(id) || good.base_sells !== true
+        if (!id || good.base_sells !== true
             || good.PoB || good.PoBGood || (good.category && good.category !== 'commodity')) continue;
         if (!manifestItem(scope, goodNickname, good.name)) continue;
         const commodity = String(good.name || goodNickname);
@@ -342,7 +320,7 @@
   }
 
   async function refreshMarket({ forceTrips = false, quiet = false } = {}) {
-    if (!producedGoods || !manifestScope()) return;
+    if (!manifestScope()) return;
     state.loading = true;
     if (!quiet) {
       state.marketTone = 'waiting';
@@ -385,13 +363,13 @@
   }
 
   function statusMarkup(rows) {
-    const commodities = new Set(rows.map(row => row.route.goodNickname)).size;
-    const positive = rows.filter(row => row.difference > 0).length;
-    const negative = rows.filter(row => row.difference < 0).length;
-    const hasComparison = rows.some(row => row.difference !== null);
+    const offers = rows.filter(row => row.route.sourceNickname).length;
+    const positive = rows.filter(row => row.estimate?.quote?.currentRate > 0).length;
+    const negative = rows.filter(row => row.estimate?.quote?.currentRate < 0).length;
+    const hasComparison = rows.some(row => row.estimate?.quote?.currentRate != null);
     return `
-      <article class="pricecheck-status"><small>MANIFEST COMMODITIES</small><strong>${commodities.toLocaleString('en-US')}</strong></article>
-      <article class="pricecheck-status"><small>STATION OFFERS</small><strong>${rows.length.toLocaleString('en-US')}</strong></article>
+      <article class="pricecheck-status"><small>MANIFEST COMMODITIES</small><strong>${rows.length.toLocaleString('en-US')}</strong></article>
+      <article class="pricecheck-status"><small>NPC SOURCES</small><strong>${offers.toLocaleString('en-US')}</strong></article>
       <article class="pricecheck-status" data-tone="${positive ? 'positive' : 'neutral'}"><small>POSITIVE</small><strong>${hasComparison ? positive.toLocaleString('en-US') : '—'}</strong></article>
       <article class="pricecheck-status" data-tone="${negative ? 'negative' : 'neutral'}"><small>LOSS</small><strong>${hasComparison ? negative.toLocaleString('en-US') : '—'}</strong></article>`;
   }
@@ -461,6 +439,43 @@
     return { reason: route?.candidates.length ? 'No estimate for selected hauler' : route?.reason || 'Round trip unavailable' };
   }
 
+  function compareOffers(a, b) {
+    const first = a.estimate.quote;
+    const second = b.estimate.quote;
+    if (Boolean(first) !== Boolean(second)) return first ? -1 : 1;
+    if (first && second) {
+      const order = first.currentRate !== null && second.currentRate !== null
+        ? second.currentRate - first.currentRate
+        : first.targetUnitCost - second.targetUnitCost;
+      if (order) return order;
+    }
+    return ((a.live ?? Infinity) - (b.live ?? Infinity)) || a.route.key.localeCompare(b.route.key);
+  }
+
+  function bestRows(scope = manifestScope(), offers = marketRoutes(scope), rhw = rhwSnapshot()) {
+    if (!scope) return [];
+    const keyFor = item => itemId(item.nickname) || `name:${commodityKey(item)}`;
+    const winners = new Map();
+    for (const route of offers) {
+      const item = manifestItem(scope, route.goodNickname, route.commodity);
+      const itemKey = keyFor(item);
+      const row = effectiveRow({ ...route, commodity: displayName(item) }, rhw, item);
+      row.itemKey = itemKey;
+      row.estimate = hourlyEstimate(row);
+      if (!winners.has(itemKey) || compareOffers(row, winners.get(itemKey)) < 0) winners.set(itemKey, row);
+    }
+    const missingSource = state.marketCache.fetchedAt && marketCovers(scope.key)
+      ? 'No NPC seller reported' : state.lastError ? 'NPC market unavailable' : 'Awaiting NPC market';
+    for (const item of scope.goods) {
+      const itemKey = keyFor(item);
+      if (winners.has(itemKey)) continue;
+      const route = { key: itemKey, goodNickname: itemId(item.nickname), commodity: displayName(item),
+        sourceNickname: '', source: '', system: '' };
+      winners.set(itemKey, { ...effectiveRow(route, rhw, item), itemKey, missingSource });
+    }
+    return [...winners.values()];
+  }
+
   function targetMarkup({ quote, reason }, fresh) {
     const label = `For ${money(state.hourlyTarget)}/h`;
     if (!quote) return `<span class="pricecheck-target"><small>${label}</small><small>${esc(reason)}</small></span>`;
@@ -480,26 +495,35 @@
     const payoutCopy = payout === null ? (rhw.available ? 'RHW PRICE UNAVAILABLE' : 'RHW DATA UNAVAILABLE') : money(payout);
     const payoutStatus = payout === null ? '' : `<small class="${rhw.stale ? '' : 'pricecheck-current'}">${rhw.stale ? 'RHW CACHED' : 'CURRENT RHW BUY'}</small>`;
     const total = state.quantity && difference !== null ? `<small class="pricecheck-total"><b>${signedMoney(difference * state.quantity)}</b> total for ${state.quantity.toLocaleString('en-US')}</small>` : '';
-    const estimate = hourlyEstimate(row);
-    const hourly = estimate.quote?.currentRate;
+    const estimate = route.sourceNickname ? row.estimate ?? hourlyEstimate(row) : null;
+    const hourly = estimate?.quote?.currentRate;
     const hourlyCopy = hourly == null ? '' : `<small class="pricecheck-hourly" title="Estimated trader profit at the current RHW payout">Est. <b>${signedMoney(hourly)}/h</b></small>`;
-    return `<tr class="pricecheck-row" data-route-key="${esc(route.key)}">
+    const comparison = estimate?.quote ? tripMarkup(estimate.quote)
+      : (live !== null ? '<small>Lowest known NPC price</small>' : '');
+    const source = route.sourceNickname
+      ? `<strong>${esc(route.source)}</strong><small>${esc(route.system)}<span class="pricecheck-source-id">${route.system ? ' // ' : ''}${esc(route.sourceNickname)}</span></small>${comparison}`
+      : `<small>${esc(row.missingSource)}</small>`;
+    return `<tr class="pricecheck-row" data-commodity-key="${esc(row.itemKey ?? route.goodNickname)}" data-route-key="${esc(route.key)}">
       <td class="pricecheck-item-cell"><span class="pricecheck-mobile-label">COMMODITY</span><span class="pricecheck-commodity"><strong>${esc(route.commodity)}</strong></span></td>
-      <td class="pricecheck-source-cell"><span class="pricecheck-mobile-label">SOURCE</span><span class="pricecheck-source"><strong>${esc(route.source)}</strong><small>${esc(route.system)}<span class="pricecheck-source-id">${route.system ? ' // ' : ''}${esc(route.sourceNickname)}</span></small>${tripMarkup(estimate.quote)}</span></td>
-      <td class="pricecheck-price-cell"><span class="pricecheck-mobile-label">NPC PRICE</span><div class="pricecheck-price-quote"><strong class="pricecheck-source-price">${money(live)}</strong><small class="pricecheck-live">${liveCopy}</small></div></td>
-      <td class="pricecheck-payout-cell"><span class="pricecheck-mobile-label">RHW PAYS</span><span class="pricecheck-payout"><strong>${payoutCopy}</strong>${payoutStatus}</span>${targetMarkup(estimate, fresh)}</td>
+      <td class="pricecheck-source-cell"><span class="pricecheck-mobile-label">SOURCE</span><span class="pricecheck-source">${source}</span></td>
+      <td class="pricecheck-price-cell"><span class="pricecheck-mobile-label">NPC PRICE</span><div class="pricecheck-price-quote"><strong class="pricecheck-source-price">${money(live)}</strong>${estimate ? `<small class="pricecheck-live">${liveCopy}</small>` : ''}</div></td>
+      <td class="pricecheck-payout-cell"><span class="pricecheck-mobile-label">RHW PAYS</span><span class="pricecheck-payout"><strong>${payoutCopy}</strong>${payoutStatus}</span>${estimate ? targetMarkup(estimate, fresh) : ''}</td>
       <td class="pricecheck-difference ${tone}"><span class="pricecheck-mobile-label">DIFFERENCE / UNIT</span><strong>${signedMoney(difference)}</strong>${total}${hourlyCopy}${difference !== null && (!fresh || rhw.stale) ? '<small class="pricecheck-estimate">FROM CACHED PRICES</small>' : ''}</td>
     </tr>`;
   }
 
   function compareRows(a, b) {
-    const sourceOrder = a.route.source.localeCompare(b.route.source, 'en');
     const commodityOrder = a.route.commodity.localeCompare(b.route.commodity, 'en');
-    if (state.sort === 'source') return sourceOrder || commodityOrder;
-    if (state.sort === 'commodity') return commodityOrder || ((a.live ?? Infinity) - (b.live ?? Infinity)) || sourceOrder;
-    if (a.difference === null) return b.difference === null ? sourceOrder : 1;
-    if (b.difference === null) return -1;
-    return (a.difference - b.difference) * (state.sort === 'best' ? -1 : 1) || sourceOrder;
+    if (state.sort === 'source') {
+      return Number(!a.route.sourceNickname) - Number(!b.route.sourceNickname)
+        || a.route.source.localeCompare(b.route.source, 'en') || commodityOrder;
+    }
+    if (state.sort === 'commodity') return commodityOrder;
+    const first = a.estimate?.quote?.currentRate;
+    const second = b.estimate?.quote?.currentRate;
+    if (first == null) return second == null ? commodityOrder : 1;
+    if (second == null) return -1;
+    return (first - second) * (state.sort === 'best' ? -1 : 1) || commodityOrder;
   }
 
   function renderResults(rowsNode, rows, scope) {
@@ -509,24 +533,15 @@
       const text = normalize(`${route.commodity} ${route.source} ${route.system} ${route.goodNickname} ${route.sourceNickname}`);
       return terms.every(term => text.includes(term));
     }).sort(compareRows);
-    const pages = Math.max(1, Math.ceil(results.length / PAGE_SIZE));
-    state.page = Math.min(Math.max(0, state.page), pages - 1);
-    const first = state.page * PAGE_SIZE;
-    const last = Math.min(first + PAGE_SIZE, results.length);
     const count = document.getElementById('priceCheckResultCount');
-    const summary = results.length ? `${first + 1}–${last} of ${results.length.toLocaleString('en-US')} offers`
-      : !scope ? 'Waiting for the RHW Full Manifest.'
-      : !producedGoods ? 'Discovery recipe catalog unavailable.'
-      : !state.marketCache.fetchedAt ? 'Awaiting NPC market offers.'
-      : state.query ? 'No offers match your search.' : 'No eligible NPC offers reported.';
+    const summary = !scope ? 'Waiting for the RHW Full Manifest.'
+      : state.query ? `${results.length.toLocaleString('en-US')} matching commodities`
+      : rows.length === 0 ? 'No commodities reported in the Full Manifest.' : '';
     if (count.textContent !== summary) count.textContent = summary;
-    document.getElementById('priceCheckPageNav').hidden = pages === 1;
-    document.getElementById('priceCheckPrev').disabled = state.page === 0;
-    document.getElementById('priceCheckNext').disabled = state.page === pages - 1;
 
-    const existingRows = new Map([...rowsNode.children].map(row => [row.dataset.routeKey, row]));
-    results.slice(first, last).forEach((row, index) => {
-      const key = row.route.key;
+    const existingRows = new Map([...rowsNode.children].map(row => [row.dataset.commodityKey, row]));
+    results.forEach((row, index) => {
+      const key = row.itemKey;
       const existing = existingRows.get(key);
       const fragment = document.createElement('tbody');
       fragment.innerHTML = rowMarkup(row);
@@ -536,6 +551,7 @@
         return;
       }
       existingRows.delete(key);
+      existing.dataset.routeKey = row.route.key;
       if (rowsNode.children[index] !== existing) rowsNode.insertBefore(existing, rowsNode.children[index] || null);
       [...next.children].forEach((cell, cellIndex) => {
         const current = existing.children[cellIndex];
@@ -557,8 +573,8 @@
     const scope = manifestScope();
     const offers = marketRoutes(scope);
     const rhw = rhwSnapshot();
-    const rows = offers.map(route => effectiveRow(route, rhw, manifestItem(scope, route.goodNickname, route.commodity)));
     updateTrips(offers, forceTrips);
+    const rows = bestRows(scope, offers, rhw);
     const tripStatus = document.getElementById('priceCheckTripStatus');
     const tripCopy = tripError || (tripData ? `Route map checked ${new Date(tripData.mapAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}${tripData.savedReferences ? ' · saved ship or cargo data' : ''}` : '');
     if (tripStatus && tripStatus.textContent !== tripCopy) tripStatus.textContent = tripCopy;
@@ -567,12 +583,13 @@
     renderResults(rowsNode, rows, scope);
 
     const parts = [scope ? state.marketLabel : 'AWAITING RHW FULL MANIFEST'];
+    if (scope && state.marketCache.fetchedAt && !marketCovers(scope.key)) parts.push('PARTIAL SNAPSHOT');
     if (scope && state.marketDetail) parts.push(state.marketDetail);
     if (rhw?.detail) parts.push(rhw.detail);
     note.textContent = parts.join(' // ');
     note.dataset.tone = state.marketTone === 'negative' ? 'error' : (state.marketTone === 'warn' || rhw.stale || !rhw.available ? 'warn' : 'good');
     if (refresh) {
-      refresh.disabled = state.loading || !scope || !producedGoods;
+      refresh.disabled = state.loading || !scope;
       refresh.textContent = state.loading ? 'REFRESHING…' : 'REFRESH MARKET';
     }
   }
@@ -615,11 +632,6 @@
   }
 
   app.lifecycle.on('shell:ready', 'price-check', 30, ensureShell);
-  app.lifecycle.on('catalog:loaded', 'price-check-commodity-scope', 45, ({ catalog }) => {
-    classifyGoods(catalog);
-    scheduleMarket();
-    render();
-  });
 
   // RHW payout changes arrive through the same telemetry notifications as COMMAND.
   app.onUiUpdate(() => {
@@ -641,6 +653,7 @@
 
   app.pricecheck = {
     get routes() { return marketRoutes(); },
+    get rows() { return bestRows(); },
     state,
     init,
     activate,

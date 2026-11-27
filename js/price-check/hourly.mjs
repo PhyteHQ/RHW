@@ -60,7 +60,8 @@ export function quoteHourly(candidates, { hauler, quantity, sourcePrice, payout,
     if (!trip || unitsPerHour > trip.unitsPerHour) trip = { ...candidate, units, unitsPerHour };
   }
   if (!trip) return null;
-  const targetPrice = Math.ceil(sourcePrice + target * trip.seconds / (3600 * trip.units));
+  const targetUnitCost = sourcePrice + target * trip.seconds / (3600 * trip.units);
+  const targetPrice = Math.ceil(targetUnitCost);
   if (!Number.isSafeInteger(targetPrice)) return null;
-  return { ...trip, targetPrice, currentRate: payout === null ? null : (payout - sourcePrice) * trip.unitsPerHour };
+  return { ...trip, targetUnitCost, targetPrice, currentRate: payout === null ? null : (payout - sourcePrice) * trip.unitsPerHour };
 }
