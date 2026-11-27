@@ -897,7 +897,7 @@ def main():
           const preview=document.getElementById('forumLivePreview');
           RHWV4.comms.renderPreview(RHWV4.storage.defaultState());
           const now=new Date();
-          const today=[String(now.getDate()).padStart(2,'0'),String(now.getMonth()+1).padStart(2,'0'),now.getFullYear()].join('/');
+          const today=[String(now.getDate()).padStart(2,'0'),String(now.getMonth()+1).padStart(2,'0'),now.getFullYear()-1190].join('/');
           const images=[...preview.querySelectorAll('img')];
           await Promise.all(images.map(img=>{img.loading='eager';return img.decode();}));
           const state={...RHWV4.state.comms,templateKey:'incident',classification:'',subject:'Docking Notice',
